@@ -28,12 +28,49 @@ let package = Package(
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
+        .executableTarget(
+            name: "Bazelize",
+            dependencies: [
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "PathKit",
+                "BazelizeKit",
+            ]),
+        
+        .target(
+            name: "BazelizeKit",
+            dependencies: [
+                //                .product(name: "PackageDescription", package: "swift-package-manager"),
+                //                .product(name: "SwiftPMDataModel", package: "swift-package-manager"),
+                //                .product(name: "SwiftPM", package: "swift-package-manager"),
+                //                .product(name: "SwiftPM", package: "SwiftPM"),
+                //                .product(name: "SwiftToolsSupport-auto", package: "SwiftTSC"),
+                
+                .product(name: "XcodeProj", package: "XcodeProj"),
+                
+                "XCode",
+                "Cocoapod"
+
+            ]),
+        
         .target(
             name: "Util",
             dependencies: [
                 "Yams",
                 "PathKit",
             ]),
+        
+        .target(
+            name: "Protocol",
+            dependencies: [
+                "PathKit",
+            ]),
+        
+        .target(
+            name: "XCode",
+            dependencies: [
+                .product(name: "XcodeProj", package: "XcodeProj"),
+            ]),
+        
         .target(
             name: "Cocoapod",
             dependencies: [
@@ -41,5 +78,16 @@ let package = Package(
                 "AnyCodable",
                 "PathKit",
             ]),
+        .testTarget(
+            name: "CocoapodTests",
+            dependencies: ["Cocoapod"],
+            resources: [
+                .copy("Resource")
+            ]
+        ),
+        
+//        .testTarget(
+//            name: "SwiftBazelGenTests",
+//            dependencies: ["SwiftBazelGen"]),
     ]
 )

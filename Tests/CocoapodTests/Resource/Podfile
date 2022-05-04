@@ -1,0 +1,162 @@
+{
+  "target_definitions": [
+    {
+      "name": "Pods",
+      "abstract": true,
+      "platform": {
+        "ios": "11.0"
+      },
+      "uses_frameworks": {
+        "linkage": "dynamic",
+        "packaging": "framework"
+      },
+      "children": [
+        {
+          "name": "Tangran-iOS",
+          "inhibit_warnings": {
+            "all": true
+          },
+          "dependencies": [
+            {
+              "XLPagerTabStrip": [
+                "~> 9.0"
+              ]
+            },
+            "SVProgressHUD",
+            "TLPhotoPicker",
+            {
+              "CocoaMQTT": [
+                "~> 1.3.0-rc.1"
+              ]
+            },
+            "DataCompression",
+            {
+              "ThirdParty": [
+                {
+                  "path": "ThirdParty.podspec"
+                }
+              ]
+            },
+            "Peek",
+            {
+              "Bagel": [
+                "~>  1.4.0"
+              ]
+            }
+          ],
+          "configuration_pod_whitelist": {
+            "Debug": [
+              "Peek",
+              "Bagel"
+            ]
+          },
+          "children": [
+            {
+              "name": "Tangran-iOSTests",
+              "abstract": false,
+              "inheritance": "search_paths",
+              "uses_frameworks": {
+                "linkage": "dynamic",
+                "packaging": "framework"
+              },
+              "inhibit_warnings": {
+                "all": true
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vendor",
+          "inhibit_warnings": {
+            "all": true
+          },
+          "dependencies": [
+            "MSAL",
+            {
+              "XLPagerTabStrip": [
+                "~> 9.0"
+              ]
+            },
+            "SVProgressHUD",
+            "TLPhotoPicker",
+            {
+              "CocoaMQTT": [
+                "~> 1.3.0-rc.1"
+              ]
+            },
+            "DataCompression"
+          ]
+        },
+        {
+          "name": "Tangran-iOS-Demo",
+          "inhibit_warnings": {
+            "all": true
+          },
+          "dependencies": [
+            {
+              "XLPagerTabStrip": [
+                "~> 9.0"
+              ]
+            },
+            "SVProgressHUD",
+            "TLPhotoPicker",
+            {
+              "CocoaMQTT": [
+                "~> 1.3.0-rc.1"
+              ]
+            },
+            "DataCompression",
+            "Peek",
+            {
+              "Bagel": [
+                "~>  1.4.0"
+              ]
+            }
+          ],
+          "configuration_pod_whitelist": {
+            "Debug": [
+              "Peek",
+              "Bagel"
+            ]
+          }
+        },
+        {
+          "name": "Style",
+          "inhibit_warnings": {
+            "all": true
+          },
+          "dependencies": [
+            {
+              "SwiftyJSON": [
+                "~> 5.0.0"
+              ]
+            },
+            "SDWebImageSVGKitPlugin"
+          ]
+        },
+        {
+          "name": "ShareFormula",
+          "inhibit_warnings": {
+            "all": true
+          },
+          "dependencies": [
+            "SDWebImageSVGKitPlugin"
+          ]
+        },
+        {
+          "name": "TANGRAM_SDK",
+          "inhibit_warnings": {
+            "all": true
+          },
+          "dependencies": [
+            {
+              "CocoaMQTT": [
+                "~> 1.3.0-rc.1"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

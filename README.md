@@ -1,40 +1,68 @@
 # Bazelize
 
-A cli tool turn your xcode project to bazel
+A cli tool turn your xcode project to bazel.
 
 ---
+
+## Install
+
+```sh
+mint install yume190/Bazelize
+```
+
+## Usage
+
+```sh
+bazelize --project YOUR.xcodeproj
+```
 
 ## TODO
 
 ### Cocoapod
 
-#### pod spec -> code gen
+ * Build configurations
+    * `:configurations => ['Debug', 'Beta']`
+ * Modular Headers
+    * `:modular_headers => true`
+ * Source
+    * `:source => 'https://github.com/CocoaPods/Specs.git'`
+ * Subspecs
+    * `pod 'QueryKit/Attribute'`
+    * `pod 'QueryKit', :subspecs => ['Attribute', 'QuerySet']`
+ * Test Specs
+    * `:testspecs => ['UnitTests', 'SomeOtherTests']`
+ * local path
+    * `:path => '~/Documents/AFNetworking'`
+ * From a podspec in the root of a library repository.
+    * `pod 'AFNetworking', :git => 'https://github.com/gowalla/AFNetworking.git'`
+    * `pod 'AFNetworking', :git => 'https://github.com/gowalla/AFNetworking.git', :branch => 'dev'`
+    * `pod 'AFNetworking', :git => 'https://github.com/gowalla/AFNetworking.git', :tag => '0.7.0'`
+    * `pod 'AFNetworking', :git => 'https://github.com/gowalla/AFNetworking.git', :commit => '082f8319af'`
+ * From a podspec outside a spec repository, for a library without podspec.
+    * `:podspec => 'https://example.com/JSONKit.podspec'`
 
-```bazel
-//new_pod_repository(
-//  name = "PINOperation",
-//  url = "https://github.com/pinterest/PINOperation/archive/1.2.1.zip",
-//)
-```
-
-#### XCode 查詢 target dependency -> code gen
-
-#### 無效 pod spec 問題
-
-#### 設計 Error -> help
-
-#### 指令檢查 `pod is exist`? O
+#### Error -> help
 
 ------
 
 ### Xcode
 
+#### XCode SPM Dependencies
 
-## todo code sytle
+#### XCode Target Dependencies
 
-```swift
-public func codeGenerate(_ path: Path) throws 
-```
+#### XCode Framework Dependencies
+
+#### Build Settings
+
+#### info plist
+
+#### `PBXProductType`
+
+ * mac app
+ * framewrok
+ * unit test
+ * ...
 
 -----
 
@@ -42,4 +70,4 @@ public func codeGenerate(_ path: Path) throws
 
  * [rules_apple](https://github.com/bazelbuild/rules_apple/tree/master/doc)
  * [rules_swift](https://github.com/bazelbuild/rules_swift/blob/master/doc/rules.md#swift_proto_library)
- * [PodToBUILD](https://github.com/pinterest/PodToBUILD/blob/f96b6575452540a98791c170b637d46dec79bfac/BazelExtensions/workspace.bzl)
+ * [PodToBUILD](https://github.com/pinterest/PodToBUILD/blob/master/BazelExtensions/workspace.bzl)
