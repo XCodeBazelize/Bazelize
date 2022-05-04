@@ -59,11 +59,11 @@ let package = Package(
                 "PathKit",
             ]),
         
-        .target(
-            name: "Protocol",
-            dependencies: [
-                "PathKit",
-            ]),
+//        .target(
+//            name: "Protocol",
+//            dependencies: [
+//                "PathKit",
+//            ]),
         
         .target(
             name: "XCode",
