@@ -68,7 +68,7 @@ jobs:
           ${{ runner.os }}-${{ matrix.xcode }}-spm-
       
     - name: Build ${{ matrix.xcode }}
-      run: swift build -v
+      run: make build
       
     - name: Run tests ${{ matrix.xcode }}
-      run: COCOAPOD=`which pod` swift test -v 2>&1 | xcpretty
+      run: make test
