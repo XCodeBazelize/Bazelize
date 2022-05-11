@@ -30,14 +30,17 @@ final class SPMTests: XCTestCase {
     /// Total 9 pod
     ///
     /// - AFNetworking (4.0.1):
+    /// x dep's dep
     /// - Alamofire (5.6.1)
     /// - DataCompression (3.6.0)
     ///
     /// - Moya/Combine (15.0.0):
+    /// ? Default Subspec
     /// - Moya/Core (15.0.0):
     /// - Moya/RxSwift (15.0.0):
     ///
     /// - Peek (5.3.0)
+    /// x dep's dep
     /// - RxSwift (6.5.0)
     /// - SVProgressHUD (2.2.5)
     /// - TLPhotoPicker (2.1.6)

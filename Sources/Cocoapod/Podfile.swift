@@ -65,9 +65,16 @@ fileprivate struct PodChildren: Codable {
         }
     }
     
-    fileprivate var deps: [String] {
-        return dependencies?.compactMap(\.name) ?? []
+    var depsCode: String {
+        return dependencies?
+            .map(\.code)
+            .joined(separator: "\n") ?? ""
     }
+}
+
+fileprivate struct PodDependency: Codable {
+    let package: String
+    let target: String
     
     /// //Vendor/__PACKAGE__:__TARGET__
     ///
@@ -75,48 +82,29 @@ fileprivate struct PodChildren: Codable {
     /// //Vendor/PINCache:Core
     ///
     /// "//Vendor/RxSwift:RxSwift",
-    var depsCode: String {
-        return deps.map { dep in
-            return """
-                    "//Vendor/\(dep):\(dep)",
-            """
-        }.joined(separator: "\n")
-    }
-}
-
-fileprivate enum PodDependency: Codable {
-    /// "TLPhotoPicker",
-    case normal(String)
-    /// {
-    ///   "CocoaMQTT": [
-    ///     "~> 1.3.0-rc.1"
-    ///   ]
-    /// },
-    case version([String: [String]])
-    case any(AnyCodable)
-    
-    var name: String? {
-        switch self {
-        case .normal(let name):
-            return name
-        case .version(let ver):
-            return ver.first?.key
-        default:
-            return nil
-        }
+    var code: String {
+        return """
+                "//Vendor/\(package):\(target)",
+        """
     }
     
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         do {
-            self = try .normal(container.decode(String.self))
+            let name = try container.decode(String.self)
+            (package, target) = Util.parse(name: name)
             return
         } catch {
-            do {
-                self = try .version(container.decode([String: [String]].self))
-            } catch {
-                self = try .any(container.decode(AnyCodable.self))
+            let podGraph = try container.decode([String: AnyCodable].self)
+            guard let name = podGraph.keys.first else {
+                throw PodError.reason("""
+                Parse Podfile fail
+                Pod: \(podGraph)
+                """)
             }
+            
+            (package, target) = Util.parse(name: name)
+            return
         }
     }
 }

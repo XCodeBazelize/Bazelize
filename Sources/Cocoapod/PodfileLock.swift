@@ -37,7 +37,7 @@ struct PodfileLock: Codable, YamlParsable {
             try await withThrowingTaskGroup(of: NewPodRepository.self) { group -> [NewPodRepository] in
                 for spec in specs {
                     group.addTask {
-                        return try await spec.aaaaa(lock: self)
+                        return try await spec.repo(lock: self)
                     }
                 }
 
@@ -93,7 +93,7 @@ extension PodfileLock {
             }
         }
         
-        fileprivate func aaaaa(lock: PodfileLock) async throws -> NewPodRepository {
+        fileprivate func repo(lock: PodfileLock) async throws -> NewPodRepository {
             guard
                 let external = lock.externals[package],
                 let checkout = lock.checkouts[package]
@@ -143,28 +143,9 @@ extension PodfileLock {
                 .replacingOccurrences(of: "(", with: "")
                 .replacingOccurrences(of: ")", with: "")
 
-            let (package, target) = try Self.parse(name: name)
+            let (package, target) = Util.parse(name: name)
             
             return .init(package: package, target: target, tag: tag)
-        }
-        
-        /// AFNetworking
-        ///     AFNetworking, AFNetworking
-        ///
-        /// AFNetworking/NSURLSession
-        ///     AFNetworking, NSURLSession
-        private static func parse(name: String) throws -> (String, String) {
-            let parts = name.split(separator: "/").map(String.init)
-            switch parts.count {
-            case 1:
-                return (parts[0], parts[0])
-            case 2:
-                return (parts[0], parts[1])
-            default:
-                throw PodError.reason("""
-                Parse Podfile.lock PODS["\(name)"] fail.
-                """)
-            }
         }
     }
 }
@@ -185,7 +166,6 @@ extension PodfileLock {
         }
     }
 }
-
 
 /// CHECKOUT OPTIONS:
 extension PodfileLock {
