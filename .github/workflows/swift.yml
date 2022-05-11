@@ -37,6 +37,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Check Cocoapod Version
+      run: pod version
+
+    - name: Check Cocoapod Path
+      run: which pod
+
+    - name: Update Cocoapod Repo
+      run: pod repo update
+
     - name: Xcode Select ${{ matrix.xcode }}
       # You may pin to the exact commit or the version.
       # uses: devbotsxyz/xcode-select@05f94658217eb8575f0aabd3b95e702a47995d21
