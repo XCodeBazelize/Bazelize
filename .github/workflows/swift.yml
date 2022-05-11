@@ -37,6 +37,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Check Cocoapod Version
+      run: pod --version
+
     - name: Check Cocoapod Path
       run: which pod
 
@@ -68,4 +71,4 @@ jobs:
       run: swift build -v
       
     - name: Run tests ${{ matrix.xcode }}
-      run: swift test -v 2>&1 | xcpretty
+      run: COCOAPOD=`which pod` swift test -v 2>&1 | xcpretty
