@@ -69,6 +69,11 @@ fileprivate struct PodChildren: Codable {
         return dependencies?.compactMap(\.name) ?? []
     }
     
+    /// //Vendor/__PACKAGE__:__TARGET__
+    ///
+    /// subpsec `Core` in `PINCache`
+    /// //Vendor/PINCache:Core
+    ///
     /// "//Vendor/RxSwift:RxSwift",
     var depsCode: String {
         return deps.map { dep in

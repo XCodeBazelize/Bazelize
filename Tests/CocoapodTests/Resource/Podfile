@@ -3,158 +3,65 @@
     {
       "name": "Pods",
       "abstract": true,
-      "platform": {
-        "ios": "11.0"
-      },
-      "uses_frameworks": {
-        "linkage": "dynamic",
-        "packaging": "framework"
-      },
+      "user_project_path": "ABCDEF.xcodeproj",
       "children": [
         {
-          "name": "Tangran-iOS",
-          "inhibit_warnings": {
-            "all": true
+          "name": "ABCDEF",
+          "uses_frameworks": {
+            "linkage": "dynamic",
+            "packaging": "framework"
+          },
+          "configuration_pod_whitelist": {
+            "Debug": [
+              "Peek"
+            ]
           },
           "dependencies": [
+            "Peek",
             {
-              "XLPagerTabStrip": [
-                "~> 9.0"
+              "AFNetworking": [
+                "~> 4.0"
               ]
             },
-            "SVProgressHUD",
-            "TLPhotoPicker",
+            "Moya/RxSwift",
+            "Moya/Combine",
             {
-              "CocoaMQTT": [
-                "~> 1.3.0-rc.1"
-              ]
-            },
-            "DataCompression",
-            {
-              "ThirdParty": [
+              "DataCompression": [
                 {
-                  "path": "ThirdParty.podspec"
+                  "git": "https://github.com/mw99/DataCompression"
                 }
               ]
             },
-            "Peek",
             {
-              "Bagel": [
-                "~>  1.4.0"
+              "XLPagerTabStrip": [
+                {
+                  "git": "https://github.com/xmartlabs/XLPagerTabStrip",
+                  "branch": "master"
+                }
+              ]
+            },
+            {
+              "SVProgressHUD": [
+                {
+                  "git": "https://github.com/SVProgressHUD/SVProgressHUD",
+                  "tag": "2.2.5"
+                }
+              ]
+            },
+            {
+              "TLPhotoPicker": [
+                {
+                  "git": "https://github.com/tilltue/TLPhotoPicker",
+                  "commit": "0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7"
+                }
               ]
             }
           ],
-          "configuration_pod_whitelist": {
-            "Debug": [
-              "Peek",
-              "Bagel"
-            ]
-          },
-          "children": [
-            {
-              "name": "Tangran-iOSTests",
-              "abstract": false,
-              "inheritance": "search_paths",
-              "uses_frameworks": {
-                "linkage": "dynamic",
-                "packaging": "framework"
-              },
-              "inhibit_warnings": {
-                "all": true
-              }
-            }
-          ]
-        },
-        {
-          "name": "Vendor",
-          "inhibit_warnings": {
-            "all": true
-          },
-          "dependencies": [
-            "MSAL",
-            {
-              "XLPagerTabStrip": [
-                "~> 9.0"
-              ]
-            },
-            "SVProgressHUD",
-            "TLPhotoPicker",
-            {
-              "CocoaMQTT": [
-                "~> 1.3.0-rc.1"
-              ]
-            },
-            "DataCompression"
-          ]
-        },
-        {
-          "name": "Tangran-iOS-Demo",
-          "inhibit_warnings": {
-            "all": true
-          },
-          "dependencies": [
-            {
-              "XLPagerTabStrip": [
-                "~> 9.0"
-              ]
-            },
-            "SVProgressHUD",
-            "TLPhotoPicker",
-            {
-              "CocoaMQTT": [
-                "~> 1.3.0-rc.1"
-              ]
-            },
-            "DataCompression",
-            "Peek",
-            {
-              "Bagel": [
-                "~>  1.4.0"
-              ]
-            }
-          ],
-          "configuration_pod_whitelist": {
-            "Debug": [
-              "Peek",
-              "Bagel"
+          "use_modular_headers": {
+            "for_pods": [
+              "AFNetworking"
             ]
           }
-        },
-        {
-          "name": "Style",
-          "inhibit_warnings": {
-            "all": true
-          },
-          "dependencies": [
-            {
-              "SwiftyJSON": [
-                "~> 5.0.0"
-              ]
-            },
-            "SDWebImageSVGKitPlugin"
-          ]
-        },
-        {
-          "name": "ShareFormula",
-          "inhibit_warnings": {
-            "all": true
-          },
-          "dependencies": [
-            "SDWebImageSVGKitPlugin"
-          ]
-        },
-        {
-          "name": "TANGRAM_SDK",
-          "inhibit_warnings": {
-            "all": true
-          },
-          "dependencies": [
-            {
-              "CocoaMQTT": [
-                "~> 1.3.0-rc.1"
-              ]
-            }
-          ]
         }
       ]
     }

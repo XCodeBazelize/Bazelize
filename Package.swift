@@ -39,11 +39,10 @@ let package = Package(
         .target(
             name: "BazelizeKit",
             dependencies: [
-                //                .product(name: "PackageDescription", package: "swift-package-manager"),
-                //                .product(name: "SwiftPMDataModel", package: "swift-package-manager"),
-                //                .product(name: "SwiftPM", package: "swift-package-manager"),
-                //                .product(name: "SwiftPM", package: "SwiftPM"),
-                //                .product(name: "SwiftToolsSupport-auto", package: "SwiftTSC"),
+                // .product(name: "PackageDescription", package: "swift-package-manager"),
+                // .product(name: "SwiftPMDataModel", package: "swift-package-manager"),
+                // .product(name: "SwiftPM", package: "SwiftPM"),
+                // .product(name: "SwiftToolsSupport-auto", package: "SwiftTSC"),
                 
                 .product(name: "XcodeProj", package: "XcodeProj"),
                 

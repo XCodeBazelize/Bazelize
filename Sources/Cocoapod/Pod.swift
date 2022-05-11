@@ -12,7 +12,8 @@ import PathKit
 public struct Pod {
     let podfile: Podfile
     let lock: PodfileLock
-    let specs: [PodSpec]
+    
+    let repoCodes: [String]
 }
 
 extension Pod {
@@ -42,8 +43,8 @@ extension Pod {
         guard checkPodfile(path) else { return nil }
         async let podfile = Podfile.process(path + "Podfile")
         let lock = try PodfileLock.parse(path + "Podfile.lock")
-        async let specs = lock.specs
-        return try await .init(podfile: podfile, lock: lock, specs: specs)
+        async let codes = lock.repoCodes
+        return try await .init(podfile: podfile, lock: lock, repoCodes: codes)
     }
 }
 
@@ -62,9 +63,10 @@ extension Pod {
 
     /// generate Pods.WORKSPACE
     public func generate(_ path: Path) throws {
-        let to = path + "Pods.WORKSPACE"
-        let code = specs.map(\.code).joined(separator: "\n\n")
+        let code = repoCodes.joined(separator: "\n\n")
+        let PodWorkspace = path + "Pods.WORKSPACE"
+        print("Create \(PodWorkspace.string)")
 //        try to.delete()
-        try to.write(code)
+        try PodWorkspace.write(code)
     }
 }

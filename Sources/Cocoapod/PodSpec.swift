@@ -8,21 +8,12 @@
 import Foundation
 import Util
 
-struct PodSpec: Codable, JSONParsable {
+struct PodSpec: Codable, JSONParsable, NewPodRepository {
     let name: String
     let source: PodSpecSource
     
-    /// new_pod_repository(
-    ///   name = "PINOperation",
-    ///   url = "https://github.com/pinterest/PINOperation/archive/1.2.1.zip",
-    /// )
-    var code: String {
-        return """
-        new_pod_repository(
-          name = "\(name)",
-          url = "\(source.url)",
-        )
-        """
+    var url: String {
+        return source.url
     }
 }
 

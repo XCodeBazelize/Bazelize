@@ -1,82 +1,90 @@
 PODS:
-  - Bagel (1.4.0):
-    - CocoaAsyncSocket
-  - CocoaAsyncSocket (7.6.5)
-  - CocoaLumberjack (3.7.2):
-    - CocoaLumberjack/Core (= 3.7.2)
-  - CocoaLumberjack/Core (3.7.2)
-  - CocoaMQTT (1.3.0-rc.2):
-    - CocoaMQTT/Core (= 1.3.0-rc.2)
-  - CocoaMQTT/Core (1.3.0-rc.2):
-    - CocoaAsyncSocket (~> 7.6.3)
+  - AFNetworking (4.0.1):
+    - AFNetworking/NSURLSession (= 4.0.1)
+    - AFNetworking/Reachability (= 4.0.1)
+    - AFNetworking/Security (= 4.0.1)
+    - AFNetworking/Serialization (= 4.0.1)
+    - AFNetworking/UIKit (= 4.0.1)
+  - AFNetworking/NSURLSession (4.0.1):
+    - AFNetworking/Reachability
+    - AFNetworking/Security
+    - AFNetworking/Serialization
+  - AFNetworking/Reachability (4.0.1)
+  - AFNetworking/Security (4.0.1)
+  - AFNetworking/Serialization (4.0.1)
+  - AFNetworking/UIKit (4.0.1):
+    - AFNetworking/NSURLSession
+  - Alamofire (5.6.1)
   - DataCompression (3.6.0)
-  - MSAL (1.1.25):
-    - MSAL/app-lib (= 1.1.25)
-  - MSAL/app-lib (1.1.25)
+  - Moya/Combine (15.0.0):
+    - Moya/Core
+  - Moya/Core (15.0.0):
+    - Alamofire (~> 5.0)
+  - Moya/RxSwift (15.0.0):
+    - Moya/Core
+    - RxSwift (~> 6.0)
   - Peek (5.3.0)
-  - SDWebImage/Core (5.12.1)
-  - SDWebImageSVGKitPlugin (1.3.0):
-    - SDWebImage/Core (~> 5.10)
-    - SVGKit (>= 2.1)
-  - SVGKit (3.0.0):
-    - CocoaLumberjack (~> 3.0)
+  - RxSwift (6.5.0)
   - SVProgressHUD (2.2.5)
-  - SwiftyJSON (5.0.1)
-  - ThirdParty (1.0.22)
-  - TLPhotoPicker (2.1.7)
+  - TLPhotoPicker (2.1.6)
   - XLPagerTabStrip (9.0.0)
 
 DEPENDENCIES:
-  - Bagel (~> 1.4.0)
-  - CocoaMQTT (~> 1.3.0-rc.1)
-  - DataCompression
-  - MSAL
+  - AFNetworking (~> 4.0)
+  - DataCompression (from `https://github.com/mw99/DataCompression`)
+  - Moya/Combine
+  - Moya/RxSwift
   - Peek
-  - SDWebImageSVGKitPlugin
-  - SVProgressHUD
-  - SwiftyJSON (~> 5.0.0)
-  - ThirdParty (from `ThirdParty.podspec`)
-  - TLPhotoPicker
-  - XLPagerTabStrip (~> 9.0)
+  - SVProgressHUD (from `https://github.com/SVProgressHUD/SVProgressHUD`, tag `2.2.5`)
+  - TLPhotoPicker (from `https://github.com/tilltue/TLPhotoPicker`, commit `0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7`)
+  - XLPagerTabStrip (from `https://github.com/xmartlabs/XLPagerTabStrip`, branch `master`)
 
 SPEC REPOS:
   trunk:
-    - Bagel
-    - CocoaAsyncSocket
-    - CocoaLumberjack
-    - CocoaMQTT
-    - DataCompression
-    - MSAL
+    - AFNetworking
+    - Alamofire
+    - Moya
     - Peek
-    - SDWebImage
-    - SDWebImageSVGKitPlugin
-    - SVGKit
-    - SVProgressHUD
-    - SwiftyJSON
-    - TLPhotoPicker
-    - XLPagerTabStrip
+    - RxSwift
 
 EXTERNAL SOURCES:
-  ThirdParty:
-    :path: ThirdParty.podspec
+  DataCompression:
+    :git: https://github.com/mw99/DataCompression
+  SVProgressHUD:
+    :git: https://github.com/SVProgressHUD/SVProgressHUD
+    :tag: 2.2.5
+  TLPhotoPicker:
+    :commit: 0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7
+    :git: https://github.com/tilltue/TLPhotoPicker
+  XLPagerTabStrip:
+    :branch: master
+    :git: https://github.com/xmartlabs/XLPagerTabStrip
+
+CHECKOUT OPTIONS:
+  DataCompression:
+    :commit: 2c0d48be59acd5bdf1a5352d969d6f24bd7212c9
+    :git: https://github.com/mw99/DataCompression
+  SVProgressHUD:
+    :git: https://github.com/SVProgressHUD/SVProgressHUD
+    :tag: 2.2.5
+  TLPhotoPicker:
+    :commit: 0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7
+    :git: https://github.com/tilltue/TLPhotoPicker
+  XLPagerTabStrip:
+    :commit: 903b7609b2b2dd1010efb9ee1c6a27edaa9df89b
+    :git: https://github.com/xmartlabs/XLPagerTabStrip
 
 SPEC CHECKSUMS:
-  Bagel: c3fa6bcbd52db9ca976edbafd7638f0553ded101
-  CocoaAsyncSocket: 065fd1e645c7abab64f7a6a2007a48038fdc6a99
-  CocoaLumberjack: b7e05132ff94f6ae4dfa9d5bce9141893a21d9da
-  CocoaMQTT: 77d92d98aeb18c719bc3b0baae73541ba249a9ea
+  AFNetworking: 7864c38297c79aaca1500c33288e429c3451fdce
+  Alamofire: 87bd8c952f9a4454320fce00d9cc3de57bcadaf5
   DataCompression: 06628f9c807b6f152e0da37635633f62fc51dc77
-  MSAL: e6996d8971d96ee0d1b95df8dd2599a541285744
+  Moya: 138f0573e53411fb3dc17016add0b748dfbd78ee
   Peek: 4209f7aa72d00244616f6b4804739c04cae2e457
-  SDWebImage: 4dc3e42d9ec0c1028b960a33ac6b637bb432207b
-  SDWebImageSVGKitPlugin: 8797e1c9b9baf80bd50d28e673e16a12359af1c9
-  SVGKit: 1ad7513f8c74d9652f94ed64ddecda1a23864dea
+  RxSwift: 5710a9e6b17f3c3d6e40d6e559b9fa1e813b2ef8
   SVProgressHUD: 1428aafac632c1f86f62aa4243ec12008d7a51d6
-  SwiftyJSON: 2f33a42c6fbc52764d96f13368585094bfd8aa5e
-  ThirdParty: 1e137cc3a9475e178a53a884217819f7edc82bcd
-  TLPhotoPicker: ffddcfc335e1475e769b2cdd37af5bbe42ddf0cb
-  XLPagerTabStrip: 61c57fd61f611ee5f01ff1495ad6fbee8bf496c5
+  TLPhotoPicker: 57ad6b54a9cf8c9ec60107be0864d42f3dbe7175
+  XLPagerTabStrip: 6af5fe7b41c21f371860df6bac2ddf12818c5103
 
-PODFILE CHECKSUM: d92aa7920836101e66a4d2640faf821534a12b2f
+PODFILE CHECKSUM: 3be7930c466451f51fe2597aada6fdbd7e8817d9
 
 COCOAPODS: 1.11.3
