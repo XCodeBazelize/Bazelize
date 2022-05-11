@@ -37,9 +37,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Check Cocoapod Version
-      run: pod version
-
     - name: Check Cocoapod Path
       run: which pod
 
