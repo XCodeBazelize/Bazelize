@@ -81,14 +81,18 @@ extension PodfileLock {
         
         /// pod spec cat Bagel --version=1.4.0
         private func spec() async throws -> PodSpec {
-            let data = try await Process.execute(
-                Env.pod,
-                arguments: "spec", "cat", package, "--version=\(tag)"
-            )
             do {
+                let data = try await Process.execute(
+                    Env.pod,
+                    arguments: "spec", "cat", package, "--version=\(tag)"
+                )
                 return try PodSpec.parse(data)
             } catch {
-                print(package, tag, error)
+                print("""
+                Parse Podspec Fail
+                `\(Env.pod) spec cat \(package) --version=\(tag)`
+                
+                """)
                 throw error
             }
         }
