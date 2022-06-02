@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  WORKSPACE.swift
 //  
 //
 //  Created by Yume on 2022/4/27.
@@ -10,18 +10,20 @@ import PathKit
 
 enum Workspace {
     static var code: String {
-        return workspace
+        return _workspace
     }
     
     // WORKSPACE
-    static func generate(_ path: Path) throws {
-        let _workspace = path + "WORKSPACE"
+    static func generate(_ path: Path, other codes: String...) throws {
+        let workspace = path + "WORKSPACE"
+        print("Create \(workspace.string)")
 //        try _workspace.delete()
-        try _workspace.write(workspace)
+        let all = [code] + codes
+        try workspace.write(all.joined(separator: "\n"))
     }
 }
 
-private let workspace = """
+private let _workspace = """
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
@@ -72,4 +74,21 @@ http_archive(
     name = "xchammer",
     urls = [ "https://github.com/pinterest/xchammer/releases/download/v3.4.3.3/xchammer.zip" ],
 )
+
+# spm
+http_archive(
+    name = "cgrindel_rules_spm",
+    sha256 = "ba4310ba33cd1864a95e41d1ceceaa057e56ebbe311f74105774d526d68e2a0d",
+    strip_prefix = "rules_spm-0.10.0",
+    urls = [
+        "http://github.com/cgrindel/rules_spm/archive/v0.10.0.tar.gz",
+    ],
+)
+
+load(
+    "@cgrindel_rules_spm//spm:deps.bzl",
+    "spm_rules_dependencies",
+)
+
+spm_rules_dependencies()
 """

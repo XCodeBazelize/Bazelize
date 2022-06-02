@@ -8,11 +8,13 @@
 import Foundation
 
 enum Util {
-    /// AFNetworking
-    ///     AFNetworking, AFNetworking
+    /// name: AFNetworking
+    ///     package: AFNetworking
+    ///     target: AFNetworking
     ///
-    /// AFNetworking/NSURLSession
-    ///     AFNetworking, NSURLSession
+    /// name AFNetworking/NSURLSession
+    ///     package: AFNetworking
+    ///     target: NSURLSession
     static func parse(name: String) -> (package: String, target: String) {
         let parts = name.split(separator: "/").map(String.init)
         switch parts.count {

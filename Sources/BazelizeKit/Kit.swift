@@ -1,17 +1,17 @@
 //
-//  File.swift
-//  
+//  Kit.swift
+//
 //
 //  Created by Yume on 2022/4/29.
 //
 
-import Foundation
 import Cocoapod
-import XCode
+import CoreLocation
+import Foundation
 import PathKit
 import Util
+import XCode
 import XcodeProj
-import CoreLocation
 
 public struct Kit {
     let path: Path
@@ -30,17 +30,28 @@ public struct Kit {
         pod?.tip()
     }
     
-    public func run() async throws {
+    public func run() throws {
         defer { tip() }
         
         for target in proj.pbxproj.nativeTargets {
-            try target.generate(path, self)
+            try? target.generate(path, self)
         }
         
-        try Workspace.generate(path)
-        try pod?.generate(path)
+        try? Workspace.generate(
+            path,
+            other: proj.pbxproj.nativeTargets.spm_repositories
+        )
+        try? pod?.generate(path)
+    }
+    
+    public func dump() throws {
+        for target in proj.pbxproj.nativeTargets {
+            target.dump()
+            print("\n-------------\n")
+        }
         
-        print("over")
-        
+        if proj.pbxproj.nativeTargets.isHaveSPM {
+            print(proj.pbxproj.nativeTargets.spm_pkgs)
+        }
     }
 }

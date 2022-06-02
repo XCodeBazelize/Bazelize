@@ -1,27 +1,23 @@
 //
-//  Application.swift
+//  StaticFramework.swift
+//  
 //
-//
-//  Created by Yume on 2022/4/29.
+//  Created by Yume on 2022/5/4.
 //
 
 import Foundation
 import XcodeProj
 
-/// XcodeProj.PBXProductType.application
+//XcodeProj.PBXProductType.static
 extension PBXNativeTarget {
-    func generateApplicationCode(_ kit: Kit) -> String {
-        
-        //        - key: "IPHONEOS_DEPLOYMENT_TARGET"
-        //        - value: "15.2"
-        //                    let _build = path + target.name + "BUILD"
+    func generateStaitcFrameworkCode(_ kit: Kit) -> String {
         let bundle_id = buildSettings.bundleID ?? ""
         let podDeps: String = kit.pod?[name] ?? ""
         let xcodeDeps = ""
         let xcodeSPMDeps = spm_deps.joined(separator: "\n")
         
         let code = """
-        load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")
+        load("@build_bazel_rules_apple//apple:ios.bzl", "ios_static_framework")
         load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
         
         swift_library(
@@ -29,9 +25,6 @@ extension PBXNativeTarget {
             module_name = "\(name)",
             srcs = [
         \(srcs)
-            ],
-            data = [
-                "Base.lproj/Main.storyboard",
             ],
             deps = [
                 # Cocoapod Deps
@@ -42,7 +35,7 @@ extension PBXNativeTarget {
             ],
         )
         
-        ios_application(
+        ios_static_framework(
             name = "\(name)",
             bundle_id = "\(bundle_id)",
             families = [
@@ -51,7 +44,6 @@ extension PBXNativeTarget {
             ],
             minimum_os_version = "13.0",
             infoplists = [":Info.plist"],
-            launch_storyboard = ":Base.lproj/LaunchScreen.storyboard",
             deps = [":_\(name)"],
             frameworks = [
                 # XCode Target Deps
