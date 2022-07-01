@@ -67,6 +67,9 @@ fileprivate struct PodChildren: Codable {
     
     var depsCode: String {
         return dependencies?
+            .sorted { lhs, rhs in
+                lhs.code < rhs.code
+            }
             .map(\.code)
             .joined(separator: "\n") ?? ""
     }
@@ -84,7 +87,7 @@ fileprivate struct PodDependency: Codable {
     /// "//Vendor/RxSwift:RxSwift",
     var code: String {
         return """
-                "//Vendor/\(package):\(target)",
+        "//Vendor/\(package):\(target)",
         """
     }
     

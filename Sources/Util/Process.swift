@@ -44,6 +44,8 @@ extension Process {
                 }
             }
         }, onCancel: {
+            guard task.isRunning else {return}
+//            task.interrupt()
             task.terminate()
         })
     }

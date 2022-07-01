@@ -71,4 +71,23 @@ final class SPMTests: XCTestCase {
         XCTAssertEqual(repos[7].url, "https://github.com/tilltue/TLPhotoPicker/archive/0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7.zip")
         XCTAssertEqual(repos[8].url, "https://github.com/xmartlabs/XLPagerTabStrip/archive/master.zip")
     }
+    
+    func testParsePodfile() async throws {
+        let code = try Self.strings("Podfile")
+        let podfile = try Podfile.parse(code)
+        
+        let result = podfile["ABCDEF"]
+        let deps = """
+        "//Vendor/AFNetworking:AFNetworking",
+        "//Vendor/DataCompression:DataCompression",
+        "//Vendor/Moya:Combine",
+        "//Vendor/Moya:RxSwift",
+        "//Vendor/Peek:Peek",
+        "//Vendor/SVProgressHUD:SVProgressHUD",
+        "//Vendor/TLPhotoPicker:TLPhotoPicker",
+        "//Vendor/XLPagerTabStrip:XLPagerTabStrip",
+        """
+        
+        XCTAssertEqual(result, deps)
+    }
 }

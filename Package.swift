@@ -44,11 +44,10 @@ let package = Package(
                 // .product(name: "SwiftPM", package: "SwiftPM"),
                 // .product(name: "SwiftToolsSupport-auto", package: "SwiftTSC"),
                 
-                .product(name: "XcodeProj", package: "XcodeProj"),
-                
                 "XCode",
-                "Cocoapod"
-
+                "Cocoapod",
+                
+                .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         
         .target(
@@ -57,16 +56,16 @@ let package = Package(
                 "Yams",
                 "PathKit",
             ]),
-        
-//        .target(
-//            name: "Protocol",
-//            dependencies: [
-//                "PathKit",
-//            ]),
+        .testTarget(
+            name: "UtilTests",
+            dependencies: ["Util"]
+        ),
         
         .target(
             name: "XCode",
             dependencies: [
+                "Util",
+                
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         

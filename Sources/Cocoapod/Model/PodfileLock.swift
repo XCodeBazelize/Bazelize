@@ -10,23 +10,17 @@ import Util
 
 struct PodfileLock: Codable, YamlParsable {
     private let pods: [PodfileLock.Pod]
-    private let externals: [String: ExternalSource]
-    private let checkouts: [String: CheckoutOption]
+    private let externals: [String: ExternalSource]?
+    private let checkouts: [String: CheckoutOption]?
+    private let spec: [String: String]
     
     enum CodingKeys: String, CodingKey {
         case pods = "PODS"
         case externals = "EXTERNAL SOURCES"
         case checkouts = "CHECKOUT OPTIONS"
+        case spec = "SPEC CHECKSUMS"
     }
     
-//    #warning("todo parse error")
-//    var dependencies: [PodfileLock.Dependency] {
-//        return []
-////        pods.compactMap(\.dependency)
-////            .filter { dep in
-////                return dep.name != "ThirdParty"
-////            }
-//    }
     private var specs: [PodfileLock.Pod] {
         let set = Set(pods)
         return set.map { $0 }
@@ -41,15 +35,10 @@ struct PodfileLock: Codable, YamlParsable {
                     }
                 }
 
-                var result: [NewPodRepository] = []
-                for try await spec in group {
-                    result.append(spec)
-                }
-
-                return result
-            }.sorted(by: { lhs, rhs in
+                return try await group.all
+            }.sorted { lhs, rhs in
                 return lhs.name < rhs.name
-            })
+            }
         }
     }
     
@@ -62,7 +51,7 @@ struct PodfileLock: Codable, YamlParsable {
 
 extension PodfileLock {
     /// //Vendor/__PACKAGE__:__TARGET__
-    fileprivate  struct Pod: Codable, Hashable, Equatable {
+    fileprivate struct Pod: Codable, Hashable, Equatable {
         let package: String
         let target: String
         let tag: String
@@ -80,29 +69,42 @@ extension PodfileLock {
         }
         
         /// pod spec cat Bagel --version=1.4.0
-        private func spec() async throws -> PodSpec {
-            do {
+        private var podSpec: PodSpec {
+            get async throws {
+                let query = """
+                ^\(package)$
+                """
+                    .replacingOccurrences(of: "+", with: "\\+")
+                    .replacingOccurrences(of: ".", with: "\\.")
+                let arg = "spec cat --regex \(query) --version=\(tag)"
+                
                 let data = try await Process.execute(
                     Env.pod,
-                    arguments: "spec", "cat", package, "--version=\(tag)"
+//                    arguments: arg
+                    arguments: "spec", "cat", "--regex", query, "--version=\(tag)"
                 )
-                return try PodSpec.parse(data)
-            } catch {
-                print("""
-                Parse Podspec Fail
-                `\(Env.pod) spec cat \(package) --version=\(tag)`
-                
-                """)
-                throw error
+                do {   
+                    return try PodSpec.parse(data)
+                } catch {
+                    print("""
+                    Parse Podspec Fail
+                    `\(Env.pod) spec cat --regex \(query) --version=\(tag)`
+                    \(arg)
+                    string: \(String(data: data, encoding: .utf8) ?? "")
+                    \(error)
+                    
+                    """)
+                    throw error
+                }
             }
         }
         
         fileprivate func repo(lock: PodfileLock) async throws -> NewPodRepository {
             guard
-                let external = lock.externals[package],
-                let checkout = lock.checkouts[package]
+                let external = lock.externals?[package],
+                let checkout = lock.checkouts?[package]
             else {
-                return try await spec()
+                return try await podSpec
             }
             return try PodRepository(pod: self, external: external, checkout: checkout)
         }
