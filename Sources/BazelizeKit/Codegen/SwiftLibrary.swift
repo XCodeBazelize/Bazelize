@@ -31,6 +31,7 @@ extension Target {
                 # XCode SPM Deps
         \(depsSPM.indent(2))
             ],
+            visibility = ["//visibility:public"],
         )
         """)
 

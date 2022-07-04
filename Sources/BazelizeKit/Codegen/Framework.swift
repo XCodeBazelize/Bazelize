@@ -37,6 +37,7 @@ extension Target {
                 # XCode Target Deps
             \(depsXcode)
             ],
+            visibility = ["//visibility:public"],
         )
         """)
                 
