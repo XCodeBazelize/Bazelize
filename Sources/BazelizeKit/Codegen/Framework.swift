@@ -6,52 +6,40 @@
 //
 
 import Foundation
-import XcodeProj
+import XCode
 
-//XcodeProj.PBXProductType.framework
-extension PBXNativeTarget {
+extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
-        let bundle_id = buildSettings.bundleID ?? ""
-        let podDeps: String = kit.pod?[name] ?? ""
-        let xcodeDeps = ""
-        let xcodeSPMDeps = spm_deps.joined(separator: "\n")
+        precondition(self.bundleID != nil, "bundle id")
+        precondition(self.version != nil, "min version")
         
-        let code = """
-        load("@build_bazel_rules_apple//apple:ios.bzl", "ios_framework")
-        load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+        let depsXcode = ""
         
-        swift_library(
-            name = "_\(name)",
-            module_name = "\(name)",
-            srcs = [
-        \(srcs)
-            ],
-            deps = [
-                # Cocoapod Deps
-        \(podDeps)
-
-                # XCode SPM Deps
-        \(xcodeSPMDeps)
-            ],
-        )
+        let deviceFamily = self.deviceFamily?.joined(separator: "\n") ?? ""
         
+//        self.infoPlist
+        
+        var builder = Build.Builder()
+        builder.load(.ios_framework)
+        builder.custom(generateSwiftLibrary(kit))
+        
+        builder.custom("""
         ios_framework(
             name = "\(name)",
-            bundle_id = "\(bundle_id)",
+            bundle_id = "\(self.bundleID!)",
             families = [
-                "iphone",
-                "ipad",
+        \(deviceFamily.indent(2))
             ],
-            minimum_os_version = "13.0",
+            minimum_os_version = "\(self.version!)",
             infoplists = [":Info.plist"],
             deps = [":_\(name)"],
             frameworks = [
                 # XCode Target Deps
-            \(xcodeDeps)
+            \(depsXcode)
             ],
         )
-        """
-        
-        return code
+        """)
+                
+        return builder.build()
     }
 }

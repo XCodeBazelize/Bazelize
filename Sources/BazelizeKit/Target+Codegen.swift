@@ -7,19 +7,23 @@
 
 import Foundation
 import Cocoapod
-import XcodeProj
+import XCode
 import PathKit
 
-extension PBXNativeTarget {
+extension Target {
     private func generateCode(_ kit: Kit) -> String {
-        switch self.productType {
+        switch self.native.productType {
         case .application:
             return generateApplicationCode(kit)
         case .framework:
             return generateFrameworkCode(kit)
-        case .staticFramework:
-            return generateStaitcFrameworkCode(kit)
+        case .staticFramework: fallthrough
+//            return "" //generateStaitcFrameworkCode(kit)
+        case .appExtension: fallthrough
+        case .unitTestBundle: fallthrough
+        case .commandLineTool: fallthrough
         default:
+            print("Type: \(self.native.productType) not gen")
             return ""
         }
     }
