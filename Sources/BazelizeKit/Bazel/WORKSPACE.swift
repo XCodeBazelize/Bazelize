@@ -8,30 +8,6 @@
 import Foundation
 import PathKit
 
-enum Rule {
-    enum Apple: String {
-        case v1_0_1 = "1.0.1"
-        
-        var sha256: String {
-            return "36072d4f3614d309d6a703da0dfe48684ec4c65a89611aeb9590b45af7a3e592"
-        }
-    }
-    
-    enum Pod: String {
-        case v4_1_0_412495 = "4.1.0-412495"
-        var sha256: String {
-            return "d697642a6ca9d4d0441a5a6132e9f2bf70e8e9ee0080c3c780fe57e698e79d82"
-        }
-    }
-    
-    enum SPM: String {
-        case v0_11_0 = "0.11.0"
-        var sha256: String {
-            return "03718eb865a100ba4449ebcbca6d97bf6ea78fa17346ce6d55532312e8bf9aa8"
-        }
-    }
-}
-
 struct Workspace {
     private let code: String
     
@@ -66,9 +42,10 @@ struct Workspace {
         mutating
         public func `default`() {
             self.http_archive()
-            self.rulesApple(rule: .v1_0_1)
-            self.rulesPod(rule: .v4_1_0_412495)
-            self.rulesSPM(rule: .v0_11_0)
+            self.rulesApple(repo: .v1_0_1)
+            self.rulesPod(repo: .v4_1_0_412495)
+            self.rulesSPM(repo: .v0_11_0)
+            self.rulesHammer(repo: .v3_4_3_3)
         }
         
         mutating
@@ -79,13 +56,13 @@ struct Workspace {
         }
         
         mutating
-        public func rulesApple(rule: Rule.Apple) {
+        public func rulesApple(repo: Repo.Apple) {
             _code = """
             # rules_apple
             http_archive(
                 name = "build_bazel_rules_apple",
-                sha256 = "\(rule.sha256)",
-                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(rule.rawValue)/rules_apple.\(rule.rawValue).tar.gz",
+                sha256 = "\(repo.sha256)",
+                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(repo.rawValue)/rules_apple.\(repo.rawValue).tar.gz",
             )
 
             load(
@@ -119,13 +96,13 @@ struct Workspace {
         }
         
         mutating
-        public func rulesPod(rule: Rule.Pod) {
+        public func rulesPod(repo: Repo.Pod) {
             _code = """
             # rules_pods
             http_archive(
                 name = "rules_pods",
-                urls = ["https://github.com/pinterest/PodToBUILD/releases/download/\(rule.rawValue)/PodToBUILD.zip"],
-                sha256 = "\(rule.sha256)",
+                urls = ["https://github.com/pinterest/PodToBUILD/releases/download/\(repo.rawValue)/PodToBUILD.zip"],
+                # sha256 = "\(repo.sha256)",
             )
 
             load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
@@ -133,14 +110,14 @@ struct Workspace {
         }
         
         mutating
-        public func rulesSPM(rule: Rule.SPM) {
+        public func rulesSPM(repo: Repo.SPM) {
             _code = """
             http_archive(
                 name = "cgrindel_rules_spm",
-                sha256 = "\(rule.sha256)",
-                strip_prefix = "rules_spm-\(rule.rawValue)",
+                # sha256 = "\(repo.sha256)",
+                strip_prefix = "rules_spm-\(repo.rawValue)",
                 urls = [
-                    "http://github.com/cgrindel/rules_spm/archive/v\(rule.rawValue).tar.gz",
+                    "http://github.com/cgrindel/rules_spm/archive/v\(repo.rawValue).tar.gz",
                 ],
             )
 
@@ -154,6 +131,16 @@ struct Workspace {
         }
         
         mutating
+        public func rulesHammer(repo: Repo.XCHammer) {
+            _code = """
+            http_archive(
+                name = "xchammer",
+                urls = [ "https://github.com/pinterest/xchammer/releases/download/\(repo.rawValue)/xchammer.zip" ],
+            )
+            """
+        }
+        
+        mutating
         public func custom(code: String) {
             _code = code
         }
@@ -163,11 +150,3 @@ struct Workspace {
         }
     }
 }
-
-private let _workspace = """
-# xchammer
-http_archive(
-    name = "xchammer",
-    urls = [ "https://github.com/pinterest/xchammer/releases/download/v3.4.3.3/xchammer.zip" ],
-)
-"""
