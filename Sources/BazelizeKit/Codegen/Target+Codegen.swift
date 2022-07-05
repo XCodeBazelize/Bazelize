@@ -1,5 +1,5 @@
 //
-//  PBXNativeTarget+Codegen.swift
+//  Target+Codegen.swift
 //  
 //
 //  Created by Yume on 2022/4/29.
@@ -15,13 +15,14 @@ extension Target {
         switch self.native.productType {
         case .application:
             return generateApplicationCode(kit)
+        case .commandLineTool:
+            return generateCommandLineApplicationCode(kit)
         case .framework:
             return generateFrameworkCode(kit)
         case .staticFramework: fallthrough
 //            return "" //generateStaitcFrameworkCode(kit)
         case .appExtension: fallthrough
         case .unitTestBundle: fallthrough
-        case .commandLineTool: fallthrough
         default:
             print("Type: \(self.native.productType) not gen")
             return ""

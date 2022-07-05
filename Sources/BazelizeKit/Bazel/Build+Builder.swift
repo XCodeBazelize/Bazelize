@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Build+Builder.swift
 //  
 //
 //  Created by Yume on 2022/7/1.
@@ -18,29 +18,36 @@ struct Build {
         
         mutating
         func load(_ rule: RulesApple.IOS) {
-            custom(rule.code)
+            load(rule.code)
         }
         
         mutating
         func load(_ rule: RulesApple.Mac) {
-            custom(rule.code)
+            load(rule.code)
         }
         
         mutating
         func load(_ rule: RulesApple.TV) {
-            custom(rule.code)
+            load(rule.code)
         }
         
         mutating
         func load(_ rule: RulesApple.Watch) {
-            custom(rule.code)
+            load(rule.code)
         }
         
         mutating
         func load(_ rule: RulesSwift) {
-            custom(rule.code)
+            load(rule.code)
         }
         
+        /// load function at top of the file.
+        mutating
+        func load(_ code: String) {
+            codes.insert(code, at: 0)
+        }
+        
+        /// append custom code.
         mutating
         func custom(_ code: String) {
             _code = code
