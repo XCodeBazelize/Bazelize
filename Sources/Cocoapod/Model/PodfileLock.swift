@@ -216,7 +216,7 @@ extension PodfileLock {
             
             #warning("todo error")
             throw PodError.reason("""
-            ParsePodfile.lock Error
+            Parse Podfile.lock Error
             Can't find git at \(pod.package)
             """)
         }
