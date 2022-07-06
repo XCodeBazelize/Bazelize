@@ -43,5 +43,3 @@ extension Repo {{
         }
     }
 }''', file=file, end='')
-    
-    ""

@@ -79,62 +79,43 @@ extension PBXNativeTarget {
     public var resources: String {
         return resourceFiles.paths
     }
+    
+    /// use for `frameworks`
+    public var importFrameworks: String {
+        #warning("todo import framework/xcframework/static...")
+        return ""
+    }
+    
+    /// use for `frameworks`
+    public var frameworks: String {
+        return self.dependencies.compactMap(\.target?.name).joined(separator: "\n")
+    }
+    
+    /// use for `sdk_frameworks`
+    public var sdkFrameworks: String {
+        let builds = (try? frameworksBuildPhase()?.files) ?? []
+        
+        return builds.filter { build in
+            return
+                build.file?.sourceTree == .sdkRoot ||
+                (build.file?.path?.hasPrefix("System/") ?? false)
+        }.compactMap { build -> String? in
+            return build.file?.name?.replacingOccurrences(of: ".framework", with: "")
+        }.joined(separator: "\n")
+    }
 }
 
 public extension Target {
     mutating func dump(config: String) {
         self.setup(config: config)
-        /// Embed Framework
-        //            po target.embedFrameworksBuildPhases()[0].files![0].file?.relativePath
-        //            "DEF.framework"
-        //
-        //                / dependencies
-        //            target.dependencies
-        //            DEF
-        //
-        //                / framework library
-        //            po target.frameworksBuildPhase()?.files?.map(\.file?.relativePath)
-        //                ▿ [String?]?
-        //                ▿ some: 4 elements
-        //                ▿ 0: String?
-        //                - some: "DEF.framework"
-        //                - 1: nil
-        //                ▿ 2: String?
-        //                - some: "System/Library/Frameworks/Accounts.framework"
-        //                ▿ 3: String?
-        //                - some: "Pods_ABCDEF.framework"
         print("""
         name: \(name)
         productType: \(native.productType!)
         sdk: \(self.sdk!)
         version: \(self.version!)
+        plist build setting: \((self.plistKeys?.joined(separator: "\n") ?? "").withNewLine)
         """)
-
-        print("""
-        plist build setting:
-        \(self.plistKeys?.joined(separator: "\n"))
-        """)
-
-        if !native.packageProductDependencies.isEmpty {
-            print("PackageProductDependencies:")
-            for dep in native.packageProductDependencies {
-                print("""
-                - name: \(dep.productName)
-                  url: \(dep.package?.repositoryURL ?? "")
-                  version: \(dep.package?.versionRequirement.debugDescription ?? "")
-                """)
-            }
-        }
-
-        if !native.dependencies.isEmpty {
-            print("Dependencies:")
-            for dep in native.dependencies {
-                print("""
-                - name: \(dep.target?.name ?? "")
-                """)
-            }
-        }
-
+        
         if let files = try? native.frameworksBuildPhase()?.files, !files.isEmpty {
             print("Frameworks:")
             for file in files {
@@ -146,11 +127,22 @@ public extension Target {
             }
         }
 
-        if !native.spm_deps.isEmpty {
-            print("SPM Deps:")
-            for dep in native.spm_deps {
-                print(dep)
-            }
+        print("""
+        Sources: \(srcs.withNewLine)
+        Resources: \(resources.withNewLine)
+        Framework: \(native.frameworks.withNewLine)
+        SDK: \(native.sdkFrameworks.withNewLine)
+        SPM Deps: \(native.spm_deps.withNewLine)
+        """)
+    }
+}
+
+fileprivate extension String {
+    var withNewLine: String {
+        if self.isEmpty {
+            return ""
+        } else {
+            return "\n" + self
         }
     }
 }

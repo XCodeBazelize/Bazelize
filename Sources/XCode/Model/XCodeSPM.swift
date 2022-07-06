@@ -228,7 +228,8 @@ extension PBXNativeTarget {
         _spm.map(Package.init)
     }
     
-    public var spm_deps: [String] {
-        return spm.compactMap(\.dep)
+    /// use for `deps`
+    public var spm_deps: String {
+        return spm.compactMap(\.dep).joined(separator: "\n")
     }
 }

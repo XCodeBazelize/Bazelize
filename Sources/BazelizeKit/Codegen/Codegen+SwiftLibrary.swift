@@ -13,7 +13,7 @@ extension Target {
         #warning("todo check pure swift, or mix objc & swift")
 
         let depsPod: String = kit.pod?[name] ?? ""
-        let depsSPM = native.spm_deps.joined(separator: "\n")
+        let depsSPM = native.spm_deps
         
         var builder = Build.Builder()
         builder.load(.swift_library)
