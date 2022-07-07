@@ -1,12 +1,11 @@
 
 extension Repo {
-    /// https://github.com/cgrindel/rules_spm
-    enum SPM: String {
-        case v0_11_0 = "v0.11.0"
-        case v0_10_0 = "v0.10.0"
-        case v0_9_0 = "v0.9.0"
-        case v0_8_0 = "v0.8.0"
-        case v0_7_0 = "v0.7.0"
+    /// https://github.com/pinterest/xchammer
+    enum Hammer: String {
+        case v3_4_3_3 = "v3.4.3.3"
+        case v3_4_3_2 = "v3.4.3.2"
+        case v3_4_3_1 = "v3.4.3.1"
+        case v3_4_2_2 = "v3.4.2.2"
 
         var version: String {
             if self.rawValue.first == "v" {

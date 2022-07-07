@@ -3,18 +3,20 @@ import sys
 
 if __name__ == "__main__":
     print(sys.argv)
-    if (len(sys.argv) < 4):
+    if (len(sys.argv) < 5):
         print("please input with user/repo rule_name output_file_path")
         exit(1)
     
     repo = sys.argv[1]
     name = sys.argv[2]
     path = sys.argv[3]
+    count = sys.argv[4]
 
     headers = {
         'Accept': 'application/vnd.github+json'
     }
-    r = requests.get('https://api.github.com/repos/{0}/releases'.format(repo), headers = headers)
+    # https://docs.github.com/en/rest/releases/releases
+    r = requests.get('https://api.github.com/repos/{0}/releases?per_page={1}'.format(repo, count), headers = headers)
 
     if r.status_code != 200:
         r.raise_for_status()
@@ -30,6 +32,10 @@ extension Repo {{
 
         for release in r.json():
             tag = release["tag_name"]
+
+            if "dev" in tag or "alpha" in tag or "beta" in tag:
+                continue
+
             _tag_name = tag.replace(".", "_").replace("-", "_")
             tag_name = 'v{0}'.format(_tag_name) if _tag_name[:1].isdigit() else _tag_name
             print(
@@ -38,6 +44,14 @@ extension Repo {{
 
         print(
 '''
+
+        var version: String {
+            if self.rawValue.first == "v" {
+                return String(self.rawValue.dropFirst())
+            }
+            return self.rawValue
+        }
+
         var sha256: String {
             return ""
         }
