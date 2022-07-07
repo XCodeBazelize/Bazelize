@@ -22,10 +22,6 @@ final class SPMTests: XCTestCase {
         return try String(contentsOfFile: resource(file), encoding: .utf8)
     }
     
-    func testParsePodfile() throws {
-        _ = try Podfile.parse(Self.strings("Podfile"))
-    }
-    
     #warning("todo default spec is sub spec")
     /// Total 9 pod
     ///

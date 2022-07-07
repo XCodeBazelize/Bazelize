@@ -31,11 +31,15 @@ extension Target {
         \(deviceFamily.indent(2))
             ],
             minimum_os_version = "\(self.version!)",
-            infoplists = [":Info.plist"],
-            deps = [":_\(name)"],
+            # \(self.infoPlist ?? "")
+            infoplists = [
+                # ":Info.plist",
+                \(self.plistLabel)
+            ],
+            deps = [":\(name)_library"],
             frameworks = [
                 # XCode Target Deps
-            \(depsXcode)
+        \(depsXcode.indent(2))
             ],
             visibility = ["//visibility:public"],
         )

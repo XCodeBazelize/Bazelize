@@ -8,18 +8,6 @@
 import Foundation
 import XCode
 
-//extension SDK {
-//    fileprivate func load(_ builder: inout Build.Builder) {
-//        switch self {
-//        case .iOS: return builder.load(RulesApple.IOS.ios_application)
-//        case .macOS: return builder.load(RulesApple.Mac.macos_application)
-//        case .tvOS: return builder.load(RulesApple.TV.tvos_application)
-//        case .watchOS: return builder.load(RulesApple.Watch.watchos_application)
-//        default: break
-//        }
-//    }
-//}
-
 extension Target {
     func generateApplicationCode(_ kit: Kit) -> String {
         precondition(self.sdk != nil, "sdk")
@@ -30,7 +18,6 @@ extension Target {
         #warning("todo infoPlist target")
         
         var builder = Build.Builder()
-//        self.sdk?.load(&builder)
         builder.custom(generateSwiftLibrary(kit))
         
         switch self.sdk {
@@ -46,10 +33,7 @@ extension Target {
     
     /// macos_command_line_application(name, additional_linker_inputs, bundle_id, codesign_inputs, codesignopts, deps, exported_symbols_lists, infoplists, launchdplists, linkopts, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, stamp, version)
     func generateCommandLineApplicationCode(_ kit: Kit) -> String {
-        precondition(self.bundleID != nil, "bundle id")
         precondition(self.version != nil, "min version")
-        
-        print(native.resourceFiles)
         
         var builder = Build.Builder()
         builder.load(.macos_command_line_application)
@@ -58,10 +42,13 @@ extension Target {
         builder.custom("""
         macos_command_line_application(
             name = "\(name)",
-            bundle_id = "\(self.bundleID!)",
+            # bundle_id = "\(self.bundleID ?? "")",
             minimum_os_version = "\(self.version!)",
-            infoplists = [":Info.plist"],
-            deps = [":_\(name)"],
+            infoplists = [
+                # ":Info.plist",
+                \(self.plistLabel)
+            ],
+            deps = [":\(name)_library"],
             visibility = ["//visibility:public"],
         )
         """)
@@ -71,7 +58,6 @@ extension Target {
     
     /// ios_application(name, additional_linker_inputs, alternate_icons, app_clips, app_icons, bundle_id, bundle_name, codesign_inputs, codesignopts, deps, entitlements, entitlements_validation, executable_name, exported_symbols_lists, extensions, families, frameworks, include_symbols_in_bundle, infoplists, ipa_post_processor, launch_images, launch_storyboard, linkopts, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, resources, sdk_frameworks, settings_bundle, stamp, strings, version, watch_application)
     func buildIOS(_ builder: inout Build.Builder) {
-        let depsXcode = ""
         let deviceFamily = self.deviceFamily?.joined(separator: "\n") ?? ""
         
         builder.load(.ios_application)
@@ -83,15 +69,22 @@ extension Target {
         \(deviceFamily.indent(2))
             ],
             minimum_os_version = "\(self.version!)",
-            infoplists = [":Info.plist"],
+            infoplists = [
+                # ":Info.plist",
+                \(self.plistLabel)
+            ],
             launch_storyboard = ":Base.lproj/LaunchScreen.storyboard",
-            deps = [":_\(name)"],
+            deps = [":\(name)_library"],
             frameworks = [
                 # XCode Target Deps
-        \(depsXcode)
+        \(self.frameworks.indent(2))
+                # manual import framework
+            ],
+            sdk_frameworks = [
+        \(self.sdkFrameworks.indent(2))
             ],
             resources = [
-        
+        \(self.resources.indent(2))
             ],
             visibility = ["//visibility:public"],
         )
@@ -100,22 +93,19 @@ extension Target {
     
     /// macos_application(name, additional_contents, additional_linker_inputs, app_icons, bundle_extension, bundle_id, bundle_name, codesign_inputs, codesignopts, deps, entitlements, entitlements_validation, executable_name, exported_symbols_lists, extensions, include_symbols_in_bundle, infoplists, ipa_post_processor, linkopts, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, resources, stamp, strings, version, xpc_services)
     func buildMac(_ builder: inout Build.Builder) {
-        let depsXcode = ""
-        
         builder.load(.macos_application)
         builder.custom("""
         macos_application(
             name = "\(name)",
             bundle_id = "\(self.bundleID!)",
             minimum_os_version = "\(self.version!)",
-            infoplists = [":Info.plist"],
-            deps = [":_\(name)"],
-            frameworks = [
-                # XCode Target Deps
-        \(depsXcode)
+            infoplists = [
+                # ":Info.plist",
+                \(self.plistLabel)
             ],
+            deps = [":\(name)_library"],
             resources = [
-        
+        \(self.resources.indent(2))
             ],
             visibility = ["//visibility:public"],
         )
@@ -130,14 +120,18 @@ extension Target {
             name = "\(name)",
             bundle_id = "\(self.bundleID!)",
             minimum_os_version = "\(self.version!)",
-            infoplists = [":Info.plist"],
-            deps = [":_\(name)"],
+            infoplists = [
+                # ":Info.plist",
+                \(self.plistLabel)
+            ],
+            deps = [":\(name)_library"],
             frameworks = [
                 # XCode Target Deps
-        
+        \(self.frameworks.indent(2))
+                # manual import framework
             ],
             resources = [
-        
+        \(self.resources.indent(2))
             ],
             visibility = ["//visibility:public"],
         )
@@ -152,14 +146,13 @@ extension Target {
             name = "\(name)",
             bundle_id = "\(self.bundleID!)",
             minimum_os_version = "\(self.version!)",
-            infoplists = [":Info.plist"],
-            deps = [":_\(name)"],
-            frameworks = [
-                # XCode Target Deps
-        
+            infoplists = [
+                # ":Info.plist",
+                \(self.plistLabel)
             ],
+            deps = [":\(name)_library"],
             resources = [
-        
+        \(self.resources.indent(2))
             ],
             visibility = ["//visibility:public"],
         )

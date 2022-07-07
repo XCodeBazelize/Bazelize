@@ -10,9 +10,9 @@ import PathKit
 import XcodeProj
 import Util
 
-extension Array where Element == PBXNativeTarget {
+extension Array where Element == Target {
     private var flatPackages: [Package] {
-        self.flatMap(\.spm)
+        self.flatMap(\.native.spm)
     }
     
     public var isHaveSPM: Bool {

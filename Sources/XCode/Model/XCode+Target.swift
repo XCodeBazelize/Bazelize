@@ -9,23 +9,24 @@ import Foundation
 import XcodeProj
 
 @dynamicMemberLookup
-public struct Target {
+public final class Target {
     public let native: PBXNativeTarget
     let defaultConfigList: ConfigList?
+    let projectConfig: ProjectConfig
+    
     /// Release / Debug / More...
     private var config: String = "Release"
     
-    init(native: PBXNativeTarget, defaultConfigList: ConfigList?) {
+    
+    init(native: PBXNativeTarget, defaultConfigList: ConfigList?, projectConfig: ProjectConfig) {
         self.native = native
         self.defaultConfigList = defaultConfigList
+        self.projectConfig = projectConfig
     }
     
     public var name: String { native.name }
-    public var srcs: String { native.srcs }
-    public var resources: String { native.resources }
     public var configList: ConfigList { .init(native.buildConfigurationList) }
     
-    mutating
     public func setup(config: String) {
         self.config = config
     }
@@ -52,32 +53,43 @@ public struct Target {
         case .none: return nil
         }
     }
+    
+    #warning("todo plist gen")
+    public var plistLabel: String {
+        return projectConfig.toLabel(self.infoPlist) ?? "\":Info.plist\","
+    }
 }
 
-extension PBXNativeTarget {
+extension Target {
     public var srcFiles: [File] {
-        guard let sourceBuildPhase = try? sourcesBuildPhase() else {
+        guard let sourceBuildPhase = try? native.sourcesBuildPhase() else {
             return []
         }
 
         let files = sourceBuildPhase.files ?? []
-        return files.compactMap(\.file)
+        return files.compactMap { build in
+            guard let file = build.file else {return nil}
+            return File(native: file, config: projectConfig)
+        }
     }
 
     public var srcs: String {
-        return srcFiles.paths
+        return srcFiles.labels
     }
 
     public var resourceFiles: [File] {
-        guard let phase = try? resourcesBuildPhase() else {
+        guard let phase = try? native.resourcesBuildPhase() else {
             return []
         }
         let files = phase.files ?? []
-        return files.compactMap(\.file)
+        return files.compactMap { build in
+            guard let file = build.file else {return nil}
+            return File(native: file, config: projectConfig)
+        }
     }
 
     public var resources: String {
-        return resourceFiles.paths
+        return resourceFiles.labels
     }
     
     /// use for `frameworks`
@@ -88,12 +100,34 @@ extension PBXNativeTarget {
     
     /// use for `frameworks`
     public var frameworks: String {
-        return self.dependencies.compactMap(\.target?.name).joined(separator: "\n")
+        return self.native
+            .dependencies
+            .compactMap(\.target?.name)
+            .map { framework in
+                return """
+                "//\(framework):\(framework)",
+                """
+            }
+            .joined(separator: "\n")
+    }
+    
+    /// use for `xxx_library.deps`
+    ///
+    public var frameworks_library: String {
+        return self.native
+            .dependencies
+            .compactMap(\.target?.name)
+            .map { framework in
+                return """
+                "//\(framework):\(framework)_library",
+                """
+            }
+            .joined(separator: "\n")
     }
     
     /// use for `sdk_frameworks`
     public var sdkFrameworks: String {
-        let builds = (try? frameworksBuildPhase()?.files) ?? []
+        let builds = (try? native.frameworksBuildPhase()?.files) ?? []
         
         return builds.filter { build in
             return
@@ -101,12 +135,17 @@ extension PBXNativeTarget {
                 (build.file?.path?.hasPrefix("System/") ?? false)
         }.compactMap { build -> String? in
             return build.file?.name?.replacingOccurrences(of: ".framework", with: "")
-        }.joined(separator: "\n")
+        }.map { framework in
+            return """
+            "\(framework)",
+            """
+        }
+        .joined(separator: "\n")
     }
 }
 
 public extension Target {
-    mutating func dump(config: String) {
+    func dump(config: String) {
         self.setup(config: config)
         print("""
         name: \(name)
@@ -116,22 +155,22 @@ public extension Target {
         plist build setting: \((self.plistKeys?.joined(separator: "\n") ?? "").withNewLine)
         """)
         
-        if let files = try? native.frameworksBuildPhase()?.files, !files.isEmpty {
-            print("Frameworks:")
-            for file in files {
-                print("""
-                - product: \(file.product?.productName ?? "")
-                  packageName: \(file.product?.package?.name ?? "")
-                  path: \(file.file?.relativePath ?? "")
-                """)
-            }
-        }
+//        if let files = try? native.frameworksBuildPhase()?.files, !files.isEmpty {
+//            print("Frameworks:")
+//            for file in files {
+//                print("""
+//                - product: \(file.product?.productName ?? "")
+//                  packageName: \(file.product?.package?.name ?? "")
+//                  path: \(file.file?.relativePath ?? "")
+//                """)
+//            }
+//        }
 
         print("""
         Sources: \(srcs.withNewLine)
         Resources: \(resources.withNewLine)
-        Framework: \(native.frameworks.withNewLine)
-        SDK: \(native.sdkFrameworks.withNewLine)
+        Framework: \(frameworks.withNewLine)
+        SDK: \(sdkFrameworks.withNewLine)
         SPM Deps: \(native.spm_deps.withNewLine)
         """)
     }

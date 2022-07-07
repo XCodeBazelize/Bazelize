@@ -44,8 +44,8 @@ struct Workspace {
             self.http_archive()
             self.rulesApple(repo: .v1_0_1)
             self.rulesPod(repo: .v4_1_0_412495)
-            self.rulesSPM(repo: .v0_11_0)
-            self.rulesHammer(repo: .v3_4_3_3)
+//            self.rulesSPM(repo: .v0_11_0)
+//            self.rulesHammer(repo: .v3_4_3_3)
         }
         
         mutating
@@ -61,8 +61,8 @@ struct Workspace {
             # rules_apple
             http_archive(
                 name = "build_bazel_rules_apple",
-                sha256 = "\(repo.sha256)",
-                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(repo.rawValue)/rules_apple.\(repo.rawValue).tar.gz",
+                # sha256 = "\(repo.sha256)",
+                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(repo.version)/rules_apple.\(repo.version).tar.gz",
             )
 
             load(
@@ -92,6 +92,7 @@ struct Workspace {
             )
 
             apple_support_dependencies()
+            
             """
         }
         
@@ -106,18 +107,20 @@ struct Workspace {
             )
 
             load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
+            
             """
         }
         
         mutating
         public func rulesSPM(repo: Repo.SPM) {
             _code = """
+            # rules_spm
             http_archive(
                 name = "cgrindel_rules_spm",
                 # sha256 = "\(repo.sha256)",
-                strip_prefix = "rules_spm-\(repo.rawValue)",
+                strip_prefix = "rules_spm-\(repo.version)",
                 urls = [
-                    "http://github.com/cgrindel/rules_spm/archive/v\(repo.rawValue).tar.gz",
+                    "http://github.com/cgrindel/rules_spm/archive/\(repo.rawValue).tar.gz",
                 ],
             )
 
@@ -127,16 +130,19 @@ struct Workspace {
             )
 
             spm_rules_dependencies()
+            
             """
         }
         
         mutating
-        public func rulesHammer(repo: Repo.XCHammer) {
+        public func rulesHammer(repo: Repo.Hammer) {
             _code = """
+            # rules_hammer
             http_archive(
                 name = "xchammer",
                 urls = [ "https://github.com/pinterest/xchammer/releases/download/\(repo.rawValue)/xchammer.zip" ],
             )
+            
             """
         }
         

@@ -17,14 +17,16 @@ public struct Kit {
     let path: Path
     let projPath: Path
     let pod: Pod?
-    let proj: XcodeProj
+    let _proj: XcodeProj
+    let project: Project
     
     public init(_ projPath: Path) async throws {
         let path = projPath.parent()
         self.path = path
         self.projPath = projPath
         async let pod = Pod.parse(path)
-        self.proj = try XcodeProj(path: projPath)
+        self._proj = try XcodeProj(path: projPath)
+        self.project = .init(proj: self._proj, root: path.string)
         self.pod = try await pod
     }
     
@@ -35,14 +37,14 @@ public struct Kit {
     public func run(config: String) throws {
         defer { tip() }
         
-        for target in proj.pbxproj.targets {
+        for target in project.targets {
             try? target.generate(path, self)
         }
         
-        let spm_repositories = proj.pbxproj.nativeTargets.spm_repositories(projPath)
+        let spm_repositories = project.targets.spm_repositories(projPath)
         let workspace = Workspace { builder in
             builder.default()
-            builder.custom(code: spm_repositories)
+//            builder.custom(code: spm_repositories)
         }
         try? workspace.generate(path)
         
@@ -50,13 +52,13 @@ public struct Kit {
     }
     
     public func dump(config: String) throws {
-        for var target in proj.pbxproj.targets {
+        for target in project.targets {
             target.dump(config: config)
             print("\n-------------\n")
         }
         
-        if proj.pbxproj.nativeTargets.isHaveSPM {
-            print(proj.pbxproj.nativeTargets.spm_pkgs)
+        if project.targets.isHaveSPM {
+            print(project.targets.spm_pkgs)
         }
     }
 }
