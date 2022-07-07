@@ -46,8 +46,8 @@ jobs:
     - name: Update Cocoapod Repo
       run: pod repo update
     
-    - name: Get Pod Spec
-      run: pod spec cat --regex Bagel --version=1.4.0
+    # - name: Get Pod Spec
+    #   run: pod spec cat --regex Bagel --version=1.4.0
 
     - name: Xcode Select ${{ matrix.xcode }}
       # You may pin to the exact commit or the version.
