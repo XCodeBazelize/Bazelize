@@ -125,7 +125,7 @@ COCOAPODS: 1.11.3
 #### 套件管理(Cocoapod) 條件
 
  * [ ] 套件來源
-   * [O] 大部分 Pod，會支援其 git 來源
+   * [X] 大部分 Pod，會支援其 git 來源
    * [ ] 少部分 Pod 並無提供來源
  * [x] 套件版本
  * [x] 對應關係
@@ -153,7 +153,9 @@ COCOAPODS: 1.11.3
           "revision": "626c3d4b6b55354b4af3aa309f998fae9b31a3d9",
           "version": "3.2.0"
         }
-      },
+      }
+    ]
+  },
   "version" : 1
 }
 ```
@@ -173,7 +175,8 @@ COCOAPODS: 1.11.3
         "branch" : "custom",
         "revision" : "39b01c53ffadf3dab9871dd4c960cd81af5246b6"
       }
-    },
+    }
+  ],
   "version" : 2
 }
 ```
