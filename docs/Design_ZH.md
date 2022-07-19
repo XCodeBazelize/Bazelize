@@ -155,13 +155,13 @@ alias(
 
 目錄結構：
 
-```bash=
+```bash
 └── Target2
     ├── BUILD
     └── xxx.m
 ```
 
-```bazel=
+```bazel
 # Target2/BUILD
 objc_library(
     name = "Target2_objc", # Target2 + _objc
@@ -187,14 +187,14 @@ ios_framework(
 
 目錄結構：
 
-```bash=
+```bash
 └── Target1
     ├── BUILD
     └── xxx.swift
 ```
 
 
-```bazel=
+```bazel
 # Target1/BUILD
 swift_library(
     name = "Target1_swift",
@@ -228,7 +228,7 @@ ios_application(
 
 ## 預期專案結構
 
-```shell=
+```bash
 ├── xxx.xcodeproj
 ├── xxx.xcworkspace
 ├── # BUILD?
@@ -303,7 +303,7 @@ prefix `INFOPLIST_KEY_`
 
 > 要順帶考慮 `naming rule`。
 
-```bazel=
+```bazel
 swift_library(
   name = "RxSwift_swift",
 )
