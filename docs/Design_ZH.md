@@ -5,7 +5,7 @@
 ## `Bazelize` 的目標
 
  1. 在儘量不影響現有 `XCode` 專案的情況下，達成轉移到 `bazel` 的過程。
-     * 見 [将大型 iOS 应用迁移至 Bazel][Ref1]
+     * 見 [Ref](#Ref)
  2. 將 `xxx.xcodeproj` 以及其相依套件，如 `pod`, `spm` ...，轉移至 `bazel`。
 
 ----
@@ -329,5 +329,12 @@ objc_library(
 
 ...
 
+---
 
-[Ref1]: https://www.youtube.com/watch?v=PPgiv7GLH6Y&ab_channel=GoogleOpenSource  "将大型 iOS 应用迁移至 Bazel"
+## Ref
+
+ * [将大型 iOS 应用迁移至 Bazel](https://www.youtube.com/watch?v=PPgiv7GLH6Y&ab_channel=GoogleOpenSource)
+ * [iOS and Bazel at Reddit: A Journey](https://www.reddit.com/r/RedditEng/comments/syz5dw/ios_and_bazel_at_reddit_a_journey)
+ * [BazelCon 2019 Day 1: Porting iOS Apps to Bazel + Q&A](https://www.youtube.com/watch?v=gVdkJu3QRA4)
+ * [Keith Smiley of Lyft on How to Scale Code with Bazel](https://semaphoreci.com/blog/keith-smiley-bazel)
+ * [Improving Build Performance of LINE for iOS with Bazel](https://engineering.linecorp.com/en/blog/improving-build-performance-line-ios-bazel)
