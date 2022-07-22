@@ -49,61 +49,12 @@
 
 我們先從 `XCode Target` type 暸解起，初步我們會先實作較為常見的幾種 type。
 
-```swift
-public enum PBXProductType: String, Decodable {
-    case none = ""
-    case application = "com.apple.product-type.application"
-    case framework = "com.apple.product-type.framework"
-    case staticFramework = "com.apple.product-type.framework.static"
-    case xcFramework = "com.apple.product-type.xcframework"
-    case dynamicLibrary = "com.apple.product-type.library.dynamic"
-    case staticLibrary = "com.apple.product-type.library.static"
-    case bundle = "com.apple.product-type.bundle"
-    case unitTestBundle = "com.apple.product-type.bundle.unit-test"
-    case uiTestBundle = "com.apple.product-type.bundle.ui-testing"
-    case appExtension = "com.apple.product-type.app-extension"
-    case commandLineTool = "com.apple.product-type.tool"
-    case watchApp = "com.apple.product-type.application.watchapp"
-    case watch2App = "com.apple.product-type.application.watchapp2"
-    case watch2AppContainer = "com.apple.product-type.application.watchapp2-container"
-    case watchExtension = "com.apple.product-type.watchkit-extension"
-    case watch2Extension = "com.apple.product-type.watchkit2-extension"
-    case tvExtension = "com.apple.product-type.tv-app-extension"
-    case messagesApplication = "com.apple.product-type.application.messages"
-    case messagesExtension = "com.apple.product-type.app-extension.messages"
-    case stickerPack = "com.apple.product-type.app-extension.messages-sticker-pack"
-    case xpcService = "com.apple.product-type.xpc-service"
-    case ocUnitTestBundle = "com.apple.product-type.bundle.ocunit-test"
-    case xcodeExtension = "com.apple.product-type.xcode-extension"
-    case instrumentsPackage = "com.apple.product-type.instruments-package"
-    case intentsServiceExtension = "com.apple.product-type.app-extension.intents-service"
-    case onDemandInstallCapableApplication = "com.apple.product-type.application.on-demand-install-capable"
-    case metalLibrary = "com.apple.product-type.metal-library"
-    case driverExtension = "com.apple.product-type.driver-extension"
-    case systemExtension = "com.apple.product-type.system-extension"
-}
-```
+見 [PBXProductType][product_type]
 
-### `XCode Target` `iOS Application`
+### 辨識 `XCode Target` type
 
-如何得知 `Target` 是 `iOS Application`，可以從 `type` 得知其為 `.application`
+主要由 [PBXProductType][product_type] 以及 [XCConfigurationList][config_list] 作為判斷標準。
 
-```swift
-target.type == .application
-```
-
-接著預期可以從 Target Setting 得知為 iOS，期望是 `target.setting[sdk] == "iphoneos"`
-
-```swift
-target.setting[sdk] == "iphoneos"
-```
-
-實際上是：
-
-```swift
-let config = "Debug"
-(target.setting[config][sdk] ?? defaultSetting[config][sdk]) == "iphoneos"
-```
 
 ### `XCode Target` + `Naming Rule`
 
@@ -338,3 +289,7 @@ objc_library(
  * [BazelCon 2019 Day 1: Porting iOS Apps to Bazel + Q&A](https://www.youtube.com/watch?v=gVdkJu3QRA4)
  * [Keith Smiley of Lyft on How to Scale Code with Bazel](https://semaphoreci.com/blog/keith-smiley-bazel)
  * [Improving Build Performance of LINE for iOS with Bazel](https://engineering.linecorp.com/en/blog/improving-build-performance-line-ios-bazel)
+
+
+[product_type]: https://github.com/tuist/XcodeProj/blob/main/Sources/XcodeProj/Objects/Targets/PBXProductType.swift
+[config_list]: https://github.com/tuist/XcodeProj/blob/main/Sources/XcodeProj/Objects/Configuration/XCConfigurationList.swift
