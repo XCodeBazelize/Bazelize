@@ -9,8 +9,8 @@ import Foundation
 
 /// https://github.com/bazelbuild/rules_apple/tree/master/doc
 enum RulesApple {
-    enum IOS: String {
-        private static let target = "@build_bazel_rules_apple//apple:ios.bzl"
+    enum IOS: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:ios.bzl"
         
         case ios_application
         case ios_app_clip
@@ -26,16 +26,10 @@ enum RulesApple {
         case ios_unit_test
         case ios_unit_test_suite
         case ios_build_test
-        
-        var code: String {
-            return """
-            load("\(Self.target)", "\(rawValue)")
-            """
-        }
     }
     
-    enum Mac: String {
-        private static let target = "@build_bazel_rules_apple//apple:macos.bzl"
+    enum Mac: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:macos.bzl"
         
         case macos_application
         case macos_bundle
@@ -43,16 +37,10 @@ enum RulesApple {
         case macos_extension
         case macos_unit_test
         case macos_build_test
-        
-        var code: String {
-            return """
-            load("\(Self.target)", "\(rawValue)")
-            """
-        }
     }
     
-    enum TV: String {
-        private static let target = "@build_bazel_rules_apple//apple:tvos.bzl"
+    enum TV: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:tvos.bzl"
         
         case tvos_application
         case tvos_extension
@@ -61,16 +49,10 @@ enum RulesApple {
         case tvos_ui_test
         case tvos_unit_test
         case tvos_build_test
-        
-        var code: String {
-            return """
-            load("\(Self.target)", "\(rawValue)")
-            """
-        }
     }
     
-    enum Watch: String {
-        private static let target = "@build_bazel_rules_apple//apple:watchos.bzl"
+    enum Watch: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:watchos.bzl"
         
         case watchos_application
         case watchos_extension
@@ -79,12 +61,6 @@ enum RulesApple {
         case watchos_ui_test
         case watchos_unit_test
         case watchos_build_test
-        
-        var code: String {
-            return """
-            load("\(Self.target)", "\(rawValue)")
-            """
-        }
     }
 }
 

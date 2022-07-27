@@ -8,8 +8,8 @@
 import Foundation
 
 /// https://github.com/bazelbuild/rules_swift
-enum RulesSwift: String {
-    private static let target = "@build_bazel_rules_swift//swift:swift.bzl"
+enum RulesSwift: String, LoadableRule {
+    static let target = "@build_bazel_rules_swift//swift:swift.bzl"
     
     case swift_binary
     case swift_c_module
@@ -21,10 +21,4 @@ enum RulesSwift: String {
     case swift_package_configuration
     case swift_proto_library
     case swift_test
-    
-    var code: String {
-        return """
-        load("\(Self.target)", "\(rawValue)")
-        """
-    }
 }

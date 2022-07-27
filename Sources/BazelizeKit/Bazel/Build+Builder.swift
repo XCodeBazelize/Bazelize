@@ -18,27 +18,32 @@ struct Build {
         
         mutating
         func load(_ rule: RulesApple.IOS) {
-            load(rule.code)
+            load(loadableRule: rule)
         }
         
         mutating
         func load(_ rule: RulesApple.Mac) {
-            load(rule.code)
+            load(loadableRule: rule)
         }
         
         mutating
         func load(_ rule: RulesApple.TV) {
-            load(rule.code)
+            load(loadableRule: rule)
         }
         
         mutating
         func load(_ rule: RulesApple.Watch) {
-            load(rule.code)
+            load(loadableRule: rule)
         }
         
         mutating
         func load(_ rule: RulesSwift) {
-            load(rule.code)
+            load(loadableRule: rule)
+        }
+        
+        mutating
+        private func load(loadableRule rule: LoadableRule) {
+            load(rule.load)
         }
         
         /// load function at top of the file.
