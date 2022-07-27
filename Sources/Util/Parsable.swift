@@ -9,7 +9,7 @@ import Foundation
 import Yams
 import PathKit
 
-public protocol Parsable: Codable {
+public protocol Parsable: Decodable {
     static func parse(_ path: Path) throws -> Self
     static func parse(_ content: String) throws -> Self
     static func parse(_ content: Foundation.Data) throws -> Self
