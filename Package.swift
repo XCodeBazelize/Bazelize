@@ -65,6 +65,7 @@ let package = Package(
             name: "XCode",
             dependencies: [
                 "Util",
+                "PluginInterface",
                 
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
@@ -72,6 +73,7 @@ let package = Package(
         .target(
             name: "Cocoapod",
             dependencies: [
+                "PluginInterface",
                 "Util",
                 "AnyCodable",
                 "PathKit",
@@ -82,6 +84,11 @@ let package = Package(
             resources: [
                 .copy("Resource")
             ]
+        ),
+        
+        .target(
+            name: "PluginInterface",
+            dependencies: ["PathKit"]
         ),
         
 //        .testTarget(
