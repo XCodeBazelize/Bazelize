@@ -42,7 +42,7 @@
 
 所幸，`XCode Target` 似乎同時只支援一種語言。
 
-> 例外: application 可透過 `bridge-header` 或 generated header `RxSwift-Swift.h`，
+> 例外: application 可透過 `bridge-header` 或 generated header `${target_name}-Swift.h`，
 
 
 ### `XCode Target` type
