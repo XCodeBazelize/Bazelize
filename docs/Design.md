@@ -7,7 +7,6 @@
  1. Migrating to `bazel` with minimal impact on existing `XCode` projects.
      * See [Ref](#Ref)
  2. Migrating `xxx.xcodeproj` and its dependencies to `bazel`, for example, `pod`, `spm`.
-     * See [Dependecy](Dependecy_ZH.md)
 
 ----
 
@@ -41,7 +40,7 @@ We are currently focusing on `swift_library` and `objc_library` implementations.
 
 Fortunately, `XCode Target` seems to support only one language.
 
-> Except for application, we can use `bridge-header` or generated header `RxSwift-Swift.h`
+> Except for application, we can use `bridge-header` or generated header `${target_name}-Swift.h`
 
 
 ### `XCode Target` type
