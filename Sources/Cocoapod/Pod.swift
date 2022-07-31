@@ -8,12 +8,21 @@
 import Foundation
 import Util
 import PathKit
+import PluginInterface
 
-public struct Pod {
+public final class Pod {
+    public let name = "Cocoapod"
+    
     let podfile: Podfile
     let lock: PodfileLock
     
     let repoCodes: [String]
+    
+    init(podfile: Podfile, lock: PodfileLock, repoCodes: [String]) {
+        self.podfile = podfile
+        self.lock = lock
+        self.repoCodes = repoCodes
+    }
 }
 
 extension Pod {
@@ -48,13 +57,38 @@ extension Pod {
     }
 }
 
-extension Pod {
-    /// "//Vendor/RxSwift:RxSwift",
-    /// "//Vendor/Alamofire:Alamofire",
-    public subscript(targetName: String) -> String {
-        return podfile[targetName]
+extension Pod: Plugin {
+    public static func load(_ proj: XCodeProject) async throws -> Pod? {
+        return try await parse(proj.workspacePath)
     }
     
+    public func workspace() -> String {
+        return """
+        # rules_pods
+        http_archive(
+            name = "rules_pods",
+            urls = ["https://github.com/pinterest/PodToBUILD/releases/download/4.1.0-412495/PodToBUILD.zip"],
+            # sha256 = "",
+        )
+        
+        load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
+        """
+    }
+    
+    private struct PodPluginTarget: PluginTarget {
+        let deps: [String]
+        var framework: [String] {
+            []
+        }
+    }
+    
+    /// "//Vendor/RxSwift:RxSwift",
+    /// "//Vendor/Alamofire:Alamofire",
+    public subscript(target: String) -> PluginTarget? {
+        return PodPluginTarget(deps: podfile[target])
+    }
+    
+    /// bazel run @rules_pods//:update_pods -- --src_root `PWD`
     public func tip() {
         print("""
         use bazel run @rules_pods//:update_pods -- --src_root `PWD` to install pod deps.
@@ -62,9 +96,9 @@ extension Pod {
     }
 
     /// generate Pods.WORKSPACE
-    public func generate(_ path: Path) throws {
+    public func generateFile(_ rootPath: Path) throws {
         let code = repoCodes.joined(separator: "\n\n")
-        let PodWorkspace = path + "Pods.WORKSPACE"
+        let PodWorkspace = rootPath + "Pods.WORKSPACE"
         print("Create \(PodWorkspace.string)")
 //        try to.delete()
         try PodWorkspace.write(code)

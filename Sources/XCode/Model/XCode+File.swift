@@ -9,47 +9,9 @@ import Foundation
 import XcodeProj
 import PathKit
 
-internal struct ProjectConfig {
-    internal typealias Package = String
-    internal let root: String
-    internal let packages: [Package]
-    
-    internal init(root: String, packages: [Package]) {
-        self.root = root
-        self.packages = packages
-    }
-    
-    private func check(_ package: Package) -> Bool {
-        return self.packages.contains(package)
-    }
-    
-    func toLabel(_ path: String?) -> String? {
-        /// DEF/Base.lproj/LaunchScreen.storyboard
-        guard let path = path else {return nil}
-        
-        if let _package = path.split(separator: "/").first {
-            /// DEF
-            let package = String(_package)
-            /// Base.lproj/LaunchScreen.storyboard
-            let restPath = path.delete(prefix: package + "/")
-            
-            if self.check(package) {
-                return """
-                "//\(package):\(restPath)",
-                """
-            }
-        }
-        
-        return """
-        "# \(path),"
-        """
-    }
-}
-
-
 public final class File {
-    public let native: PBXFileElement
-    let config: ProjectConfig
+    private let native: PBXFileElement
+    private let config: ProjectConfig
     
     init(native: PBXFileElement, config: ProjectConfig) {
         self.native = native
@@ -66,17 +28,22 @@ public final class File {
             return nil
         }
         
-        let path = fullPath.delete(prefix: root + "/")
-        return config.toLabel(path)
+        if fullPath.hasPrefix(root + "/") {
+            let path = fullPath.delete(prefix: root + "/")
+            return config.toLabel(path)
+        }
+        
+        return """
+        # "\(fullPath)",
+        """
     }
 }
 
 extension Array where Element == File {
-    public var labels: String {
-        return self.compactMap(\.label).joined(separator: "\n")
+    public var labels: [String] {
+        return self.compactMap(\.label)
     }
 }
-
 
 extension String {
     func delete(prefix: String) -> String {

@@ -1,6 +1,6 @@
 //
 //  Codegen+Framework.swift
-//  
+//
 //
 //  Created by Yume on 2022/4/29.
 //
@@ -10,12 +10,12 @@ import XCode
 
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
-        precondition(self.bundleID != nil, "bundle id")
-        precondition(self.version != nil, "min version")
+        precondition(setting.bundleID != nil, "bundle id")
+//        precondition(setting.version != nil, "min version")
         
         let depsXcode = ""
         
-        let deviceFamily = self.deviceFamily?.joined(separator: "\n") ?? ""
+        let deviceFamily = setting.deviceFamily.withNewLine
         
 //        self.infoPlist
         
@@ -26,15 +26,15 @@ extension Target {
         builder.custom("""
         ios_framework(
             name = "\(name)",
-            bundle_id = "\(self.bundleID!)",
+            bundle_id = "\(setting.bundleID!)",
             families = [
         \(deviceFamily.indent(2))
             ],
-            minimum_os_version = "\(self.version!)",
-            # \(self.infoPlist ?? "")
+            # minimum_os_version = "(setting.version!)",
+            # (self.infoPlist ?? "")
             infoplists = [
                 # ":Info.plist",
-                \(self.plistLabel)
+                (self.plistLabel)
             ],
             deps = [":\(name)_library"],
             frameworks = [

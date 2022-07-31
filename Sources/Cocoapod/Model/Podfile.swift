@@ -16,8 +16,8 @@ struct Podfile: Codable, JSONParsable {
         return target_definitions.flatMap(\.flatTarget)
     }
     
-    subscript(targetName: String) -> String {
-        return self[target: targetName]?.depsCode ?? ""
+    subscript(targetName: String) -> [String] {
+        return self[target: targetName]?.depsCode ?? []
     }
     
     fileprivate subscript(target targetName: String) -> PodChildren? {
@@ -65,13 +65,12 @@ fileprivate struct PodChildren: Codable {
         }
     }
     
-    var depsCode: String {
+    var depsCode: [String] {
         return dependencies?
             .sorted { lhs, rhs in
                 lhs.code < rhs.code
             }
-            .map(\.code)
-            .joined(separator: "\n") ?? ""
+            .map(\.code) ?? []
     }
 }
 

@@ -9,9 +9,10 @@ import Foundation
 import PathKit
 
 public protocol Plugin: AnyObject {
+    /// plugin name
     var name: String { get }
     
-    static func load(_ rootPath: Path) async throws -> Self?
+    static func load(_ proj: XCodeProject) async throws -> Self?
     
     subscript(target: String) -> PluginTarget? { get }
 
@@ -23,10 +24,10 @@ public protocol Plugin: AnyObject {
     /// )
     ///
     /// load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
-    func workspcae() -> String
+    func workspace() -> String
 
     /// {WORKSPACE}/Pods.WORKSPACE
-    func generateFile(_ rootPath: Path) throws
+    func generateFile(_ workspace: Path) throws
 
     /// bazel run @rules_pods//:update_pods -- --src_root `PWD`
     func tip()
