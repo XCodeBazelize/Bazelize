@@ -11,7 +11,7 @@ import XCode
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
         precondition(setting.bundleID != nil, "bundle id")
-//        precondition(setting.version != nil, "min version")
+        precondition(setting.iOS != nil, "min version")
         
         let depsXcode = ""
         
@@ -30,7 +30,7 @@ extension Target {
             families = [
         \(deviceFamily.indent(2))
             ],
-            # minimum_os_version = "(setting.version!)",
+            # minimum_os_version = "\(setting.iOS!)",
             # (self.infoPlist ?? "")
             infoplists = [
                 # ":Info.plist",

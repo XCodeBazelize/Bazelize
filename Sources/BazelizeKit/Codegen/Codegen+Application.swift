@@ -17,7 +17,6 @@ extension Target {
         precondition(setting.sdk != nil, "sdk")
         
         precondition(setting.bundleID != nil, "bundle id")
-//        precondition(setting.version != nil, "min version")
         
         #warning("todo infoPlist target")
         
