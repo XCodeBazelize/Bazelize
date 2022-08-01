@@ -10,7 +10,7 @@ import XCode
 import PluginInterface
 
 extension Target {
-    #warning("todo config")
+    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/3
     var setting: XCodeBuildSetting { self["Release"]! }
     
     func generateApplicationCode(_ kit: Kit) -> String {
