@@ -8,14 +8,15 @@
 import Foundation
 import XcodeProj
 import PathKit
+import PluginInterface
 
 public final class File {
     private let native: PBXFileElement
-    private let config: ProjectConfig
+    private unowned let project: XCodeProject
     
-    init(native: PBXFileElement, config: ProjectConfig) {
+    init(native: PBXFileElement, project: XCodeProject) {
         self.native = native
-        self.config = config
+        self.project = project
     }
     
     /// root:     /Users/xxx/git/ABCDEF
@@ -23,14 +24,14 @@ public final class File {
     /// fullPath: /Users/xxx/git/ABCDEF/DEF/Base.lproj/LaunchScreen.storyboard
     /// package:  DEF
     public var label: String? {
-        let root = config.root
+        let root = project.workspacePath.string
         guard let fullPath = try? self.native.fullPath(sourceRoot: root) else {
             return nil
         }
         
         if fullPath.hasPrefix(root + "/") {
             let path = fullPath.delete(prefix: root + "/")
-            return config.toLabel(path)
+            return project.transformToLabel(path)
         }
         
         return """

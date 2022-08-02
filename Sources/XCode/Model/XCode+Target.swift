@@ -38,7 +38,7 @@ extension Target: Encodable {
 public final class Target {
     public let native: PBXNativeTarget
     
-    let projectConfig: ProjectConfig
+    unowned let project: XCodeProject
     let originConfig: [String: XCodeBuildSetting]
     public let config: [String: XCodeBuildSetting]
     public var configs: [String] {
@@ -47,13 +47,13 @@ public final class Target {
         }
     }
     
-    init(native: PBXNativeTarget, defaultConfigList: ConfigList?, projectConfig: ProjectConfig) {
+    init(native: PBXNativeTarget, defaultConfigList: ConfigList?, project: XCodeProject) {
         self.native = native
         let configList: ConfigList = .init(native.buildConfigurationList)
         let defaultConfigList = defaultConfigList
         self.originConfig = configList.buildSettings
         self.config = configList.merge(defaultConfigList)
-        self.projectConfig = projectConfig
+        self.project = project
     }
     
     public var name: String { native.name }
@@ -77,7 +77,7 @@ extension Target {
         let files = sourceBuildPhase.files ?? []
         return files.compactMap { build in
             guard let file = build.file else {return nil}
-            return File(native: file, config: projectConfig)
+            return File(native: file, project: project)
         }
     }
 
@@ -92,7 +92,7 @@ extension Target {
         let files = phase.files ?? []
         return files.compactMap { build in
             guard let file = build.file else {return nil}
-            return File(native: file, config: projectConfig)
+            return File(native: file, project: project)
         }
     }
 

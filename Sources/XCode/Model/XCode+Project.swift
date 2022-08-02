@@ -74,15 +74,10 @@ public final class Project {
         return []
     }
     
-    private var projectConfig: ProjectConfig {
-        let packages = self.native.nativeTargets.map(\.name)
-        return .init(root: workspacePath.string, packages: packages)
-    }
-    
     private var _targets: [Target] {
         let list = self.native.defaultConfigList
         return native.nativeTargets.map {
-            Target(native: $0, defaultConfigList: list, projectConfig: projectConfig)
+            Target(native: $0, defaultConfigList: list, project: self)
         }
     }
 }

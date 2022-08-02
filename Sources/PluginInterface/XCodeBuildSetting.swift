@@ -13,10 +13,8 @@ public protocol XCodeBuildSetting {
     
     var setting: [String: Any] { get }
 
-    /// com.xxx.ABCDEF
     var bundleID: String? { get }
 
-    /// "37MR9XXXXX"
     var team: String? { get }
 
     /// "5.0"
