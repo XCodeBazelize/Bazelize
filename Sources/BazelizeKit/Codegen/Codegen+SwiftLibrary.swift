@@ -12,8 +12,8 @@ extension Target {
     func generateSwiftLibrary(_ kit: Kit) -> String {
         #warning("todo check pure swift, or mix objc & swift")
 
-        
-        let depsPod: String = kit.pod?[name] ?? ""
+        #warning("")
+        let depsPod: String = ""//kit.pod?[name] ?? ""
         let depsSPM = native.spm_deps
         
         var builder = Build.Builder()
@@ -23,7 +23,7 @@ extension Target {
             name = "\(name)_swift",
             module_name = "\(name)",
             srcs = [
-        \(srcs.indent(2))
+        \(srcs.withNewLine.indent(2))
             ],
             deps = [
                 # Cocoapod Deps
@@ -33,7 +33,7 @@ extension Target {
         \(depsSPM.indent(1, "# ").indent(2))
         
                 # Framework TODO (swift_library/objc_library)
-        \(self.frameworks_library.indent(2))
+        \(self.frameworks_library.withNewLine.indent(2))
             ],
             visibility = ["//visibility:private"],
         )

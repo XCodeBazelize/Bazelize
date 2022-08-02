@@ -8,52 +8,15 @@
 import Foundation
 import XcodeProj
 import PathKit
-
-internal struct ProjectConfig {
-    internal typealias Package = String
-    internal let root: String
-    internal let packages: [Package]
-    
-    internal init(root: String, packages: [Package]) {
-        self.root = root
-        self.packages = packages
-    }
-    
-    private func check(_ package: Package) -> Bool {
-        return self.packages.contains(package)
-    }
-    
-    func toLabel(_ path: String?) -> String? {
-        /// DEF/Base.lproj/LaunchScreen.storyboard
-        guard let path = path else {return nil}
-        
-        if let _package = path.split(separator: "/").first {
-            /// DEF
-            let package = String(_package)
-            /// Base.lproj/LaunchScreen.storyboard
-            let restPath = path.delete(prefix: package + "/")
-            
-            if self.check(package) {
-                return """
-                "//\(package):\(restPath)",
-                """
-            }
-        }
-        
-        return """
-        "# \(path),"
-        """
-    }
-}
-
+import PluginInterface
 
 public final class File {
-    public let native: PBXFileElement
-    let config: ProjectConfig
+    private let native: PBXFileElement
+    private unowned let project: XCodeProject
     
-    init(native: PBXFileElement, config: ProjectConfig) {
+    init(native: PBXFileElement, project: XCodeProject) {
         self.native = native
-        self.config = config
+        self.project = project
     }
     
     /// root:     /Users/xxx/git/ABCDEF
@@ -61,22 +24,27 @@ public final class File {
     /// fullPath: /Users/xxx/git/ABCDEF/DEF/Base.lproj/LaunchScreen.storyboard
     /// package:  DEF
     public var label: String? {
-        let root = config.root
+        let root = project.workspacePath.string
         guard let fullPath = try? self.native.fullPath(sourceRoot: root) else {
             return nil
         }
         
-        let path = fullPath.delete(prefix: root + "/")
-        return config.toLabel(path)
+        if fullPath.hasPrefix(root + "/") {
+            let path = fullPath.delete(prefix: root + "/")
+            return project.transformToLabel(path)
+        }
+        
+        return """
+        # "\(fullPath)",
+        """
     }
 }
 
 extension Array where Element == File {
-    public var labels: String {
-        return self.compactMap(\.label).joined(separator: "\n")
+    public var labels: [String] {
+        return self.compactMap(\.label)
     }
 }
-
 
 extension String {
     func delete(prefix: String) -> String {

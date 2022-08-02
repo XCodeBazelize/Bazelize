@@ -84,6 +84,6 @@ final class SPMTests: XCTestCase {
         "//Vendor/XLPagerTabStrip:XLPagerTabStrip",
         """
         
-        XCTAssertEqual(result, deps)
+        XCTAssertEqual(result.joined(separator: "\n"), deps)
     }
 }

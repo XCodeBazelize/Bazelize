@@ -7,31 +7,77 @@
 
 import Foundation
 import XcodeProj
+import PluginInterface
+import PathKit
+import AnyCodable
 
-//XcodeProj
+extension Project: XCodeProject {
+    public var spm: [XCodeSPM] {
+        _spm
+    }
+    
+    public var targets: [XCodeTarget] {
+        _targets
+    }
+    
+    public var config: [String : XCodeBuildSetting]? {
+        return native.defaultConfigList?.buildSettings
+    }
+}
+
+extension Project: Encodable {
+    enum Keys: String, CodingKey {
+        case workspacePath
+        case projectPath
+        case localSPM
+        case spm
+        case targets
+        case config
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: Keys.self)
+        try container.encode(workspacePath.string, forKey: .workspacePath)
+        try container.encode(projectPath.string, forKey: .projectPath)
+        
+        try container.encode(localSPM, forKey: .localSPM)
+        try container.encode(_spm, forKey: .spm)
+        
+        try container.encode(_targets, forKey: .targets)
+        try container.encode(AnyCodable(config), forKey: .config)
+    }
+}
 
 public final class Project {
-    public let native: PBXProj
-    public let root: String
+    public let workspacePath: Path
+    public let projectPath: Path
+    private let project: XcodeProj
+    private let native: PBXProj
+    private let _spm: [RemoteSPMPackage]
     
-    public convenience init(proj: XcodeProj, root: String) {
-        self.init(native: proj.pbxproj, root: root)
+    public init(_ projectPath: Path) async throws {
+        let path = projectPath.parent()
+        self.workspacePath = path
+        self.projectPath = projectPath
+        self.project = try XcodeProj(path: projectPath)
+        self.native = self.project.pbxproj
+        self._spm = self.native.frameworksBuildPhases
+            .compactMap(\.files)
+            .flatMap {$0}
+            .compactMap(\.product)
+            .compactMap(RemoteSPMPackage.init)
     }
     
-    public init(native: PBXProj, root: String) {
-        self.native = native
-        self.root = root
+    #warning("todo")
+    public var localSPM: [String] {
+        let groups = try? self.native.rootGroup()?.localSPM.compactMap{$0}
+        return []
     }
     
-    private var projectConfig: ProjectConfig {
-        let packages = self.native.nativeTargets.map(\.name)
-        return .init(root: root, packages: packages)
-    }
-    
-    public var targets: [Target] {
+    private var _targets: [Target] {
         let list = self.native.defaultConfigList
         return native.nativeTargets.map {
-            Target(native: $0, defaultConfigList: list, projectConfig: projectConfig)
+            Target(native: $0, defaultConfigList: list, project: self)
         }
     }
 }
