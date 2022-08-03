@@ -38,6 +38,16 @@ let package = Package(
             ]),
         
         .target(
+            name: "RuleBuilder",
+            dependencies: [
+                "Util",
+            ]),
+        .testTarget(
+            name: "RuleBuilderTests",
+            dependencies: ["RuleBuilder",]
+        ),
+        
+        .target(
             name: "BazelizeKit",
             dependencies: [
                 // .product(name: "PackageDescription", package: "swift-package-manager"),
@@ -49,6 +59,7 @@ let package = Package(
                 
                 "XCode",
                 "Cocoapod",
+                "RuleBuilder",
                 
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
