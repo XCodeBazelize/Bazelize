@@ -24,9 +24,9 @@ struct Command: AsyncParsableCommand {
         let path = Path.current + project
         let kit = try await Kit(path)
         if dump {
-            try kit.dump(config: config)
+            try kit.dump()
         } else {
-            try kit.run(config: config)
+            try await kit.run()
         }
     }
 }

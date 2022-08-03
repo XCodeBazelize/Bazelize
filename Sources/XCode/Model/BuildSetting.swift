@@ -7,15 +7,29 @@
 
 import Foundation
 import XcodeProj
+import PluginInterface
+import AnyCodable
+
+extension BuildSetting: XCodeBuildSetting {}
+extension BuildSetting: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(AnyCodable(setting))
+    }
+}
 
 public struct BuildSetting {
-    let config: XCBuildConfiguration
-    var setting: [String: Any] {
-        config.buildSettings
+    /// Release / Debug / More...
+    public let name: String
+    public let setting: [String: Any]
+    
+    init(_ name: String, _ setting: [String: Any]) {
+        self.name = name
+        self.setting = setting
     }
     
-    public init(_ config: XCBuildConfiguration) {
-        self.config = config
+    init(_ config: XCBuildConfiguration) {
+        self.init(config.name, config.buildSettings)
     }
     
     private subscript<T>(key: String) -> T? {
@@ -27,6 +41,18 @@ public struct BuildSetting {
     /// INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
     private subscript<T>(plist key: String) -> T? {
         return self["\(Self.PLIST_PREFIX)\(key)"]
+    }
+    
+    func merge(_ input: BuildSetting?) -> BuildSetting {
+        guard let input = input else {
+            return self
+        }
+        
+        let newSetting = self.setting.merging(input.setting) { first, _ in
+            return first
+        }
+        
+        return .init(name, newSetting)
     }
 }
 

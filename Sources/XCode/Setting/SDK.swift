@@ -7,10 +7,10 @@
 
 import Foundation
 
-public enum SDK: String {
-    case iOS = "iphoneos"
-    case macOS = "macosx"
-    case tvOS = "appletvos"
-    case watchOS = "watchos"
-    case DriverKit = "driverkit"
-}
+//public enum SDK: String {
+//    case iOS = "iphoneos"
+//    case macOS = "macosx"
+//    case tvOS = "appletvos"
+//    case watchOS = "watchos"
+//    case DriverKit = "driverkit"
+//}

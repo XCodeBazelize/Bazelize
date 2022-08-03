@@ -69,7 +69,7 @@ extension Array where Element == Package {
         return mapping.compactMap { _, value -> String? in
             let (package, set) = value
             return package.spm_pkg(set, resolved)
-        }.joined(separator: "\n")
+        }.withNewLine
     }
 }
 
@@ -230,6 +230,8 @@ extension PBXNativeTarget {
     
     /// use for `deps`
     public var spm_deps: String {
-        return spm.compactMap(\.dep).joined(separator: "\n")
+        return spm
+            .compactMap(\.dep)
+            .withNewLine
     }
 }
