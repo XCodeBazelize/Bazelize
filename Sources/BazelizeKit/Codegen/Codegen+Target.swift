@@ -24,14 +24,18 @@ extension Target {
         case .appExtension: fallthrough
         case .unitTestBundle: fallthrough
         default:
-            print("Type: \(self.native.productType) not gen")
+            print("""
+            Name: \(name)
+            Type: \(self.native.productType) not gen
+            """)
             return ""
         }
     }
     
-    func generate(_ path: Path, _ kit: Kit) throws {
+    /// WORKSPACE/TARGET_NAME/BUILD
+    public func generateBUILD(_ kit: Kit) throws {
         let code = generateCode(kit)
-        let build = path + name + "BUILD"
+        let build = kit.project.workspacePath + name + "BUILD"
         print("Create \(build.string)")
         try build.write(code)
     }

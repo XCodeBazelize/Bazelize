@@ -31,5 +31,3 @@ extension LoadableRule {
         """
     }
 }
-
-//T:RawRepresentable

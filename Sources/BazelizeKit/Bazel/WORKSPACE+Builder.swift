@@ -129,6 +129,6 @@ extension Workspace {
         }
         
         internal func build() -> String {
-            return codes.joined(separator: "\n")
+            return codes.withNewLine
         }
     }}

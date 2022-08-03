@@ -12,53 +12,69 @@ import PathKit
 import Util
 import XCode
 import XcodeProj
+import Yams
 
-public struct Kit {
-    let path: Path
-    let projPath: Path
-    let pod: Pod?
-    let _proj: XcodeProj
+public final class Kit {
+
     let project: Project
     
+    /// plugins...
+    var pod: Pod?
+    
     public init(_ projPath: Path) async throws {
-        let path = projPath.parent()
-        self.path = path
-        self.projPath = projPath
-        async let pod = Pod.parse(path)
-        self._proj = try XcodeProj(path: projPath)
-        self.project = .init(proj: self._proj, root: path.string)
-        self.pod = try await pod
+        self.project = try await Project(projPath)
+    }
+    
+    public func run() async throws {
+        defer { tip() }
+        
+        try await self.load()
+        
+        let targets = project.targets.compactMap {
+            $0 as? XCode.Target
+        }
+        for target in targets {
+            try target.generateBUILD(self)
+        }
+        
+        let spm_repositories = targets.spm_repositories(project.projectPath)
+        let workspace = Workspace { builder in
+            builder.default()
+            builder.custom(code: spm_repositories)
+        }
+        try? workspace.generate(project.workspacePath)
+        
+        try? pod?.generateFile(project.workspacePath)
+    }
+    
+    public func dump() throws {
+        let encoder = YAMLEncoder()
+        let yaml = try encoder.encode(project)
+        print(yaml)
+    }
+}
+
+// MARK: - Plugins
+/// start -> load xcode
+/// start -> load plugin list
+/// load plugin list -> build plugin
+/// build plugin -> load plugin
+/// load xcode -> load plugin
+extension Kit {
+//    private func loadPluginList(_ path: Path?) async throws -> PluginList {}
+//    private func buildPlugins(_ list: PluginList) async throws {}
+//    private func loadPlugins(_ list: PluginList) async throws -> [Plugin] {}
+//    private func load(_ path: Path?) async throws {
+//        let list = try await loadPluginList(path)
+//        try await buildPlugin(list)
+//        self.plugins = try await loadPlugins(list)
+//    }
+    
+    private func load() async throws {
+        self.pod = try await Pod.parse(project.workspacePath)
     }
     
     private func tip() {
         pod?.tip()
-    }
-    
-    public func run(config: String) throws {
-        defer { tip() }
-        
-        for target in project.targets {
-            try? target.generate(path, self)
-        }
-        
-        let spm_repositories = project.targets.spm_repositories(projPath)
-        let workspace = Workspace { builder in
-            builder.default()
-//            builder.custom(code: spm_repositories)
-        }
-        try? workspace.generate(path)
-        
-        try? pod?.generate(path)
-    }
-    
-    public func dump(config: String) throws {
-        for target in project.targets {
-            target.dump(config: config)
-            print("\n-------------\n")
-        }
-        
-        if project.targets.isHaveSPM {
-            print(project.targets.spm_pkgs)
-        }
     }
 }
