@@ -26,7 +26,7 @@ extension Target {
         default:
             print("""
             Name: \(name)
-            Type: \(self.native.productType) not gen
+            Type: \(self.native.productType?.rawValue ?? "") not gen
             """)
             return ""
         }

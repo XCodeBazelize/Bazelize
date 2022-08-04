@@ -8,6 +8,8 @@
 import Foundation
 import XcodeProj
 
+// TODO: https://github.com/XCodeBazelize/Bazelize/issues/15
+// TODO: check logic
 extension PBXFileElement {
     var localSPM: [PBXFileElement] {
         if let group = self as? PBXGroup {

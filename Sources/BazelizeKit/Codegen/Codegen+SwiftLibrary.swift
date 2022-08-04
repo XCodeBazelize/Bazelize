@@ -9,10 +9,9 @@ import Foundation
 import XCode
 
 extension Target {
+    #warning("todo check pure swift, or mix objc & swift")
     func generateSwiftLibrary(_ kit: Kit) -> String {
-        #warning("todo check pure swift, or mix objc & swift")
-
-        #warning("")
+        #warning("plugin")
         let depsPod: String = ""//kit.pod?[name] ?? ""
         let depsSPM = native.spm_deps
         
