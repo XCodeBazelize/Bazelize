@@ -10,14 +10,24 @@ import Foundation
 infix operator => : AssignmentPrecedence
 extension String {
     public static func =>(propertyName: String, @LabelBuilder builder: () -> [LabelBuilder.Target]) -> Property {
-        .init(propertyName, builder: builder)
+        return Property(propertyName, builder: builder)
+    }
+    
+    public static func =>(propertyName: String, label: String?) -> Property {
+        return Property(propertyName) {
+            label
+        }
     }
     
     public static func =>(propertyName: String, label: Label) -> Property {
-        .init(propertyName, labels: [label])
+        return Property(propertyName) {
+            label
+        }
     }
     
     public static func =>(propertyName: String, labels: [Label]) -> Property {
-        .init(propertyName, labels: labels)
+        return Property(propertyName) {
+            labels
+        }
     }
 }

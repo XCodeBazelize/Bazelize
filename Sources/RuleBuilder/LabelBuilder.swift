@@ -19,6 +19,14 @@ public enum LabelBuilder {
         return Label(name: expression)
     }
     
+    public static func buildExpression(_ expression: [Label]) -> [Target] {
+        return expression
+    }
+    
+    public static func buildExpression(_ expression: Label) -> Target {
+        return expression
+    }
+    
     public static func buildExpression(_ expression: Comment) -> Target {
         return expression
     }
