@@ -38,7 +38,7 @@ extension Target: Encodable {
 public final class Target {
     public let native: PBXNativeTarget
     
-    unowned let project: XCodeProject
+    unowned let project: Project
     let originConfig: [String: XCodeBuildSetting]
     public let config: [String: XCodeBuildSetting]
     public var configs: [String] {
@@ -47,7 +47,7 @@ public final class Target {
         }
     }
     
-    init(native: PBXNativeTarget, defaultConfigList: ConfigList?, project: XCodeProject) {
+    init(native: PBXNativeTarget, defaultConfigList: ConfigList?, project: Project) {
         self.native = native
         let configList: ConfigList = .init(native.buildConfigurationList)
         let defaultConfigList = defaultConfigList
@@ -61,45 +61,60 @@ public final class Target {
     public subscript(config: String) -> XCodeBuildSetting? {
         self.config[config]
     }
-    
-//    #warning("todo plist gen")
-//    public var plistLabel: String {
-//        return projectConfig.toLabel(self.infoPlist) ?? "\":Info.plist\","
-//    }
 }
 
 extension Target {
-    public var srcFiles: [File] {
-        guard let sourceBuildPhase = try? native.sourcesBuildPhase() else {
-            return []
-        }
-
-        let files = sourceBuildPhase.files ?? []
-        return files.compactMap { build in
+    private func files(_ files: [PBXBuildFile]?) -> [File] {
+        return files?.compactMap { build in
             guard let file = build.file else {return nil}
             return File(native: file, project: project)
-        }
+        } ?? []
     }
+    
+    public var srcFiles: [File] {
+        return files(try? native.sourcesBuildPhase()?.files)
+    }
+    
+    public var resourceFiles: [File] {
+        return files(try? native.resourcesBuildPhase()?.files)
+    }
+}
 
+extension Target {
     public var srcs: [String] {
         return srcFiles.labels
     }
-
-    public var resourceFiles: [File] {
-        guard let phase = try? native.resourcesBuildPhase() else {
-            return []
-        }
-        let files = phase.files ?? []
-        return files.compactMap { build in
-            guard let file = build.file else {return nil}
-            return File(native: file, project: project)
-        }
+    
+    func srcs(_ type: LastKnownFileType) -> [String] {
+        return srcFiles.filter { file in
+            file.isType(type)
+        }.labels
+    }
+    
+    /// `.h` & `.pch`
+    public var headers: [String] {
+        return self.project
+            .headers
+            .labels
+            .filter { label in
+                label.hasPrefix("""
+                "//\(name):
+                """)
+            }
     }
 
     public var resources: [String] {
         return resourceFiles.labels
     }
     
+    func resources(_ type: LastKnownFileType) -> [String] {
+        return resourceFiles.filter { file in
+            file.isType(type)
+        }.labels
+    }
+}
+
+extension Target {
     /// use for `frameworks`
     public var importFrameworks: [String] {
         #warning("todo import framework/xcframework/static...")

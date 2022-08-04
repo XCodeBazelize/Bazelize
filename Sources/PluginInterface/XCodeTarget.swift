@@ -17,6 +17,10 @@ public protocol XCodeTarget {
     
     var config: [String: XCodeBuildSetting] { get }
 
+    /// `.h` & `.pch`
+    /// headers in current Target(Bazel Package)
+    var headers: [String] { get }
+    
     /// swift
     /// m
     /// mm
