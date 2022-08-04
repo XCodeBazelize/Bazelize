@@ -1,6 +1,6 @@
 //
 //  indent.swift
-//  
+//
 //
 //  Created by Yume on 2022/6/7.
 //
@@ -13,9 +13,8 @@ extension String {
         return self
             .split(separator: "\n")
             .map { sub in
-                prefix + sub
+                sub.appending(prefix: prefix)
             }
             .withNewLine
     }
 }
-
