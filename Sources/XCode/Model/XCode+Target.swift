@@ -15,6 +15,7 @@ extension Target: Encodable {
     enum Keys: String, CodingKey {
         case name
         case config
+        case headers
         case srcs
         case resources
         case importFrameworks
@@ -26,6 +27,7 @@ extension Target: Encodable {
         var container = encoder.container(keyedBy: Keys.self)
         try container.encode(name, forKey: .name)
         try container.encode(AnyCodable(originConfig), forKey: .config)
+        try container.encode(headers, forKey: .headers)
         try container.encode(srcs, forKey: .srcs)
         try container.encode(resources, forKey: .resources)
         try container.encode(importFrameworks, forKey: .importFrameworks)
