@@ -20,14 +20,24 @@ public protocol XCodeTarget {
     /// `.h` & `.pch`
     /// headers in current Target(Bazel Package)
     var headers: [String] { get }
+    /// `.hpp`
+    /// headers in current Target(Bazel Package)
+    var hpps: [String] { get }
     
-    /// swift
-    /// m
-    /// mm
-    /// ...
+    /// all build file
     var srcs: [String] { get }
-    /// var srcs_swift: [String] { get }
-    /// var hdr
+    /// `.c`
+    var srcs_c: [String] { get }
+    /// `.m`
+    var srcs_objc: [String] { get }
+    /// `.cpp`
+    var srcs_cpp: [String] { get }
+    /// `.mm`
+    var srcs_objcpp: [String] { get }
+    /// `.swift`
+    var srcs_swift: [String] { get }
+    /// `.metal`
+    var srcs_metal: [String] { get }
     
     var resources: [String] { get }
 

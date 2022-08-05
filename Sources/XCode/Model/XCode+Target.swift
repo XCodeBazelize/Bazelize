@@ -23,6 +23,7 @@ extension Target: Encodable {
         case frameworks_library
         case sdkFrameworks
     }
+    
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: Keys.self)
         try container.encode(name, forKey: .name)
@@ -83,26 +84,61 @@ extension Target {
 }
 
 extension Target {
-    public var srcs: [String] {
-        return srcFiles.labels
-    }
-    
-    func srcs(_ type: LastKnownFileType) -> [String] {
-        return srcFiles.filter { file in
-            file.isType(type)
-        }.labels
-    }
-    
     /// `.h` & `.pch`
     public var headers: [String] {
         return self.project
-            .headers
+            .files(.h)
             .labels
             .filter { label in
                 label.hasPrefix("""
                 "//\(name):
                 """)
             }
+    }
+    
+    public var hpps: [String] {
+        return self.project
+            .files(.hpp)
+            .labels
+            .filter { label in
+                label.hasPrefix("""
+                "//\(name):
+                """)
+            }
+    }
+    
+    public var srcs: [String] {
+        return srcFiles.labels
+    }
+
+    public var srcs_c: [String] {
+        return self.srcs(.c)
+    }
+    
+    public var srcs_objc: [String] {
+        return self.srcs(.objc)
+    }
+    
+    public var srcs_cpp: [String] {
+        return self.srcs(.cpp)
+    }
+    
+    public var srcs_objcpp: [String] {
+        return self.srcs(.objcpp)
+    }
+    
+    public var srcs_swift: [String] {
+        return self.srcs(.swift)
+    }
+    
+    public var srcs_metal: [String] {
+        return self.srcs(.metal)
+    }
+    
+    func srcs(_ type: LastKnownFileType) -> [String] {
+        return srcFiles.filter { file in
+            file.isType(type)
+        }.labels
     }
 
     public var resources: [String] {
