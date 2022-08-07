@@ -30,9 +30,9 @@ jobs:
         run: |
           brew install swiftformat
 
-      - name: swiftformat
+      - name: swiftformat --lint
         run: |
-          swiftformat --config .swiftformat .
+          swiftformat --lint --config .swiftformat .
   build:
 
     # https://github.com/actions/virtual-environments
