@@ -1,6 +1,6 @@
 //
 //  AsyncSequence+all.swift
-//  
+//
 //
 //  Created by Yume on 2022/7/1.
 //

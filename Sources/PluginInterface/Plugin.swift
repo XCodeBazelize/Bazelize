@@ -1,6 +1,6 @@
 //
 //  Plugin.swift
-//  
+//
 //
 //  Created by Yume on 2022/7/16.
 //
@@ -8,13 +8,15 @@
 import Foundation
 import PathKit
 
+// MARK: - Plugin
+
 public protocol Plugin: AnyObject {
     /// plugin name
     var name: String { get }
-    
+
     static func load(_ proj: XCodeProject) async throws -> Self?
-    
-    subscript(target: String) -> PluginTarget? { get }
+
+    subscript(_: String) -> PluginTarget? { get }
 
     /// # rules_pods
     /// http_archive(
@@ -32,6 +34,8 @@ public protocol Plugin: AnyObject {
     /// bazel run @rules_pods//:update_pods -- --src_root `PWD`
     func tip()
 }
+
+// MARK: - PluginTarget
 
 public protocol PluginTarget {
     var deps: [String] { get }

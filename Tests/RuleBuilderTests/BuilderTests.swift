@@ -5,20 +5,20 @@
 //  Created by Yume on 2022/7/29.
 //
 
-@testable import RuleBuilder
 import XCTest
+@testable import RuleBuilder
 
 final class RuleTests: XCTestCase {
     static let target = """
-    ios_framework(
-        name = "Test",
-        bundle_id = "com.example.test",
-        families = [
-            "1",
-            "2",
-        ],
-    )
-    """
+        ios_framework(
+            name = "Test",
+            bundle_id = "com.example.test",
+            families = [
+                "1",
+                "2",
+            ],
+        )
+        """
 
     func testRuleBuilderSimple() throws {
         let result = Rule("ios_framework") {
@@ -68,14 +68,14 @@ final class RuleTests: XCTestCase {
         }.text
 
         let target = """
-        ios_framework(
-            name = None,
-            families = [
-                "1",
-                "2",
-            ],
-        )
-        """
+            ios_framework(
+                name = None,
+                families = [
+                    "1",
+                    "2",
+                ],
+            )
+            """
         XCTAssertEqual(target, result)
     }
 
@@ -85,14 +85,14 @@ final class RuleTests: XCTestCase {
             "name" => "Test"
             "After"
         }.text
-        
+
         let target = """
-        ios_framework(
-            # Before
-            name = "Test",
-            # After
-        )
-        """
+            ios_framework(
+                # Before
+                name = "Test",
+                # After
+            )
+            """
         XCTAssertEqual(target, result)
     }
 }

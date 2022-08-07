@@ -1,7 +1,7 @@
 import Foundation
 
 @main
-struct Main {
+enum Main {
     static func main() async throws {
         await Command.main()
     }

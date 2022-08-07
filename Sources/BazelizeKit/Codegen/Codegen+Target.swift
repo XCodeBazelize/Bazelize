@@ -1,18 +1,31 @@
 //
 //  Target+Codegen.swift
-//  
+//
 //
 //  Created by Yume on 2022/4/29.
 //
 
-import Foundation
 import Cocoapod
-import XCode
+import Foundation
 import PathKit
+import XCode
 
 extension Target {
+    // MARK: Public
+
+
+    /// WORKSPACE/TARGET_NAME/BUILD
+    public func generateBUILD(_ kit: Kit) throws {
+        let code = generateCode(kit)
+        let build = kit.project.workspacePath + name + "BUILD"
+        print("Create \(build.string)")
+        try build.write(code)
+    }
+
+    // MARK: Private
+
     private func generateCode(_ kit: Kit) -> String {
-        switch self.native.productType {
+        switch native.productType {
         case .application:
             return generateApplicationCode(kit)
         case .commandLineTool:
@@ -25,18 +38,10 @@ extension Target {
         case .unitTestBundle: fallthrough
         default:
             print("""
-            Name: \(name)
-            Type: \(self.native.productType?.rawValue ?? "") not gen
-            """)
+                Name: \(name)
+                Type: \(native.productType?.rawValue ?? "") not gen
+                """)
             return ""
         }
-    }
-    
-    /// WORKSPACE/TARGET_NAME/BUILD
-    public func generateBUILD(_ kit: Kit) throws {
-        let code = generateCode(kit)
-        let build = kit.project.workspacePath + name + "BUILD"
-        print("Create \(build.string)")
-        try build.write(code)
     }
 }

@@ -7,26 +7,26 @@
 
 import Foundation
 import PathKit
-import XcodeProj
 import Util
+import XcodeProj
 
 extension Array where Element == Target {
-    private var flatPackages: [Package] {
-        self.flatMap(\.native.spm)
-    }
-    
+    // MARK: Public
+
+
     public var isHaveSPM: Bool {
-        return !flatPackages.isEmpty
+        !flatPackages.isEmpty
     }
-    
+
+
     public func spm_pkgs(_ path: Path? = nil) -> String {
-        return flatPackages.spm_pkgs(path)
+        flatPackages.spm_pkgs(path)
     }
-    
+
     public func spm_repositories(_ path: Path? = nil) -> String {
-        return """
+        """
         load("@cgrindel_rules_spm//spm:defs.bzl", "spm_pkg", "spm_repositories")
-        
+
         spm_repositories(
             name = "swift_pkgs",
             dependencies = [
@@ -34,7 +34,13 @@ extension Array where Element == Target {
             ],
         )
         """
-    } 
+    }
+
+    // MARK: Private
+
+    private var flatPackages: [Package] {
+        flatMap(\.native.spm)
+    }
 }
 
 extension Array where Element == Package {
@@ -44,7 +50,7 @@ extension Array where Element == Package {
     private var mapping: [String: (Package, Set<String>)] {
         var dict: [String: (Package, Set<String>)] = [:]
         for package in self {
-            guard let url = package.product.package?.repositoryURL else {continue}
+            guard let url = package.product.package?.repositoryURL else { continue }
             if var (_, set) = dict[url] {
                 set.insert(package.product.productName)
                 dict[url] = (package, set)
@@ -74,40 +80,12 @@ extension Array where Element == Package {
 }
 
 #warning("TODO local spm")
+
+// MARK: - Package
+
 // path    A local path string to the package repository.    None
 // name    Optional. The name (string) to be used for the package in Package.swift.    None
 private struct Package {
-    let product: XCSwiftPackageProductDependency
-
-    /// exact_version    Optional. A string representing a valid "exact" SPM version.    None
-    /// from_version    Optional. A string representing a valid "from" SPM version.    None
-    /// revision    Optional. A commit hash (string).    None
-    func version(_ resolved: Resolved?) -> String? {
-        switch product.package?.versionRequirement {
-        case let .exact(ver):
-            return """
-            exact_version = "\(ver)"
-            """
-        case let .range(from, _): fallthrough
-        case let .upToNextMajorVersion(from): fallthrough
-        case let .upToNextMinorVersion(from):
-            return """
-            from_version = "\(from)"
-            """
-        case let .revision(commit):
-            return """
-            revision = "\(commit)"
-            """
-        case .branch(let branch):
-            guard let commit = resolved?[product.package?.name ?? ""] else {return nil}
-            return """
-            # branch `\(branch)`
-            revision = "\(commit)"
-            """
-        default: return nil
-        }
-    }
-    
     /// xxx.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
     /// {
     ///   "pins" : [
@@ -137,10 +115,31 @@ private struct Package {
     ///   "version" : 1
     /// }
     struct Resolved: JSONParsable {
+        struct Object: Codable {
+            let pins: [Pin1]
+        }
+
+        struct Pin1: Codable {
+            /// Rainbow
+            let package: String
+            let state: State
+        }
+
+        struct Pin2: Codable {
+            /// alertkit
+            let identity: String
+            let state: State
+        }
+
+        struct State: Codable {
+            let revision: String
+        }
+
         let version: Int
         let object: Object?
         let pins: [Pin2]?
-        
+
+
         subscript(_ name: String) -> String? {
             switch version {
             case 1:
@@ -151,29 +150,55 @@ private struct Package {
                 return nil
             }
         }
-        
-        struct Object: Codable {
-            let pins: [Pin1]
-        }
-        
-        struct Pin1: Codable {
-            /// Rainbow
-            let package: String
-            let state: State
-        }
-        
-        struct Pin2: Codable {
-            /// alertkit
-            let identity: String
-            let state: State
-        }
-        
-        struct State: Codable {
-            let revision: String
-        }
-        
     }
-    
+
+    let product: XCSwiftPackageProductDependency
+
+    /// "@swift_pkgs//swift-log:Logging",
+    var dep: String? {
+        /// https://github.com/apple/swift-log.git
+        guard let url = product.package?.repositoryURL else { return nil }
+        let path = Path(url)
+        /// swift-log
+        let repo = path.lastComponentWithoutExtension
+
+        /// Logging
+        let product = product.productName
+
+        return """
+            "@swift_pkgs//\(repo):\(product)",
+            """
+    }
+
+    /// exact_version    Optional. A string representing a valid "exact" SPM version.    None
+    /// from_version    Optional. A string representing a valid "from" SPM version.    None
+    /// revision    Optional. A commit hash (string).    None
+    func version(_ resolved: Resolved?) -> String? {
+        switch product.package?.versionRequirement {
+        case .exact(let ver):
+            return """
+                exact_version = "\(ver)"
+                """
+        case .range(let from, _): fallthrough
+        case .upToNextMajorVersion(let from): fallthrough
+        case .upToNextMinorVersion(let from):
+            return """
+                from_version = "\(from)"
+                """
+        case .revision(let commit):
+            return """
+                revision = "\(commit)"
+                """
+        case .branch(let branch):
+            guard let commit = resolved?[product.package?.name ?? ""] else { return nil }
+            return """
+                # branch `\(branch)`
+                revision = "\(commit)"
+                """
+        default: return nil
+        }
+    }
+
 
     /// spm_pkg(
     ///     "https://github.com/apple/swift-log.git",
@@ -192,46 +217,37 @@ private struct Package {
             "\(product)"
             """
         }.joined(separator: " ,")
-        
-        return """
-        spm_pkg(
-            "\(url)",
-            \(version),
-            products = [\(products)],
-        ),
-        """
-    }
-
-    /// "@swift_pkgs//swift-log:Logging",
-    var dep: String? {
-        /// https://github.com/apple/swift-log.git
-        guard let url = product.package?.repositoryURL else { return nil }
-        let path = Path(url)
-        /// swift-log
-        let repo = path.lastComponentWithoutExtension
-
-        /// Logging
-        let product = self.product.productName
 
         return """
-        "@swift_pkgs//\(repo):\(product)",
-        """
+            spm_pkg(
+                "\(url)",
+                \(version),
+                products = [\(products)],
+            ),
+            """
     }
 }
 
 extension PBXNativeTarget {
-    private var _spm: [XCSwiftPackageProductDependency] {
-        return (try? frameworksBuildPhase()?.files?.compactMap(\.product)) ?? []
+    // MARK: Public
+
+
+    /// use for `deps`
+    public var spm_deps: String {
+        spm
+            .compactMap(\.dep)
+            .withNewLine
     }
+
+    // MARK: Fileprivate
 
     fileprivate var spm: [Package] {
         _spm.map(Package.init)
     }
-    
-    /// use for `deps`
-    public var spm_deps: String {
-        return spm
-            .compactMap(\.dep)
-            .withNewLine
+
+    // MARK: Private
+
+    private var _spm: [XCSwiftPackageProductDependency] {
+        (try? frameworksBuildPhase()?.files?.compactMap(\.product)) ?? []
     }
 }
