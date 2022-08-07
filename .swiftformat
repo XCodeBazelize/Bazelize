@@ -1,3 +1,5 @@
+# From: https://github.com/airbnb/swift/blob/master/Sources/AirbnbSwiftFormatTool/airbnb.swiftformat
+# Modified for simplicity
 
 --swiftversion 5.6
 --self remove # redundantSelf
