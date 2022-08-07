@@ -6,7 +6,7 @@
 --trimwhitespace always # trailingSpace
 --indent 4 #indent
 --ifdef no-indent #indent
---indentstrings true #indent
+# --indentstrings true #indent
 --wraparguments before-first # wrapArguments
 --wrapparameters before-first # wrapArguments
 --wrapcollections before-first # wrapArguments
