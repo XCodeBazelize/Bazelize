@@ -1,17 +1,16 @@
 //
 //  XCodeBuildSetting.swift
-//
+//  
 //
 //  Created by Yume on 2022/7/29.
 //
 
 import Foundation
 
-// MARK: - XCodeBuildSetting
-
 public protocol XCodeBuildSetting {
+    
     var name: String { get }
-
+    
     var setting: [String: Any] { get }
 
     var bundleID: String? { get }
@@ -26,7 +25,7 @@ public protocol XCodeBuildSetting {
     /// SDKROOT
     var sdk: SDK? { get }
 
-    // MARK: - OS version -
+// MARK: - OS version -
     var iOS: String? { get }
 
     var macOS: String? { get }
@@ -37,10 +36,10 @@ public protocol XCodeBuildSetting {
 
     var driverKit: String? { get }
 
-    // MARK: - plist -
+// MARK: - plist -
     /// "YES"
     var generateInfoPlist: Bool { get }
-
+    
     /// plist gen keys
     var plistKeys: [String] { get }
 
@@ -53,8 +52,6 @@ public protocol XCodeBuildSetting {
     /// "Main"
     var storyboard: String? { get }
 }
-
-// MARK: - SDK
 
 public enum SDK: String, Encodable {
     case iOS = "iphoneos"

@@ -1,6 +1,6 @@
 //
 //  XCode+LocalSPMPackage.swift
-//
+//  
 //
 //  Created by Yume on 2022/7/29.
 //
@@ -16,11 +16,11 @@ extension PBXFileElement {
             return group.children
                 .flatMap(\.localSPM)
         }
-
+        
         if let ref = self as? PBXFileReference, ref.lastKnownFileType == "wrapper" {
             return [ref]
         }
-
+        
         if let ref = self as? PBXFileReference, ref.sourceTree == .sourceRoot {
             return [ref]
         }

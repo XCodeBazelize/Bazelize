@@ -1,6 +1,6 @@
 //
 //  WORKSPACE.swift
-//
+//  
 //
 //  Created by Yume on 2022/4/27.
 //
@@ -9,22 +9,19 @@ import Foundation
 import PathKit
 
 struct Workspace {
-    // MARK: Lifecycle
-
-
+    private let code: String
+    
     public init(_ build: (inout Builder) -> Void) {
         var builder = Builder()
         build(&builder)
-        code = builder.build()
+        self.code = builder.build()
     }
-
+    
     public init() {
         var builder = Builder()
         builder.default()
-        code = builder.build()
+        self.code = builder.build()
     }
-
-    // MARK: Public
 
     // WORKSPACE
     public func generate(_ path: Path) throws {
@@ -33,8 +30,4 @@ struct Workspace {
 //        try _workspace.delete()
         try workspace.write(code)
     }
-
-    // MARK: Private
-
-    private let code: String
 }

@@ -5,20 +5,23 @@
 //  Created by Yume on 2022/4/25.
 //
 
-import AnyCodable
 import Foundation
-import PluginInterface
 import XcodeProj
+import PluginInterface
+import AnyCodable
 
-// MARK: - Target + XCodeTarget
-
-extension Target: XCodeTarget { }
-
-// MARK: - Target + Encodable
-
+extension Target: XCodeTarget {}
 extension Target: Encodable {
-    // MARK: Public
-
+    enum Keys: String, CodingKey {
+        case name
+        case config
+        case srcs
+        case resources
+        case importFrameworks
+        case frameworks
+        case frameworks_library
+        case sdkFrameworks
+    }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: Keys.self)
         try container.encode(name, forKey: .name)
@@ -30,117 +33,82 @@ extension Target: Encodable {
         try container.encode(frameworks_library, forKey: .frameworks_library)
         try container.encode(sdkFrameworks, forKey: .sdkFrameworks)
     }
-
-    // MARK: Internal
-
-    enum Keys: String, CodingKey {
-        case name
-        case config
-        case srcs
-        case resources
-        case importFrameworks
-        case frameworks
-        case frameworks_library
-        case sdkFrameworks
-    }
 }
 
-// MARK: - Target
-
 public final class Target {
-    // MARK: Lifecycle
-
-
+    public let native: PBXNativeTarget
+    
+    unowned let project: Project
+    let originConfig: [String: XCodeBuildSetting]
+    public let config: [String: XCodeBuildSetting]
+    public var configs: [String] {
+        return config.keys.sorted { lhs, rhs in
+            return lhs < rhs
+        }
+    }
+    
     init(native: PBXNativeTarget, defaultConfigList: ConfigList?, project: Project) {
         self.native = native
         let configList: ConfigList = .init(native.buildConfigurationList)
         let defaultConfigList = defaultConfigList
-        originConfig = configList.buildSettings
-        config = configList.merge(defaultConfigList)
+        self.originConfig = configList.buildSettings
+        self.config = configList.merge(defaultConfigList)
         self.project = project
     }
-
-    // MARK: Public
-
-    public let native: PBXNativeTarget
-    public let config: [String: XCodeBuildSetting]
-
-    public var configs: [String] {
-        config.keys.sorted { lhs, rhs in
-            lhs < rhs
-        }
-    }
-
+    
     public var name: String { native.name }
-
-
+    
     public subscript(config: String) -> XCodeBuildSetting? {
         self.config[config]
     }
-
-    // MARK: Internal
-
-
-    unowned let project: Project
-    let originConfig: [String: XCodeBuildSetting]
 }
 
 extension Target {
-    // MARK: Public
-
-
-    public var srcFiles: [File] {
-        files(try? native.sourcesBuildPhase()?.files)
-    }
-
-    public var resourceFiles: [File] {
-        files(try? native.resourcesBuildPhase()?.files)
-    }
-
-    // MARK: Private
-
     private func files(_ files: [PBXBuildFile]?) -> [File] {
-        files?.compactMap { build in
-            guard let file = build.file else { return nil }
+        return files?.compactMap { build in
+            guard let file = build.file else {return nil}
             return File(native: file, project: project)
         } ?? []
     }
+    
+    public var srcFiles: [File] {
+        return files(try? native.sourcesBuildPhase()?.files)
+    }
+    
+    public var resourceFiles: [File] {
+        return files(try? native.resourcesBuildPhase()?.files)
+    }
 }
 
 extension Target {
-    // MARK: Public
-
     public var srcs: [String] {
-        srcFiles.labels
+        return srcFiles.labels
     }
-
+    
+    func srcs(_ type: LastKnownFileType) -> [String] {
+        return srcFiles.filter { file in
+            file.isType(type)
+        }.labels
+    }
+    
     /// `.h` & `.pch`
     public var headers: [String] {
-        project
+        return self.project
             .headers
             .labels
             .filter { label in
                 label.hasPrefix("""
-                    "//\(name):
-                    """)
+                "//\(name):
+                """)
             }
     }
 
     public var resources: [String] {
-        resourceFiles.labels
+        return resourceFiles.labels
     }
-
-    // MARK: Internal
-
-
-    func srcs(_ type: LastKnownFileType) -> [String] {
-        srcFiles.filter { file in
-            file.isType(type)
-        }.labels
-    }
-
+    
     func resources(_ type: LastKnownFileType) -> [String] {
-        resourceFiles.filter { file in
+        return resourceFiles.filter { file in
             file.isType(type)
         }.labels
     }
@@ -152,43 +120,44 @@ extension Target {
         #warning("todo import framework/xcframework/static...")
         return []
     }
-
+    
     /// use for `frameworks`
     public var frameworks: [String] {
-        native
+        return self.native
             .dependencies
             .compactMap(\.target?.name)
             .map { framework in
-                """
+                return """
                 "//\(framework):\(framework)",
                 """
             }
     }
-
+    
     /// use for `xxx_library.deps`
     ///
     public var frameworks_library: [String] {
-        native
+        return self.native
             .dependencies
             .compactMap(\.target?.name)
             .map { framework in
-                """
+                return """
                 "//\(framework):\(framework)_library",
                 """
             }
     }
-
+    
     /// use for `sdk_frameworks`
     public var sdkFrameworks: [String] {
         let builds = (try? native.frameworksBuildPhase()?.files) ?? []
-
+        
         return builds.filter { build in
-            build.file?.sourceTree == .sdkRoot ||
+            return
+                build.file?.sourceTree == .sdkRoot ||
                 (build.file?.path?.hasPrefix("System/") ?? false)
         }.compactMap { build -> String? in
-            build.file?.name?.replacingOccurrences(of: ".framework", with: "")
+            return build.file?.name?.replacingOccurrences(of: ".framework", with: "")
         }.map { framework in
-            """
+            return """
             "\(framework)",
             """
         }
@@ -200,8 +169,8 @@ extension String {
     /// .m
     /// .mm
     func hasExtension(_ type: String) -> Bool {
-        hasSuffix("""
-            "\(type)",
-            """)
+        self.hasSuffix("""
+        "\(type)",
+        """)
     }
 }

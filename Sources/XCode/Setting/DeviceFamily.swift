@@ -1,6 +1,6 @@
 //
 //  File.swift
-//
+//  
 //
 //  Created by Yume on 2022/7/1.
 //
@@ -21,10 +21,7 @@ internal enum DeviceFamily: String {
     case applewatch = "4"
     case homepod = "5"
     case mac = "6"
-
-    // MARK: Internal
-
-
+    
     internal var code: String {
         switch self {
         case .iphone: return "\"iphone\","
@@ -35,11 +32,10 @@ internal enum DeviceFamily: String {
         case .mac: return "\"mac\","
         }
     }
-
-
+    
     /// `1,2` -> [`"iphone",` `"ipad",`]
     internal static func parse(_ code: String?) -> [String] {
-        code?.split(separator: ",")
+        return code?.split(separator: ",")
             .map(String.init)
             .compactMap(DeviceFamily.init(rawValue:))
             .map(\.code) ?? []

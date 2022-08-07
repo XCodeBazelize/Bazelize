@@ -1,91 +1,53 @@
 //
 //  Podfile.swift
-//
+//  
 //
 //  Created by Yume on 2022/4/25.
 //
 
-import AnyCodable
 import Foundation
-import PathKit
+import AnyCodable
 import Util
-
-// MARK: - Podfile
+import PathKit
 
 struct Podfile: Codable, JSONParsable {
-    // MARK: Internal
-
-
+    fileprivate let target_definitions: [PodDefinition]
+    fileprivate var flatTarget: [PodChildren] {
+        return target_definitions.flatMap(\.flatTarget)
+    }
+    
+    subscript(targetName: String) -> [String] {
+        return self[target: targetName]?.depsCode ?? []
+    }
+    
+    fileprivate subscript(target targetName: String) -> PodChildren? {
+        return flatTarget.first { _target in
+            return _target.name == targetName
+        }
+    }
+    
     static func process(_ path: Path) async throws -> Podfile {
         /// pod ipc podfile-json Podfile
         let data = try await Process.execute(
             Env.pod,
-            arguments: "ipc", "podfile-json", path.string)
-
+            arguments: "ipc", "podfile-json", path.string
+        )
+        
         return try Podfile.parse(data)
     }
-
-
-    subscript(targetName: String) -> [String] {
-        self[target: targetName]?.depsCode ?? []
-    }
-
-    // MARK: Fileprivate
-
-    fileprivate let target_definitions: [PodDefinition]
-
-    fileprivate var flatTarget: [PodChildren] {
-        target_definitions.flatMap(\.flatTarget)
-    }
-
-
-    fileprivate subscript(target targetName: String) -> PodChildren? {
-        flatTarget.first { _target in
-            _target.name == targetName
-        }
-    }
 }
 
-// MARK: - PodDefinition
-
-private struct PodDefinition: Codable {
+fileprivate struct PodDefinition: Codable {
     fileprivate let children: [PodChildren]
     fileprivate var flatTarget: [PodChildren] {
-        children.flatMap(\.flatTarget)
+        return children.flatMap(\.flatTarget)
     }
 }
 
-// MARK: - PodChildren
-
-private struct PodChildren: Codable {
-    // MARK: Internal
-
-
-    var depsCode: [String] {
-        dependencies?
-            .sorted { lhs, rhs in
-                lhs.code < rhs.code
-            }
-            .map(\.code) ?? []
-    }
-
-    // MARK: Fileprivate
-
+fileprivate struct PodChildren: Codable {
     /// Target
     fileprivate let name: String
     fileprivate let dependencies: [PodDependency]?
-
-
-    fileprivate var flatTarget: [PodChildren] {
-        if let child = children {
-            return [self] + child.flatMap(\.flatTarget)
-        } else {
-            return [self]
-        }
-    }
-
-    // MARK: Private
-
 //    "configuration_pod_whitelist": {
 //                "Debug": [
 //                  "Peek",
@@ -94,14 +56,40 @@ private struct PodChildren: Codable {
 //              },
 //    let configuration_pod_whitelist
     private let children: [PodChildren]?
+    
+    fileprivate var flatTarget: [PodChildren] {
+        if let child = self.children {
+            return [self] + child.flatMap(\.flatTarget)
+        } else {
+            return [self]
+        }
+    }
+    
+    var depsCode: [String] {
+        return dependencies?
+            .sorted { lhs, rhs in
+                lhs.code < rhs.code
+            }
+            .map(\.code) ?? []
+    }
 }
 
-// MARK: - PodDependency
-
-private struct PodDependency: Codable {
-    // MARK: Lifecycle
-
-
+fileprivate struct PodDependency: Codable {
+    let package: String
+    let target: String
+    
+    /// //Vendor/__PACKAGE__:__TARGET__
+    ///
+    /// subpsec `Core` in `PINCache`
+    /// //Vendor/PINCache:Core
+    ///
+    /// "//Vendor/RxSwift:RxSwift",
+    var code: String {
+        return """
+        "//Vendor/\(package):\(target)",
+        """
+    }
+    
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         do {
@@ -112,31 +100,13 @@ private struct PodDependency: Codable {
             let podGraph = try container.decode([String: AnyCodable].self)
             guard let name = podGraph.keys.first else {
                 throw PodError.reason("""
-                    Parse Podfile fail
-                    Pod: \(podGraph)
-                    """)
+                Parse Podfile fail
+                Pod: \(podGraph)
+                """)
             }
-
+            
             (package, target) = Util.parse(name: name)
             return
         }
-    }
-
-    // MARK: Internal
-
-    let package: String
-    let target: String
-
-
-    /// //Vendor/__PACKAGE__:__TARGET__
-    ///
-    /// subpsec `Core` in `PINCache`
-    /// //Vendor/PINCache:Core
-    ///
-    /// "//Vendor/RxSwift:RxSwift",
-    var code: String {
-        """
-        "//Vendor/\(package):\(target)",
-        """
     }
 }

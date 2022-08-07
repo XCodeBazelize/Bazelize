@@ -10,44 +10,43 @@ import Foundation
 @resultBuilder
 public enum LabelBuilder {
     public typealias Target = Text & CodeText
-
     public static func buildExpression(_ expression: [String?]) -> [Target] {
-        expression.compactMap { $0 }.map(Label.init(stringLiteral:))
+        return expression.compactMap {$0}.map(Label.init(stringLiteral:))
     }
-
+    
     public static func buildExpression(_ expression: String?) -> Target? {
-        guard let expression = expression else { return nil }
+        guard let expression = expression else {return nil}
         return Label(name: expression)
     }
-
+    
     public static func buildExpression(_ expression: [Label]) -> [Target] {
-        expression
+        return expression
     }
-
+    
     public static func buildExpression(_ expression: Label) -> Target {
-        expression
+        return expression
     }
-
+    
     public static func buildExpression(_ expression: Comment) -> Target {
-        expression
+        return expression
     }
-
+    
     public static func buildBlock(_ components: Target?) -> [Target] {
-        [components].compactMap { $0 }
+        return [components].compactMap { $0 }
     }
-
+    
     public static func buildBlock(_ components: Target?...) -> [Target] {
-        components.compactMap { $0 }
+        return components.compactMap { $0 }
     }
-
+    
     public static func buildBlock(_ components: [Target?]) -> [Target] {
-        components.compactMap { $0 }
+        return components.compactMap { $0 }
     }
-
+    
     public static func buildArray(_ components: [Target?]) -> [Target] {
-        components.compactMap { $0 }
+        return components.compactMap { $0 }
     }
-
+    
 //    public static func buildBlock(_ components: String?) -> [Label] {
 //        return [Label(name: components)].compactMap { $0 }
 //    }

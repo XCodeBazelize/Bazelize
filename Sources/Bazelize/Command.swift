@@ -15,10 +15,10 @@ struct Command: AsyncParsableCommand {
     var project: String
 
     @Option(name: [.short], help: "Debug/Release")
-    var config = "Release"
+    var config: String = "Release"
 
     @Flag
-    var dump = false
+    var dump: Bool = false
 
     func run() async throws {
         let path = Path.current + project

@@ -10,47 +10,39 @@ import PathKit
 import PluginInterface
 import XcodeProj
 
-// MARK: - File
-
 public final class File {
-    // MARK: Lifecycle
+    private let native: PBXFileElement
+    private unowned let project: XCodeProject
 
     init(native: PBXFileElement, project: XCodeProject) {
         self.native = native
         self.project = project
     }
 
-    // MARK: Public
+    public func isType(_ type: LastKnownFileType) -> Bool {
+        guard let ref = self.native as? PBXFileReference else { return false }
+        return ref.lastKnownFileType == type.rawValue
+    }
 
     /// root:     /Users/xxx/git/ABCDEF
     ///
     /// fullPath: /Users/xxx/git/ABCDEF/DEF/Base.lproj/LaunchScreen.storyboard
     /// package:  DEF
     public var label: String? {
-        let root = project.workspacePath.string
-        guard let fullPath = try? native.fullPath(sourceRoot: root) else {
+        let root = self.project.workspacePath.string
+        guard let fullPath = try? self.native.fullPath(sourceRoot: root) else {
             return nil
         }
 
         if fullPath.hasPrefix(root + "/") {
             let path = fullPath.delete(prefix: root + "/")
-            return project.transformToLabel(path)
+            return self.project.transformToLabel(path)
         }
 
         return """
-            # "\(fullPath)",
-            """
+        # "\(fullPath)",
+        """
     }
-
-    public func isType(_ type: LastKnownFileType) -> Bool {
-        guard let ref = native as? PBXFileReference else { return false }
-        return ref.lastKnownFileType == type.rawValue
-    }
-
-    // MARK: Private
-
-    private let native: PBXFileElement
-    private unowned let project: XCodeProject
 }
 
 extension PBXFileElement {
@@ -71,13 +63,13 @@ extension PBXFileElement {
 
 extension String {
     func delete(prefix: String) -> String {
-        guard hasPrefix(prefix) else { return self }
-        return String(dropFirst(prefix.count))
+        guard self.hasPrefix(prefix) else { return self }
+        return String(self.dropFirst(prefix.count))
     }
 }
 
 extension Array where Element == File {
     var labels: [String] {
-        compactMap(\.label)
+        return self.compactMap(\.label)
     }
 }

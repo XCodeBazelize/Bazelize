@@ -1,6 +1,6 @@
 //
 //  Process.swift
-//
+//  
 //
 //  Created by Yume on 2022/4/26.
 //
@@ -8,18 +8,32 @@
 import Foundation
 
 extension Process {
-    // MARK: Public
-
-
+    private static var task: Process {
+        var environment = ProcessInfo.processInfo.environment
+        environment["LANG"] = "en_US.UTF-8"
+        
+        let task = Process()
+        task.environment = environment
+        return task
+    }
+    
+    private func setup(_ command: String, arguments: [String]) {
+        var args = command.split(separator: " ").map(String.init)
+        let cmd = args.removeFirst()
+        self.executableURL = URL(fileURLWithPath: cmd)
+        self.arguments = args + arguments
+        self.currentDirectoryURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    }
+    
     public static func execute(_ command: String, arguments: String...) async throws -> Data {
         let task = Process.task
         task.setup(command, arguments: arguments)
-
+        
         let pipe = Pipe()
         task.standardOutput = pipe
-
+        
         return try await withTaskCancellationHandler(operation: {
-            try await withCheckedThrowingContinuation { continuation in
+            return try await withCheckedThrowingContinuation { continuation in
                 do {
                     try task.run()
                     task.waitUntilExit()
@@ -30,12 +44,12 @@ extension Process {
                 }
             }
         }, onCancel: {
-            guard task.isRunning else { return }
+            guard task.isRunning else {return}
 //            task.interrupt()
             task.terminate()
         })
     }
-
+    
     public static func result(_ command: String, arguments: String...) -> Bool {
         let task = Process.task
         task.setup(command, arguments: arguments)
@@ -50,25 +64,5 @@ extension Process {
         } catch {
             return false
         }
-    }
-
-    // MARK: Private
-
-    private static var task: Process {
-        var environment = ProcessInfo.processInfo.environment
-        environment["LANG"] = "en_US.UTF-8"
-
-        let task = Process()
-        task.environment = environment
-        return task
-    }
-
-
-    private func setup(_ command: String, arguments: [String]) {
-        var args = command.split(separator: " ").map(String.init)
-        let cmd = args.removeFirst()
-        executableURL = URL(fileURLWithPath: cmd)
-        self.arguments = args + arguments
-        currentDirectoryURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     }
 }

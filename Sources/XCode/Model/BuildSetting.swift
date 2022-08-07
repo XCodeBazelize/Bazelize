@@ -5,17 +5,12 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import AnyCodable
 import Foundation
-import PluginInterface
 import XcodeProj
+import PluginInterface
+import AnyCodable
 
-// MARK: - BuildSetting + XCodeBuildSetting
-
-extension BuildSetting: XCodeBuildSetting { }
-
-// MARK: - BuildSetting + Encodable
-
+extension BuildSetting: XCodeBuildSetting {}
 extension BuildSetting: Encodable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -23,55 +18,41 @@ extension BuildSetting: Encodable {
     }
 }
 
-// MARK: - BuildSetting
-
 public struct BuildSetting {
-    // MARK: Lifecycle
-
-
+    /// Release / Debug / More...
+    public let name: String
+    public let setting: [String: Any]
+    
     init(_ name: String, _ setting: [String: Any]) {
         self.name = name
         self.setting = setting
     }
-
+    
     init(_ config: XCBuildConfiguration) {
         self.init(config.name, config.buildSettings)
     }
+    
+    private subscript<T>(key: String) -> T? {
+        return self.setting[key] as? T
+    }
 
-    // MARK: Public
-
-    /// Release / Debug / More...
-    public let name: String
-    public let setting: [String: Any]
-
-    // MARK: Internal
-
-
+    private static let PLIST_PREFIX = "INFOPLIST_KEY_"
+    /// INFOPLIST_KEY_
+    /// INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
+    private subscript<T>(plist key: String) -> T? {
+        return self["\(Self.PLIST_PREFIX)\(key)"]
+    }
+    
     func merge(_ input: BuildSetting?) -> BuildSetting {
         guard let input = input else {
             return self
         }
-
-        let newSetting = setting.merging(input.setting) { first, _ in
-            first
+        
+        let newSetting = self.setting.merging(input.setting) { first, _ in
+            return first
         }
-
+        
         return .init(name, newSetting)
-    }
-
-    // MARK: Private
-
-    private static let PLIST_PREFIX = "INFOPLIST_KEY_"
-
-
-    private subscript<T>(key: String) -> T? {
-        setting[key] as? T
-    }
-
-    /// INFOPLIST_KEY_
-    /// INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
-    private subscript<T>(plist key: String) -> T? {
-        self["\(Self.PLIST_PREFIX)\(key)"]
     }
 }
 
@@ -85,37 +66,36 @@ extension BuildSetting {
     public var team: String? {
         self["DEVELOPMENT_TEAM"]
     }
-
+    
     /// "5.0"
     public var swiftVersion: String? {
         self["SWIFT_VERSION"]
     }
-
+    
     public var deviceFamily: [String] {
         DeviceFamily.parse(self["TARGETED_DEVICE_FAMILY"])
     }
-
+    
     /// SDKROOT
     public var sdk: SDK? {
-        SDK(rawValue: self["SDKROOT"] ?? "")
+        return SDK(rawValue: self["SDKROOT"] ?? "")
     }
-
+    
     public var iOS: String? {
         self["IPHONEOS_DEPLOYMENT_TARGET"]
     }
-
+    
     public var macOS: String? {
         self["MACOSX_DEPLOYMENT_TARGET"]
     }
-
     public var tvOS: String? {
         self["TVOS_DEPLOYMENT_TARGET"]
     }
-
+    
     public var watchOS: String? {
         self["WATCHOS_DEPLOYMENT_TARGET"]
     }
-
+    
     public var driverKit: String? {
         self["DRIVERKIT_DEPLOYMENT_TARGET"]
     }
@@ -124,22 +104,22 @@ extension BuildSetting {
 // MARK: - PLIST Key -
 extension BuildSetting {
     public var plistKeys: [String] {
-        setting.keys.filter {
+        self.setting.keys.filter {
             $0.hasPrefix(Self.PLIST_PREFIX)
         }
     }
-
+    
     /// "YES"
     public var generateInfoPlist: Bool {
         let result: String? = self["GENERATE_INFOPLIST_FILE"]
         return result == "YES"
     }
-
+    
     /// "ABCDEF/Info.plist"
     public var infoPlist: String? {
-        self["INFOPLIST_FILE"]
+        return self["INFOPLIST_FILE"]
     }
-
+    
     /// "LaunchScreen"
     public var launch: String? {
         self[plist: "UILaunchStoryboardName"]
@@ -150,7 +130,6 @@ extension BuildSetting {
         self[plist: "UIMainStoryboardFile"]
     }
 }
-
 // MARK: - PLIST Value -
 extension BuildSetting {
     /// CFBundleName $(PRODUCT_NAME)
@@ -164,7 +143,7 @@ extension BuildSetting {
     //      - value: "1.0"
     //      - key: "CURRENT_PROJECT_VERSION"
     //      - value: "1"
-
+    
 //    UIApplicationSceneManifest....UISceneDelegateClassName
 //    $(PRODUCT_MODULE_NAME).SceneDelegate
 //    PRODUCT_MODULE_NAME
@@ -172,7 +151,6 @@ extension BuildSetting {
 //    PRODUCT_NAME
 //    $(TARGET_NAME)
 }
-
 //    ▿ (2 elements)
 //      - key: "LD_RUNPATH_SEARCH_PATHS"
 //      ▿ value: 2 elements
@@ -194,7 +172,7 @@ extension BuildSetting {
 //      - key: "SWIFT_EMIT_LOC_STRINGS"
 //      - value: "YES"
 
-// <key>UILaunchStoryboardName</key>
-// <string>LaunchScreen</string>
-// <key>UIMainStoryboardFile</key>
-// <string>Main</string>
+//<key>UILaunchStoryboardName</key>
+//<string>LaunchScreen</string>
+//<key>UIMainStoryboardFile</key>
+//<string>Main</string>

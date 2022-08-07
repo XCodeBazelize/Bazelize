@@ -14,53 +14,44 @@ import XCode
 import XcodeProj
 import Yams
 
-// MARK: - Kit
-
 public final class Kit {
-    // MARK: Lifecycle
 
-
+    let project: Project
+    
+    /// plugins...
+    var pod: Pod?
+    
     public init(_ projPath: Path) async throws {
-        project = try await Project(projPath)
+        self.project = try await Project(projPath)
     }
-
-    // MARK: Public
-
-
+    
     public func run() async throws {
         defer { tip() }
-
-        try await load()
-
+        
+        try await self.load()
+        
         let targets = project.targets.compactMap {
             $0 as? XCode.Target
         }
         for target in targets {
             try target.generateBUILD(self)
         }
-
+        
         let spm_repositories = targets.spm_repositories(project.projectPath)
         let workspace = Workspace { builder in
             builder.default()
             builder.custom(code: spm_repositories)
         }
         try? workspace.generate(project.workspacePath)
-
+        
         try? pod?.generateFile(project.workspacePath)
     }
-
+    
     public func dump() throws {
         let encoder = YAMLEncoder()
         let yaml = try encoder.encode(project)
         print(yaml)
     }
-
-    // MARK: Internal
-
-    let project: Project
-
-    /// plugins...
-    var pod: Pod?
 }
 
 // MARK: - Plugins
@@ -78,11 +69,11 @@ extension Kit {
 //        try await buildPlugin(list)
 //        self.plugins = try await loadPlugins(list)
 //    }
-
+    
     private func load() async throws {
-        pod = try await Pod.parse(project.workspacePath)
+        self.pod = try await Pod.parse(project.workspacePath)
     }
-
+    
     private func tip() {
         pod?.tip()
     }

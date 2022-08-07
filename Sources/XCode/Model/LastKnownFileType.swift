@@ -1,6 +1,6 @@
 //
 //  LastKnownFileType.swift
-//
+//  
 //
 //  Created by Yume on 2022/8/4.
 //
@@ -20,6 +20,6 @@ public enum LastKnownFileType: String {
     case asset = "folder.assetcatalog"
 
     case xib = "file.xib"
-
-    case wrapper
+    
+    case wrapper = "wrapper"
 }

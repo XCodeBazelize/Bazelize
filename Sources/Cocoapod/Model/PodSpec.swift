@@ -1,6 +1,6 @@
 //
 //  PodSpec.swift
-//
+//  
 //
 //  Created by Yume on 2022/4/25.
 //
@@ -8,18 +8,14 @@
 import Foundation
 import Util
 
-// MARK: - PodSpec
-
 struct PodSpec: Codable, JSONParsable, NewPodRepository {
     let name: String
     let source: PodSpecSource
-
+    
     var url: String {
-        source.url
+        return source.url
     }
 }
-
-// MARK: - PodSpecSource
 
 //  "source": {
 //    "git": "https://github.com/yagiz/Bagel.git",
@@ -28,7 +24,7 @@ struct PodSpec: Codable, JSONParsable, NewPodRepository {
 struct PodSpecSource: Codable {
     let git: String
     let tag: String
-
+    
     /// https://github.com/yagiz/Bagel/archive/1.4.0.zip
     var url: String {
         let base = git.replacingOccurrences(of: ".git", with: "")
