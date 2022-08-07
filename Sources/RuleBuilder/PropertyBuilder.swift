@@ -10,24 +10,25 @@ import Foundation
 @resultBuilder
 public enum PropertyBuilder {
     public typealias Target = Text
-    
+
+
     public static func buildExpression(_ expression: String) -> Target {
-        return Comment(expression)
+        Comment(expression)
     }
-    
+
     public static func buildExpression(_ expression: Comment) -> Target {
-        return expression
+        expression
     }
-    
+
     public static func buildExpression(_ expression: Property) -> Target {
-        return expression
+        expression
     }
-    
+
     public static func buildBlock(_ components: Target...) -> [Target] {
-        return components
+        components
     }
-    
+
     public static func buildBlock(_ components: [Target]...) -> [Target] {
-        return components.flatMap { $0 }
+        components.flatMap { $0 }
     }
 }

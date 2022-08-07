@@ -1,6 +1,6 @@
 //
 //  Codegen+SwiftLibrary.swift
-//  
+//
 //
 //  Created by Yume on 2022/7/4.
 //
@@ -10,11 +10,11 @@ import XCode
 
 extension Target {
     #warning("todo check pure swift, or mix objc & swift")
-    func generateSwiftLibrary(_ kit: Kit) -> String {
+    func generateSwiftLibrary(_: Kit) -> String {
         #warning("plugin")
-        let depsPod: String = ""//kit.pod?[name] ?? ""
+        let depsPod = "" // kit.pod?[name] ?? ""
         let depsSPM = native.spm_deps
-        
+
         var builder = Build.Builder()
         builder.load(.swift_library)
         builder.custom("""
@@ -30,9 +30,9 @@ extension Target {
 
                 # XCode SPM Deps
         \(depsSPM.indent(1, "# ").indent(2))
-        
+
                 # Framework TODO (swift_library/objc_library)
-        \(self.frameworks_library.withNewLine.indent(2))
+        \(frameworks_library.withNewLine.indent(2))
             ],
             visibility = ["//visibility:private"],
         )

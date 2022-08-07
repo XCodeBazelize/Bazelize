@@ -1,31 +1,36 @@
 //
 //  Parsable.swift
-//  
+//
 //
 //  Created by Yume on 2022/4/26.
 //
 
 import Foundation
-import Yams
 import PathKit
+import Yams
+
+// MARK: - Parsable
 
 public protocol Parsable: Decodable {
     static func parse(_ path: Path) throws -> Self
     static func parse(_ content: String) throws -> Self
     static func parse(_ content: Foundation.Data) throws -> Self
 }
+
 extension Parsable {
     public static func parse(_ path: Path) throws -> Self {
-        return try self.parse(path.read())
+        try parse(path.read())
     }
-    
+
     public static func parse(_ content: String) throws -> Self {
         let data = Data(content.utf8)
-        return try self.parse(data)
+        return try parse(data)
     }
 }
 
-public protocol JSONParsable: Parsable {}
+// MARK: - JSONParsable
+
+public protocol JSONParsable: Parsable { }
 extension JSONParsable {
     public static func parse(_ content: Data) throws -> Self {
         let decoder = JSONDecoder()
@@ -33,7 +38,9 @@ extension JSONParsable {
     }
 }
 
-public protocol YamlParsable: Parsable {}
+// MARK: - YamlParsable
+
+public protocol YamlParsable: Parsable { }
 extension YamlParsable {
     public static func parse(_ content: Data) throws -> Self {
         let decoder = YAMLDecoder()

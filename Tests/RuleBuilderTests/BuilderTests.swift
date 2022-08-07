@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/7/29.
 //
 
-@testable import RuleBuilder
 import XCTest
+@testable import RuleBuilder
 
 final class RuleTests: XCTestCase {
     static let target = """
@@ -85,7 +85,7 @@ final class RuleTests: XCTestCase {
             "name" => "Test"
             "After"
         }.text
-        
+
         let target = """
         ios_framework(
             # Before
