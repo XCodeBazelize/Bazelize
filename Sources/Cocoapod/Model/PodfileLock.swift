@@ -13,7 +13,6 @@ import Util
 struct PodfileLock: Codable, YamlParsable {
     // MARK: Internal
 
-
     enum CodingKeys: String, CodingKey {
         case pods = "PODS"
         case externals = "EXTERNAL SOURCES"
@@ -63,7 +62,6 @@ extension PodfileLock {
     fileprivate struct Pod: Codable, Hashable, Equatable {
         // MARK: Lifecycle
 
-
         init(package: String, target: String, tag: String) {
             self.package = package
             self.target = target
@@ -105,7 +103,6 @@ extension PodfileLock {
 
         // MARK: Fileprivate
 
-
         fileprivate var isDefaultSubSpec: Bool {
             package == target
         }
@@ -122,7 +119,6 @@ extension PodfileLock {
         }
 
         // MARK: Private
-
 
         /// pod spec cat Bagel --version=1.4.0
         private var podSpec: PodSpec {
@@ -214,7 +210,6 @@ extension PodfileLock {
 extension PodfileLock {
     fileprivate struct PodRepository: NewPodRepository {
         // MARK: Lifecycle
-
 
         fileprivate init(
             pod: PodfileLock.Pod,

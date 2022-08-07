@@ -14,7 +14,6 @@ import XcodeProj
 struct ConfigList {
     // MARK: Lifecycle
 
-
     init(_ target: PBXNativeTarget) {
         self.init(target.buildConfigurationList)
     }
@@ -24,7 +23,6 @@ struct ConfigList {
     }
 
     // MARK: Internal
-
 
     var buildSettings: [String: BuildSetting] {
         let pair = (native?.buildConfigurations.map(BuildSetting.init) ?? []).map {

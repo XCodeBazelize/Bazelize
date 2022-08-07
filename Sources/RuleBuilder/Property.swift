@@ -12,7 +12,6 @@ import Foundation
 public struct Property: Text {
     // MARK: Lifecycle
 
-
     public init(_ name: String, labels: [LabelBuilder.Target]) {
         self.name = name
         self.labels = labels

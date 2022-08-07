@@ -10,7 +10,6 @@ import Foundation
 extension Process {
     // MARK: Public
 
-
     public static func execute(_ command: String, arguments: String...) async throws -> Data {
         let task = Process.task
         task.setup(command, arguments: arguments)

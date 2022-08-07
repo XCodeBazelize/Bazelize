@@ -15,7 +15,6 @@ import Util
 struct Podfile: Codable, JSONParsable {
     // MARK: Internal
 
-
     static func process(_ path: Path) async throws -> Podfile {
         /// pod ipc podfile-json Podfile
         let data = try await Process.execute(
@@ -60,7 +59,6 @@ private struct PodDefinition: Codable {
 private struct PodChildren: Codable {
     // MARK: Internal
 
-
     var depsCode: [String] {
         dependencies?
             .sorted { lhs, rhs in
@@ -100,7 +98,6 @@ private struct PodChildren: Codable {
 
 private struct PodDependency: Codable {
     // MARK: Lifecycle
-
 
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()

@@ -60,7 +60,6 @@ extension Build.Builder {
 
     // MARK: Private
 
-
     private mutating
     func load(loadableRule rule: LoadableRule) {
         load(rule.load)
@@ -103,7 +102,6 @@ extension Build.Builder {
     }
 
     // MARK: Private
-
 
     private mutating
     func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {

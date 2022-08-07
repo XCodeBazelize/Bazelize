@@ -15,7 +15,6 @@ import Util
 public final class Pod {
     // MARK: Lifecycle
 
-
     init(podfile: Podfile, lock: PodfileLock, repoCodes: [String]) {
         self.podfile = podfile
         self.lock = lock
@@ -28,7 +27,6 @@ public final class Pod {
 
     // MARK: Internal
 
-
     let podfile: Podfile
     let lock: PodfileLock
 
@@ -37,7 +35,6 @@ public final class Pod {
 
 extension Pod {
     // MARK: Public
-
 
     public static func parse(_ path: Path) async throws -> Pod? {
         guard checkPodfile(path) else { return nil }
@@ -118,7 +115,6 @@ extension Pod: Plugin {
     }
 
     // MARK: Private
-
 
     private struct PodPluginTarget: PluginTarget {
         let deps: [String]

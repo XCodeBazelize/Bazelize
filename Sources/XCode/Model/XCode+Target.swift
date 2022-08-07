@@ -50,7 +50,6 @@ extension Target: Encodable {
 public final class Target {
     // MARK: Lifecycle
 
-
     init(native: PBXNativeTarget, defaultConfigList: ConfigList?, project: Project) {
         self.native = native
         let configList: ConfigList = .init(native.buildConfigurationList)
@@ -80,14 +79,12 @@ public final class Target {
 
     // MARK: Internal
 
-
     unowned let project: Project
     let originConfig: [String: XCodeBuildSetting]
 }
 
 extension Target {
     // MARK: Public
-
 
     public var srcFiles: [File] {
         files(try? native.sourcesBuildPhase()?.files)
@@ -131,7 +128,6 @@ extension Target {
     }
 
     // MARK: Internal
-
 
     func srcs(_ type: LastKnownFileType) -> [String] {
         srcFiles.filter { file in

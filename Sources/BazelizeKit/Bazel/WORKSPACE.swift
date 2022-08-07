@@ -11,7 +11,6 @@ import PathKit
 struct Workspace {
     // MARK: Lifecycle
 
-
     public init(_ build: (inout Builder) -> Void) {
         var builder = Builder()
         build(&builder)

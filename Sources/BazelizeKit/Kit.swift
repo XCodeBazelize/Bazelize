@@ -19,13 +19,11 @@ import Yams
 public final class Kit {
     // MARK: Lifecycle
 
-
     public init(_ projPath: Path) async throws {
         project = try await Project(projPath)
     }
 
     // MARK: Public
-
 
     public func run() async throws {
         defer { tip() }

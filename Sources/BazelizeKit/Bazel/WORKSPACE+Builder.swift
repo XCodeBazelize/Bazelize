@@ -11,7 +11,6 @@ extension Workspace {
     public struct Builder {
         // MARK: Public
 
-
         mutating
         public func `default`() {
             http_archive()
@@ -126,7 +125,6 @@ extension Workspace {
         }
 
         // MARK: Internal
-
 
         internal func build() -> String {
             codes.withNewLine

@@ -13,7 +13,6 @@ import XcodeProj
 extension Array where Element == Target {
     // MARK: Public
 
-
     public var isHaveSPM: Bool {
         !flatPackages.isEmpty
     }
@@ -230,7 +229,6 @@ private struct Package {
 
 extension PBXNativeTarget {
     // MARK: Public
-
 
     /// use for `deps`
     public var spm_deps: String {

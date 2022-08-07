@@ -15,7 +15,6 @@ import XcodeProj
 extension RemoteSPMPackage: Encodable {
     // MARK: Public
 
-
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: Keys.self)
         try container.encode(url, forKey: .url)

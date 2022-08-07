@@ -13,7 +13,6 @@ import XCode
 extension Target {
     // MARK: Public
 
-
     /// WORKSPACE/TARGET_NAME/BUILD
     public func generateBUILD(_ kit: Kit) throws {
         let code = generateCode(kit)

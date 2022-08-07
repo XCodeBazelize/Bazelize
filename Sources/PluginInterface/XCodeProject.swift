@@ -32,7 +32,6 @@ public protocol XCodeProject: AnyObject {
 extension XCodeProject {
     // MARK: Public
 
-
     public func transformToLabel(_ relativePath: String?) -> String? {
         /// DEF/Base.lproj/LaunchScreen.storyboard
         guard let path = relativePath else { return nil }

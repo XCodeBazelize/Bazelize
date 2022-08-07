@@ -28,7 +28,6 @@ extension BuildSetting: Encodable {
 public struct BuildSetting {
     // MARK: Lifecycle
 
-
     init(_ name: String, _ setting: [String: Any]) {
         self.name = name
         self.setting = setting
@@ -45,7 +44,6 @@ public struct BuildSetting {
     public let setting: [String: Any]
 
     // MARK: Internal
-
 
     func merge(_ input: BuildSetting?) -> BuildSetting {
         guard let input = input else {

@@ -24,7 +24,6 @@ internal enum DeviceFamily: String {
 
     // MARK: Internal
 
-
     internal var code: String {
         switch self {
         case .iphone: return "\"iphone\","

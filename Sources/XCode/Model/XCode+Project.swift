@@ -32,7 +32,6 @@ extension Project: XCodeProject {
 extension Project: Encodable {
     // MARK: Public
 
-
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: Keys.self)
         try container.encode(workspacePath.string, forKey: .workspacePath)
@@ -62,7 +61,6 @@ extension Project: Encodable {
 public final class Project {
     // MARK: Lifecycle
 
-
     public init(_ projectPath: Path) async throws {
         let path = projectPath.parent()
         workspacePath = path
@@ -89,7 +87,6 @@ public final class Project {
     }
 
     // MARK: Internal
-
 
     internal var headers: [File] {
         (try? native.rootGroup()?.filterChildren(.h).map { header in
