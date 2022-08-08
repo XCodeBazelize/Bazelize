@@ -94,6 +94,12 @@ public final class Project {
         }) ?? []
     }
 
+    internal func files(_ type: LastKnownFileType) -> [File] {
+        (try? native.rootGroup()?.filterChildren(type).map { header in
+            File(native: header, project: self)
+        }) ?? []
+    }
+
     // MARK: Private
 
     private let project: XcodeProj
@@ -106,12 +112,6 @@ public final class Project {
         return native.nativeTargets.map {
             Target(native: $0, defaultConfigList: list, project: self)
         }
-    }
-
-    internal func files(_ type: LastKnownFileType) -> [File] {
-        return (try? self.native.rootGroup()?.filterChildren(type).map { header in
-            File(native: header, project: self)
-        }) ?? []
     }
 }
 

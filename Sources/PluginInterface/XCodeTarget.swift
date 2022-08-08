@@ -23,7 +23,7 @@ public protocol XCodeTarget {
     /// `.hpp`
     /// headers in current Target(Bazel Package)
     var hpps: [String] { get }
-    
+
     /// all build file
     var srcs: [String] { get }
     var srcs_c: [String] { get }

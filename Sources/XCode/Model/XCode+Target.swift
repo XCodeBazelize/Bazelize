@@ -107,9 +107,11 @@ extension Target {
 }
 
 extension Target {
+    // MARK: Public
+
     /// `.h` & `.pch`
     public var headers: [String] {
-        return self.project
+        project
             .files(.h)
             .labels
             .filter { label in
@@ -118,9 +120,9 @@ extension Target {
                 """)
             }
     }
-    
+
     public var hpps: [String] {
-        return self.project
+        project
             .files(.hpp)
             .labels
             .filter { label in
@@ -129,39 +131,33 @@ extension Target {
                 """)
             }
     }
-    
+
     public var srcs: [String] {
-        return srcFiles.labels
+        srcFiles.labels
     }
 
     public var srcs_c: [String] {
-        return self.srcs(.c)
+        srcs(.c)
     }
-    
+
     public var srcs_objc: [String] {
-        return self.srcs(.objc)
+        srcs(.objc)
     }
-    
+
     public var srcs_cpp: [String] {
-        return self.srcs(.cpp)
+        srcs(.cpp)
     }
-    
+
     public var srcs_objcpp: [String] {
-        return self.srcs(.objcpp)
+        srcs(.objcpp)
     }
-    
+
     public var srcs_swift: [String] {
-        return self.srcs(.swift)
+        srcs(.swift)
     }
-    
+
     public var srcs_metal: [String] {
-        return self.srcs(.metal)
-    }
-    
-    func srcs(_ type: LastKnownFileType) -> [String] {
-        return srcFiles.filter { file in
-            file.isType(type)
-        }.labels
+        srcs(.metal)
     }
 
     public var resources: [String] {
