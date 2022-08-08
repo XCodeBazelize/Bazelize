@@ -27,6 +27,10 @@ public enum LabelBuilder {
         return expression
     }
     
+    public static func buildExpression(_ expression: Dictionary) -> Target {
+        return expression
+    }
+    
     public static func buildExpression(_ expression: Comment) -> Target {
         return expression
     }

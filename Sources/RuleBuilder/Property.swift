@@ -39,7 +39,7 @@ public struct Property: Text {
 }
 
 
-public extension Property {
+extension Property {
     /// https://bazel.build/concepts/visibility
     public enum Visibility {
         /// "//visibility:public": Anyone can use this target. (May not be combined with any other specification.)

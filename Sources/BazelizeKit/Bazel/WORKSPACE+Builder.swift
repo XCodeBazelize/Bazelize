@@ -131,4 +131,5 @@ extension Workspace {
         internal func build() -> String {
             return codes.withNewLine
         }
-    }}
+    }
+}

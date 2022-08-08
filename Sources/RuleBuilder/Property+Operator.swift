@@ -19,6 +19,12 @@ extension String {
         }
     }
     
+    public static func =>(propertyName: String, dictionary: [String: String]) -> Property {
+        return Property(propertyName) {
+            Dictionary(dictionary: dictionary)
+        }
+    }
+    
     public static func =>(propertyName: String, label: Label) -> Property {
         return Property(propertyName) {
             label

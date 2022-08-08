@@ -7,18 +7,20 @@
 
 import Foundation
 
-protocol LoadableRule {
-    /// "@build_bazel_rules_apple//apple:ios.bzl"
-    static var target: String {get}
-    
+protocol BuildableRule {
     /// "ios_application"
     var rule: String {get}
+}
+
+protocol LoadableRule: BuildableRule {
+    /// "@build_bazel_rules_apple//apple:ios.bzl"
+    static var target: String {get}
     
     /// load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")
     var load: String {get}
 }
 
-extension LoadableRule where Self: RawRepresentable, Self.RawValue == String {
+extension BuildableRule where Self: RawRepresentable, Self.RawValue == String {
     var rule: String {
         rawValue
     }
