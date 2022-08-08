@@ -102,6 +102,7 @@ extension BuildSetting {
 }
 
 // MARK: - PLIST Key -
+// TODO: https://github.com/XCodeBazelize/Bazelize/issues/5
 extension BuildSetting {
     public var plistKeys: [String] {
         self.setting.keys.filter {
@@ -130,6 +131,7 @@ extension BuildSetting {
         self[plist: "UIMainStoryboardFile"]
     }
 }
+
 // MARK: - PLIST Value -
 extension BuildSetting {
     /// CFBundleName $(PRODUCT_NAME)
