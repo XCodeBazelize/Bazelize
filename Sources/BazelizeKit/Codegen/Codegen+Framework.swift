@@ -12,17 +12,17 @@ extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
         precondition(setting.bundleID != nil, "bundle id")
         precondition(setting.iOS != nil, "min version")
-        
+
         let depsXcode = ""
-        
+
         let deviceFamily = setting.deviceFamily.withNewLine
-        
+
 //        self.infoPlist
-        
+
         var builder = Build.Builder()
         builder.load(.ios_framework)
         builder.custom(generateSwiftLibrary(kit))
-        
+
         builder.custom("""
         ios_framework(
             name = "\(name)",
@@ -44,7 +44,7 @@ extension Target {
             visibility = ["//visibility:public"],
         )
         """)
-                
+
         return builder.build()
     }
 }

@@ -8,24 +8,31 @@
 import Foundation
 
 public struct Label: ExpressibleByStringLiteral, Text, CodeText {
-    public let name: String
+    // MARK: Lifecycle
+
     public init?(name: String?) {
         guard let name = name else { return nil }
         self.name = name
     }
 
     public init(stringLiteral value: String) {
-        self.name = value
+        name = value
     }
 
+    // MARK: Public
+
+    public let name: String
+
     public var text: String {
-        return """
+        """
         "\(name)"
         """
     }
+
     public var withComma: String {
         text.withComma
     }
+
     public var withComment: String {
         text.comment
     }
