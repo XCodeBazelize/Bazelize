@@ -69,7 +69,9 @@ public final class Kit {
 /// load xcode -> load plugin
 extension Kit {
 //    private func loadPluginList(_ path: Path?) async throws -> PluginList {}
+    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/12
 //    private func buildPlugins(_ list: PluginList) async throws {}
+    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/14
 //    private func loadPlugins(_ list: PluginList) async throws -> [Plugin] {}
 //    private func load(_ path: Path?) async throws {
 //        let list = try await loadPluginList(path)

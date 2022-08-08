@@ -19,8 +19,6 @@ extension Target {
 
         precondition(setting.bundleID != nil, "bundle id")
 
-        #warning("todo infoPlist target")
-
         var builder = Build.Builder()
         builder.custom(generateSwiftLibrary(kit))
 

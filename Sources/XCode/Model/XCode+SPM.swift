@@ -78,8 +78,6 @@ extension Array where Element == Package {
     }
 }
 
-#warning("TODO local spm")
-
 // MARK: - Package
 
 // path    A local path string to the package repository.    None
