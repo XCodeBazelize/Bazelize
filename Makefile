@@ -13,6 +13,7 @@ build:
 .PHONY: test
 test:
 	COCOAPOD=$(shell which pod) swift test -v 2>&1 | xcpretty
+#	COCOAPOD=$(shell which pod) swift test -v 2>&1 | xcbeautify
 
 
 Apple  := bazelbuild/rules_apple
