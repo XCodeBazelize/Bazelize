@@ -120,6 +120,7 @@ extension BuildSetting {
 }
 
 // MARK: - PLIST Key -
+// TODO: https://github.com/XCodeBazelize/Bazelize/issues/5
 extension BuildSetting {
     public var plistKeys: [String] {
         setting.keys.filter {

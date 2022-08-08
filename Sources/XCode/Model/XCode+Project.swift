@@ -107,6 +107,12 @@ public final class Project {
             Target(native: $0, defaultConfigList: list, project: self)
         }
     }
+
+    internal func files(_ type: LastKnownFileType) -> [File] {
+        return (try? self.native.rootGroup()?.filterChildren(type).map { header in
+            File(native: header, project: self)
+        }) ?? []
+    }
 }
 
 extension PBXProj {
