@@ -39,8 +39,8 @@ extension Project {
     ///
     /// ```bazel
     /// select({
-    ///     ":deubg": "label1",
-    ///     ":release": "label2",
+    ///     "//:deubg": "label1",
+    ///     "//:release": "label2",
     ///     "//conditions:default": "label3",
     /// })
     /// ```
