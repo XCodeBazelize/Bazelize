@@ -118,7 +118,6 @@ extension Build.Builder {
 
     // MARK: Private
 
-
     private mutating
     func add(rule: BuildableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule.rule, builder: builder)

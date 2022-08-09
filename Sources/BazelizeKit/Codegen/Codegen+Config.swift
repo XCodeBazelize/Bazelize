@@ -38,7 +38,6 @@ extension Project {
 
     // MARK: Private
 
-
     /// configs:
     ///     debug/release/...
     ///
