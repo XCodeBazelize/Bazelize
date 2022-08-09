@@ -6,9 +6,13 @@ install: release
 release:
 	swift build -c release
 
+.PHONY: format
+format:
+	swiftformat .
+
 .PHONY: build
-build:
-	swift build -v
+build: format
+	swift build
 
 .PHONY: test
 test:
