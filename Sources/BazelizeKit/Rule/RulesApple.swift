@@ -1,6 +1,6 @@
 //
 //  RulesApple.swift
-//  
+//
 //
 //  Created by Yume on 2022/7/1.
 //
@@ -11,7 +11,7 @@ import Foundation
 enum RulesApple {
     enum IOS: String, LoadableRule {
         static let target = "@build_bazel_rules_apple//apple:ios.bzl"
-        
+
         case ios_application
         case ios_app_clip
         case ios_extension
@@ -21,27 +21,35 @@ enum RulesApple {
         case ios_framework
         case ios_static_framework
         case ios_dynamic_framework
+
         case ios_ui_test
         case ios_ui_test_suite
         case ios_unit_test
         case ios_unit_test_suite
         case ios_build_test
     }
-    
+
     enum Mac: String, LoadableRule {
         static let target = "@build_bazel_rules_apple//apple:macos.bzl"
-        
+
         case macos_application
         case macos_bundle
         case macos_command_line_application
         case macos_extension
+
         case macos_unit_test
         case macos_build_test
+
+        case macos_dylib
+        case macos_kernel_extension
+        case macos_quick_look_plugin
+        case macos_spotlight_importer
+        case macos_xpc_service
     }
-    
+
     enum TV: String, LoadableRule {
         static let target = "@build_bazel_rules_apple//apple:tvos.bzl"
-        
+
         case tvos_application
         case tvos_extension
         case tvos_static_framework
@@ -50,10 +58,10 @@ enum RulesApple {
         case tvos_unit_test
         case tvos_build_test
     }
-    
+
     enum Watch: String, LoadableRule {
         static let target = "@build_bazel_rules_apple//apple:watchos.bzl"
-        
+
         case watchos_application
         case watchos_extension
         case watchos_static_framework
@@ -62,30 +70,41 @@ enum RulesApple {
         case watchos_unit_test
         case watchos_build_test
     }
+
+    enum Verion: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:versioning.bzl"
+
+        case apple_bundle_version
+    }
+
+    enum Apple: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:apple.bzl"
+
+        case apple_dynamic_framework_import
+        case apple_dynamic_xcframework_import
+        case apple_static_framework_import
+        case apple_static_xcframework
+        case apple_static_xcframework_import
+        case apple_universal_binary
+        case apple_xcframework
+        case local_provisioning_profile
+        case provisioning_profile_repository
+    }
+
+    enum Resource: String, LoadableRule {
+        static let target = "@build_bazel_rules_apple//apple:resources.bzl"
+
+        case apple_bundle_import
+        case apple_core_data_model
+        case apple_core_ml_library
+        case apple_resource_bundle
+        case apple_resource_group
+        case swift_apple_core_ml_library
+        case swift_intent_library
+    }
 }
 
-//@build_bazel_rules_apple//apple:versioning.bzl
-//apple_bundle_version
 
-//@build_bazel_rules_apple//apple:apple.bzl
-//apple_dynamic_framework_import
-//apple_dynamic_xcframework_import
-//apple_static_framework_import
-//apple_static_xcframework
-//apple_static_xcframework_import
-//apple_universal_binary
-//apple_xcframework
-//local_provisioning_profile
-//provisioning_profile_repository
 
-//@build_bazel_rules_apple//apple:resources.bzl
-//apple_bundle_import
-//apple_core_data_model
-//apple_core_ml_library
-//apple_resource_bundle
-//apple_resource_group
-//swift_apple_core_ml_library
-//swift_intent_library
-
-//options
-//https://github.com/bazelbuild/rules_apple/blob/master/doc/common_info.md
+// options
+// https://github.com/bazelbuild/rules_apple/blob/master/doc/common_info.md

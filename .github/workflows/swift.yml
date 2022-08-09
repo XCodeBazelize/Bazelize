@@ -21,6 +21,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: swiftformat installation
+        run: |
+          brew install swiftformat
+
+      - name: swiftformat --lint
+        run: |
+          swiftformat --lint --config .swiftformat .
   build:
 
     # https://github.com/actions/virtual-environments

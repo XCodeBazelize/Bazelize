@@ -9,14 +9,14 @@ extension Repo {
         case v4_0_0_f96b657 = "4.0.0-f96b657"
 
         var version: String {
-            if self.rawValue.first == "v" {
-                return String(self.rawValue.dropFirst())
+            if rawValue.first == "v" {
+                return String(rawValue.dropFirst())
             }
-            return self.rawValue
+            return rawValue
         }
 
         var sha256: String {
-            return ""
+            ""
         }
     }
 }

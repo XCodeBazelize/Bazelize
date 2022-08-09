@@ -7,19 +7,26 @@
 
 import Foundation
 
+// MARK: - Property
+
 public struct Property: Text {
-    public let name: String
-    public let labels: [LabelBuilder.Target]
-    
+    // MARK: Lifecycle
+
     public init(_ name: String, labels: [LabelBuilder.Target]) {
         self.name = name
         self.labels = labels
     }
-    
+
     public init(_ name: String, @LabelBuilder builder: () -> [LabelBuilder.Target]) {
         self.init(name, labels: builder())
     }
-    
+
+    // MARK: Public
+
+    public let name: String
+    public let labels: [LabelBuilder.Target]
+
+
     public var text: String {
         switch labels.count {
         case 0:

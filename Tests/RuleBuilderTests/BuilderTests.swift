@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/7/29.
 //
 
-@testable import RuleBuilder
 import XCTest
+@testable import RuleBuilder
 
 final class RuleTests: XCTestCase {
     static let target = """
@@ -85,7 +85,7 @@ final class RuleTests: XCTestCase {
             "name" => "Test"
             "After"
         }.text
-        
+
         let target = """
         ios_framework(
             # Before
@@ -95,15 +95,15 @@ final class RuleTests: XCTestCase {
         """
         XCTAssertEqual(target, result)
     }
-    
+
     func testWithDictionary() throws {
         let result = Rule("ios_framework") {
             "data" => [
                 "b": "b",
-                "a": "a"
+                "a": "a",
             ]
         }.text
-        
+
         let target = """
         ios_framework(
             data = {
@@ -114,12 +114,12 @@ final class RuleTests: XCTestCase {
         """
         XCTAssertEqual(target, result)
     }
-    
+
     func testWithEmptyDictionary() throws {
         let result = Rule("ios_framework") {
             "data" => [:]
         }.text
-        
+
         let target = """
         ios_framework(
             data = {

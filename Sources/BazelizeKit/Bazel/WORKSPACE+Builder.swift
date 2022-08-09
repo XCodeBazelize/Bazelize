@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Yume on 2022/7/25.
 //
@@ -9,29 +9,24 @@ import Foundation
 
 extension Workspace {
     public struct Builder {
-        private var codes: [String] = []
-        
-        private var _code: String {
-            get { "" }
-            set { codes.append(newValue) }
-        }
-        
+        // MARK: Public
+
         mutating
         public func `default`() {
-            self.http_archive()
-            self.rulesApple(repo: .v1_0_1)
-            self.rulesPod(repo: .v4_1_0_412495)
+            http_archive()
+            rulesApple(repo: .v1_0_1)
+            rulesPod(repo: .v4_1_0_412495)
 //            self.rulesSPM(repo: .v0_11_0)
 //            self.rulesHammer(repo: .v3_4_3_3)
         }
-        
+
         mutating
         public func http_archive() {
             _code = """
             load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
             """
         }
-        
+
         mutating
         public func rulesApple(repo: Repo.Apple) {
             _code = """
@@ -39,7 +34,8 @@ extension Workspace {
             http_archive(
                 name = "build_bazel_rules_apple",
                 # sha256 = "\(repo.sha256)",
-                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(repo.version)/rules_apple.\(repo.version).tar.gz",
+                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(repo.version)/rules_apple.\(repo
+                .version).tar.gz",
             )
 
             load(
@@ -69,10 +65,10 @@ extension Workspace {
             )
 
             apple_support_dependencies()
-            
+
             """
         }
-        
+
         mutating
         public func rulesPod(repo: Repo.Pod) {
             _code = """
@@ -84,10 +80,10 @@ extension Workspace {
             )
 
             load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
-            
+
             """
         }
-        
+
         mutating
         public func rulesSPM(repo: Repo.SPM) {
             _code = """
@@ -107,10 +103,10 @@ extension Workspace {
             )
 
             spm_rules_dependencies()
-            
+
             """
         }
-        
+
         mutating
         public func rulesHammer(repo: Repo.Hammer) {
             _code = """
@@ -119,17 +115,29 @@ extension Workspace {
                 name = "xchammer",
                 urls = [ "https://github.com/pinterest/xchammer/releases/download/\(repo.rawValue)/xchammer.zip" ],
             )
-            
+
             """
         }
-        
+
         mutating
         public func custom(code: String) {
             _code = code
         }
-        
+
+        // MARK: Internal
+
         internal func build() -> String {
-            return codes.withNewLine
+            codes.withNewLine
+        }
+
+        // MARK: Private
+
+        private var codes: [String] = []
+
+
+        private var _code: String {
+            get { "" }
+            set { codes.append(newValue) }
         }
     }
 }

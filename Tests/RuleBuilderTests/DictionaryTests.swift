@@ -1,12 +1,12 @@
 //
 //  DictionaryTests.swift
-//  
+//
 //
 //  Created by Yume on 2022/8/9.
 //
 
-@testable import RuleBuilder
 import XCTest
+@testable import RuleBuilder
 
 final class DictionaryTests: XCTestCase {
     static let dictionary = Dictionary([
@@ -14,7 +14,8 @@ final class DictionaryTests: XCTestCase {
         "a": "aaa",
         "c": "ccc",
     ])
-    
+
+
     func test() {
         let result = """
         {
