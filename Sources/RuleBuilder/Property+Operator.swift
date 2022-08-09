@@ -21,7 +21,7 @@ extension String {
     
     public static func =>(propertyName: String, dictionary: [String: String]) -> Property {
         return Property(propertyName) {
-            Dictionary(dictionary: dictionary)
+            Dictionary(dictionary)
         }
     }
     

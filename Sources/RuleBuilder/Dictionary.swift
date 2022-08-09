@@ -9,13 +9,16 @@ import Foundation
 
 public struct Dictionary: Text, CodeText {
     public let dictionary: [String: String]
+    public init(_ dictionary: [String: String]) {
+        self.dictionary = dictionary
+    }
     
     public var text: String {
         let pair = dictionary.map { (key, value) in
             return """
             "\(key)": "\(value)"
             """
-        }.joined(separator: ",\n").indent(1)
+        }.sorted().joined(separator: ",\n").indent(1)
         return ["{", pair,"}"].withNewLine
     }
     

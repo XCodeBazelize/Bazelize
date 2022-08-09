@@ -15,11 +15,7 @@ public enum PropertyBuilder {
         return Comment(expression)
     }
     
-    public static func buildExpression(_ expression: Comment) -> Target {
-        return expression
-    }
-    
-    public static func buildExpression(_ expression: Property) -> Target {
+    public static func buildExpression(_ expression: Target) -> Target {
         return expression
     }
     

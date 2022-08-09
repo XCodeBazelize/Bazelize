@@ -95,4 +95,37 @@ final class RuleTests: XCTestCase {
         """
         XCTAssertEqual(target, result)
     }
+    
+    func testWithDictionary() throws {
+        let result = Rule("ios_framework") {
+            "data" => [
+                "b": "b",
+                "a": "a"
+            ]
+        }.text
+        
+        let target = """
+        ios_framework(
+            data = {
+                "a": "a",
+                "b": "b"
+            },
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+    
+    func testWithEmptyDictionary() throws {
+        let result = Rule("ios_framework") {
+            "data" => [:]
+        }.text
+        
+        let target = """
+        ios_framework(
+            data = {
+            },
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
 }
