@@ -21,7 +21,7 @@ extension String {
 
     public static func =>(propertyName: String, labels: [String]) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            labels.compactMap(StarlarkLabel.init(name:))
+            labels.map(StarlarkLabel.init(stringLiteral:))
         }
     }
 

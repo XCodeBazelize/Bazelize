@@ -23,7 +23,7 @@ public enum LabelBuilder {
 
     public static func buildExpression(_ expression: String?) -> Box<Target> {
         guard let expression = expression else { return .nothing }
-        guard let label = StarlarkLabel(name: expression) else { return .nothing }
+        let label = StarlarkLabel(stringLiteral: expression)
         return .single(label)
     }
 
