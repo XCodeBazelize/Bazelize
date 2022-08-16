@@ -7,8 +7,8 @@
 
 import Foundation
 import PluginInterface
-import XCode
 import RuleBuilder
+import XCode
 
 extension Target {
     // TODO: https://github.com/XCodeBazelize/Bazelize/issues/3
@@ -75,18 +75,13 @@ extension Target {
     /// macos_application(name, additional_contents, additional_linker_inputs, app_icons, bundle_extension, bundle_id, bundle_name, codesign_inputs, codesignopts, deps, entitlements, entitlements_validation, executable_name, exported_symbols_lists, extensions, include_symbols_in_bundle, infoplists, ipa_post_processor, linkopts, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, resources, stamp, strings, version, xpc_services)
     func buildMac(_ builder: inout Build.Builder) {
         builder.load(.macos_application)
-        
+
         builder.add(.macos_application) {
             "name" => name
             "bundle_id" => setting.bundleID
-//            "families" => setting.deviceFamily
             "minimum_os_version" => setting.macOS
             "infoplists" => setting.infoPlist
-//            "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
             "deps" => ":\(name)_library"
-//            "frameworks" => frameworks
-//            "sdk_frameworks" => sdkFrameworks
-//            "resources" => resources
             StarlarkProperty.Visibility.public
         }
     }

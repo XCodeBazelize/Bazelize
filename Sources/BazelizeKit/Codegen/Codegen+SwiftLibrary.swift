@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import XCode
 import RuleBuilder
+import XCode
 
 extension Target {
     #warning("todo check pure swift, or mix objc & swift")
@@ -23,16 +23,16 @@ extension Target {
             "module_name" => name
             "srcs" => srcs
             "deps" => {
-////                # Cocoapod Deps
-//                // depsPod
-////                # XCode SPM Deps
-////                depsSPM
-////                # Framework TODO (swift_library/objc_library)
+                StarlarkComment("Cocoapod Deps")
+                // depsPod
+                StarlarkComment("XCode SPM Deps")
+                // depsSPM
+                StarlarkComment("Framework TODO (swift_library/objc_library)")
                 frameworks_library
             }
             StarlarkProperty.Visibility.private
         }
-        
+
         builder.add("alias") {
             "name" => "\(name)_library"
             "actual" => "\(name)_swift"

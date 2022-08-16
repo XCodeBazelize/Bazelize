@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import XCode
 import RuleBuilder
+import XCode
 
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
