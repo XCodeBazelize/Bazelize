@@ -133,7 +133,7 @@ private struct PodDependency: Codable {
     /// "//Vendor/RxSwift:RxSwift",
     var code: String {
         """
-        "//Vendor/\(package):\(target)",
+        //Vendor/\(package):\(target)
         """
     }
 }

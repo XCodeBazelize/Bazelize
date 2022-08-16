@@ -7,6 +7,7 @@
 
 import Foundation
 import XCode
+import RuleBuilder
 
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
@@ -15,35 +16,24 @@ extension Target {
 
         let depsXcode = ""
 
-        let deviceFamily = setting.deviceFamily.withNewLine
-
-//        self.infoPlist
-
         var builder = Build.Builder()
         builder.load(.ios_framework)
         builder.custom(generateSwiftLibrary(kit))
 
-        builder.custom("""
-        ios_framework(
-            name = "\(name)",
-            bundle_id = "\(setting.bundleID!)",
-            families = [
-        \(deviceFamily.indent(2))
-            ],
-            # minimum_os_version = "\(setting.iOS!)",
-            # (self.infoPlist ?? "")
-            infoplists = [
-                # ":Info.plist",
-                (self.plistLabel)
-            ],
-            deps = [":\(name)_library"],
-            frameworks = [
-                # XCode Target Deps
-        \(depsXcode.indent(2))
-            ],
-            visibility = ["//visibility:public"],
-        )
-        """)
+        builder.add(.ios_framework) {
+            "name" => name
+            "bundle_id" => setting.bundleID
+            "families" => setting.deviceFamily
+            "minimum_os_version" => setting.iOS
+            "infoplists" => setting.infoPlist
+            "deps" => {
+                ":\(name)_library"
+            }
+            "frameworks" => {
+                depsXcode
+            }
+            StarlarkProperty.Visibility.public
+        }
 
         return builder.build()
     }
