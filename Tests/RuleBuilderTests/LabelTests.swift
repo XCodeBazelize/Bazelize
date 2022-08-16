@@ -9,7 +9,7 @@ import XCTest
 @testable import RuleBuilder
 
 final class LabelTests: XCTestCase {
-    static let label: Label = "1"
+    static let label: StarlarkLabel = "1"
 
     func test() {
         XCTAssertEqual(Self.label.text, "\"1\"")

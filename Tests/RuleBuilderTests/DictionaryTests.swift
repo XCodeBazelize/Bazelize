@@ -9,7 +9,7 @@ import XCTest
 @testable import RuleBuilder
 
 final class DictionaryTests: XCTestCase {
-    static let dictionary = Dictionary([
+    static let dictionary = StarlarkDictionary([
         "b": "bbb",
         "a": "aaa",
         "c": "ccc",

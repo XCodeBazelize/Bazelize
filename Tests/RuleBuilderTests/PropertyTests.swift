@@ -22,7 +22,7 @@ final class PropertyTests: XCTestCase {
 
 
     func testSingle1() {
-        let property = Property("name") {
+        let property = StarlarkProperty("name") {
             "Target"
         }
         XCTAssertEqual(Self.resultSingle, property.text)
@@ -49,7 +49,7 @@ final class PropertyTests: XCTestCase {
     }
 
     func testMulti1() {
-        let property = Property("families") {
+        let property = StarlarkProperty("families") {
             "1"
             "2"
         }
@@ -75,7 +75,7 @@ final class PropertyTests: XCTestCase {
 
     func testCommentSingle() {
         let property = "families" => {
-            Comment("test")
+            StarlarkComment("test")
         }
         let result = """
         families = None, # test
@@ -97,7 +97,7 @@ final class PropertyTests: XCTestCase {
     func testNilMulti() {
         let nilString: String? = nil
         let property = "families" => {
-            Comment("test")
+            StarlarkComment("test")
             nilString
             "1"
             nilString

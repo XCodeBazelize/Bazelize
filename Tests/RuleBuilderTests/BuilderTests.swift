@@ -21,14 +21,14 @@ final class RuleTests: XCTestCase {
     """
 
     func testRuleBuilderSimple() throws {
-        let result = Rule("ios_framework") {
-            Property("name") {
+        let result = StarlarkRule("ios_framework") {
+            StarlarkProperty("name") {
                 "Test"
             }
-            Property("bundle_id") {
+            StarlarkProperty("bundle_id") {
                 "com.example.test"
             }
-            Property("families") {
+            StarlarkProperty("families") {
                 "1"
                 "2"
             }
@@ -37,14 +37,14 @@ final class RuleTests: XCTestCase {
     }
 
     func testRuleBuilderArray() throws {
-        let result = Rule("ios_framework") {
-            Property("name") {
+        let result = StarlarkRule("ios_framework") {
+            StarlarkProperty("name") {
                 "Test"
             }
-            Property("bundle_id") {
+            StarlarkProperty("bundle_id") {
                 "com.example.test"
             }
-            Property("families") {
+            StarlarkProperty("families") {
                 ["1", "2"]
             }
         }.text
@@ -54,7 +54,7 @@ final class RuleTests: XCTestCase {
     func testWithNil() throws {
         let nilStr: String? = nil
 
-        let result = Rule("ios_framework") {
+        let result = StarlarkRule("ios_framework") {
             "name" => {
                 nilStr
             }
@@ -80,8 +80,8 @@ final class RuleTests: XCTestCase {
     }
 
     func testWithComment() throws {
-        let result = Rule("ios_framework") {
-            Comment("Before")
+        let result = StarlarkRule("ios_framework") {
+            StarlarkComment("Before")
             "name" => "Test"
             "After"
         }.text
@@ -97,7 +97,7 @@ final class RuleTests: XCTestCase {
     }
 
     func testWithDictionary() throws {
-        let result = Rule("ios_framework") {
+        let result = StarlarkRule("ios_framework") {
             "data" => [
                 "b": "b",
                 "a": "a",
@@ -116,7 +116,7 @@ final class RuleTests: XCTestCase {
     }
 
     func testWithEmptyDictionary() throws {
-        let result = Rule("ios_framework") {
+        let result = StarlarkRule("ios_framework") {
             "data" => [:]
         }.text
 

@@ -9,7 +9,7 @@ import XCTest
 @testable import RuleBuilder
 
 final class CommentTests: XCTestCase {
-    static let comment = Comment("test")
+    static let comment = StarlarkComment("test")
 
     func test() {
         XCTAssertEqual(Self.comment.text, "# test")
