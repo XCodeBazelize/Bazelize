@@ -1,5 +1,5 @@
 //
-//  Dictionary.swift
+//  StarlarkDictionary.swift
 //
 //
 //  Created by Yume on 2022/8/5.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Dictionary: Text, CodeText {
+public struct StarlarkDictionary: Text, CodeText {
     // MARK: Lifecycle
 
     public init(_ dictionary: [String: String]) {

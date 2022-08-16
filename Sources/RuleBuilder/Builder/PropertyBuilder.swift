@@ -12,7 +12,7 @@ public enum PropertyBuilder {
     public typealias Target = Text
 
     public static func buildExpression(_ expression: String) -> Target {
-        Comment(expression)
+        StarlarkComment(expression)
     }
 
     public static func buildExpression(_ expression: Target) -> Target {

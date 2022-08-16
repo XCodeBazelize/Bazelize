@@ -12,16 +12,16 @@ public enum LabelBuilder {
     public typealias Target = Text & CodeText
 
     public static func buildExpression(_ expression: [String: String]) -> Target {
-        Dictionary(expression)
+        StarlarkDictionary(expression)
     }
 
     public static func buildExpression(_ expression: [String?]) -> [Target] {
-        expression.compactMap { $0 }.map(Label.init(stringLiteral:))
+        expression.compactMap { $0 }.map(StarlarkLabel.init(stringLiteral:))
     }
 
     public static func buildExpression(_ expression: String?) -> Target? {
         guard let expression = expression else { return nil }
-        return Label(name: expression)
+        return StarlarkLabel(name: expression)
     }
 
     public static func buildExpression(_ expression: [Target]) -> [Target] {

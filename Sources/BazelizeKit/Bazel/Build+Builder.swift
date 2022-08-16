@@ -107,7 +107,7 @@ extension Build.Builder {
 
     mutating
     func add(_ rule: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(Rule(rule, builder: builder).text)
+        custom(StarlarkRule(rule, builder: builder).text)
     }
 
     /// append custom code.
@@ -125,7 +125,7 @@ extension Build.Builder {
 
     private mutating
     func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(Rule(rule.rule, builder: builder).text)
+        custom(StarlarkRule(rule.rule, builder: builder).text)
     }
 }
 

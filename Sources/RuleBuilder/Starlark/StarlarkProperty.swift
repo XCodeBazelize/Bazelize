@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - Property
 
-public struct Property: Text {
+public struct StarlarkProperty: Text {
     // MARK: Lifecycle
 
     public init(_ name: String, labels: [LabelBuilder.Target]) {
@@ -31,10 +31,10 @@ public struct Property: Text {
         switch labels.count {
         case 0:
             return "\(name) = None,"
-        case 1 where labels[0] is Comment:
+        case 1 where labels[0] is StarlarkComment:
             return "\(name) = None, \(labels[0].text)"
-        case 1 where labels[0] is Label: fallthrough
-        case 1 where labels[0] is Dictionary:
+        case 1 where labels[0] is StarlarkLabel: fallthrough
+        case 1 where labels[0] is StarlarkDictionary:
             return "\(name) = \(labels[0].text),"
         default:
             return """
