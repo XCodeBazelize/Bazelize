@@ -1,5 +1,5 @@
 //
-//  Label.swift
+//  StarlarkLabel.swift
 //
 //
 //  Created by Yume on 2022/8/2.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Label: ExpressibleByStringLiteral, Text, CodeText {
+public struct StarlarkLabel: ExpressibleByStringLiteral, Text, CodeText {
     // MARK: Lifecycle
 
     public init?(name: String?) {

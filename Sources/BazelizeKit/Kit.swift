@@ -33,16 +33,25 @@ public final class Kit {
         let targets = project.targets.compactMap {
             $0 as? XCode.Target
         }
+
+        /// {WORKSPACE}/WORKSPACE
+//        let spm_repositories = targets.spm_repositories(project.projectPath)
+        let workspace = Workspace { builder in
+            builder.default()
+//            builder.custom(code: spm_repositories)
+        }
+        try? workspace.generate(project.workspacePath)
+
+        /// {WORKSPACE}/BUILD
+        try? project.generateBUILD(self)
+
+        /// {WORKSPACE}/.bazelrc
+        try? project.generateBazelRC(self)
+
+        /// {WORKSPACE}/Target/BUILD
         for target in targets {
             try target.generateBUILD(self)
         }
-
-        let spm_repositories = targets.spm_repositories(project.projectPath)
-        let workspace = Workspace { builder in
-            builder.default()
-            builder.custom(code: spm_repositories)
-        }
-        try? workspace.generate(project.workspacePath)
 
         try? pod?.generateFile(project.workspacePath)
     }

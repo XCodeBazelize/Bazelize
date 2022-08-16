@@ -52,6 +52,11 @@ extension Build.Builder {
         load(loadableRule: rule)
     }
 
+    mutating
+    func load(_ rule: RulesConfig) {
+        load(loadableRule: rule)
+    }
+
     /// load function at top of the file.
     mutating
     func load(_ code: String) {
@@ -72,27 +77,37 @@ extension Build.Builder {
 
     mutating
     func add(_ rule: RulesApple.IOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(loadableRule: rule, builder: builder)
+        add(rule: rule, builder: builder)
     }
 
     mutating
     func add(_ rule: RulesApple.Mac, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(loadableRule: rule, builder: builder)
+        add(rule: rule, builder: builder)
     }
 
     mutating
     func add(_ rule: RulesApple.TV, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(loadableRule: rule, builder: builder)
+        add(rule: rule, builder: builder)
     }
 
     mutating
     func add(_ rule: RulesApple.Watch, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(loadableRule: rule, builder: builder)
+        add(rule: rule, builder: builder)
     }
 
     mutating
     func add(_ rule: RulesSwift, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(loadableRule: rule, builder: builder)
+        add(rule: rule, builder: builder)
+    }
+
+    mutating
+    func add(_ rule: RulesConfig, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        add(rule: rule, builder: builder)
+    }
+
+    mutating
+    func add(_ rule: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        custom(StarlarkRule(rule, builder: builder).text)
     }
 
     /// append custom code.
@@ -104,8 +119,13 @@ extension Build.Builder {
     // MARK: Private
 
     private mutating
+    func add(rule: BuildableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        add(rule.rule, builder: builder)
+    }
+
+    private mutating
     func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(Rule(rule.rule, builder: builder).text)
+        custom(StarlarkRule(rule.rule, builder: builder).text)
     }
 }
 

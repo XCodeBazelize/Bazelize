@@ -1,5 +1,5 @@
 //
-//  Comment.swift
+//  StarlarkComment.swift
 //
 //
 //  Created by Yume on 2022/8/2.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Comment: Text, CodeText {
+public struct StarlarkComment: Text, CodeText {
     public let description: String
     public init(_ description: String) {
         self.description = description
