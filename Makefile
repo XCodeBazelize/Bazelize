@@ -6,6 +6,10 @@ install: release
 release:
 	swift build -c release
 
+.PHONY: coherent
+coherent:
+	coherent-swift report
+
 .PHONY: format
 format:
 	swiftformat .

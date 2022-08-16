@@ -167,6 +167,11 @@ xcuserdata
 
 # End of https://www.toptal.com/developers/gitignore/api/xcode,visualstudiocode,macos,swift,swiftpm,swiftpackagemanager
 
-temp.swift
+temp/
+
+# coherent-swift
+coherent-swift.yml
+reports/
+
 .swiftpm/*
 .vscode/*
