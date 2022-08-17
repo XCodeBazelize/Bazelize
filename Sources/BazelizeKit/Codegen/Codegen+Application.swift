@@ -10,13 +10,11 @@ import PluginInterface
 import XCode
 
 extension Target {
-    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/3
+    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/20
     var setting: XCodeBuildSetting { self["Release"]! }
-
 
     func generateApplicationCode(_ kit: Kit) -> String {
         precondition(setting.sdk != nil, "sdk")
-
         precondition(setting.bundleID != nil, "bundle id")
 
         var builder = Build.Builder()
