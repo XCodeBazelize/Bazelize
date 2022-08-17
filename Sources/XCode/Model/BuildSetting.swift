@@ -10,10 +10,10 @@ import Foundation
 import PluginInterface
 import XcodeProj
 
+// MARK: - BuildSetting + XCodeBuildSetting
+
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/2 opts (swift/objc/link)
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/4 data(folder link/bundle/...)
-
-// MARK: - BuildSetting + XCodeBuildSetting
 
 extension BuildSetting: XCodeBuildSetting { }
 
