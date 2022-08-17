@@ -34,6 +34,8 @@ public struct StarlarkProperty: Text {
         case 1 where labels[0] is StarlarkComment:
             return "\(name) = None, \(labels[0].text)"
         case 1 where labels[0] is StarlarkLabel: fallthrough
+        case 1 where labels[0] is StarlarkBool: fallthrough
+        case 1 where labels[0] is StarlarkNone: fallthrough
         case 1 where labels[0] is StarlarkDictionary:
             return "\(name) = \(labels[0].text),"
         default:

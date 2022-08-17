@@ -13,6 +13,12 @@ extension String {
         StarlarkProperty(propertyName, builder: builder)
     }
 
+    public static func =>(propertyName: String, bool: Bool) -> StarlarkProperty {
+        StarlarkProperty(propertyName) {
+            StarlarkBool(bool)
+        }
+    }
+
     public static func =>(propertyName: String, label: String?) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
             label
@@ -31,15 +37,15 @@ extension String {
         }
     }
 
-    public static func =>(propertyName: String, label: StarlarkLabel) -> StarlarkProperty {
+    public static func =>(propertyName: String, target: LabelBuilder.Target) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            label
+            target
         }
     }
 
-    public static func =>(propertyName: String, labels: [StarlarkLabel]) -> StarlarkProperty {
+    public static func =>(propertyName: String, targets: [LabelBuilder.Target]) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            labels
+            targets
         }
     }
 }

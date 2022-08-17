@@ -17,6 +17,10 @@ public enum LabelBuilder {
         .single(StarlarkDictionary(expression))
     }
 
+    public static func buildExpression(_ expression: Bool) -> Box<Target> {
+        .single(StarlarkBool(expression))
+    }
+
     public static func buildExpression(_ expression: [String?]) -> Box<Target> {
         .multi(expression.compactMap { $0 }.map(StarlarkLabel.init(stringLiteral:)))
     }

@@ -115,6 +115,36 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(target, result)
     }
 
+    func testWithBool() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data1" => true
+            "data2" => false
+        }.text
+
+        let target = """
+        ios_framework(
+            data1 = True,
+            data2 = False,
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithNone() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data1" => nil
+            "data2" => None
+        }.text
+
+        let target = """
+        ios_framework(
+            data1 = None,
+            data2 = None,
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
     func testWithEmptyDictionary() throws {
         let result = StarlarkRule("ios_framework") {
             "data" => [:]
