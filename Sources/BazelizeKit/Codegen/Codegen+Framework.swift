@@ -8,6 +8,8 @@
 import Foundation
 import XCode
 
+// TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
+
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
         precondition(setting.bundleID != nil, "bundle id")
