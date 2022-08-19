@@ -25,11 +25,11 @@ extension Target {
             "module_name" => name
             "srcs" => srcs
             "deps" => {
-                StarlarkComment("Cocoapod Deps")
+                Starlark.comment("Cocoapod Deps")
                 // depsPod
-                StarlarkComment("XCode SPM Deps")
+                Starlark.comment("XCode SPM Deps")
                 // depsSPM
-                StarlarkComment("Framework TODO (swift_library/objc_library)")
+                Starlark.comment("Framework TODO (swift_library/objc_library)")
                 frameworks_library
             }
             StarlarkProperty.Visibility.private

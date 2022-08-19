@@ -12,38 +12,27 @@ import Foundation
 public struct StarlarkProperty: Text {
     // MARK: Lifecycle
 
-    public init(_ name: String, labels: [LabelBuilder.Target]) {
+    public init(_ name: String, starlark: Starlark) {
         self.name = name
-        self.labels = labels
+        self.starlark = starlark
     }
 
-    public init(_ name: String, @LabelBuilder builder: () -> [LabelBuilder.Target]) {
-        self.init(name, labels: builder())
+    public init(_ name: String, @StarlarkBuilder builder: () -> Starlark) {
+        self.init(name, starlark: builder())
     }
 
     // MARK: Public
 
     public let name: String
-    public let labels: [LabelBuilder.Target]
+    public let starlark: Starlark
 
 
     public var text: String {
-        switch labels.count {
-        case 0:
-            return "\(name) = None,"
-        case 1 where labels[0] is StarlarkComment:
-            return "\(name) = None, \(labels[0].text)"
-        case 1 where labels[0] is StarlarkLabel: fallthrough
-        case 1 where labels[0] is StarlarkBool: fallthrough
-        case 1 where labels[0] is StarlarkNone: fallthrough
-        case 1 where labels[0] is StarlarkDictionary:
-            return "\(name) = \(labels[0].text),"
+        switch starlark {
+        case .comment:
+            return "\(name) = None, \(starlark.text)"
         default:
-            return """
-            \(name) = [
-            \(labels.map(\.withComma).withNewLine.indent(1))
-            ],
-            """
+            return "\(name) = \(starlark.text),"
         }
     }
 }

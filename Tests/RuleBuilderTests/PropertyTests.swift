@@ -75,7 +75,7 @@ final class PropertyTests: XCTestCase {
 
     func testCommentSingle() {
         let property = "families" => {
-            StarlarkComment("test")
+            Starlark.comment("test")
         }
         let result = """
         families = None, # test
@@ -97,7 +97,7 @@ final class PropertyTests: XCTestCase {
     func testNilMulti() {
         let nilString: String? = nil
         let property = "families" => {
-            StarlarkComment("test")
+            Starlark.comment("test")
             nilString
             "1"
             nilString

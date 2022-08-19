@@ -1,4 +1,3 @@
-//
 //  Property+Operator.swift
 //
 //
@@ -9,13 +8,13 @@ import Foundation
 
 infix operator => : AssignmentPrecedence
 extension String {
-    public static func =>(propertyName: String, @LabelBuilder builder: () -> [LabelBuilder.Target]) -> StarlarkProperty {
+    public static func =>(propertyName: String, @StarlarkBuilder builder: () -> Starlark) -> StarlarkProperty {
         StarlarkProperty(propertyName, builder: builder)
     }
 
     public static func =>(propertyName: String, bool: Bool) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            StarlarkBool(bool)
+            bool
         }
     }
 
@@ -27,25 +26,31 @@ extension String {
 
     public static func =>(propertyName: String, labels: [String]) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            labels.map(StarlarkLabel.init(stringLiteral:))
+            labels
+        }
+    }
+
+    public static func =>(propertyName: String, labels: [String]?) -> StarlarkProperty {
+        StarlarkProperty(propertyName) {
+            labels
         }
     }
 
     public static func =>(propertyName: String, dictionary: [String: String]) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            StarlarkDictionary(dictionary)
+            dictionary
         }
     }
 
-    public static func =>(propertyName: String, target: LabelBuilder.Target) -> StarlarkProperty {
+    public static func =>(propertyName: String, starlark: Starlark) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            target
+            starlark
         }
     }
 
-    public static func =>(propertyName: String, targets: [LabelBuilder.Target]) -> StarlarkProperty {
+    public static func =>(propertyName: String, starlarks: [Starlark]) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
-            targets
+            starlarks
         }
     }
 }

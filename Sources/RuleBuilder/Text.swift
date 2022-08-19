@@ -12,10 +12,3 @@ import Foundation
 public protocol Text {
     var text: String { get }
 }
-
-// MARK: - CodeText
-
-public protocol CodeText {
-    var withComment: String { get }
-    var withComma: String { get }
-}
