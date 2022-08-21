@@ -38,7 +38,7 @@ public final class File {
         }
 
         return """
-        # "\(fullPath)",
+        # \(fullPath)
         """
     }
 

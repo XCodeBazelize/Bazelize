@@ -67,14 +67,14 @@ final class SPMTests: XCTestCase {
 
         let result = podfile["ABCDEF"]
         let deps = """
-        "//Vendor/AFNetworking:AFNetworking",
-        "//Vendor/DataCompression:DataCompression",
-        "//Vendor/Moya:Combine",
-        "//Vendor/Moya:RxSwift",
-        "//Vendor/Peek:Peek",
-        "//Vendor/SVProgressHUD:SVProgressHUD",
-        "//Vendor/TLPhotoPicker:TLPhotoPicker",
-        "//Vendor/XLPagerTabStrip:XLPagerTabStrip",
+        //Vendor/AFNetworking:AFNetworking
+        //Vendor/DataCompression:DataCompression
+        //Vendor/Moya:Combine
+        //Vendor/Moya:RxSwift
+        //Vendor/Peek:Peek
+        //Vendor/SVProgressHUD:SVProgressHUD
+        //Vendor/TLPhotoPicker:TLPhotoPicker
+        //Vendor/XLPagerTabStrip:XLPagerTabStrip
         """
 
         XCTAssertEqual(result.joined(separator: "\n"), deps)

@@ -81,7 +81,7 @@ final class RuleTests: XCTestCase {
 
     func testWithComment() throws {
         let result = StarlarkRule("ios_framework") {
-            StarlarkComment("Before")
+            Starlark.comment("Before")
             "name" => "Test"
             "After"
         }.text
@@ -110,6 +110,34 @@ final class RuleTests: XCTestCase {
                 "a": "a",
                 "b": "b"
             },
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithBool() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data1" => true
+            "data2" => false
+        }.text
+
+        let target = """
+        ios_framework(
+            data1 = True,
+            data2 = False,
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithNone() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data" => None
+        }.text
+
+        let target = """
+        ios_framework(
+            data = None,
         )
         """
         XCTAssertEqual(target, result)

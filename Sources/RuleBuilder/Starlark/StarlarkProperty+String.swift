@@ -8,7 +8,7 @@
 import Foundation
 
 extension String {
-    public func property(@LabelBuilder builder: () -> [LabelBuilder.Target]) -> StarlarkProperty {
+    public func property(@StarlarkBuilder builder: () -> Starlark) -> StarlarkProperty {
         .init(self, builder: builder)
     }
 }
