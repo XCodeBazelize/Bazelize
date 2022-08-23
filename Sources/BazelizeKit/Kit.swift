@@ -6,7 +6,6 @@
 //
 
 import Cocoapod
-import CoreLocation
 import Foundation
 import PathKit
 import Util
@@ -19,8 +18,8 @@ import Yams
 public final class Kit {
     // MARK: Lifecycle
 
-    public init(_ projPath: Path) async throws {
-        project = try await Project(projPath)
+    public init(_ projPath: Path, _ prefferConfig: String? = nil) async throws {
+        project = try await Project(projPath, prefferConfig)
     }
 
     // MARK: Public

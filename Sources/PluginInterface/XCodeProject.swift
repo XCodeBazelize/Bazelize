@@ -26,6 +26,8 @@ public protocol XCodeProject: AnyObject {
 
     var config: [String: XCodeBuildSetting]? { get }
 
+    var prefferConfig: String? { get }
+
     func transformToLabel(_ path: String?) -> String?
 }
 

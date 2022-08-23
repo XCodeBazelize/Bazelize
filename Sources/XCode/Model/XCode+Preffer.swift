@@ -19,27 +19,29 @@ extension Dictionary where Key == String {
 }
 
 extension Dictionary where Key == String, Value == XCodeBuildSetting {
-    public func preffer<T>(config: String = "Release", _ keypath: KeyPath<XCodeBuildSetting, T>) -> T? {
-        let prefferValue = self[config]?[keyPath: keypath]
-        let firstValue = sortedByKey.first?.value[keyPath: keypath]
+    public func preffer<T>(config: String?, _ keyPath: KeyPath<XCodeBuildSetting, T>) -> T? {
+        let firstValue = sortedByKey.first?.value[keyPath: keyPath]
+        guard let key = config else { return firstValue }
+        let prefferValue = self[key]?[keyPath: keyPath]
         return prefferValue ?? firstValue
     }
 
     // prevent T??
-    public func preffer<T>(config: String = "Release", _ keypath: KeyPath<XCodeBuildSetting, T?>) -> T? {
-        let prefferValue = self[config]?[keyPath: keypath]
-        let firstValue = sortedByKey.first?.value[keyPath: keypath]
+    public func preffer<T>(config: String?, _ keyPath: KeyPath<XCodeBuildSetting, T?>) -> T? {
+        let firstValue = sortedByKey.first?.value[keyPath: keyPath]
+        guard let key = config else { return firstValue }
+        let prefferValue = self[key]?[keyPath: keyPath]
         return prefferValue ?? firstValue
     }
 }
 
 extension Target {
-    public func preffer<T>(config: String = "Release", _ keypath: KeyPath<XCodeBuildSetting, T>) -> T? {
-        self.config.preffer(config: config, keypath)
+    public func preffer<T>(_ keyPath: KeyPath<XCodeBuildSetting, T>) -> T? {
+        config.preffer(config: project.prefferConfig, keyPath)
     }
 
     // prevent T??
-    public func preffer<T>(config: String = "Release", _ keypath: KeyPath<XCodeBuildSetting, T?>) -> T? {
-        self.config.preffer(config: config, keypath)
+    public func preffer<T>(_ keyPath: KeyPath<XCodeBuildSetting, T?>) -> T? {
+        config.preffer(config: project.prefferConfig, keyPath)
     }
 }

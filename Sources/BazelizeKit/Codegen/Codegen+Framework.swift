@@ -13,9 +13,6 @@ import XCode
 
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
-        precondition(setting.bundleID != nil, "bundle id")
-        precondition(setting.iOS != nil, "min version")
-
         let depsXcode = ""
 
         var builder = Build.Builder()
@@ -24,10 +21,10 @@ extension Target {
 
         builder.add(.ios_framework) {
             "name" => name
-            "bundle_id" => setting.bundleID
-            "families" => setting.deviceFamily
-            "minimum_os_version" => setting.iOS
-            "infoplists" => setting.infoPlist
+            "bundle_id" => preffer(\.bundleID)
+            "families" => preffer(\.deviceFamily)
+            "minimum_os_version" => preffer(\.iOS)
+            "infoplists" => select(\.infoPlist).starlark
             "deps" => {
                 ":\(name)_library"
             }

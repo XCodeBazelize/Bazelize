@@ -11,10 +11,10 @@ import PathKit
 import XCode
 
 extension Target {
-    // MARK: Public
+    // MARK: Internal
 
     /// WORKSPACE/TARGET_NAME/BUILD
-    public func generateBUILD(_ kit: Kit) throws {
+    internal func generateBUILD(_ kit: Kit) throws {
         let code = generateCode(kit)
         let build = kit.project.workspacePath + name + "BUILD"
         print("Create \(build.string)")

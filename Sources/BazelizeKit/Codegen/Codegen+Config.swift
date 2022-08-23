@@ -17,7 +17,7 @@ extension Project {
 
     /// build:debug --//:mode=debug
     /// bazel build --config=debug [PACKAGE:RULE]
-    public func generateBazelRC(_ kit: Kit) throws {
+    internal func generateBazelRC(_ kit: Kit) throws {
         let configs = config?.keys.map { $0 } ?? []
         let bazelrc = kit.project.workspacePath + ".bazelrc"
         let code = configs.map { config in
@@ -29,7 +29,7 @@ extension Project {
         try bazelrc.write(code)
     }
 
-    public func generateBUILD(_ kit: Kit) throws {
+    internal func generateBUILD(_ kit: Kit) throws {
         let code = generateCode(kit)
         let build = kit.project.workspacePath + "BUILD"
         print("Create \(build.string)")
