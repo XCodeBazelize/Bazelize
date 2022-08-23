@@ -99,21 +99,21 @@ extension XCodeTests {
     }
 }
 
-// MARK: Test Preffer
+// MARK: Test Prefer
 extension XCodeTests {
-    func testPrefferHit() {
-        let code = Self.config.preffer(config: "Release", \.iOS)
+    func testPreferHit() {
+        let code = Self.config.prefer(config: "Release", \.iOS)
         XCTAssertEqual(code, "9.0")
     }
 
-    func testPrefferNotHit() {
-        let code = Self.config.preffer(config: "Release2", \.iOS)
+    func testPreferNotHit() {
+        let code = Self.config.prefer(config: "Release2", \.iOS)
         XCTAssertEqual(code, "10.0")
     }
 
-    func testPrefferNoValue() {
+    func testPreferNoValue() {
         let config: [String: XCodeBuildSetting] = [:]
-        let code = config.preffer(config: "Release", \.iOS)
+        let code = config.prefer(config: "Release", \.iOS)
         XCTAssertEqual(code, nil)
     }
 }

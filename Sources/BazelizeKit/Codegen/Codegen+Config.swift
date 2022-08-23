@@ -13,7 +13,7 @@ import XCode
 
 /// https://bazel.build/docs/configurable-attributes
 extension Project {
-    // MARK: Public
+    // MARK: Internal
 
     /// build:debug --//:mode=debug
     /// bazel build --config=debug [PACKAGE:RULE]

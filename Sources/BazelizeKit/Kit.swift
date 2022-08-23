@@ -18,8 +18,8 @@ import Yams
 public final class Kit {
     // MARK: Lifecycle
 
-    public init(_ projPath: Path, _ prefferConfig: String? = nil) async throws {
-        project = try await Project(projPath, prefferConfig)
+    public init(_ projPath: Path, _ preferConfig: String? = nil) async throws {
+        project = try await Project(projPath, preferConfig)
     }
 
     // MARK: Public

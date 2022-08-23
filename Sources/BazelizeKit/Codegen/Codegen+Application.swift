@@ -15,7 +15,7 @@ extension Target {
         var builder = Build.Builder()
         builder.custom(generateSwiftLibrary(kit))
 
-        switch preffer(\.sdk) {
+        switch prefer(\.sdk) {
         case .iOS: buildIOS(&builder, kit)
         case .macOS: buildMac(&builder, kit)
         case .tvOS: buildTV(&builder, kit)
@@ -34,8 +34,8 @@ extension Target {
 
         builder.add(.macos_command_line_application) {
             "name" => name
-            "bundle_id" => preffer(\.bundleID)
-            "minimum_os_version" => preffer(\.macOS)
+            "bundle_id" => prefer(\.bundleID)
+            "minimum_os_version" => prefer(\.macOS)
             "infoplists" => {
                 select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
             }
@@ -51,9 +51,9 @@ extension Target {
         builder.load(.ios_application)
         builder.add(.ios_application) {
             "name" => name
-            "bundle_id" => preffer(\.bundleID)
-            "families" => preffer(\.deviceFamily)
-            "minimum_os_version" => preffer(\.iOS)
+            "bundle_id" => prefer(\.bundleID)
+            "families" => prefer(\.deviceFamily)
+            "minimum_os_version" => prefer(\.iOS)
             "infoplists" => {
                 select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
             }
@@ -72,8 +72,8 @@ extension Target {
 
         builder.add(.macos_application) {
             "name" => name
-            "bundle_id" => preffer(\.bundleID)
-            "minimum_os_version" => preffer(\.macOS)
+            "bundle_id" => prefer(\.bundleID)
+            "minimum_os_version" => prefer(\.macOS)
             "infoplists" => {
                 select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
             }
@@ -87,8 +87,8 @@ extension Target {
         builder.load(.tvos_application)
         builder.add(.tvos_application) {
             "name" => name
-            "bundle_id" => preffer(\.bundleID)
-            "minimum_os_version" => preffer(\.tvOS)
+            "bundle_id" => prefer(\.bundleID)
+            "minimum_os_version" => prefer(\.tvOS)
             "infoplists" => {
                 select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
             }
@@ -104,8 +104,8 @@ extension Target {
         builder.load(.watchos_application)
         builder.add(.watchos_application) {
             "name" => name
-            "bundle_id" => preffer(\.bundleID)
-            "minimum_os_version" => preffer(\.watchOS)
+            "bundle_id" => prefer(\.bundleID)
+            "minimum_os_version" => prefer(\.watchOS)
             "infoplists" => {
                 select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
             }

@@ -61,7 +61,7 @@ extension Project: Encodable {
 public final class Project {
     // MARK: Lifecycle
 
-    public init(_ projectPath: Path, _ prefferConfig: String? = nil) async throws {
+    public init(_ projectPath: Path, _ preferConfig: String? = nil) async throws {
         let path = projectPath.parent()
         workspacePath = path
         self.projectPath = projectPath
@@ -72,7 +72,7 @@ public final class Project {
             .flatMap { $0 }
             .compactMap(\.product)
             .compactMap(RemoteSPMPackage.init)
-        self.prefferConfig = prefferConfig
+        self.preferConfig = preferConfig
     }
 
     #warning("todo")
@@ -81,7 +81,7 @@ public final class Project {
 
     public let workspacePath: Path
     public let projectPath: Path
-    public let prefferConfig: String?
+    public let preferConfig: String?
 
     public var localSPM: [String] {
         let groups = try? native.rootGroup()?.localSPM.compactMap { $0 }

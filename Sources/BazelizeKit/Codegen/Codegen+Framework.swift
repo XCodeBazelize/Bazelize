@@ -21,9 +21,9 @@ extension Target {
 
         builder.add(.ios_framework) {
             "name" => name
-            "bundle_id" => preffer(\.bundleID)
-            "families" => preffer(\.deviceFamily)
-            "minimum_os_version" => preffer(\.iOS)
+            "bundle_id" => prefer(\.bundleID)
+            "families" => prefer(\.deviceFamily)
+            "minimum_os_version" => prefer(\.iOS)
             "infoplists" => select(\.infoPlist).starlark
             "deps" => {
                 ":\(name)_library"

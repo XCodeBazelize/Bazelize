@@ -1,5 +1,5 @@
 //
-//  XCode+Preffer.swift
+//  XCode+Prefer.swift
 //
 //
 //  Created by Yume on 2022/8/23.
@@ -19,29 +19,29 @@ extension Dictionary where Key == String {
 }
 
 extension Dictionary where Key == String, Value == XCodeBuildSetting {
-    public func preffer<T>(config: String?, _ keyPath: KeyPath<XCodeBuildSetting, T>) -> T? {
+    public func prefer<T>(config: String?, _ keyPath: KeyPath<XCodeBuildSetting, T>) -> T? {
         let firstValue = sortedByKey.first?.value[keyPath: keyPath]
         guard let key = config else { return firstValue }
-        let prefferValue = self[key]?[keyPath: keyPath]
-        return prefferValue ?? firstValue
+        let preferValue = self[key]?[keyPath: keyPath]
+        return preferValue ?? firstValue
     }
 
     // prevent T??
-    public func preffer<T>(config: String?, _ keyPath: KeyPath<XCodeBuildSetting, T?>) -> T? {
+    public func prefer<T>(config: String?, _ keyPath: KeyPath<XCodeBuildSetting, T?>) -> T? {
         let firstValue = sortedByKey.first?.value[keyPath: keyPath]
         guard let key = config else { return firstValue }
-        let prefferValue = self[key]?[keyPath: keyPath]
-        return prefferValue ?? firstValue
+        let preferValue = self[key]?[keyPath: keyPath]
+        return preferValue ?? firstValue
     }
 }
 
 extension Target {
-    public func preffer<T>(_ keyPath: KeyPath<XCodeBuildSetting, T>) -> T? {
-        config.preffer(config: project.prefferConfig, keyPath)
+    public func prefer<T>(_ keyPath: KeyPath<XCodeBuildSetting, T>) -> T? {
+        config.prefer(config: project.preferConfig, keyPath)
     }
 
     // prevent T??
-    public func preffer<T>(_ keyPath: KeyPath<XCodeBuildSetting, T?>) -> T? {
-        config.preffer(config: project.prefferConfig, keyPath)
+    public func prefer<T>(_ keyPath: KeyPath<XCodeBuildSetting, T?>) -> T? {
+        config.prefer(config: project.preferConfig, keyPath)
     }
 }
