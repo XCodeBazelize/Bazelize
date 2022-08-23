@@ -17,6 +17,7 @@ public indirect enum Starlark: Text {
     case array([Starlark])
     case dictionary([String: Starlark])
     case bool(Bool)
+    case select(Starlark.Select<Starlark>)
     case none
 
     // MARK: Lifecycle
@@ -85,6 +86,8 @@ public indirect enum Starlark: Text {
             return ["{", pair,"}"].withNewLine
         case .bool(let value):
             return value ? "True" : "False"
+        case .select(let value):
+            return value.text
         case .none:
             return "None"
         }

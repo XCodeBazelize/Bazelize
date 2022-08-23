@@ -41,4 +41,8 @@ public enum StarlarkBuilder {
     public static func buildExpression(_ expression: Bool) -> Starlark {
         .bool(expression)
     }
+
+    public static func buildExpression(_ expression: Starlark.Select<Starlark>) -> Starlark {
+        .select(expression)
+    }
 }
