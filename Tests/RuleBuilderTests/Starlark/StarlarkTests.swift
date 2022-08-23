@@ -8,6 +8,8 @@
 import XCTest
 @testable import RuleBuilder
 
+// MARK: - StarlarkTests
+
 final class StarlarkTests: XCTestCase {
     func build(@StarlarkBuilder builder: () -> Starlark) -> Starlark {
         builder()
@@ -110,6 +112,33 @@ final class StarlarkTests: XCTestCase {
             "2",
             "3",
         ]
+        """)
+    }
+}
+
+// MARK: Select
+extension StarlarkTests {
+    func testSelectSame() {
+        let code = build {
+            Starlark.Select.same("test")
+        }.text
+
+        XCTAssertEqual(code, "\"test\"")
+    }
+
+    func testSelectVarious() {
+        let code = build {
+            Starlark.Select.various([
+                "Release": "r",
+                "Debug": "d",
+            ])
+        }.text
+
+        XCTAssertEqual(code, """
+        select({
+            "//:Debug": "d",
+            "//:Release": "r"
+        })
         """)
     }
 }

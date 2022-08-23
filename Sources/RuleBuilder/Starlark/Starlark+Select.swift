@@ -26,24 +26,24 @@ extension Starlark {
 }
 
 extension Starlark.Select where T == String {
-    public var starlark: Starlark.Select<Starlark> {
-        map(Starlark.init)
+    public var starlark: Starlark {
+        .select(map(Starlark.init))
     }
 }
 
 extension Starlark.Select where T == String? {
-    public var starlark: Starlark.Select<Starlark> {
-        map {
+    public var starlark: Starlark {
+        .select(map {
             Starlark($0) ?? None
-        }
+        })
     }
 }
 
 extension Starlark.Select where T == [String] {
-    public var starlark: Starlark.Select<Starlark> {
-        map {
+    public var starlark: Starlark {
+        .select(map {
             Starlark($0) ?? .none
-        }
+        })
     }
 }
 
