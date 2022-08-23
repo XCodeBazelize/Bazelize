@@ -12,7 +12,6 @@ import XCode
 extension Target {
     /// https://github.com/bazelbuild/rules_swift/blob/master/doc/rules.md#swift_library
     /// swift_library(name, alwayslink, copts, data, defines, deps, generated_header_name, generates_header, linkopts, linkstatic, module_name, private_deps, srcs, swiftc_inputs)
-    #warning("todo check pure swift, or mix objc & swift")
     func generateSwiftLibrary(_: Kit) -> String {
         #warning("plugin")
 //        let depsPod = "" // kit.pod?[name] ?? ""
@@ -23,7 +22,7 @@ extension Target {
         builder.add(.swift_library) {
             "name" => "\(name)_swift"
             "module_name" => name
-            "srcs" => srcs
+            "srcs" => srcs_swift
             "deps" => {
                 Starlark.comment("Cocoapod Deps")
                 // depsPod

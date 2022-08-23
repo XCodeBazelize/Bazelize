@@ -13,7 +13,7 @@ import XCode
 extension Target {
     func generateApplicationCode(_ kit: Kit) -> String {
         var builder = Build.Builder()
-        builder.custom(generateSwiftLibrary(kit))
+        builder.custom(generateLibrary(kit))
 
         switch prefer(\.sdk) {
         case .iOS: buildIOS(&builder, kit)
@@ -30,7 +30,7 @@ extension Target {
     func generateCommandLineApplicationCode(_ kit: Kit) -> String {
         var builder = Build.Builder()
         builder.load(.macos_command_line_application)
-        builder.custom(generateSwiftLibrary(kit))
+        builder.custom(generateLibrary(kit))
 
         builder.add(.macos_command_line_application) {
             "name" => name

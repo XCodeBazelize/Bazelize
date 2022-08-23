@@ -24,7 +24,9 @@ extension Target {
             "bundle_id" => prefer(\.bundleID)
             "families" => prefer(\.deviceFamily)
             "minimum_os_version" => prefer(\.iOS)
-            "infoplists" => select(\.infoPlist).starlark
+            "infoplists" => {
+                select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
+            }
             "deps" => {
                 ":\(name)_library"
             }
