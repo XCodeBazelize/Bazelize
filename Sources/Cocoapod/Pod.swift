@@ -12,13 +12,13 @@ import Util
 
 
 @_cdecl("createPlugin")
-func createPlugin() -> UnsafeMutableRawPointer {
-    Unmanaged.passRetained(PluginABuilder()).toOpaque()
+public func createPlugin() -> UnsafeMutableRawPointer {
+    Unmanaged.passRetained(_PluginBuilder()).toOpaque()
 }
 
-// MARK: - PluginABuilder
+// MARK: - _PluginBuilder
 
-final class PluginABuilder: PluginBuilder {
+final class _PluginBuilder: PluginBuilder {
     override final func build(_ proj: XCodeProject) async throws -> Plugin? {
         try await Pod.load(proj)
     }

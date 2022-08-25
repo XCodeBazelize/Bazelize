@@ -11,6 +11,8 @@ import SwiftCommand
 import SystemPackage
 import Util
 
+// MARK: - PluginBuilder
+
 /// ~/.bazelize
 ///     git/XCodeBazelize_Bazelize
 ///     build/5.6/XCodeBazelize_Bazelize/1.0.0
@@ -29,7 +31,7 @@ enum PluginBuilder {
                 try build(plugin: info)
                 return info
             } catch {
-                print("Build Plugin(\(info.repo) Fail")
+                print("Build Plugin(\(info.repo)) Fail: \(error)")
                 return nil
             }
         }
@@ -73,23 +75,42 @@ enum PluginBuilder {
         if !repo.exists {
             _ = try commandGit?.setCWD(FilePath(git.string))
                 .addArguments("clone", plugin.url, plugin.user_repo)
-                .waitForOutput()
+                .setStdout(.null)
+                .print()
+                .wait()
         }
 
         _ = try commandGit?.setCWD(FilePath(repo.string))
             .addArguments("checkout", plugin.tag)
-            .waitForOutput()
+            .setStdout(.null)
+            .print()
+            .wait()
 
         _ = try commandSwift?.setCWD(FilePath(repo.string))
             .addArguments("build", "-c", "release")
-            .waitForOutput()
+            .setStdout(.null)
+            .print()
+            .wait()
 
         let release = repo + ".build" + "release"
 
         try plugin.libsName.forEach { lib in
             let from = release + lib
-            let to = build + lib
+            let toDir = build + plugin.user_repo
+            try toDir.mkpath()
+            let to = toDir + lib
+            print("cp \(from.string) \(to.string)")
             try from.copy(to)
         }
+    }
+}
+
+extension Command {
+    __consuming func print() -> Self {
+        Swift.print("""
+        \(cwd?.string ?? "")> \(executablePath) \(arguments.joined(separator: " "))
+        """)
+
+        return self
     }
 }

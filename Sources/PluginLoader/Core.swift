@@ -19,8 +19,14 @@ public func load(manifest: Path, _ proj: XCodeProject) async throws -> [Plugin] 
     guard manifest.exists else {
         return []
     }
+
+    print("Parse Manifest: \(manifest.string)")
     let infos = try parseManifest(manifest)
+
+    print("Build Plugins")
     let buildPlugins = try PluginBuilder.build(plugins: infos)
+
+    print("Load Plugins")
     let result = try await withThrowingTaskGroup(of: Plugin?.self) { group -> [Plugin?] in
         let build = Path.home + ".bazelize" + "build" + swift
         for plugin in buildPlugins {
@@ -32,7 +38,6 @@ public func load(manifest: Path, _ proj: XCodeProject) async throws -> [Plugin] 
             }
         }
 
-        try await group.waitForAll()
         return try await group.all
     }
     return result.compactMap { $0 }

@@ -37,7 +37,7 @@ struct PluginInfo: Codable {
 
     var paths: [String] {
         libsName.map { lib in
-            repo + "/" + lib
+            user_repo + "/" + lib
         }
     }
 }

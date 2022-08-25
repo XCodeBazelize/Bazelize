@@ -22,6 +22,25 @@ enum DynamicLoadError: Error {
 // MARK: - PluginLoader
 
 enum PluginLoader {
+    /// ## Package.swift
+    /// ---
+    ///
+    /// `.library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),`
+    ///
+    /// ### Loadable Plugin Implement
+    ///
+    /// ```swift
+    /// @_cdecl("createPlugin")
+    /// public func createPlugin() -> UnsafeMutableRawPointer {
+    ///     Unmanaged.passRetained(YourPluginBuilder()).toOpaque()
+    /// }
+    ///
+    /// final class YourPluginBuilder: PluginBuilder {
+    ///     override final func build(_ proj: XCodeProject) async throws -> Plugin? {
+    ///         try await Pod.load(proj)
+    ///     }
+    /// }
+    /// ```
     static func load(at path: String, proj: XCodeProject) async throws -> Plugin? {
         let openRes = dlopen(path, RTLD_NOW|RTLD_LOCAL)
         if openRes != nil {
