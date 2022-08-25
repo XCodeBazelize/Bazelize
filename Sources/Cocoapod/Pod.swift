@@ -24,6 +24,9 @@ public final class Pod {
     // MARK: Public
 
     public let name = "Cocoapod"
+    public let description = "Use `PodToBUILD`"
+    public let version = "0.0.1"
+    public let url = "https://github.com/XCodeBazelize/Bazelize"
 
     // MARK: Internal
 

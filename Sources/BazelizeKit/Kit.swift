@@ -9,6 +9,8 @@ import Cocoapod
 import CoreLocation
 import Foundation
 import PathKit
+import PluginInterface
+import PluginLoader
 import Util
 import XCode
 import XcodeProj
@@ -21,14 +23,15 @@ public final class Kit {
 
     public init(_ projPath: Path) async throws {
         project = try await Project(projPath)
+        plugins = []
     }
 
     // MARK: Public
 
-    public func run() async throws {
+    public func run(_ mainfest: Path) async throws {
         defer { tip() }
 
-        try await load()
+        plugins = try await PluginLoader.load(manifest: mainfest, project)
 
         let targets = project.targets.compactMap {
             $0 as? XCode.Target
@@ -53,7 +56,9 @@ public final class Kit {
             try target.generateBUILD(self)
         }
 
-        try? pod?.generateFile(project.workspacePath)
+        plugins.forEach { plugin in
+            try? plugin.generateFile(project.workspacePath)
+        }
     }
 
     public func dump() throws {
@@ -67,32 +72,14 @@ public final class Kit {
     let project: Project
 
     /// plugins...
-    var pod: Pod?
+    var plugins: [Plugin]
 }
 
 // MARK: - Plugins
-/// start -> load xcode
-/// start -> load plugin list
-/// load plugin list -> build plugin
-/// build plugin -> load plugin
-/// load xcode -> load plugin
 extension Kit {
-//    private func loadPluginList(_ path: Path?) async throws -> PluginList {}
-    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/12
-//    private func buildPlugins(_ list: PluginList) async throws {}
-    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/14
-//    private func loadPlugins(_ list: PluginList) async throws -> [Plugin] {}
-//    private func load(_ path: Path?) async throws {
-//        let list = try await loadPluginList(path)
-//        try await buildPlugin(list)
-//        self.plugins = try await loadPlugins(list)
-//    }
-
-    private func load() async throws {
-        pod = try await Pod.parse(project.workspacePath)
-    }
-
     private func tip() {
-        pod?.tip()
+        plugins.forEach { plugin in
+            plugin.tip()
+        }
     }
 }
