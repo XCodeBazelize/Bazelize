@@ -11,6 +11,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "bazelize", targets: ["Bazelize"]),
+        .library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -60,7 +61,6 @@ let package = Package(
                 "Yams",
 
                 "XCode",
-                "Cocoapod",
                 "RuleBuilder",
                 "PluginLoader",
 

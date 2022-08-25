@@ -5,7 +5,6 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import Cocoapod
 import CoreLocation
 import Foundation
 import PathKit

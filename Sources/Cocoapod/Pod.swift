@@ -10,6 +10,21 @@ import PathKit
 import PluginInterface
 import Util
 
+
+@_cdecl("createPlugin")
+func createPlugin() -> UnsafeMutableRawPointer {
+    Unmanaged.passRetained(PluginABuilder()).toOpaque()
+}
+
+// MARK: - PluginABuilder
+
+final class PluginABuilder: PluginBuilder {
+    override final func build(_ proj: XCodeProject) async throws -> Plugin? {
+        try await Pod.load(proj)
+    }
+}
+
+
 // MARK: - Pod
 
 public final class Pod {
