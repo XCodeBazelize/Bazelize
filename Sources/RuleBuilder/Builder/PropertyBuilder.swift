@@ -11,16 +11,11 @@ import Foundation
 public enum PropertyBuilder {
     public typealias Target = Text
 
-
     public static func buildExpression(_ expression: String) -> Target {
-        Comment(expression)
+        Starlark.comment(expression)
     }
 
-    public static func buildExpression(_ expression: Comment) -> Target {
-        expression
-    }
-
-    public static func buildExpression(_ expression: Property) -> Target {
+    public static func buildExpression(_ expression: Target) -> Target {
         expression
     }
 

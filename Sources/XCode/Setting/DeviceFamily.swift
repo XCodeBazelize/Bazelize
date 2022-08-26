@@ -26,17 +26,17 @@ internal enum DeviceFamily: String {
 
     internal var code: String {
         switch self {
-        case .iphone: return "\"iphone\","
-        case .ipad: return "\"ipad\","
-        case .appletv: return "\"appletv\","
-        case .applewatch: return "\"applewatch\","
-        case .homepod: return "\"homepod\","
-        case .mac: return "\"mac\","
+        case .iphone: return "iphone"
+        case .ipad: return "ipad"
+        case .appletv: return "appletv"
+        case .applewatch: return "applewatch"
+        case .homepod: return "homepod"
+        case .mac: return "mac"
         }
     }
 
 
-    /// `1,2` -> [`"iphone",` `"ipad",`]
+    /// `1,2` -> [`"iphone"` `"ipad"`]
     internal static func parse(_ code: String?) -> [String] {
         code?.split(separator: ",")
             .map(String.init)

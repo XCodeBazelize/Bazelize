@@ -193,7 +193,7 @@ extension Target {
             .compactMap(\.target?.name)
             .map { framework in
                 """
-                "//\(framework):\(framework)",
+                //\(framework):\(framework)
                 """
             }
     }
@@ -206,7 +206,7 @@ extension Target {
             .compactMap(\.target?.name)
             .map { framework in
                 """
-                "//\(framework):\(framework)_library",
+                //\(framework):\(framework)_library
                 """
             }
     }
@@ -222,7 +222,7 @@ extension Target {
             build.file?.name?.replacingOccurrences(of: ".framework", with: "")
         }.map { framework in
             """
-            "\(framework)",
+            \(framework)
             """
         }
     }
@@ -234,7 +234,7 @@ extension String {
     /// .mm
     func hasExtension(_ type: String) -> Bool {
         hasSuffix("""
-        "\(type)",
+        \(type)
         """)
     }
 }

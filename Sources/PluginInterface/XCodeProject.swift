@@ -26,6 +26,8 @@ public protocol XCodeProject: AnyObject {
 
     var config: [String: XCodeBuildSetting]? { get }
 
+    var preferConfig: String? { get }
+
     func transformToLabel(_ path: String?) -> String?
 }
 
@@ -37,7 +39,7 @@ extension XCodeProject {
         guard let path = relativePath else { return nil }
 
         let commentedLabel = """
-        "# \(path)",
+        # \(path)
         """
         guard let _package = path.split(separator: "/").first else {
             return commentedLabel
@@ -51,11 +53,11 @@ extension XCodeProject {
 
         if check(package) {
             return """
-            "//\(package):\(restPath)",
+            //\(package):\(restPath)
             """
         } else {
             return """
-            "//:\(package)/\(restPath)",
+            //:\(package)/\(restPath)
             """
         }
     }

@@ -10,6 +10,10 @@ release:
 coherent:
 	coherent-swift report
 
+.PHONY: lint
+lint:
+	swiftformat --lint . --verbose
+
 .PHONY: format
 format:
 	swiftformat .

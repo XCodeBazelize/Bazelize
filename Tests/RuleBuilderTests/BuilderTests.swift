@@ -21,14 +21,14 @@ final class RuleTests: XCTestCase {
     """
 
     func testRuleBuilderSimple() throws {
-        let result = Rule("ios_framework") {
-            Property("name") {
+        let result = StarlarkRule("ios_framework") {
+            StarlarkProperty("name") {
                 "Test"
             }
-            Property("bundle_id") {
+            StarlarkProperty("bundle_id") {
                 "com.example.test"
             }
-            Property("families") {
+            StarlarkProperty("families") {
                 "1"
                 "2"
             }
@@ -37,14 +37,14 @@ final class RuleTests: XCTestCase {
     }
 
     func testRuleBuilderArray() throws {
-        let result = Rule("ios_framework") {
-            Property("name") {
+        let result = StarlarkRule("ios_framework") {
+            StarlarkProperty("name") {
                 "Test"
             }
-            Property("bundle_id") {
+            StarlarkProperty("bundle_id") {
                 "com.example.test"
             }
-            Property("families") {
+            StarlarkProperty("families") {
                 ["1", "2"]
             }
         }.text
@@ -54,7 +54,7 @@ final class RuleTests: XCTestCase {
     func testWithNil() throws {
         let nilStr: String? = nil
 
-        let result = Rule("ios_framework") {
+        let result = StarlarkRule("ios_framework") {
             "name" => {
                 nilStr
             }
@@ -80,8 +80,8 @@ final class RuleTests: XCTestCase {
     }
 
     func testWithComment() throws {
-        let result = Rule("ios_framework") {
-            Comment("Before")
+        let result = StarlarkRule("ios_framework") {
+            Starlark.comment("Before")
             "name" => "Test"
             "After"
         }.text
@@ -91,6 +91,67 @@ final class RuleTests: XCTestCase {
             # Before
             name = "Test",
             # After
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithDictionary() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data" => [
+                "b": "b",
+                "a": "a",
+            ]
+        }.text
+
+        let target = """
+        ios_framework(
+            data = {
+                "a": "a",
+                "b": "b"
+            },
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithBool() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data1" => true
+            "data2" => false
+        }.text
+
+        let target = """
+        ios_framework(
+            data1 = True,
+            data2 = False,
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithNone() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data" => None
+        }.text
+
+        let target = """
+        ios_framework(
+            data = None,
+        )
+        """
+        XCTAssertEqual(target, result)
+    }
+
+    func testWithEmptyDictionary() throws {
+        let result = StarlarkRule("ios_framework") {
+            "data" => [:]
+        }.text
+
+        let target = """
+        ios_framework(
+            data = {
+            },
         )
         """
         XCTAssertEqual(target, result)

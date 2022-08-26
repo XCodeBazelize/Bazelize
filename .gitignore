@@ -173,5 +173,8 @@ temp/
 coherent-swift.yml
 reports/
 
+# lefthook
+lefthook.yml
+
 .swiftpm/*
 .vscode/*

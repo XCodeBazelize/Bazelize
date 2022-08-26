@@ -6,44 +6,35 @@
 //
 
 import Foundation
+import RuleBuilder
 import XCode
+
+// TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
 
 extension Target {
     func generateFrameworkCode(_ kit: Kit) -> String {
-        precondition(setting.bundleID != nil, "bundle id")
-        precondition(setting.iOS != nil, "min version")
-
         let depsXcode = ""
-
-        let deviceFamily = setting.deviceFamily.withNewLine
-
-//        self.infoPlist
 
         var builder = Build.Builder()
         builder.load(.ios_framework)
         builder.custom(generateSwiftLibrary(kit))
 
-        builder.custom("""
-        ios_framework(
-            name = "\(name)",
-            bundle_id = "\(setting.bundleID!)",
-            families = [
-        \(deviceFamily.indent(2))
-            ],
-            # minimum_os_version = "\(setting.iOS!)",
-            # (self.infoPlist ?? "")
-            infoplists = [
-                # ":Info.plist",
-                (self.plistLabel)
-            ],
-            deps = [":\(name)_library"],
-            frameworks = [
-                # XCode Target Deps
-        \(depsXcode.indent(2))
-            ],
-            visibility = ["//visibility:public"],
-        )
-        """)
+        builder.add(.ios_framework) {
+            "name" => name
+            "bundle_id" => prefer(\.bundleID)
+            "families" => prefer(\.deviceFamily)
+            "minimum_os_version" => prefer(\.iOS)
+            "infoplists" => {
+                select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
+            }
+            "deps" => {
+                ":\(name)_library"
+            }
+            "frameworks" => {
+                depsXcode
+            }
+            StarlarkProperty.Visibility.public
+        }
 
         return builder.build()
     }
