@@ -25,8 +25,6 @@ extension Build.Builder {
 }
 
 extension Build.Builder {
-    // MARK: Internal
-
     mutating
     func load(_ rule: RulesObjc) {
         load(loadableRule: rule)
@@ -68,9 +66,7 @@ extension Build.Builder {
         codes.insert(code, at: 0)
     }
 
-    // MARK: Private
-
-    private mutating
+    mutating
     func load(loadableRule rule: LoadableRule) {
         load(rule.load)
     }

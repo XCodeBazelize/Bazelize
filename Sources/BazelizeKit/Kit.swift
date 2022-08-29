@@ -79,6 +79,7 @@ extension Kit {
     private final func generateWorkspace() {
         let workspace = Workspace { builder in
             builder.default()
+            builder.rulesPlistFragment()
         }
         try? workspace.generate(project.workspacePath)
     }
