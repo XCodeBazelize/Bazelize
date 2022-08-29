@@ -10,6 +10,21 @@ import PathKit
 import PluginInterface
 import Util
 
+
+@_cdecl("createPlugin")
+public func createPlugin() -> UnsafeMutableRawPointer {
+    Unmanaged.passRetained(_PluginBuilder()).toOpaque()
+}
+
+// MARK: - _PluginBuilder
+
+final class _PluginBuilder: PluginBuilder {
+    override final func build(_ proj: XCodeProject) async throws -> Plugin? {
+        try await Pod.load(proj)
+    }
+}
+
+
 // MARK: - Pod
 
 public final class Pod {
@@ -24,6 +39,9 @@ public final class Pod {
     // MARK: Public
 
     public let name = "Cocoapod"
+    public let description = "Use `PodToBUILD`"
+    public let version = "0.0.1"
+    public let url = "https://github.com/XCodeBazelize/Bazelize"
 
     // MARK: Internal
 
