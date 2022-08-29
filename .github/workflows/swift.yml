@@ -42,9 +42,9 @@ jobs:
     strategy:
       matrix:
         xcode: 
+        - "13.4.1"
+        - "13.4"
         - "13.3.1"
-        - "13.3"
-        - "13.2.1"
 
     steps:
     - uses: actions/checkout@v2

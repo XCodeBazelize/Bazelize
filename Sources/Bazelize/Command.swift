@@ -17,6 +17,9 @@ struct Command: AsyncParsableCommand {
     @Option(name: [.short], help: "Debug/Release")
     var config = "Release"
 
+    @Option(name: [.long], help: "plugin list")
+    var manifest = ".bazelize.yml"
+
     @Flag
     var dump = false
 
@@ -26,7 +29,7 @@ struct Command: AsyncParsableCommand {
         if dump {
             try kit.dump()
         } else {
-            try await kit.run()
+            try await kit.run(Path(manifest))
         }
     }
 }

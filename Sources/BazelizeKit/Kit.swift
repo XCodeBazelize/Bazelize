@@ -5,9 +5,10 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import Cocoapod
 import Foundation
 import PathKit
+import PluginInterface
+import PluginLoader
 import Util
 import XCode
 import XcodeProj
@@ -20,42 +21,24 @@ public final class Kit {
 
     public init(_ projPath: Path, _ preferConfig: String? = nil) async throws {
         project = try await Project(projPath, preferConfig)
+        plugins = []
     }
 
     // MARK: Public
 
-    public func run() async throws {
-        defer { tip() }
+    public final func run(_ mainfest: Path) async throws {
+        defer { tips() }
 
-        try await load()
+        try await loadPlugins(mainfest)
 
-        let targets = project.targets.compactMap {
-            $0 as? XCode.Target
-        }
-
-        /// {WORKSPACE}/WORKSPACE
-//        let spm_repositories = targets.spm_repositories(project.projectPath)
-        let workspace = Workspace { builder in
-            builder.default()
-//            builder.custom(code: spm_repositories)
-        }
-        try? workspace.generate(project.workspacePath)
-
-        /// {WORKSPACE}/BUILD
-        try? project.generateBUILD(self)
-
-        /// {WORKSPACE}/.bazelrc
-        try? project.generateBazelRC(self)
-
-        /// {WORKSPACE}/Target/BUILD
-        for target in targets {
-            try target.generateBUILD(self)
-        }
-
-        try? pod?.generateFile(project.workspacePath)
+        generateWorkspace()
+        generateBuild()
+        generateBazelRC()
+        generateTargetBuild()
+        generatePluginExtraFile()
     }
 
-    public func dump() throws {
+    public final func dump() throws {
         let encoder = YAMLEncoder()
         let yaml = try encoder.encode(project)
         print(yaml)
@@ -66,32 +49,59 @@ public final class Kit {
     let project: Project
 
     /// plugins...
-    var pod: Pod?
+    var plugins: [Plugin]
 }
 
-// MARK: - Plugins
-/// start -> load xcode
-/// start -> load plugin list
-/// load plugin list -> build plugin
-/// build plugin -> load plugin
-/// load xcode -> load plugin
-extension Kit {
-//    private func loadPluginList(_ path: Path?) async throws -> PluginList {}
-    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/12
-//    private func buildPlugins(_ list: PluginList) async throws {}
-    // TODO: https://github.com/XCodeBazelize/Bazelize/issues/14
-//    private func loadPlugins(_ list: PluginList) async throws -> [Plugin] {}
-//    private func load(_ path: Path?) async throws {
-//        let list = try await loadPluginList(path)
-//        try await buildPlugin(list)
-//        self.plugins = try await loadPlugins(list)
-//    }
 
-    private func load() async throws {
-        pod = try await Pod.parse(project.workspacePath)
+extension Kit {
+    private final func loadPlugins(_ mainfest: Path) async throws {
+        plugins = try await PluginLoader.load(manifest: mainfest, project)
+        for plugin in plugins {
+            print("Load Plugin \(plugin.name)(\(plugin.version))")
+        }
     }
 
-    private func tip() {
-        pod?.tip()
+    private final func tips() {
+        plugins.forEach { plugin in
+            plugin.tip()
+        }
+    }
+
+    private final func generatePluginExtraFile() {
+        plugins.forEach { plugin in
+            try? plugin.generateFile(project.workspacePath)
+        }
+    }
+}
+
+extension Kit {
+    /// {WORKSPACE}/WORKSPACE
+    private final func generateWorkspace() {
+        let workspace = Workspace { builder in
+            builder.default()
+        }
+        try? workspace.generate(project.workspacePath)
+    }
+
+    /// {WORKSPACE}/BUILD
+    private final func generateBuild() {
+        try? project.generateBUILD(self)
+    }
+
+    /// {WORKSPACE}/.bazelrc
+    private final func generateBazelRC() {
+        try? project.generateBazelRC(self)
+    }
+
+
+    /// {WORKSPACE}/Target/BUILD
+    private final func generateTargetBuild() {
+        let targets = project.targets.compactMap {
+            $0 as? XCode.Target
+        }
+
+        for target in targets {
+            try? target.generateBUILD(self)
+        }
     }
 }

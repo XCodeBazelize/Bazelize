@@ -61,7 +61,6 @@ extension BuildSetting {
 
     // MARK: Private
 
-
     /// INFOPLIST_KEY_
     /// INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
     private subscript(plist key: String) -> String? {
@@ -71,7 +70,6 @@ extension BuildSetting {
 
 extension BuildSetting {
     // MARK: Internal
-
 
     func defaultPlist() -> [String] {
         DefaultPlist.allCases.filter { (key: DefaultPlist) in
@@ -90,8 +88,16 @@ extension BuildSetting {
         case CFBundleDevelopmentRegion
         case CFBundleShortVersionString
 
-        // MARK: Private
+        // MARK: Fileprivate
 
+        fileprivate var xml: String {
+            """
+            <key>\(rawValue)</key>
+            <string>\(value)</string>
+            """
+        }
+
+        // MARK: Private
 
         private var value: String {
             switch self {
@@ -103,13 +109,6 @@ extension BuildSetting {
             case .CFBundleDevelopmentRegion: return "$(DEVELOPMENT_LANGUAGE)"
             case .CFBundleShortVersionString: return "$(MARKETING_VERSION)"
             }
-        }
-
-        fileprivate var xml: String {
-            return """
-            <key>\(rawValue)</key>
-            <string>\(value)</string>
-            """
         }
     }
 }
@@ -144,7 +143,6 @@ extension BuildSetting {
 
     // MARK: Fileprivate
 
-
     fileprivate enum Decision {
         case string
         case stringArray
@@ -171,13 +169,12 @@ extension BuildSetting {
 extension BuildSetting {
     // MARK: Internal
 
-
     static func bool(_ value: String) -> String {
-        return value == "YES" ? "<true/>" : "<false/>"
+        value == "YES" ? "<true/>" : "<false/>"
     }
 
     static func string(_ value: String) -> String {
-        return "<string>\(value)</string>"
+        "<string>\(value)</string>"
     }
 
     static func stringArray(_ value: String) -> String {
@@ -196,7 +193,7 @@ extension BuildSetting {
     }
 
     static func comment(_ value: String) -> String {
-        return "<!--<key>\(value)</key>-->"
+        "<!--<key>\(value)</key>-->"
     }
 
     // MARK: Private

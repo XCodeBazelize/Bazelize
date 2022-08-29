@@ -75,7 +75,7 @@ public final class Project {
         self.preferConfig = preferConfig
     }
 
-    #warning("todo")
+
 
     // MARK: Public
 
@@ -84,6 +84,7 @@ public final class Project {
     public let preferConfig: String?
 
     public var localSPM: [String] {
+        #warning("todo")
         let groups = try? native.rootGroup()?.localSPM.compactMap { $0 }
         return []
     }

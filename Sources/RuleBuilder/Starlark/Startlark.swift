@@ -99,6 +99,8 @@ public indirect enum Starlark: Text {
         switch self {
         case .comment:
             return text
+        case .array(let value):
+            return value.map(\.withComma).withNewLine
         default:
             return text.withComma
         }
