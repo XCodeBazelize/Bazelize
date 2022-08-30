@@ -69,12 +69,13 @@ extension BuildSetting {
 }
 
 extension BuildSetting {
-    // MARK: Internal
+    // MARK: Public
 
-    func defaultPlist() -> [String] {
-        DefaultPlist.allCases.filter { (key: DefaultPlist) in
-            self[key.rawValue] != nil
+    public var defaultPlist: [String] {
+        let xmls = DefaultPlist.allCases.filter { (key: DefaultPlist) in
+            self[key.rawValue] == nil
         }.map(\.xml).sorted()
+        return fillShortVersion(fillVersion(xmls))
     }
 
     // MARK: Fileprivate
@@ -111,30 +112,57 @@ extension BuildSetting {
             }
         }
     }
+
+    // MARK: Private
+
+    /// CFBundleVersion - CURRENT_PROJECT_VERSION
+    private var CURRENT_PROJECT_VERSION: String? {
+        self[#function]
+    }
+
+    /// CFBundleShortVersionString - MARKETING_VERSION
+    private var MARKETING_VERSION: String? {
+        self[#function]
+    }
+
+
+    private func fillVersion(_ xmls: [String]) -> [String] {
+        guard let version = CURRENT_PROJECT_VERSION else { return xmls }
+        return xmls.map { xml in
+            xml.replacingOccurrences(of: "$(CURRENT_PROJECT_VERSION)", with: version)
+        }
+    }
+
+    private func fillShortVersion(_ xmls: [String]) -> [String] {
+        guard let version = MARKETING_VERSION else { return xmls }
+        return xmls.map { xml in
+            xml.replacingOccurrences(of: "$(MARKETING_VERSION)", with: version)
+        }
+    }
 }
 
 extension BuildSetting {
-    // MARK: Internal
+    // MARK: Public
 
-    func plist() -> [String] {
+    public var plist: [String] {
         guard generateInfoPlist else { return [] }
 
         let xmls = plistKeys.sorted().flatMap { key -> [String?] in
-            let key = Self.key(key)
+            let newKey = Self.key(key)
 
             guard let value = self[key] else {
-                return [Self.comment(key), nil]
+                return [Self.comment(newKey), nil]
             }
 
             switch Decision(key) {
             case .string:
-                return [key, Self.string(value)]
+                return [newKey, Self.string(value)]
             case .stringArray:
-                return [key, Self.stringArray(value)]
+                return [newKey, Self.stringArray(value)]
             case .bool:
-                return [key, Self.bool(value)]
+                return [newKey, Self.bool(value)]
             case .unknown:
-                return [Self.comment(key), Self.comment(value)]
+                return [Self.comment(newKey), Self.comment(value)]
             }
         }.compactMap { $0 }
 

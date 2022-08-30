@@ -78,7 +78,8 @@ final class PropertyTests: XCTestCase {
             Starlark.comment("test")
         }
         let result = """
-        families = None, # test
+        # test
+        # families = None,
         """
         XCTAssertEqual(result, property.text)
     }
@@ -89,7 +90,7 @@ final class PropertyTests: XCTestCase {
             nilString
         }
         let result = """
-        families = None,
+        # families = None,
         """
         XCTAssertEqual(result, property.text)
     }

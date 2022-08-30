@@ -69,7 +69,7 @@ final class RuleTests: XCTestCase {
 
         let target = """
         ios_framework(
-            name = None,
+            # name = None,
             families = [
                 "1",
                 "2",
@@ -137,7 +137,7 @@ final class RuleTests: XCTestCase {
 
         let target = """
         ios_framework(
-            data = None,
+            # data = None,
         )
         """
         XCTAssertEqual(target, result)

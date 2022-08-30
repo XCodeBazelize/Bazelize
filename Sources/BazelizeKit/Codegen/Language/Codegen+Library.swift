@@ -9,19 +9,19 @@ import Foundation
 import XCode
 
 extension Target {
-    func generateLibrary(_ kit: Kit) -> String {
+    func generateLibrary(_ builder: inout Build.Builder, _ kit: Kit) {
         let cFamily = srcs_c + srcs_cpp + srcs_cpp + srcs_objcpp
 
         switch (cFamily.isEmpty, srcs_swift.isEmpty) {
         case (true, false):
-            return generateSwiftLibrary(kit)
+            generateSwiftLibrary(&builder, kit)
         case (false, true):
-            return generateObjcLibrary(kit)
+            generateObjcLibrary(&builder, kit)
         case (false, false):
             #warning("mix objc & swift")
-            return ""
+            print("")
         case (true, true):
-            return ""
+            print("")
         }
     }
 }

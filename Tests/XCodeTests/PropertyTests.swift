@@ -23,6 +23,8 @@ private struct Setting: XCodeBuildSetting {
 
     let setting: [String: Any]
 
+    var plist: [String] { [] }
+
     var name: String { "" }
 
     var bundleID: String? { self[#function] }
@@ -50,6 +52,8 @@ private struct Setting: XCodeBuildSetting {
     var plistKeys: [String] { [] }
 
     var infoPlist: String? { nil }
+
+    var defaultPlist: [String] { [] }
 
     var launch: String? { self[#function] }
 

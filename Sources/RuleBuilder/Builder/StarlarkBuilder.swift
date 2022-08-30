@@ -10,7 +10,11 @@ import Foundation
 @resultBuilder
 public enum StarlarkBuilder {
     public static func buildBlock(_ components: Starlark?...) -> Starlark {
-        .init(components.compactMap { $0 }) ?? None
+        let result = components.compactMap { $0 }
+        if result.count == 1, let first = result.first {
+            return first
+        }
+        return .init(result) ?? None
     }
 
     // MARK: - expression
@@ -44,5 +48,9 @@ public enum StarlarkBuilder {
 
     public static func buildExpression(_ expression: Starlark.Select<Starlark>) -> Starlark {
         .select(expression)
+    }
+
+    public static func buildOptional(_ component: Starlark?) -> Starlark {
+        component ?? None
     }
 }

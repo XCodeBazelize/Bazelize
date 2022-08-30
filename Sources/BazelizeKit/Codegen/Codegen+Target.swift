@@ -24,13 +24,19 @@ extension Target {
     // MARK: Private
 
     private func generateCode(_ kit: Kit) -> String {
+        var builder = Build.Builder()
+        generateLibrary(&builder, kit)
+        generatePlistFile(&builder, kit)
+        generatePlistAuto(&builder)
+        generatePlistDefault(&builder)
+
         switch native.productType {
         case .application:
-            return generateApplicationCode(kit)
+            generateApplicationCode(&builder, kit)
         case .commandLineTool:
-            return generateCommandLineApplicationCode(kit)
+            generateCommandLineApplicationCode(&builder, kit)
         case .framework:
-            return generateFrameworkCode(kit)
+            generateFrameworkCode(&builder, kit)
         case .staticFramework: fallthrough
 //            return "" //generateStaitcFrameworkCode(kit)
         case .appExtension: fallthrough
@@ -40,7 +46,7 @@ extension Target {
             Name: \(name)
             Type: \(native.productType?.rawValue ?? "") not gen
             """)
-            return ""
         }
+        return builder.build()
     }
 }

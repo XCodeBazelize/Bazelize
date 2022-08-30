@@ -12,12 +12,10 @@ import XCode
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
 
 extension Target {
-    func generateFrameworkCode(_ kit: Kit) -> String {
+    func generateFrameworkCode(_ builder: inout Build.Builder, _ kit: Kit) {
         let depsXcode = ""
-
-        var builder = Build.Builder()
         builder.load(.ios_framework)
-        builder.custom(generateSwiftLibrary(kit))
+        generateSwiftLibrary(&builder, kit)
 
         builder.add(.ios_framework) {
             "name" => name
@@ -35,7 +33,5 @@ extension Target {
             }
             StarlarkProperty.Visibility.public
         }
-
-        return builder.build()
     }
 }

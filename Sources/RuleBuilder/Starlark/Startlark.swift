@@ -18,6 +18,7 @@ public indirect enum Starlark: Text {
     case dictionary([String: Starlark])
     case bool(Bool)
     case select(Starlark.Select<Starlark>)
+    case custom(String)
     case none
 
     // MARK: Lifecycle
@@ -68,10 +69,6 @@ public indirect enum Starlark: Text {
                 return Starlark.none.text
             }
 
-            if value.count == 1, let first = value.first {
-                return first.text
-            }
-
             return """
             [
             \(value.map(\.withComma).withNewLine.indent(1))
@@ -88,6 +85,8 @@ public indirect enum Starlark: Text {
             return value ? "True" : "False"
         case .select(let value):
             return value.text
+        case .custom(let value):
+            return value
         case .none:
             return "None"
         }
@@ -145,11 +144,6 @@ extension Starlark: ExpressibleByArrayLiteral {
 
         if values.isEmpty {
             self = .none
-            return
-        }
-
-        if values.count == 1, let value = values.first {
-            self = value
             return
         }
 

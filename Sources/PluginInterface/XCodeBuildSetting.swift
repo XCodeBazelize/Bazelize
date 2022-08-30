@@ -41,11 +41,15 @@ public protocol XCodeBuildSetting {
     /// "YES"
     var generateInfoPlist: Bool { get }
 
+    var plist: [String] { get }
+
     /// plist gen keys
     var plistKeys: [String] { get }
 
     /// "ABCDEF/Info.plist"
     var infoPlist: String? { get }
+
+    var defaultPlist: [String] { get }
 
     /// "LaunchScreen"
     var launch: String? { get }
