@@ -8,82 +8,112 @@
 import XCTest
 @testable import RuleBuilder
 
-final class PropertyTests: XCTestCase {
-    static let resultSingle = """
-    name = "Target",
-    """
-
-    static let resultMulti = """
-    families = [
-        "1",
-        "2",
-    ],
-    """
 
 
-    func testSingle1() {
+// MARK: - PropertyTests
+
+final class PropertyTests: XCTestCase { }
+
+private let label = """
+name = "Target",
+"""
+
+private let labelList = """
+name = [
+    "Target",
+],
+"""
+
+// MARK: - Single Label
+extension PropertyTests {
+    func testLabelList1() {
         let property = StarlarkProperty("name") {
             "Target"
         }
-        XCTAssertEqual(Self.resultSingle, property.text)
+        XCTAssertEqual(labelList, property.text)
     }
 
-    func testSingle2() {
+    func testLabelList2() {
         let property = "name".property {
             "Target"
         }
-        XCTAssertEqual(Self.resultSingle, property.text)
+        XCTAssertEqual(labelList, property.text)
     }
 
-    func testSingle3() {
-        let property = "name" => "Target"
-
-        XCTAssertEqual(Self.resultSingle, property.text)
-    }
-
-    func testSingle4() {
+    func testLabelList3() {
         let property = "name" => {
             "Target"
         }
-        XCTAssertEqual(Self.resultSingle, property.text)
+        XCTAssertEqual(labelList, property.text)
     }
 
-    func testMulti1() {
+    func testLabel() {
+        let property = "name" => "Target"
+
+        XCTAssertEqual(label, property.text)
+    }
+}
+
+private let list = """
+families = [
+    "1",
+    "2",
+],
+"""
+// MARK: - Label List
+extension PropertyTests {
+    func testList1() {
         let property = StarlarkProperty("families") {
             "1"
             "2"
         }
-        XCTAssertEqual(Self.resultMulti, property.text)
+        XCTAssertEqual(list, property.text)
     }
 
-    func testMulti2() {
+    func testList2() {
         let property = "families".property {
             "1"
             "2"
         }
-        XCTAssertEqual(Self.resultMulti, property.text)
+        XCTAssertEqual(list, property.text)
     }
 
-    func testMulti3() {
+    func testList3() {
         let property = "families" => {
             "1"
             "2"
         }
 
-        XCTAssertEqual(Self.resultMulti, property.text)
+        XCTAssertEqual(list, property.text)
     }
+}
 
-    func testCommentSingle() {
+// MARK: - Comment
+extension PropertyTests {
+    func testCommentSingle1() {
         let property = "families" => {
             Starlark.comment("test")
         }
+        let result = """
+        families = [
+            # test
+        ],
+        """
+        XCTAssertEqual(result, property.text)
+    }
+
+    func testCommentSingle2() {
+        let property = "families" => Starlark.comment("test")
         let result = """
         # test
         # families = None,
         """
         XCTAssertEqual(result, property.text)
     }
+}
 
+// MARK: - Nil Label
+extension PropertyTests {
     func testNilSingle() {
         let nilString: String? = nil
         let property = "families" => {
@@ -115,3 +145,4 @@ final class PropertyTests: XCTestCase {
         XCTAssertEqual(result, property.text)
     }
 }
+

@@ -16,54 +16,50 @@ final class StarlarkTests: XCTestCase {
     }
 
     func testComment() {
-        let code = build {
-            Starlark.comment("test")
-        }.text
+        let code: Starlark = .comment("test")
+        XCTAssertEqual(code.text, "# test")
+    }
 
-        XCTAssertEqual(code, "# test")
+    func testLabelString() {
+        let code: Starlark = "test"
+        XCTAssertEqual(code.text, "\"test\"")
     }
 
     func testLabel() {
-        let code = build {
-            "test"
-        }.text
+        let code: Starlark = .label("test")
+        XCTAssertEqual(code.text, "\"test\"")
+    }
 
-        XCTAssertEqual(code, "\"test\"")
+    func testNil() {
+        let code: Starlark = nil
+        XCTAssertEqual(code.text, "None")
     }
 
     func testNilString() {
         let nilString: String? = nil
-        let code = build {
+        let code: Starlark = build {
             nilString
-        }.text
+        }
 
-        XCTAssertEqual(code, "None")
+        XCTAssertEqual(code.text, "None")
     }
 
     func testTrue() {
-        let code = build {
-            true
-        }.text
-
-        XCTAssertEqual(code, "True")
+        let code: Starlark = true
+        XCTAssertEqual(code.text, "True")
     }
 
     func testFalse() {
-        let code = build {
-            false
-        }.text
-
-        XCTAssertEqual(code, "False")
+        let code: Starlark = false
+        XCTAssertEqual(code.text, "False")
     }
 
     func testDictionary() {
-        let code = build {
-            [
-                "b": "bbb",
-                "a": "aaa",
-                "c": "ccc",
-            ]
-        }.text
+        let code: Starlark = [
+            "b": "bbb",
+            "a": "aaa",
+            "c": "ccc",
+        ]
 
         let result = """
         {
@@ -72,7 +68,19 @@ final class StarlarkTests: XCTestCase {
             "c": "ccc"
         }
         """
-        XCTAssertEqual(code, result)
+        XCTAssertEqual(code.text, result)
+    }
+
+    func testArray() {
+        let code: Starlark = ["1", "2"]
+
+        let result = """
+        [
+            "1",
+            "2",
+        ]
+        """
+        XCTAssertEqual(code.text, result)
     }
 
     func testArrayWithNilString() {
@@ -119,22 +127,17 @@ final class StarlarkTests: XCTestCase {
 // MARK: Select
 extension StarlarkTests {
     func testSelectSame() {
-        let code = build {
-            Starlark.Select.same("test")
-        }.text
-
-        XCTAssertEqual(code, "\"test\"")
+        let code = Starlark.Select.same("test").starlark
+        XCTAssertEqual(code.text, "\"test\"")
     }
 
     func testSelectVarious() {
-        let code = build {
-            Starlark.Select.various([
-                "Release": "r",
-                "Debug": "d",
-            ])
-        }.text
+        let code = Starlark.Select.various([
+            "Release": "r",
+            "Debug": "d",
+        ]).starlark
 
-        XCTAssertEqual(code, """
+        XCTAssertEqual(code.text, """
         select({
             "//:Debug": "d",
             "//:Release": "r"

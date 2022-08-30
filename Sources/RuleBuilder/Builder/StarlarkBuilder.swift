@@ -11,9 +11,6 @@ import Foundation
 public enum StarlarkBuilder {
     public static func buildBlock(_ components: Starlark?...) -> Starlark {
         let result = components.compactMap { $0 }
-        if result.count == 1, let first = result.first {
-            return first
-        }
         return .init(result) ?? None
     }
 

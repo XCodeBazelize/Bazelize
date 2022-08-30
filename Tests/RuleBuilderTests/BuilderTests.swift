@@ -22,12 +22,8 @@ final class RuleTests: XCTestCase {
 
     func testRuleBuilderSimple() throws {
         let result = StarlarkRule("ios_framework") {
-            StarlarkProperty("name") {
-                "Test"
-            }
-            StarlarkProperty("bundle_id") {
-                "com.example.test"
-            }
+            "name" => "Test"
+            "bundle_id" => "com.example.test"
             StarlarkProperty("families") {
                 "1"
                 "2"
@@ -38,12 +34,8 @@ final class RuleTests: XCTestCase {
 
     func testRuleBuilderArray() throws {
         let result = StarlarkRule("ios_framework") {
-            StarlarkProperty("name") {
-                "Test"
-            }
-            StarlarkProperty("bundle_id") {
-                "com.example.test"
-            }
+            "name" => "Test"
+            "bundle_id" => "com.example.test"
             StarlarkProperty("families") {
                 ["1", "2"]
             }
