@@ -10,7 +10,7 @@ import XCode
 
 extension Target {
     func generateLibrary(_ builder: inout Build.Builder, _ kit: Kit) {
-        let cFamily = srcs_c + srcs_cpp + srcs_cpp + srcs_objcpp
+        let cFamily = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
 
         switch (cFamily.isEmpty, srcs_swift.isEmpty) {
         case (true, false):

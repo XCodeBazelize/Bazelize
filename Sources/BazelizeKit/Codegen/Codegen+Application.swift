@@ -32,9 +32,11 @@ extension Target {
             "infoplists" => {
                 plist_file
                 plist_auto
-                plist_default
+                // plist_default
             }
-            "deps" => ":\(name)_library"
+            "deps" => {
+                ":\(name)_library"
+            }
             StarlarkProperty.Visibility.public
         }
     }
@@ -56,9 +58,15 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            "frameworks" => frameworks
-            "sdk_frameworks" => sdkFrameworks
-            "resources" => resources
+            "frameworks" => {
+                frameworks
+            }
+            "sdk_frameworks" => {
+                sdkFrameworks
+            }
+            "resources" => {
+                resources
+            }
             StarlarkProperty.Visibility.public
         }
     }
@@ -76,7 +84,9 @@ extension Target {
                 plist_auto
                 plist_default
             }
-            "deps" => ":\(name)_library"
+            "deps" => {
+                ":\(name)_library"
+            }
             StarlarkProperty.Visibility.public
         }
     }
@@ -96,8 +106,12 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            "frameworks" => frameworks
-            "resources" => resources
+            "frameworks" => {
+                frameworks
+            }
+            "resources" => {
+                resources
+            }
             StarlarkProperty.Visibility.public
         }
     }
@@ -114,9 +128,15 @@ extension Target {
                 plist_auto
                 plist_default
             }
-            "deps" => ":\(name)_library"
-            "frameworks" => frameworks
-            "resources" => resources
+            "deps" => {
+                ":\(name)_library"
+            }
+            "frameworks" => {
+                frameworks
+            }
+            "resources" => {
+                resources
+            }
             StarlarkProperty.Visibility.public
         }
     }

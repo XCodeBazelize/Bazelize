@@ -117,7 +117,7 @@ extension Target {
             .labels
             .filter { label in
                 label.hasPrefix("""
-                "//\(name):
+                //\(name):
                 """)
             }
     }
@@ -128,7 +128,7 @@ extension Target {
             .labels
             .filter { label in
                 label.hasPrefix("""
-                "//\(name):
+                //\(name):
                 """)
             }
     }

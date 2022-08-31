@@ -8,7 +8,7 @@
 import Foundation
 
 extension String {
-    public func indent(_ count: Int, _ word: String = "    ") -> String {
+    public func indent(_ count: Int = 1, _ word: String = "    ") -> String {
         let prefix = Array(repeating: word, count: count).joined(separator: "")
         return split(separator: "\n")
             .map { sub in
