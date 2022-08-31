@@ -21,7 +21,6 @@ extension Target {
         return nil
     }
 
-
     func generatePlistFile(_ builder: inout Build.Builder, _: Kit) {
         builder.load(loadableRule: RulesPlist.plist_fragment)
         if let plist = plistContent {
@@ -43,7 +42,22 @@ extension Target {
     private var plistContent: String? {
         if let plistPath = prefer(\.infoPlist) {
             let path: Path = project.workspacePath + plistPath
-            return try? path.read()
+
+            guard let content: String = try? path.read() else { return nil }
+            guard
+                let xml = try? XMLDocument(xmlString: content, options: .documentXInclude)
+                    .rootElement()?
+                    .elements(forName: "dict")
+                    .first?
+                    .children else { return nil }
+
+
+            return xml.compactMap { node -> String in
+                node.detach()
+                return node.xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
+            }
+            .withNewLine
+            .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
         } else {
             return nil
         }
