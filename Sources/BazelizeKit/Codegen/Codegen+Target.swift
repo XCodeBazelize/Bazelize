@@ -5,7 +5,6 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import Cocoapod
 import Foundation
 import PathKit
 import XCode
@@ -26,6 +25,8 @@ extension Target {
     private func generateCode(_ kit: Kit) -> String {
         var builder = Build.Builder()
         generateLibrary(&builder, kit)
+
+        generateLoadPlistFragment(&builder)
         generatePlistFile(&builder, kit)
         generatePlistAuto(&builder)
         generatePlistDefault(&builder)
