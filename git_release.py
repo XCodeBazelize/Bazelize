@@ -46,14 +46,14 @@ extension Repo {{
 '''
 
         var version: String {
-            if self.rawValue.first == "v" {
-                return String(self.rawValue.dropFirst())
+            if rawValue.first == "v" {
+                return String(rawValue.dropFirst())
             }
-            return self.rawValue
+            return rawValue
         }
 
         var sha256: String {
-            return ""
+            ""
         }
     }
 }''', file=file, end='')
