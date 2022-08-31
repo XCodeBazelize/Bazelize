@@ -182,22 +182,22 @@ ios_application(
 ```bash
 ├── xxx.xcodeproj
 ├── xxx.xcworkspace
-├── # BUILD?
-├── WORKSPACE
-├── Pods.WORKSPACE # PodToBUILD
+├── .bazelrc        # generated file
+├── BUILD           # generated file
+├── WORKSPACE       # generated file
 ├── Podfile
 ├── Podfile.lock
 ├── Target1
-│   ├── BUILD
+│   ├── BUILD       # generated file
 │   └── xxx.swift
 ├── Target2
-│   ├── BUILD
+│   ├── BUILD       # generated file
 │   └── xxx.m
 ├── TestTarget1
-│   ├── BUILD
+│   ├── BUILD       # generated file
 │   └── xxx.swift
 ├── TestTarget2
-│   ├── BUILD
+│   ├── BUILD       # generated file
 │   └── xxx.swift
 └ ...
 ```
