@@ -23,7 +23,9 @@ extension Target {
             "families" => prefer(\.deviceFamily)
             "minimum_os_version" => prefer(\.iOS)
             "infoplists" => {
-                select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
+                plist_file
+                plist_auto
+                plist_default
             }
             "deps" => {
                 ":\(name)_library"

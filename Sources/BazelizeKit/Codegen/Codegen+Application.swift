@@ -30,8 +30,7 @@ extension Target {
             "bundle_id" => prefer(\.bundleID)
             "minimum_os_version" => prefer(\.macOS)
             "infoplists" => {
-                ":Info.plist"
-//                plist_file
+                plist_file
                 plist_auto
                 plist_default
             }
@@ -49,8 +48,7 @@ extension Target {
             "families" => prefer(\.deviceFamily)
             "minimum_os_version" => prefer(\.iOS)
             "infoplists" => {
-                ":Info.plist"
-//                plist_file
+                plist_file
                 plist_auto
                 plist_default
             }
@@ -66,7 +64,7 @@ extension Target {
     }
 
     /// macos_application(name, additional_contents, additional_linker_inputs, app_icons, bundle_extension, bundle_id, bundle_name, codesign_inputs, codesignopts, deps, entitlements, entitlements_validation, executable_name, exported_symbols_lists, extensions, include_symbols_in_bundle, infoplists, ipa_post_processor, linkopts, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, resources, stamp, strings, version, xpc_services)
-    func buildMac(_ builder: inout Build.Builder, _ kit: Kit) {
+    func buildMac(_ builder: inout Build.Builder, _: Kit) {
         builder.load(.macos_application)
 
         builder.add(.macos_application) {
@@ -74,7 +72,9 @@ extension Target {
             "bundle_id" => prefer(\.bundleID)
             "minimum_os_version" => prefer(\.macOS)
             "infoplists" => {
-                select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
+                plist_file
+                plist_auto
+                plist_default
             }
             "deps" => ":\(name)_library"
             StarlarkProperty.Visibility.public
@@ -82,14 +82,16 @@ extension Target {
     }
 
     /// tvos_application(name, additional_linker_inputs, app_icons, bundle_id, bundle_name, codesign_inputs, codesignopts, deps, entitlements, entitlements_validation, executable_name, exported_symbols_lists, extensions, frameworks, infoplists, ipa_post_processor, launch_images, linkopts, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, resources, settings_bundle, stamp, strings, version)
-    func buildTV(_ builder: inout Build.Builder, _ kit: Kit) {
+    func buildTV(_ builder: inout Build.Builder, _: Kit) {
         builder.load(.tvos_application)
         builder.add(.tvos_application) {
             "name" => name
             "bundle_id" => prefer(\.bundleID)
             "minimum_os_version" => prefer(\.tvOS)
             "infoplists" => {
-                select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
+                plist_file
+                plist_auto
+                plist_default
             }
             "deps" => {
                 ":\(name)_library"
@@ -101,14 +103,16 @@ extension Target {
     }
 
     /// watchos_application(name, app_icons, bundle_id, bundle_name, deps, entitlements, entitlements_validation, executable_name, extension, infoplists, ipa_post_processor, minimum_deployment_os_version, minimum_os_version, platform_type, provisioning_profile, resources, storyboards, strings, version)
-    func buildWatch(_ builder: inout Build.Builder, _ kit: Kit) {
+    func buildWatch(_ builder: inout Build.Builder, _: Kit) {
         builder.load(.watchos_application)
         builder.add(.watchos_application) {
             "name" => name
             "bundle_id" => prefer(\.bundleID)
             "minimum_os_version" => prefer(\.watchOS)
             "infoplists" => {
-                select(\.infoPlist).map(kit.project.transformToLabel(_:)).starlark
+                plist_file
+                plist_auto
+                plist_default
             }
             "deps" => ":\(name)_library"
             "frameworks" => frameworks
