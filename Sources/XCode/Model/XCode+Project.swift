@@ -74,7 +74,7 @@ public final class Project {
             .compactMap(RemoteSPMPackage.init)
     }
 
-    #warning("todo")
+
 
     // MARK: Public
 
@@ -82,6 +82,7 @@ public final class Project {
     public let projectPath: Path
 
     public var localSPM: [String] {
+        #warning("todo")
         let groups = try? native.rootGroup()?.localSPM.compactMap { $0 }
         return []
     }

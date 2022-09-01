@@ -8,11 +8,28 @@
 import Foundation
 import PathKit
 
+// MARK: - PluginBuilder
+
+open class PluginBuilder {
+    // MARK: Lifecycle
+
+    public init() { }
+
+    // MARK: Open
+
+    open func build(_: XCodeProject) async throws -> Plugin? {
+        fatalError("You have to override this method.")
+    }
+}
+
+
 // MARK: - Plugin
 
 public protocol Plugin: AnyObject {
-    /// plugin name
     var name: String { get }
+    var description: String { get }
+    var version: String { get }
+    var url: String { get }
 
     static func load(_ proj: XCodeProject) async throws -> Self?
 
