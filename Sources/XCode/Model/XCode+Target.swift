@@ -66,6 +66,8 @@ public final class Target {
     public let native: PBXNativeTarget
     public let config: [String: XCodeBuildSetting]
 
+    public unowned let project: Project
+
     public var configs: [String] {
         config.keys.sorted { lhs, rhs in
             lhs < rhs
@@ -79,10 +81,9 @@ public final class Target {
         self.config[config]
     }
 
-    // MARK: Internal
+    // MARK: Private
 
-    unowned let project: Project
-    let originConfig: [String: XCodeBuildSetting]
+    private let originConfig: [String: XCodeBuildSetting]
 }
 
 extension Target {
@@ -116,7 +117,7 @@ extension Target {
             .labels
             .filter { label in
                 label.hasPrefix("""
-                "//\(name):
+                //\(name):
                 """)
             }
     }
@@ -127,7 +128,7 @@ extension Target {
             .labels
             .filter { label in
                 label.hasPrefix("""
-                "//\(name):
+                //\(name):
                 """)
             }
     }

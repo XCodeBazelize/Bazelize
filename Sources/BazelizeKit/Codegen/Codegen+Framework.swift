@@ -12,31 +12,26 @@ import XCode
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
 
 extension Target {
-    func generateFrameworkCode(_ kit: Kit) -> String {
-        precondition(setting.bundleID != nil, "bundle id")
-        precondition(setting.iOS != nil, "min version")
+    func generateFrameworkCode(_ builder: inout Build.Builder, _: Kit) {
+        let family = prefer(\.deviceFamily) ?? []
 
-        let depsXcode = ""
-
-        var builder = Build.Builder()
         builder.load(.ios_framework)
-        builder.custom(generateSwiftLibrary(kit))
-
         builder.add(.ios_framework) {
             "name" => name
-            "bundle_id" => setting.bundleID
-            "families" => setting.deviceFamily
-            "minimum_os_version" => setting.iOS
-            "infoplists" => setting.infoPlist
+            "bundle_id" => prefer(\.bundleID)
+            "families" => prefer(\.deviceFamily)
+            "minimum_os_version" => prefer(\.iOS)
+            "infoplists" => {
+                plist_file
+                plist_auto
+//                plist_default
+            }
             "deps" => {
                 ":\(name)_library"
             }
-            "frameworks" => {
-                depsXcode
-            }
+            "families" => family.isEmpty ? ["iphone", "ipad"] : family
+            "frameworks" => None
             StarlarkProperty.Visibility.public
         }
-
-        return builder.build()
     }
 }

@@ -13,11 +13,11 @@ import XCode
 
 /// https://bazel.build/docs/configurable-attributes
 extension Project {
-    // MARK: Public
+    // MARK: Internal
 
     /// build:debug --//:mode=debug
     /// bazel build --config=debug [PACKAGE:RULE]
-    public func generateBazelRC(_ kit: Kit) throws {
+    internal func generateBazelRC(_ kit: Kit) throws {
         let configs = config?.keys.map { $0 } ?? []
         let bazelrc = kit.project.workspacePath + ".bazelrc"
         let code = configs.map { config in
@@ -29,8 +29,9 @@ extension Project {
         try bazelrc.write(code)
     }
 
-    public func generateBUILD(_ kit: Kit) throws {
-        let code = generateCode(kit)
+    internal func generateBUILD(_ kit: Kit) throws {
+        var builder = Build.Builder()
+        let code = generateCode(&builder, kit)
         let build = kit.project.workspacePath + "BUILD"
         print("Create \(build.string)")
         try build.write(code)
@@ -52,11 +53,9 @@ extension Project {
     /// ```shell
     /// bazel build target --//:mode=debug
     /// ```
-    private func generateCode(_: Kit) -> String {
+    private func generateCode(_ builder: inout Build.Builder, _: Kit) -> String {
         let configs = config?.keys.map { $0 } ?? []
-        var builder = Build.Builder()
         builder.load(.string_flag)
-
         builder.add(.string_flag) {
             "name" => "mode"
             "build_setting_default" => "normal"

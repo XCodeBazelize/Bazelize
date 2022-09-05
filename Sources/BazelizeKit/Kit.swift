@@ -5,7 +5,6 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import CoreLocation
 import Foundation
 import PathKit
 import PluginInterface
@@ -20,8 +19,8 @@ import Yams
 public final class Kit {
     // MARK: Lifecycle
 
-    public init(_ projPath: Path) async throws {
-        project = try await Project(projPath)
+    public init(_ projPath: Path, _ preferConfig: String? = nil) async throws {
+        project = try await Project(projPath, preferConfig)
         plugins = []
     }
 
@@ -80,6 +79,7 @@ extension Kit {
     private final func generateWorkspace() {
         let workspace = Workspace { builder in
             builder.default()
+            builder.rulesPlistFragment()
         }
         try? workspace.generate(project.workspacePath)
     }

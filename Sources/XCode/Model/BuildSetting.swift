@@ -60,19 +60,8 @@ public struct BuildSetting {
         return .init(name, newSetting)
     }
 
-    // MARK: Private
-
-    private static let PLIST_PREFIX = "INFOPLIST_KEY_"
-
-
-    private subscript<T>(key: String) -> T? {
-        setting[key] as? T
-    }
-
-    /// INFOPLIST_KEY_
-    /// INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
-    private subscript<T>(plist key: String) -> T? {
-        self["\(Self.PLIST_PREFIX)\(key)"]
+    internal subscript(key: String) -> String? {
+        setting[key] as? String
     }
 }
 
@@ -119,37 +108,6 @@ extension BuildSetting {
 
     public var driverKit: String? {
         self["DRIVERKIT_DEPLOYMENT_TARGET"]
-    }
-}
-
-// MARK: - PLIST Key -
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/5
-extension BuildSetting {
-    public var plistKeys: [String] {
-        setting.keys.filter {
-            $0.hasPrefix(Self.PLIST_PREFIX)
-        }
-    }
-
-    /// "YES"
-    public var generateInfoPlist: Bool {
-        let result: String? = self["GENERATE_INFOPLIST_FILE"]
-        return result == "YES"
-    }
-
-    /// "ABCDEF/Info.plist"
-    public var infoPlist: String? {
-        self["INFOPLIST_FILE"]
-    }
-
-    /// "LaunchScreen"
-    public var launch: String? {
-        self[plist: "UILaunchStoryboardName"]
-    }
-
-    /// "Main"
-    public var storyboard: String? {
-        self[plist: "UIMainStoryboardFile"]
     }
 }
 

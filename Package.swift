@@ -72,12 +72,16 @@ let package = Package(
             name: "XCode",
             dependencies: [
                 "Util",
+                "RuleBuilder",
                 "PluginInterface",
 
                 "AnyCodable",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
+        .testTarget(
+            name: "XCodeTests",
+            dependencies: ["XCode"]),
 
         .target(
             name: "Cocoapod",

@@ -5,18 +5,25 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import Cocoapod
 import Foundation
 import PathKit
 import XCode
 
 extension Target {
-    // MARK: Public
+    // MARK: Internal
 
     /// WORKSPACE/TARGET_NAME/BUILD
-    public func generateBUILD(_ kit: Kit) throws {
+    internal func generateBUILD(_ kit: Kit) throws {
+        let target = kit.project.workspacePath + name
+        let build = target + "BUILD"
+        do {
+            try target.mkpath()
+        } catch {
+            print("Fail to create dir \(target.string)")
+            throw error
+        }
+
         let code = generateCode(kit)
-        let build = kit.project.workspacePath + name + "BUILD"
         print("Create \(build.string)")
         try build.write(code)
     }
@@ -24,13 +31,21 @@ extension Target {
     // MARK: Private
 
     private func generateCode(_ kit: Kit) -> String {
+        var builder = Build.Builder()
+        generateLibrary(&builder, kit)
+
+        generateLoadPlistFragment(&builder)
+        generatePlistFile(&builder, kit)
+        generatePlistAuto(&builder)
+        generatePlistDefault(&builder)
+
         switch native.productType {
         case .application:
-            return generateApplicationCode(kit)
+            generateApplicationCode(&builder, kit)
         case .commandLineTool:
-            return generateCommandLineApplicationCode(kit)
+            generateCommandLineApplicationCode(&builder, kit)
         case .framework:
-            return generateFrameworkCode(kit)
+            generateFrameworkCode(&builder, kit)
         case .staticFramework: fallthrough
 //            return "" //generateStaitcFrameworkCode(kit)
         case .appExtension: fallthrough
@@ -40,7 +55,7 @@ extension Target {
             Name: \(name)
             Type: \(native.productType?.rawValue ?? "") not gen
             """)
-            return ""
         }
+        return builder.build()
     }
 }

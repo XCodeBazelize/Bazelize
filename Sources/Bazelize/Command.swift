@@ -25,7 +25,7 @@ struct Command: AsyncParsableCommand {
 
     func run() async throws {
         let path = Path.current + project
-        let kit = try await Kit(path)
+        let kit = try await Kit(path, config)
         if dump {
             try kit.dump()
         } else {

@@ -30,7 +30,14 @@ public struct StarlarkProperty: Text {
     public var text: String {
         switch starlark {
         case .comment:
-            return "\(name) = None, \(starlark.text)"
+            return """
+            \(starlark.text)
+            # \(name) = None,
+            """
+        case .none:
+            return """
+            # \(name) = None,
+            """
         default:
             return "\(name) = \(starlark.text),"
         }

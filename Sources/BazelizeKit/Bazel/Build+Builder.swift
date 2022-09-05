@@ -25,7 +25,10 @@ extension Build.Builder {
 }
 
 extension Build.Builder {
-    // MARK: Internal
+    mutating
+    func load(_ rule: RulesObjc) {
+        load(loadableRule: rule)
+    }
 
     mutating
     func load(_ rule: RulesApple.IOS) {
@@ -63,9 +66,7 @@ extension Build.Builder {
         codes.insert(code, at: 0)
     }
 
-    // MARK: Private
-
-    private mutating
+    mutating
     func load(loadableRule rule: LoadableRule) {
         load(rule.load)
     }
@@ -74,6 +75,11 @@ extension Build.Builder {
 // MARK: - RuleBuild
 extension Build.Builder {
     // MARK: Internal
+
+    mutating
+    func add(_ rule: RulesObjc, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        add(rule: rule, builder: builder)
+    }
 
     mutating
     func add(_ rule: RulesApple.IOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
