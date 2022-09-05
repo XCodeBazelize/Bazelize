@@ -14,8 +14,16 @@ extension Target {
 
     /// WORKSPACE/TARGET_NAME/BUILD
     internal func generateBUILD(_ kit: Kit) throws {
+        let target = kit.project.workspacePath + name
+        let build = target + "BUILD"
+        do {
+            try target.mkpath()
+        } catch {
+            print("Fail to create dir \(target.string)")
+            throw error
+        }
+
         let code = generateCode(kit)
-        let build = kit.project.workspacePath + name + "BUILD"
         print("Create \(build.string)")
         try build.write(code)
     }
