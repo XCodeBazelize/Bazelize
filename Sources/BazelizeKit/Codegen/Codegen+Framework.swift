@@ -12,11 +12,10 @@ import XCode
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
 
 extension Target {
-    func generateFrameworkCode(_ builder: inout Build.Builder, _ kit: Kit) {
-        let depsXcode = ""
-        builder.load(.ios_framework)
-        generateSwiftLibrary(&builder, kit)
+    func generateFrameworkCode(_ builder: inout Build.Builder, _: Kit) {
+        let family = prefer(\.deviceFamily) ?? []
 
+        builder.load(.ios_framework)
         builder.add(.ios_framework) {
             "name" => name
             "bundle_id" => prefer(\.bundleID)
@@ -25,14 +24,13 @@ extension Target {
             "infoplists" => {
                 plist_file
                 plist_auto
-                plist_default
+//                plist_default
             }
             "deps" => {
                 ":\(name)_library"
             }
-            "frameworks" => {
-                depsXcode
-            }
+            "families" => family.isEmpty ? ["iphone", "ipad"] : family
+            "frameworks" => None
             StarlarkProperty.Visibility.public
         }
     }
