@@ -120,6 +120,19 @@ extension Workspace {
         }
 
         mutating
+        public func rulesPlistFragment() {
+            _code = """
+            load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+            git_repository(
+                name = "Plist",
+                commit = "259ca0a5d77833728c18fa6365285559ce8cc0bf",
+                remote = "https://github.com/imWildCat/MinimalBazelFrameworkDemo",
+            )
+
+            """
+        }
+
+        mutating
         public func custom(code: String) {
             _code = code
         }

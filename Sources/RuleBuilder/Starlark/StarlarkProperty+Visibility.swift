@@ -11,9 +11,9 @@ extension StarlarkProperty {
     /// https://bazel.build/concepts/visibility
     public enum Visibility {
         /// "//visibility:public": Anyone can use this target. (May not be combined with any other specification.)
-        public static let `public`: StarlarkProperty = "visibility" => "//visibility:public"
+        public static let `public`: StarlarkProperty = "visibility" => ["//visibility:public"]
         /// "//visibility:private": Only targets in this package can use this target. (May not be combined with any other specification.)
-        public static let `private`: StarlarkProperty = "visibility" => "//visibility:private"
+        public static let `private`: StarlarkProperty = "visibility" => ["//visibility:private"]
 
         /// "//foo/bar:__pkg__": Grants access to targets defined in //foo/bar (but not its subpackages). Here, __pkg__ is a special piece of syntax representing all of the targets in a package.
         public static func package(_ packages: String...) -> StarlarkProperty {
