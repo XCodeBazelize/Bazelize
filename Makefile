@@ -30,14 +30,18 @@ test:
 
 Apple  := bazelbuild/rules_apple
 Pod    := pinterest/PodToBUILD
-SPM    := cgrindel/rules_spm
 Hammer := pinterest/xchammer
 
-REPOS = Apple Pod SPM Hammer
+SPM    := cgrindel/rules_spm
+
+REPOS := Apple Pod Hammer
 
 # user/repo rule_name output_file_path
 # python3 git_release.py bazelbuild/rules_apple Apple Sources/BazelizeKit/Rule/Rule+Apple.swift
 $(REPOS):
+	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5
+
+$(SPM):
 	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5
 
 rules: $(REPOS)

@@ -14,7 +14,7 @@ extension Workspace {
         mutating
         public func `default`() {
             http_archive()
-            rulesApple(repo: .v1_1_0)
+            rulesApple(repo: .v1_1_2)
             rulesPod(repo: .v4_1_0_412495)
 //            self.rulesSPM(repo: .v0_11_0)
 //            self.rulesHammer(repo: .v3_4_3_3)
