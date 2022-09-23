@@ -31,16 +31,19 @@ extension BuildSetting: Encodable {
 public struct BuildSetting {
     // MARK: Lifecycle
 
-    init(_ name: String, _ setting: [String: Any]) {
+    init(_ project: Project, _ name: String, _ setting: [String: Any]) {
+        self.project = project
         self.name = name
         self.setting = setting
     }
 
-    init(_ config: XCBuildConfiguration) {
-        self.init(config.name, config.buildSettings)
+    init(_ project: Project, _ config: XCBuildConfiguration) {
+        self.init(project, config.name, config.buildSettings)
     }
 
     // MARK: Public
+
+    public unowned let project: Project
 
     /// Release / Debug / More...
     public let name: String
@@ -57,7 +60,7 @@ public struct BuildSetting {
             first
         }
 
-        return .init(name, newSetting)
+        return .init(project, name, newSetting)
     }
 
     internal subscript(key: String) -> String? {

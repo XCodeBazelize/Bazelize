@@ -54,7 +54,7 @@ public final class Target {
 
     init(native: PBXNativeTarget, defaultConfigList: ConfigList?, project: Project) {
         self.native = native
-        let configList: ConfigList = .init(native.buildConfigurationList)
+        let configList: ConfigList = .init(project, native.buildConfigurationList)
         let defaultConfigList = defaultConfigList
         originConfig = configList.buildSettings
         config = configList.merge(defaultConfigList)
