@@ -14,24 +14,31 @@ import XcodeProj
 struct ConfigList {
     // MARK: Lifecycle
 
-    init(_ target: PBXNativeTarget) {
-        self.init(target.buildConfigurationList)
+    init(_ project: Project, _ target: PBXNativeTarget) {
+        self.init(project, target.buildConfigurationList)
     }
 
-    init(_ list: XCConfigurationList?) {
+    init(_ project: Project, _ list: XCConfigurationList?) {
+        self.project = project
         native = list
     }
+
+    // MARK: Public
+
+    public unowned let project: Project
 
     // MARK: Internal
 
     var buildSettings: [String: BuildSetting] {
-        let pair = (native?.buildConfigurations.map(BuildSetting.init) ?? []).map {
-            ($0.name, $0)
-        }
+        let pair: [(String, BuildSetting)] = native?.buildConfigurations
+            .map {
+                BuildSetting(project, $0)
+            }.map {
+                ($0.name, $0)
+            } ?? []
 
         return Dictionary(pair, uniquingKeysWith: { first, _ in first })
     }
-
 
     /// For XCode Target ConfigList merge default ConfigList
     func merge(_ config: ConfigList?) -> [String: BuildSetting] {

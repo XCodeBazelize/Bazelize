@@ -23,7 +23,7 @@ extension Project: XCodeProject {
     }
 
     public var config: [String : XCodeBuildSetting]? {
-        native.defaultConfigList?.buildSettings
+        defaultConfigList?.buildSettings
     }
 }
 
@@ -111,17 +111,19 @@ public final class Project {
 
 
     private var _targets: [Target] {
-        let list = native.defaultConfigList
+        let list = defaultConfigList
         return native.nativeTargets.map {
             Target(native: $0, defaultConfigList: list, project: self)
         }
     }
 }
 
-extension PBXProj {
-    fileprivate var defaultConfigList: ConfigList? {
-        let all = Set(configurationLists.map(ConfigList.init))
-        let targets = nativeTargets.compactMap { ConfigList($0.buildConfigurationList) }
+// extension PBXProj {
+extension Project {
+    private var defaultConfigList: ConfigList? {
+        let all = Set(native.configurationLists.map { ConfigList(self, $0) })
+        let targets = native.nativeTargets
+            .compactMap { ConfigList(self, $0.buildConfigurationList) }
 
         return all.subtracting(targets).first
     }

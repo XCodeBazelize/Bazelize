@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import PathKit
 import Util
 
 // <key>UISceneDelegateClassName</key>
@@ -27,7 +28,9 @@ import Util
 // )
 
 private let PLIST_PREFIX = "INFOPLIST_KEY_"
+
 // MARK: - PLIST Key -
+
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/5
 extension BuildSetting {
     // MARK: Public
@@ -72,8 +75,17 @@ extension BuildSetting {
     // MARK: Public
 
     public var defaultPlist: [String] {
+        let content: String?
+        if let plistPath = infoPlist {
+            let path: Path = project.workspacePath + plistPath
+            content = try? path.read()
+        } else {
+            content = nil
+        }
+
         let xmls = DefaultPlist.allCases.filter { (key: DefaultPlist) in
-            self[key.rawValue] == nil
+            self[key.rawValue] == nil ||
+                !(content?.contains(key.rawValue) ?? false)
         }.map(\.xml).sorted()
         return fillShortVersion(fillVersion(xmls))
     }
@@ -124,7 +136,6 @@ extension BuildSetting {
     private var MARKETING_VERSION: String? {
         self[#function]
     }
-
 
     private func fillVersion(_ xmls: [String]) -> [String] {
         guard let version = CURRENT_PROJECT_VERSION else { return xmls }

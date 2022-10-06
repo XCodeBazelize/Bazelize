@@ -33,44 +33,42 @@ extension Target {
     }
 
     func generatePlistFile(_ builder: inout Build.Builder, _: Kit) {
-        if let plist = plistContent {
-            builder.add(RulesPlist.plist_fragment.rawValue) {
-                "name" => "plist_file"
-                "extension" => "plist"
-                "template" => Starlark.custom("""
-                '''
-                \(plist)
-                '''
-                """)
-                StarlarkProperty.Visibility.private
-            }
+        guard let plist = plistContent else { return }
+        builder.add(RulesPlist.plist_fragment.rawValue) {
+            "name" => "plist_file"
+            "extension" => "plist"
+            "template" => Starlark.custom("""
+            '''
+            \(plist)
+            '''
+            """)
+            StarlarkProperty.Visibility.private
         }
     }
 
     // MARK: Private
 
     private var plistContent: String? {
-        if let plistPath = prefer(\.infoPlist) {
-            let path: Path = project.workspacePath + plistPath
-
-            guard let content: String = try? path.read() else { return nil }
-            guard
-                let xml = try? XMLDocument(xmlString: content, options: .documentXInclude)
-                    .rootElement()?
-                    .elements(forName: "dict")
-                    .first?
-                    .children else { return nil }
-
-
-            return xml.compactMap { node -> String in
-                node.detach()
-                return node.xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
-            }
-            .withNewLine
-            .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
-        } else {
+        guard let plistPath = prefer(\.infoPlist) else {
             return nil
         }
+        let path: Path = project.workspacePath + plistPath
+
+        guard let content: String = try? path.read() else { return nil }
+        guard
+            let xml = try? XMLDocument(xmlString: content, options: .documentXInclude)
+                .rootElement()?
+                .elements(forName: "dict")
+                .first?
+                .children else { return nil }
+
+
+        return xml.compactMap { node -> String in
+            node.detach()
+            return node.xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
+        }
+        .withNewLine
+        .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
     }
 }
 
