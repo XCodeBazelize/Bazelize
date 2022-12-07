@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Select
+// MARK: - Starlark.Select
 
 extension Starlark {
     public enum Select<T> {

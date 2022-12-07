@@ -31,7 +31,7 @@ enum PluginBuilder {
                 try build(plugin: info)
                 return info
             } catch {
-                print("Build Plugin(\(info.repo)) Fail: \(error)")
+                Log.pluginLoader.warning("Build Plugin(\(info.repo)) Fail: \(error.localizedDescription)")
                 return nil
             }
         }
@@ -76,20 +76,20 @@ enum PluginBuilder {
             _ = try commandGit?.setCWD(FilePath(git.string))
                 .addArguments("clone", plugin.url, plugin.user_repo)
                 .setStdout(.null)
-                .print()
+                .logging()
                 .wait()
         }
 
         _ = try commandGit?.setCWD(FilePath(repo.string))
             .addArguments("checkout", plugin.tag)
             .setStdout(.null)
-            .print()
+            .logging()
             .wait()
 
         _ = try commandSwift?.setCWD(FilePath(repo.string))
             .addArguments("build", "-c", "release")
             .setStdout(.null)
-            .print()
+            .logging()
             .wait()
 
         let release = repo + ".build" + "release"
@@ -99,15 +99,15 @@ enum PluginBuilder {
             let toDir = build + plugin.user_repo
             try toDir.mkpath()
             let to = toDir + lib
-            print("cp \(from.string) \(to.string)")
+            Log.pluginLoader.info("cp \(from.string) \(to.string)")
             try from.copy(to)
         }
     }
 }
 
 extension Command {
-    __consuming func print() -> Self {
-        Swift.print("""
+    __consuming func logging() -> Self {
+        Log.pluginLoader.info("""
         \(cwd?.string ?? "")> \(executablePath) \(arguments.joined(separator: " "))
         """)
 

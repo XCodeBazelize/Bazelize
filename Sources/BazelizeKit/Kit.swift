@@ -57,7 +57,7 @@ extension Kit {
     private final func loadPlugins(_ mainfest: Path) async throws {
         plugins = try await PluginLoader.load(manifest: mainfest, project)
         for plugin in plugins {
-            print("Load Plugin \(plugin.name)(\(plugin.version))")
+            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
         }
     }
 

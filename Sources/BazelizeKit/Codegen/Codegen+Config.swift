@@ -9,6 +9,7 @@ import Foundation
 import PathKit
 import PluginInterface
 import RuleBuilder
+import Util
 import XCode
 
 /// https://bazel.build/docs/configurable-attributes
@@ -25,7 +26,7 @@ extension Project {
             build:\(config) --//:mode=\(config)
             """
         }.withNewLine
-        print("Create \(bazelrc.string)")
+        Log.codeGenerate.info("Create `.bazelrc` at \(bazelrc.string, privacy: .public)")
         try bazelrc.write(code)
     }
 
@@ -33,7 +34,7 @@ extension Project {
         var builder = Build.Builder()
         let code = generateCode(&builder, kit)
         let build = kit.project.workspacePath + "BUILD"
-        print("Create \(build.string)")
+        Log.codeGenerate.info("Create `BUILD` at \(build.string, privacy: .public)")
         try build.write(code)
     }
 

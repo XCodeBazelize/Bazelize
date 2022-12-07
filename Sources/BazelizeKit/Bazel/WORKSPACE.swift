@@ -7,6 +7,7 @@
 
 import Foundation
 import PathKit
+import Util
 
 struct Workspace {
     // MARK: Lifecycle
@@ -28,7 +29,7 @@ struct Workspace {
     // WORKSPACE
     public func generate(_ path: Path) throws {
         let workspace = path + "WORKSPACE"
-        print("Create \(workspace.string)")
+        Log.codeGenerate.info("Create `Workspace` at \(workspace.string, privacy: .public)")
 //        try _workspace.delete()
         try workspace.write(code)
     }

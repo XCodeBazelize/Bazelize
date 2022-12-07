@@ -215,7 +215,6 @@ extension Target {
     /// use for `sdk_frameworks`
     public var sdkFrameworks: [String] {
         let builds = (try? native.frameworksBuildPhase()?.files) ?? []
-
         return builds.filter { build in
             build.file?.sourceTree == .sdkRoot ||
                 (build.file?.path?.hasPrefix("System/") ?? false)

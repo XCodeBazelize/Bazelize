@@ -7,6 +7,7 @@
 
 import Foundation
 import PathKit
+import Util
 import XCode
 
 extension Target {
@@ -19,12 +20,12 @@ extension Target {
         do {
             try target.mkpath()
         } catch {
-            print("Fail to create dir \(target.string)")
+            Log.codeGenerate.info("Fail to create dir \(target.string)")
             throw error
         }
 
         let code = generateCode(kit)
-        print("Create \(build.string)")
+        Log.codeGenerate.info("Create `Target/BUILD` at\(build.string, privacy: .public)")
         try build.write(code)
     }
 
@@ -39,6 +40,9 @@ extension Target {
         generatePlistAuto(&builder)
         generatePlistDefault(&builder)
 
+        let name = name
+        let native = native
+
         switch native.productType {
         case .application:
             generateApplicationCode(&builder, kit)
@@ -51,8 +55,8 @@ extension Target {
         case .appExtension: fallthrough
         case .unitTestBundle: fallthrough
         default:
-            print("""
-            Name: \(name)
+            Log.codeGenerate.warning("""
+            Name: \(name, privacy: .public)
             Type: \(native.productType?.rawValue ?? "") not gen
             """)
         }
