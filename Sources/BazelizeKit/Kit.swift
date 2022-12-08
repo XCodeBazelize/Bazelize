@@ -31,11 +31,7 @@ public final class Kit {
 
         try await loadPlugins(mainfest)
 
-        generateWorkspace()
-        generateBuild()
-        generateBazelRC()
-        generateTargetBuild()
-        generatePluginExtraFile()
+        generate()
     }
 
     public final func dump() throws {
@@ -45,6 +41,14 @@ public final class Kit {
     }
 
     // MARK: Internal
+
+    lazy var workspace = Workspace(project.workspacePath) { builder in
+        builder.default()
+        builder.rulesPlistFragment()
+    }
+
+    lazy var bazelRC = BazelRC(project.workspacePath)
+    lazy var build = Build(project.workspacePath)
 
     let project: Project
 
@@ -66,32 +70,42 @@ extension Kit {
             plugin.tip()
         }
     }
-
-    private final func generatePluginExtraFile() {
-        plugins.forEach { plugin in
-            try? plugin.generateFile(project.workspacePath)
-        }
-    }
 }
 
+// MARK: - Generate
 extension Kit {
+    private final func generate() {
+        generateWorkspace()
+        generateBuild()
+        generateBazelRC()
+        generateTargetBuild()
+        generatePluginExtraFile()
+    }
+
     /// {WORKSPACE}/WORKSPACE
     private final func generateWorkspace() {
-        let workspace = Workspace { builder in
-            builder.default()
-            builder.rulesPlistFragment()
-        }
-        try? workspace.generate(project.workspacePath)
+        try? workspace.write()
+
+        let path = workspace.path
+//        Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
     }
 
     /// {WORKSPACE}/BUILD
     private final func generateBuild() {
-        try? project.generateBUILD(self)
+        build.setup(config: project.config)
+        try? build.write()
+
+        let path = build.path
+//        Log.codeGenerate.info("Create `BUILD` at \(path, privacy: .public)")
     }
 
     /// {WORKSPACE}/.bazelrc
     private final func generateBazelRC() {
-        try? project.generateBazelRC(self)
+        bazelRC.setup(config: project.config)
+        try? bazelRC.write()
+
+        let path = bazelRC.path
+//        Log.codeGenerate.info("Create `.bazelrc` at \(path, privacy: .public)")
     }
 
 
@@ -105,4 +119,47 @@ extension Kit {
             try? target.generateBUILD(self)
         }
     }
+
+    private final func generatePluginExtraFile() {
+        plugins.forEach { plugin in
+            try? plugin.generateFile(project.workspacePath)
+        }
+    }
+}
+
+
+// MARK: - clear
+extension Kit {
+    // MARK: Public
+
+    public final func clear() {
+        clearWorkspace()
+        clearBuild()
+        clearBazelRC()
+        clearTargetBuild()
+        clearPluginExtraFile()
+    }
+
+    // MARK: Private
+
+    /// {WORKSPACE}/WORKSPACE
+    private final func clearWorkspace() {
+        try? workspace.clear()
+    }
+
+    /// {WORKSPACE}/BUILD
+    private final func clearBuild() {
+        try? build.clear()
+    }
+
+    /// {WORKSPACE}/.bazelrc
+    private final func clearBazelRC() {
+        try? bazelRC.clear()
+    }
+
+
+    /// {WORKSPACE}/Target/BUILD
+    private final func clearTargetBuild() { }
+
+    private final func clearPluginExtraFile() { }
 }

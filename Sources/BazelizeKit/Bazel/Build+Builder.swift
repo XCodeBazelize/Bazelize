@@ -9,9 +9,9 @@ import Foundation
 import RuleBuilder
 import Util
 
-// MARK: - Build
+// MARK: - Build.Builder
 
-struct Build {
+extension Build {
     struct Builder {
         private var codes: [String] = []
     }

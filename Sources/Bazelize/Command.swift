@@ -23,9 +23,18 @@ struct Command: AsyncParsableCommand {
     @Flag
     var dump = false
 
+    @Flag
+    var clear = false
+
     func run() async throws {
         let path = Path.current + project
         let kit = try await Kit(path, config)
+
+        guard !clear else {
+            kit.clear()
+            return
+        }
+
         if dump {
             try kit.dump()
         } else {

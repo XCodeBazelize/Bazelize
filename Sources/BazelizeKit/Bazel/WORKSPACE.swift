@@ -8,32 +8,22 @@
 import Foundation
 import PathKit
 
-struct Workspace {
+struct Workspace: BazelFile {
+    let path: Path
+    let code: String
     // MARK: Lifecycle
 
-    public init(_ build: (inout Builder) -> Void) {
+    init(_ root: Path, _ build: (inout Builder) -> Void) {
         var builder = Builder()
         build(&builder)
         code = builder.build()
+        path = root + "WORKSPACE"
     }
 
-    public init() {
+    init(_ root: Path) {
         var builder = Builder()
         builder.default()
         code = builder.build()
+        path = root + "WORKSPACE"
     }
-
-    // MARK: Public
-
-    // WORKSPACE
-    public func generate(_ path: Path) throws {
-        let workspace = path + "WORKSPACE"
-        print("Create \(workspace.string)")
-//        try _workspace.delete()
-        try workspace.write(code)
-    }
-
-    // MARK: Private
-
-    private let code: String
 }

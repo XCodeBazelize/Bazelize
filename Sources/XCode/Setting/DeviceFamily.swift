@@ -7,6 +7,8 @@
 
 import Foundation
 
+// MARK: - DeviceFamily
+
 /// "1,2"
 /// 1: iphone
 /// 2: ipad
@@ -44,3 +46,25 @@ internal enum DeviceFamily: String {
             .map(\.code) ?? []
     }
 }
+
+
+// MARK: - SupportedPlatform
+
+/// SUPPORTED_PLATFORMS
+enum SupportedPlatform: String {
+    case iphonesimulator
+    case iphoneos
+    case driverkit
+    case macosx
+    case appletvsimulator
+    case appletvos
+    case watchsimulator
+    case watchos
+}
+
+
+/// catalyst
+/// SUPPORTS_MACCATALYST
+
+/// design for ipad
+/// SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD

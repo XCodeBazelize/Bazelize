@@ -57,6 +57,8 @@ struct PodfileLock: Codable, YamlParsable {
     }
 }
 
+// MARK: PodfileLock.Pod
+
 extension PodfileLock {
     /// //Vendor/__PACKAGE__:__TARGET__
     fileprivate struct Pod: Codable, Hashable, Equatable {
@@ -175,6 +177,8 @@ extension PodfileLock {
     }
 }
 
+// MARK: PodfileLock.ExternalSource
+
 /// EXTERNAL SOURCES:
 extension PodfileLock {
     fileprivate struct ExternalSource: Codable {
@@ -192,6 +196,8 @@ extension PodfileLock {
     }
 }
 
+// MARK: PodfileLock.CheckoutOption
+
 /// CHECKOUT OPTIONS:
 extension PodfileLock {
     fileprivate struct CheckoutOption: Codable {
@@ -206,6 +212,8 @@ extension PodfileLock {
         }
     }
 }
+
+// MARK: PodfileLock.PodRepository
 
 extension PodfileLock {
     fileprivate struct PodRepository: NewPodRepository {

@@ -84,6 +84,7 @@ extension BuildSetting {
         self["SWIFT_VERSION"]
     }
 
+    // SUPPORTED_PLATFORMS
     public var deviceFamily: [String] {
         DeviceFamily.parse(self["TARGETED_DEVICE_FAMILY"])
     }
