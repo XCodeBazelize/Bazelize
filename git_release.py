@@ -12,6 +12,7 @@ if __name__ == "__main__":
     name = sys.argv[2]
     path = sys.argv[3]
     count = sys.argv[4]
+    isArchive = sys.argv[5] == 'archive'
 
     headers = {
         'Accept': 'application/vnd.github+json'
@@ -66,8 +67,12 @@ extension Repo {{
             _tag_name = tag.replace(".", "_").replace("-", "_")
             tag_name = 'v{0}'.format(_tag_name) if _tag_name[:1].isdigit() else _tag_name
             
-            
-            tarURL = release.get("assets")[0].get("browser_download_url")
+            tarURL = ''
+            if isArchive: 
+                # v0.11.2
+                tarURL = 'http://github.com/cgrindel/rules_spm/archive/{0}.tar.gz'.format(tag)
+            else:
+                tarURL = release.get("assets")[0].get("browser_download_url")
             
             if not tarURL is None:
                 print("compute sha256: {0}".format(tarURL))

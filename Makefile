@@ -35,13 +35,17 @@ Hammer := pinterest/xchammer
 SPM    := cgrindel/rules_spm
 
 REPOS := Apple Pod Hammer
+REPO_SPM := SPM
+
 
 # user/repo rule_name output_file_path
 # python3 git_release.py bazelbuild/rules_apple Apple Sources/BazelizeKit/Rule/Rule+Apple.swift
 $(REPOS):
-	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5
+	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5 normal
 
-$(SPM):
-	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5
+$(REPO_SPM):
+	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5 archive
 
 rules: $(REPOS)
+
+spm: $(REPO_SPM)
