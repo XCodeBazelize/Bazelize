@@ -61,7 +61,7 @@ extension Kit {
     private final func loadPlugins(_ mainfest: Path) async throws {
         plugins = try await PluginLoader.load(manifest: mainfest, project)
         for plugin in plugins {
-            print("Load Plugin \(plugin.name)(\(plugin.version))")
+            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
         }
     }
 
@@ -87,7 +87,7 @@ extension Kit {
         try? workspace.write()
 
         let path = workspace.path
-//        Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
+        Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
     }
 
     /// {WORKSPACE}/BUILD
@@ -96,7 +96,7 @@ extension Kit {
         try? build.write()
 
         let path = build.path
-//        Log.codeGenerate.info("Create `BUILD` at \(path, privacy: .public)")
+        Log.codeGenerate.info("Create `BUILD` at \(path, privacy: .public)")
     }
 
     /// {WORKSPACE}/.bazelrc
@@ -105,7 +105,7 @@ extension Kit {
         try? bazelRC.write()
 
         let path = bazelRC.path
-//        Log.codeGenerate.info("Create `.bazelrc` at \(path, privacy: .public)")
+        Log.codeGenerate.info("Create `.bazelrc` at \(path, privacy: .public)")
     }
 
 

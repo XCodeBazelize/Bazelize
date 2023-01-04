@@ -75,8 +75,6 @@ public final class Project {
         self.preferConfig = preferConfig
     }
 
-
-
     // MARK: Public
 
     public let workspacePath: Path

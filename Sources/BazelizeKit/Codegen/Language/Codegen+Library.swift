@@ -6,10 +6,12 @@
 //
 
 import Foundation
+import Util
 import XCode
 
 extension Target {
     func generateLibrary(_ builder: inout Build.Builder, _ kit: Kit) {
+        let name = name
         let cFamily = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
 
         switch (cFamily.isEmpty, srcs_swift.isEmpty) {
@@ -18,10 +20,10 @@ extension Target {
         case (false, true):
             generateObjcLibrary(&builder, kit)
         case (false, false):
-            #warning("mix objc & swift")
-            print("")
+            /// TODO: mix objc & swift
+            Log.codeGenerate.warning("TODO: mix objc & swift")
         case (true, true):
-            print("")
+            Log.codeGenerate.warning("Target(\(name, privacy: .public)) can't happen")
         }
     }
 }

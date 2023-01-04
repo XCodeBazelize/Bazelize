@@ -13,7 +13,6 @@ import RuleBuilder
 struct Build: BazelFile {
     // MARK: Lifecycle
 
-
     init(_ root: Path, _ target: String? = nil) {
         if let target = target {
             path = root + target + "BUILD"
