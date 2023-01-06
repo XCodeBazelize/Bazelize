@@ -84,7 +84,7 @@ extension BuildSetting {
         }
 
         let xmls = DefaultPlist.allCases.filter { (key: DefaultPlist) in
-            self[key.rawValue] == nil ||
+            self[key.rawValue] == nil &&
                 !(content?.contains(key.rawValue) ?? false)
         }.map(\.xml).sorted()
         return fillShortVersion(fillVersion(xmls))
