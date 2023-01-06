@@ -13,6 +13,7 @@ import Util
 
 extension Build {
     struct Builder {
+        private var loads: Set<String> = .init()
         private var codes: [String] = []
     }
 }
@@ -63,7 +64,7 @@ extension Build.Builder {
     /// load function at top of the file.
     mutating
     func load(_ code: String) {
-        codes.insert(code, at: 0)
+        loads.insert(code)
     }
 
     mutating
@@ -137,6 +138,8 @@ extension Build.Builder {
 
 extension Build.Builder {
     func build() -> String {
-        codes.joined(separator: "\n")
+        let loads = loads.sorted()
+        let codes = loads + [""] + codes
+        return codes.joined(separator: "\n")
     }
 }

@@ -19,7 +19,7 @@ import Yams
 public final class Kit {
     // MARK: Lifecycle
 
-    public init(_ projPath: Path, _ preferConfig: String? = nil) async throws {
+    public init(_ projPath: Path, _ preferConfig: String?) async throws {
         project = try await Project(projPath, preferConfig)
         plugins = []
     }
@@ -47,8 +47,13 @@ public final class Kit {
         builder.rulesPlistFragment()
     }
 
-    lazy var bazelRC = BazelRC(project.workspacePath)
+    lazy var config = BazelRC(project.workspacePath)
     lazy var build = Build(project.workspacePath)
+    lazy var targetsBuild = project.targets.compactMap {
+        $0 as? XCode.Target
+    }.map { target in
+        TargetBuild(project.workspacePath, target)
+    }
 
     let project: Project
 
@@ -77,7 +82,7 @@ extension Kit {
     private final func generate() {
         generateWorkspace()
         generateBuild()
-        generateBazelRC()
+        generateConfig()
         generateTargetBuild()
         generatePluginExtraFile()
     }
@@ -86,6 +91,7 @@ extension Kit {
     private final func generateWorkspace() {
         try? workspace.write()
 
+
         let path = workspace.path
         Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
     }
@@ -93,30 +99,35 @@ extension Kit {
     /// {WORKSPACE}/BUILD
     private final func generateBuild() {
         build.setup(config: project.config)
+        build.exportUncategorizedFiles(self)
+        build.build()
         try? build.write()
 
         let path = build.path
         Log.codeGenerate.info("Create `BUILD` at \(path, privacy: .public)")
     }
 
-    /// {WORKSPACE}/.bazelrc
-    private final func generateBazelRC() {
-        bazelRC.setup(config: project.config)
-        try? bazelRC.write()
+    /// {WORKSPACE}/config.bazelrc
+    private final func generateConfig() {
+        config.setup(config: project.config)
+        try? config.write()
 
-        let path = bazelRC.path
-        Log.codeGenerate.info("Create `.bazelrc` at \(path, privacy: .public)")
+        let path = config.path
+        Log.codeGenerate.info("Create `config.bazelrc` at \(path, privacy: .public)")
     }
 
 
     /// {WORKSPACE}/Target/BUILD
     private final func generateTargetBuild() {
-        let targets = project.targets.compactMap {
-            $0 as? XCode.Target
-        }
+        for build in targetsBuild {
+            var build = build
 
-        for target in targets {
-            try? target.generateBUILD(self)
+            try? build.mkpath()
+            build.setup(self)
+            try? build.write()
+
+            let path = build.path
+            Log.codeGenerate.info("Create BUILD at \(path, privacy: .public)")
         }
     }
 
@@ -135,7 +146,7 @@ extension Kit {
     public final func clear() {
         clearWorkspace()
         clearBuild()
-        clearBazelRC()
+        clearConfig()
         clearTargetBuild()
         clearPluginExtraFile()
     }
@@ -152,14 +163,18 @@ extension Kit {
         try? build.clear()
     }
 
-    /// {WORKSPACE}/.bazelrc
-    private final func clearBazelRC() {
-        try? bazelRC.clear()
+    /// {WORKSPACE}/config.bazelrc
+    private final func clearConfig() {
+        try? config.clear()
     }
 
 
     /// {WORKSPACE}/Target/BUILD
-    private final func clearTargetBuild() { }
+    private final func clearTargetBuild() {
+        for build in targetsBuild {
+            try? build.clear()
+        }
+    }
 
     private final func clearPluginExtraFile() { }
 }

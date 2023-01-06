@@ -13,8 +13,6 @@ import XCode
 
 extension Target {
     func generateFrameworkCode(_ builder: inout Build.Builder, _: Kit) {
-        let family = prefer(\.deviceFamily) ?? []
-
         builder.load(.ios_framework)
         builder.add(.ios_framework) {
             "name" => name
@@ -29,8 +27,18 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            "families" => family.isEmpty ? ["iphone", "ipad"] : family
             "frameworks" => None
+//          TODO: import framework
+//            {
+//                Starlark.comment("import")
+//                importFrameworks
+//                Starlark.comment("framework")
+//                frameworks
+//                Starlark.comment("framework lib")
+//                frameworks_library
+//                Starlark.comment("sdk")
+//                sdkFrameworks
+//            }
             StarlarkProperty.Visibility.public
         }
     }

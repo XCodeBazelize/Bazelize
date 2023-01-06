@@ -9,6 +9,7 @@ import Foundation
 import PathKit
 import Util
 
+/// /WORKSPACE
 struct Workspace: BazelFile {
     // MARK: Lifecycle
 

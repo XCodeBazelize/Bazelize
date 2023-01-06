@@ -54,7 +54,7 @@ extension Target {
                 plist_auto
                 plist_default
             }
-            "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
+            // "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
             "deps" => {
                 ":\(name)_library"
             }
