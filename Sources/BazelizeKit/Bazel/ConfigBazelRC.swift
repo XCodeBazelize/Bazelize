@@ -9,13 +9,20 @@ import Foundation
 import PathKit
 import PluginInterface
 
-/// https://bazel.build/docs/configurable-attributes
+/// [config](https://bazel.build/docs/configurable-attributes)
+/// [.bazelrc](https://bazel.build/run/bazelrc)
+///
+///
+/// TODO:
+/// TIP: `import %workspace%/config.bazelrc` in `.bazelrc`
+///
+/// /config.bazelrc
 struct BazelRC: BazelFile {
     let path: Path
     private(set) var code = ""
 
     init(_ root: Path) {
-        path = root + ".bazelrc"
+        path = root + "config.bazelrc"
     }
 
     /// build:debug --//:mode=debug
