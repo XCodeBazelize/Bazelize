@@ -25,7 +25,7 @@ bazelize --project YOUR.xcodeproj
 ```bash
 ├── xxx.xcodeproj
 ├── xxx.xcworkspace
-├── .bazelrc        # generated file
+├── config.bazelrc        # generated file
 ├── BUILD           # generated file
 ├── WORKSPACE       # generated file
 ├── Podfile
@@ -49,6 +49,8 @@ bazelize --project YOUR.xcodeproj
 
 All `XCode configs` is stored in `BUILD` file.
 
+You can build debug version with following code.
+
 > bazel build --//:mode=Debug [Package]
 
 ```bazel
@@ -70,3 +72,11 @@ config_setting(
     },
 )
 ```
+
+Or you can fill in the following code into `.bazelrc`.
+
+```python
+import %workspace%/config.bazelrc
+```
+
+> bazel build --config=Debug [Package]
