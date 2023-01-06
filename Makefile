@@ -28,13 +28,14 @@ test:
 #	COCOAPOD=$(shell which pod) swift test -v 2>&1 | xcbeautify
 
 
-Apple  := bazelbuild/rules_apple
-Pod    := pinterest/PodToBUILD
-Hammer := pinterest/xchammer
+Apple     := bazelbuild/rules_apple
+Swift     := bazelbuild/rules_swift
+Pod       := pinterest/PodToBUILD
+Hammer    := pinterest/xchammer
+XCodeProj := buildbuddy-io/rules_xcodeproj
+SPM       := cgrindel/rules_spm
 
-SPM    := cgrindel/rules_spm
-
-REPOS := Apple Pod Hammer
+REPOS    := Apple Swift Pod Hammer XCodeProj
 REPO_SPM := SPM
 
 

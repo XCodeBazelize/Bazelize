@@ -50,6 +50,7 @@ let package = Package(
                 "Yams",
 
                 "XCode",
+                "Util",
                 "RuleBuilder",
                 "PluginLoader",
 
