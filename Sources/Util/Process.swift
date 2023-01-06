@@ -7,7 +7,9 @@
 
 import Foundation
 
-extension Process {
+// MARK: - Process + Sendable
+
+extension Process: @unchecked Sendable {
     // MARK: Public
 
     public static func execute(_ command: String, arguments: String...) async throws -> Data {
