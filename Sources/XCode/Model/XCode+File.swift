@@ -42,6 +42,17 @@ public final class File {
         """
     }
 
+    /// File type start with `sourcecode.`
+    public var isSource: Bool {
+        guard let ref = native as? PBXFileReference else { return false }
+        return ref.lastKnownFileType?.hasPrefix("sourcecode.") ?? false
+    }
+
+    /// File is PBXFileReference
+    public var isFile: Bool {
+        native is PBXFileReference
+    }
+
     public func isType(_ type: LastKnownFileType) -> Bool {
         guard let ref = native as? PBXFileReference else { return false }
         return ref.lastKnownFileType == type.rawValue
@@ -54,25 +65,18 @@ public final class File {
 }
 
 extension PBXFileElement {
-    func filterChildren(_ type: LastKnownFileType) -> [PBXFileElement] {
+    func flatten() -> [PBXFileElement] {
         if let group = self as? PBXGroup {
             return group.children.flatMap { file in
-                file.filterChildren(type)
+                file.flatten()
             }
         }
 
-        if let ref = self as? PBXFileReference, ref.lastKnownFileType == type.rawValue {
+        if let ref = self as? PBXFileReference {
             return [ref]
         }
 
         return []
-    }
-}
-
-extension String {
-    func delete(prefix: String) -> String {
-        guard hasPrefix(prefix) else { return self }
-        return String(dropFirst(prefix.count))
     }
 }
 

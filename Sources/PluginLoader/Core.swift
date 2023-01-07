@@ -20,13 +20,13 @@ public func load(manifest: Path, _ proj: XCodeProject) async throws -> [Plugin] 
         return []
     }
 
-    print("Parse Manifest: \(manifest.string)")
+    Log.pluginLoader.info("Parse Manifest: \(manifest.string)")
     let infos = try parseManifest(manifest)
 
-    print("Build Plugins")
+    Log.pluginLoader.info("Build Plugins")
     let buildPlugins = try PluginBuilder.build(plugins: infos)
 
-    print("Load Plugins")
+    Log.pluginLoader.info("Load Plugins")
     let result = try await withThrowingTaskGroup(of: Plugin?.self) { group -> [Plugin?] in
         let build = Path.home + ".bazelize" + "build" + swift
         for plugin in buildPlugins {

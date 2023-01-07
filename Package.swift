@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "Bazelize",
     platforms: [
-        .macOS(.v10_15),
+        .macOS(.v11),
     ],
     products: [
         .executable(name: "bazelize", targets: ["Bazelize"]),
@@ -50,6 +50,7 @@ let package = Package(
                 "Yams",
 
                 "XCode",
+                "Util",
                 "RuleBuilder",
                 "PluginLoader",
 

@@ -27,6 +27,13 @@ extension String {
     }
 }
 
+extension String {
+    public func delete(prefix: String) -> String {
+        guard hasPrefix(prefix) else { return self }
+        return String(dropFirst(prefix.count))
+    }
+}
+
 extension StringProtocol {
     public func appending(prefix: String) -> String {
         prefix + self

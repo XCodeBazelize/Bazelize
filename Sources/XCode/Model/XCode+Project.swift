@@ -61,7 +61,7 @@ extension Project: Encodable {
 public final class Project {
     // MARK: Lifecycle
 
-    public init(_ projectPath: Path, _ preferConfig: String? = nil) async throws {
+    public init(_ projectPath: Path, _ preferConfig: String?) async throws {
         let path = projectPath.parent()
         workspacePath = path
         self.projectPath = projectPath
@@ -75,8 +75,6 @@ public final class Project {
         self.preferConfig = preferConfig
     }
 
-
-
     // MARK: Public
 
     public let workspacePath: Path
@@ -89,18 +87,18 @@ public final class Project {
         return []
     }
 
-    // MARK: Internal
+    public var all: [File] {
+        let all = try? native.rootGroup()?.flatten().map { file in
+            File(native: file, project: self)
+        }
 
-    internal var headers: [File] {
-        (try? native.rootGroup()?.filterChildren(.h).map { header in
-            File(native: header, project: self)
-        }) ?? []
+        return all ?? []
     }
 
-    internal func files(_ type: LastKnownFileType) -> [File] {
-        (try? native.rootGroup()?.filterChildren(type).map { header in
-            File(native: header, project: self)
-        }) ?? []
+    public func files(_ type: LastKnownFileType) -> [File] {
+        all.filter { file in
+            file.isType(type)
+        }
     }
 
     // MARK: Private

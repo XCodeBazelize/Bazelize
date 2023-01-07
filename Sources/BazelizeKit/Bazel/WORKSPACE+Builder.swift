@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  Workspace.swift
 //
 //
 //  Created by Yume on 2022/7/25.
@@ -14,10 +14,12 @@ extension Workspace {
         mutating
         public func `default`() {
             http_archive()
-            rulesApple(repo: .v1_1_2)
+            rulesApple(repo: .v2_0_0)
+            rulesSwift(repo: .v1_5_0)
             rulesPod(repo: .v4_1_0_412495)
-//            self.rulesSPM(repo: .v0_11_0)
-//            self.rulesHammer(repo: .v3_4_3_3)
+//            rulesSPM(repo: .v0_11_2)
+//            rulesHammer(repo: .v3_4_3_3)
+            rulesXCodeProj(repo: .v0_11_0)
         }
 
         mutating
@@ -29,13 +31,13 @@ extension Workspace {
 
         mutating
         public func rulesApple(repo: Repo.Apple) {
+            let version = repo.version
             _code = """
             # rules_apple
             http_archive(
                 name = "build_bazel_rules_apple",
                 # sha256 = "\(repo.sha256)",
-                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(repo.version)/rules_apple.\(repo
-                .version).tar.gz",
+                url = "https://github.com/bazelbuild/rules_apple/releases/download/\(version)/rules_apple.\(version).tar.gz",
             )
 
             load(
@@ -65,7 +67,6 @@ extension Workspace {
             )
 
             apple_support_dependencies()
-
             """
         }
 
@@ -80,7 +81,6 @@ extension Workspace {
             )
 
             load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
-
             """
         }
 
@@ -103,7 +103,6 @@ extension Workspace {
             )
 
             spm_rules_dependencies()
-
             """
         }
 
@@ -115,7 +114,25 @@ extension Workspace {
                 name = "xchammer",
                 urls = [ "https://github.com/pinterest/xchammer/releases/download/\(repo.rawValue)/xchammer.zip" ],
             )
+            """
+        }
 
+        mutating
+        public func rulesXCodeProj(repo: Repo.XCodeProj) {
+            _code = """
+            # rules_xcodeproj
+            http_archive(
+                name = "com_github_buildbuddy_io_rules_xcodeproj",
+                sha256 = "\(repo.sha256)",
+                url = "https://github.com/buildbuddy-io/rules_xcodeproj/releases/download/\(repo.rawValue)/release.tar.gz",
+            )
+
+            load(
+                "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:repositories.bzl",
+                "xcodeproj_rules_dependencies",
+            )
+
+            xcodeproj_rules_dependencies()
             """
         }
 
@@ -128,7 +145,34 @@ extension Workspace {
                 commit = "259ca0a5d77833728c18fa6365285559ce8cc0bf",
                 remote = "https://github.com/imWildCat/MinimalBazelFrameworkDemo",
             )
+            """
+        }
 
+        mutating
+        public func rulesSwift(repo: Repo.Swift) {
+            _code = """
+            # rules_swift
+            http_archive(
+               name = "build_bazel_rules_swift",
+               sha256 = "\(repo.sha256)",
+               url = "https://github.com/bazelbuild/rules_swift/releases/download/\(repo.rawValue)/rules_swift.\(
+                   repo
+                       .rawValue).tar.gz",
+            )
+
+            load(
+               "@build_bazel_rules_swift//swift:repositories.bzl",
+               "swift_rules_dependencies",
+            )
+
+            swift_rules_dependencies()
+
+            load(
+               "@build_bazel_rules_swift//swift:extras.bzl",
+               "swift_rules_extra_dependencies",
+            )
+
+            swift_rules_extra_dependencies()
             """
         }
 
@@ -140,7 +184,7 @@ extension Workspace {
         // MARK: Internal
 
         internal func build() -> String {
-            codes.withNewLine
+            codes.joined(separator: "\n\n")
         }
 
         // MARK: Private
