@@ -37,6 +37,7 @@ enum RulesApple {
         case macos_command_line_application
         case macos_extension
 
+        case macos_ui_test
         case macos_unit_test
         case macos_build_test
 

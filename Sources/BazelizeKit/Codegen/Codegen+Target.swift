@@ -11,6 +11,16 @@ import Util
 import XCode
 
 extension Target {
+    var isTest: Bool {
+        switch native.productType {
+        case .unitTestBundle: fallthrough
+        case .ocUnitTestBundle: fallthrough
+        case .uiTestBundle:
+            return true
+        default: return false
+        }
+    }
+
     /// WORKSPACE/TARGET_NAME/BUILD
     internal func generateBUILD(_ kit: Kit) throws {
         let target = kit.project.workspacePath + name
@@ -49,7 +59,10 @@ extension Target {
         case .staticFramework: fallthrough
 //            return "" //generateStaitcFrameworkCode(kit)
         case .appExtension: fallthrough
-        case .unitTestBundle: fallthrough
+        case .unitTestBundle:
+            generateUnitTest(&builder, kit)
+        case .uiTestBundle:
+            generateUITest(&builder, kit)
         default:
             Log.codeGenerate.warning("""
             Name: \(name, privacy: .public)

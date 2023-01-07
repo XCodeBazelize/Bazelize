@@ -24,12 +24,16 @@ extension Target {
             "srcs" => {
                 srcs_swift
             }
+            "testonly" => isTest
             "deps" => {
                 .comment("Framework TODO (swift_library/objc_library)")
                 frameworks_library
 
                 plugins.flatMap(\.deps)
             }
+//            "data" => {
+//                resources
+//            }
             StarlarkProperty.Visibility.private
         }
 

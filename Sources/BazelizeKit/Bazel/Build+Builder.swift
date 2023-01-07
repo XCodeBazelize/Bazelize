@@ -138,8 +138,8 @@ extension Build.Builder {
 
 extension Build.Builder {
     func build() -> String {
-        let loads = loads.sorted()
-        let codes = loads + [""] + codes
-        return codes.joined(separator: "\n")
+        let loads = loads.sorted().joined(separator: "\n")
+        let codes = [loads] + codes
+        return codes.joined(separator: "\n\n")
     }
 }

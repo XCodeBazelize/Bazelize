@@ -113,6 +113,10 @@ extension BuildSetting {
     public var driverKit: String? {
         self["DRIVERKIT_DEPLOYMENT_TARGET"]
     }
+
+    public var testHost: String? {
+        self["TEST_TARGET_NAME"]
+    }
 }
 
 // MARK: - PLIST Value -

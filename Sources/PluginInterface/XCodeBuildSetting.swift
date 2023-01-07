@@ -56,6 +56,9 @@ public protocol XCodeBuildSetting {
 
     /// "Main"
     var storyboard: String? { get }
+
+    /// TEST_TARGET_NAME
+    var testHost: String? { get }
 }
 
 // MARK: - SDK
