@@ -53,6 +53,12 @@ public final class File {
         native is PBXFileReference
     }
 
+
+    public var type: LastKnownFileType? {
+        guard let ref = native as? PBXFileReference else { return nil }
+        return .init(rawValue: ref.lastKnownFileType ?? "")
+    }
+
     public func isType(_ type: LastKnownFileType) -> Bool {
         guard let ref = native as? PBXFileReference else { return false }
         return ref.lastKnownFileType == type.rawValue

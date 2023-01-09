@@ -51,6 +51,7 @@ extension Target {
 
         switch native.productType {
         case .application:
+            generateStrings(&builder, kit)
             generateApplicationCode(&builder, kit)
         case .commandLineTool:
             generateCommandLineApplicationCode(&builder, kit)

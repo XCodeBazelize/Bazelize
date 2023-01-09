@@ -59,6 +59,8 @@ private struct Setting: XCodeBuildSetting {
 
     var storyboard: String? { self[#function] }
 
+    var testHost: String? { nil }
+
     // MARK: Private
 
     private subscript<T>(key: String) -> T? {

@@ -31,9 +31,13 @@ extension Target {
 
                 plugins.flatMap(\.deps)
             }
-//            "data" => {
-//                resources
-//            }
+            "data" => {
+                if !assets.isEmpty {
+                    ":Assets"
+                }
+                xibs
+                storyboards
+            }
             StarlarkProperty.Visibility.private
         }
 

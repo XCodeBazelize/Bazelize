@@ -93,9 +93,11 @@ extension Target {
             "sdk_frameworks" => {
                 sdkFrameworks
             }
-//            "resources" => {
-//                resources
-//            }
+            "strings" => {
+                if !allStrings.isEmpty {
+                    ":Strings"
+                }
+            }
             StarlarkProperty.Visibility.public
         }
     }

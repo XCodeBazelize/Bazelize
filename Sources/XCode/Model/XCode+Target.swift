@@ -87,26 +87,27 @@ public final class Target {
 }
 
 extension Target {
-    // MARK: Public
+    // MARK: Internal
 
-    public var srcFiles: [File] {
-        files(try? native.sourcesBuildPhase()?.files)
-    }
-
-    public var resourceFiles: [File] {
-        files(try? native.resourcesBuildPhase()?.files)
+    func isInPackage(_ label: String) -> Bool {
+        label.hasPrefix("""
+        //\(name):
+        """)
     }
 
     // MARK: Private
 
     private func files(_ files: [PBXBuildFile]?) -> [File] {
-        files?.compactMap { build in
-            guard let file = build.file else { return nil }
-            return File(native: file, project: project)
+        files?.flatMap { build -> [File] in
+            guard let files = build.file?.flatten() else { return [] }
+            return files.map { native -> File in
+                File(native: native, project: project)
+            }
         } ?? []
     }
 }
 
+/// srcs
 extension Target {
     // MARK: Public
 
@@ -115,22 +116,18 @@ extension Target {
         project
             .files(.h)
             .labels
-            .filter { label in
-                label.hasPrefix("""
-                //\(name):
-                """)
-            }
+            .filter(isInPackage)
     }
 
     public var hpps: [String] {
         project
             .files(.hpp)
             .labels
-            .filter { label in
-                label.hasPrefix("""
-                //\(name):
-                """)
-            }
+            .filter(isInPackage)
+    }
+
+    public var srcFiles: [File] {
+        files(try? native.sourcesBuildPhase()?.files)
     }
 
     public var srcs: [String] {
@@ -161,10 +158,6 @@ extension Target {
         srcs(.metal)
     }
 
-    public var resources: [String] {
-        resourceFiles.labels
-    }
-
     // MARK: Internal
 
     func srcs(_ type: LastKnownFileType) -> [String] {
@@ -172,6 +165,44 @@ extension Target {
             file.isType(type)
         }.labels
     }
+}
+
+extension Target {
+    // MARK: Public
+
+    public var resourceFiles: [File] {
+        files(try? native.resourcesBuildPhase()?.files)
+    }
+
+    public var xibs: [String] {
+        resources(.xib)
+    }
+
+    public var storyboards: [String] {
+        resources(.storyboard)
+    }
+
+    public var assets: [String] {
+        resources(.asset)
+    }
+
+    public var strings: [String] {
+        resources(.strings)
+    }
+
+    public var stringsdict: [String] {
+        resources(.stringsdict)
+    }
+
+    public var allStrings: [String] {
+        strings + stringsdict
+    }
+
+    public var resources: [String] {
+        resourceFiles.labels
+    }
+
+    // MARK: Internal
 
     func resources(_ type: LastKnownFileType) -> [String] {
         resourceFiles.filter { file in
@@ -181,10 +212,10 @@ extension Target {
 }
 
 extension Target {
+    /// https://github.com/XCodeBazelize/Bazelize/issues/8
     /// use for `frameworks`
     public var importFrameworks: [String] {
-        #warning("todo import framework/xcframework/static...")
-        return []
+        []
     }
 
     /// use for `frameworks`

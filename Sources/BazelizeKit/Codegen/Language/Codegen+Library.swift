@@ -14,6 +14,8 @@ extension Target {
         let name = name
         let cFamily = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
 
+        generateAssets(&builder, kit)
+
         switch (cFamily.isEmpty, srcs_swift.isEmpty) {
         case (true, false):
             generateSwiftLibrary(&builder, kit)

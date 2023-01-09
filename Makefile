@@ -50,3 +50,7 @@ $(REPO_SPM):
 rules: $(REPOS)
 
 spm: $(REPO_SPM)
+
+.PHONY: bazelize
+bazelize: install
+	cd fixture/SwiftUI && make bazelize

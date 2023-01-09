@@ -23,7 +23,7 @@ public indirect enum Starlark: Text {
 
     // MARK: Lifecycle
 
-    init?(_ any: Any?) {
+    public init?(_ any: Any?) {
         switch any {
         case let any as String?:
             guard let value = any else {
@@ -80,7 +80,7 @@ public indirect enum Starlark: Text {
                 "\(key)": \(value.text)
                 """
             }.sorted().joined(separator: ",\n").indent(1)
-            return ["{", pair,"}"].withNewLine
+            return ["{", pair, "}"].withNewLine
         case .bool(let value):
             return value ? "True" : "False"
         case .select(let value):
