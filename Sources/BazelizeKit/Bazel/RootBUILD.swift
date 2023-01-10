@@ -50,7 +50,7 @@ struct Build: BazelFile {
         builder.load(.string_flag)
         builder.add(.string_flag) {
             "name" => "mode"
-            "build_setting_default" => "normal"
+            "build_setting_default" => "Debug"
         }
 
         for config in configs.sorted() {
