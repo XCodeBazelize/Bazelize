@@ -33,12 +33,9 @@ extension Target {
 
         guard !files.isEmpty else { return }
 
-        let asset = Starlark(files) ?? .none
         builder.add("filegroup") {
             "name" => "Assets"
-            "srcs" => Starlark.custom("""
-            glob(\(asset.text))
-            """)
+            "srcs" => Starlark.glob(files)
             StarlarkProperty.Visibility.private
         }
     }

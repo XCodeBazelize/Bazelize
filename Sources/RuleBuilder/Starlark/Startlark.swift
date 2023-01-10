@@ -18,6 +18,7 @@ public indirect enum Starlark: Text {
     case dictionary([String: Starlark])
     case bool(Bool)
     case select(Starlark.Select<Starlark>)
+    case glob([String])
     case custom(String)
     case none
 
@@ -85,6 +86,11 @@ public indirect enum Starlark: Text {
             return value ? "True" : "False"
         case .select(let value):
             return value.text
+        case .glob(let files):
+            let asset = Starlark(files.sorted()) ?? .none
+            return """
+            glob(\(asset.text))
+            """
         case .custom(let value):
             return value
         case .none:
