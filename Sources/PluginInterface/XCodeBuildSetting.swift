@@ -59,6 +59,8 @@ public protocol XCodeBuildSetting {
 
     /// TEST_TARGET_NAME
     var testHost: String? { get }
+
+    var swiftDefine: String? { get }
 }
 
 // MARK: - SDK

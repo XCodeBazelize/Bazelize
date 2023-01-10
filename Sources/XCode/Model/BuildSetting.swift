@@ -117,6 +117,10 @@ extension BuildSetting {
     public var testHost: String? {
         self["TEST_TARGET_NAME"]
     }
+
+    public var swiftDefine: String? {
+        self["OTHER_SWIFT_FLAGS"]
+    }
 }
 
 // MARK: - PLIST Value -

@@ -38,6 +38,28 @@ extension Target {
                 xibs
                 storyboards
             }
+
+            "defines" => select(\.swiftDefine).map { text -> [String] in
+                let flags: [String] = (text ?? "").split(separator: " ").map(String.init)
+
+                var isPreviousDefine = false
+                var result: [String] = []
+                for flag in flags {
+                    if flag == "-D" {
+                        isPreviousDefine = true
+                    } else if isPreviousDefine {
+                        /// -D ABC
+                        result.append(flag)
+                        isPreviousDefine = false
+                    } else if flag.hasPrefix("-D") {
+                        /// -DABC
+                        result.append(flag.delete(prefix: "-D"))
+                    }
+                }
+
+                return result
+            }.starlark
+
             StarlarkProperty.Visibility.private
         }
 

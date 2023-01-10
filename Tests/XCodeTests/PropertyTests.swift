@@ -61,6 +61,8 @@ private struct Setting: XCodeBuildSetting {
 
     var testHost: String? { nil }
 
+    var swiftDefine: String? { nil }
+
     // MARK: Private
 
     private subscript<T>(key: String) -> T? {
