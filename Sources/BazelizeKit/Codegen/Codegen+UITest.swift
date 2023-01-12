@@ -30,7 +30,7 @@ extension Target {
         builder.load(.ios_ui_test)
         builder.add(.ios_ui_test) {
             "name" => "\(name)"
-            "test_host" => prefer(\.testHost).map { target in
+            "test_host" => prefer(\.testTargetName).map { target in
                 "//\(target):\(target)"
             }
             "minimum_os_version" => prefer(\.iOS)
@@ -47,7 +47,7 @@ extension Target {
         builder.load(.macos_ui_test)
         builder.add(.macos_ui_test) {
             "name" => "\(name)"
-            "test_host" => prefer(\.testHost).map { target in
+            "test_host" => prefer(\.testTargetName).map { target in
                 "//\(target):\(target)"
             }
             "minimum_os_version" => prefer(\.macOS)
@@ -64,7 +64,7 @@ extension Target {
         builder.load(.tvos_ui_test)
         builder.add(.tvos_ui_test) {
             "name" => "\(name)"
-            "test_host" => prefer(\.testHost).map { target in
+            "test_host" => prefer(\.testTargetName).map { target in
                 "//\(target):\(target)"
             }
             "minimum_os_version" => prefer(\.tvOS)
@@ -81,7 +81,7 @@ extension Target {
         builder.load(.watchos_ui_test)
         builder.add(.watchos_ui_test) {
             "name" => "\(name)"
-            "test_host" => prefer(\.testHost).map { target in
+            "test_host" => prefer(\.testTargetName).map { target in
                 "//\(target):\(target)"
             }
             "minimum_os_version" => prefer(\.watchOS)

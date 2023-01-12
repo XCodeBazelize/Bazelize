@@ -57,10 +57,19 @@ public protocol XCodeBuildSetting {
     /// "Main"
     var storyboard: String? { get }
 
+    var swiftDefine: String? { get }
+
+    /// ios application uitest `Target Application`
     /// TEST_TARGET_NAME
+    var testTargetName: String? { get }
+
+    /// ios application unittest `Host Application`
+    /// TEST_HOST
     var testHost: String? { get }
 
-    var swiftDefine: String? { get }
+    /// ios application unittest `Allow testing Host Application APIs`
+    /// BUNDLE_LOADER
+    var bundleLoader: String? { get }
 }
 
 // MARK: - SDK

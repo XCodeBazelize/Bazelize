@@ -59,8 +59,6 @@ extension Target {
             }
             "deps" => {
                 ":\(name)_library"
-            }
-            "frameworks" => {
                 frameworks
             }
             "resources" => {
@@ -86,12 +84,10 @@ extension Target {
             // "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
             "deps" => {
                 ":\(name)_library"
-            }
-            "frameworks" => {
                 frameworks
             }
             "sdk_frameworks" => {
-                sdkFrameworks
+                frameworksSDK
             }
             "strings" => {
                 if !allStrings.isEmpty {
@@ -136,8 +132,6 @@ extension Target {
             }
             "deps" => {
                 ":\(name)_library"
-            }
-            "frameworks" => {
                 frameworks
             }
             "resources" => {

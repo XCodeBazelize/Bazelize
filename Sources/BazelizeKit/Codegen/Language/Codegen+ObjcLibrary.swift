@@ -36,12 +36,7 @@ extension Target {
             "linkopts" => { }
             "includes" => { }
             "deps" => {
-                Starlark.comment("Cocoapod Deps")
-                // depsPod
-                Starlark.comment("XCode SPM Deps")
-                // depsSPM
-                Starlark.comment("Framework TODO (swift_library/objc_library)")
-                frameworks_library
+                frameworksLibrary
             }
             StarlarkProperty.Visibility.private
         }

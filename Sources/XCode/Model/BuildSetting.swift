@@ -114,12 +114,28 @@ extension BuildSetting {
         self["DRIVERKIT_DEPLOYMENT_TARGET"]
     }
 
-    public var testHost: String? {
-        self["TEST_TARGET_NAME"]
-    }
+
 
     public var swiftDefine: String? {
         self["OTHER_SWIFT_FLAGS"]
+    }
+
+    /// ios application uitest `Target Application`
+    /// TEST_TARGET_NAME
+    public var testTargetName: String? {
+        self["TEST_TARGET_NAME"]
+    }
+
+    /// ios application unittest `Host Application`
+    /// TEST_HOST
+    public var testHost: String? {
+        self["TEST_HOST"]
+    }
+
+    /// ios application unittest `Allow testing Host Application APIs`
+    /// BUNDLE_LOADER
+    public var bundleLoader: String? {
+        self["BUNDLE_LOADER"]
     }
 }
 

@@ -39,12 +39,11 @@ public protocol XCodeTarget {
     var importFrameworks: [String] { get }
 
     /// use for `frameworks`
-    var frameworks: [String] { get }
+//    var frameworks: [String] { get }
 
-    /// use for `xxx_library.deps`
-    ///
-    var frameworks_library: [String] { get }
-
-    /// use for `sdk_frameworks`
-    var sdkFrameworks: [String] { get }
+//    /// use for `xxx_library.deps`
+//    var frameworks_library: [String] { get }
+//
+//    /// use for `sdk_frameworks`
+//    var sdkFrameworks: [String] { get }
 }
