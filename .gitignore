@@ -178,3 +178,5 @@ lefthook.yml
 
 .swiftpm/*
 .vscode/*
+
+cache/
