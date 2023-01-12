@@ -21,22 +21,6 @@ extension Target {
         }
     }
 
-    /// WORKSPACE/TARGET_NAME/BUILD
-    internal func generateBUILD(_ kit: Kit) throws {
-        let target = kit.project.workspacePath + name
-        let build = target + "BUILD"
-        do {
-            try target.mkpath()
-        } catch {
-            Log.codeGenerate.info("Fail to create dir \(target.string)")
-            throw error
-        }
-
-        let code = generateCode(kit)
-        Log.codeGenerate.info("Create `Target/BUILD` at\(build.string, privacy: .public)")
-        try build.write(code)
-    }
-
     func generateCode(_ kit: Kit) -> String {
         var builder = Build.Builder()
         generateLibrary(&builder, kit)
@@ -57,9 +41,10 @@ extension Target {
             generateCommandLineApplicationCode(&builder, kit)
         case .framework:
             generateFrameworkCode(&builder, kit)
-        case .staticFramework: fallthrough
-//            return "" //generateStaitcFrameworkCode(kit)
-        case .appExtension: fallthrough
+//        case .staticFramework: break
+        case .staticLibrary:
+            generateStaticLibrary(&builder, kit)
+//        case .appExtension: break
         case .unitTestBundle:
             generateUnitTest(&builder, kit)
         case .uiTestBundle:
