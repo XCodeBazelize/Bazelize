@@ -1,0 +1,9 @@
+/* 
+  Localizable.strings
+  Example
+
+  Created by Yume on 2023/1/9.
+  
+*/
+
+"hello" = "Hello, world!!";

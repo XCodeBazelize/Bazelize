@@ -59,4 +59,4 @@ spm: $(REPO_SPM)
 
 .PHONY: bazelize
 bazelize: install
-	cd fixture/SwiftUI && make bazelize
+	cd fixture/iOS && make bazelize

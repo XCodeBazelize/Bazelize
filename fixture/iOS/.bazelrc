@@ -1,0 +1,22 @@
+import %workspace%/config.bazelrc
+
+build --disk_cache=cache
+
+
+# build --apple_platform_type=ios
+# build --verbose_failures
+
+
+# build --macos_minimum_os=10.15
+
+# # Make sure no warnings slip into the C++ tools we vendor
+# build --features treat_warnings_as_errors
+
+# # The default strategy is worker, which has sandboxing disabled by default,
+# # which can hide issues with non-hermetic bugs.
+# build --strategy=SwiftCompile=sandboxed
+
+# # build --ios_minimum_os=15.5
+# # build --ios_simulator_device="iPhone 13"
+# # build --ios_simulator_version=15.5
+# # build --xcode_version=13.4.1
