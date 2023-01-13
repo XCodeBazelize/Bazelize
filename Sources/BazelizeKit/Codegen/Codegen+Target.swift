@@ -11,20 +11,14 @@ import Util
 import XCode
 
 extension Target {
-    /// WORKSPACE/TARGET_NAME/BUILD
-    internal func generateBUILD(_ kit: Kit) throws {
-        let target = kit.project.workspacePath + name
-        let build = target + "BUILD"
-        do {
-            try target.mkpath()
-        } catch {
-            Log.codeGenerate.info("Fail to create dir \(target.string)")
-            throw error
+    var isTest: Bool {
+        switch native.productType {
+        case .unitTestBundle: fallthrough
+        case .ocUnitTestBundle: fallthrough
+        case .uiTestBundle:
+            return true
+        default: return false
         }
-
-        let code = generateCode(kit)
-        Log.codeGenerate.info("Create `Target/BUILD` at\(build.string, privacy: .public)")
-        try build.write(code)
     }
 
     func generateCode(_ kit: Kit) -> String {
@@ -41,15 +35,20 @@ extension Target {
 
         switch native.productType {
         case .application:
+            generateStrings(&builder, kit)
             generateApplicationCode(&builder, kit)
         case .commandLineTool:
             generateCommandLineApplicationCode(&builder, kit)
         case .framework:
             generateFrameworkCode(&builder, kit)
-        case .staticFramework: fallthrough
-//            return "" //generateStaitcFrameworkCode(kit)
-        case .appExtension: fallthrough
-        case .unitTestBundle: fallthrough
+//        case .staticFramework: break
+        case .staticLibrary:
+            generateStaticLibrary(&builder, kit)
+//        case .appExtension: break
+        case .unitTestBundle:
+            generateUnitTest(&builder, kit)
+        case .uiTestBundle:
+            generateUITest(&builder, kit)
         default:
             Log.codeGenerate.warning("""
             Name: \(name, privacy: .public)

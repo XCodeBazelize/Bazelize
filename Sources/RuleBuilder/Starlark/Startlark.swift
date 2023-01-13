@@ -18,12 +18,13 @@ public indirect enum Starlark: Text {
     case dictionary([String: Starlark])
     case bool(Bool)
     case select(Starlark.Select<Starlark>)
+    case glob([String])
     case custom(String)
     case none
 
     // MARK: Lifecycle
 
-    init?(_ any: Any?) {
+    public init?(_ any: Any?) {
         switch any {
         case let any as String?:
             guard let value = any else {
@@ -80,11 +81,16 @@ public indirect enum Starlark: Text {
                 "\(key)": \(value.text)
                 """
             }.sorted().joined(separator: ",\n").indent(1)
-            return ["{", pair,"}"].withNewLine
+            return ["{", pair, "}"].withNewLine
         case .bool(let value):
             return value ? "True" : "False"
         case .select(let value):
             return value.text
+        case .glob(let files):
+            let asset = Starlark(files.sorted()) ?? .none
+            return """
+            glob(\(asset.text))
+            """
         case .custom(let value):
             return value
         case .none:

@@ -81,10 +81,10 @@ public final class Project {
     public let projectPath: Path
     public let preferConfig: String?
 
+    /// https://github.com/XCodeBazelize/Bazelize/issues/15
     public var localSPM: [String] {
-        #warning("todo")
-        let groups = try? native.rootGroup()?.localSPM.compactMap { $0 }
-        return []
+        // let groups = try? native.rootGroup()?.localSPM.compactMap { $0 }
+        []
     }
 
     public var all: [File] {

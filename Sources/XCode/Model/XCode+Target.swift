@@ -27,9 +27,9 @@ extension Target: Encodable {
         try container.encode(srcs, forKey: .srcs)
         try container.encode(resources, forKey: .resources)
         try container.encode(importFrameworks, forKey: .importFrameworks)
-        try container.encode(frameworks, forKey: .frameworks)
-        try container.encode(frameworks_library, forKey: .frameworks_library)
-        try container.encode(sdkFrameworks, forKey: .sdkFrameworks)
+        // try container.encode(frameworks, forKey: .frameworks)
+        // try container.encode(frameworks_library, forKey: .frameworks_library)
+        // try container.encode(sdkFrameworks, forKey: .sdkFrameworks)
     }
 
     // MARK: Internal
@@ -87,26 +87,27 @@ public final class Target {
 }
 
 extension Target {
-    // MARK: Public
+    // MARK: Internal
 
-    public var srcFiles: [File] {
-        files(try? native.sourcesBuildPhase()?.files)
-    }
-
-    public var resourceFiles: [File] {
-        files(try? native.resourcesBuildPhase()?.files)
+    func isInPackage(_ label: String) -> Bool {
+        label.hasPrefix("""
+        //\(name):
+        """)
     }
 
     // MARK: Private
 
     private func files(_ files: [PBXBuildFile]?) -> [File] {
-        files?.compactMap { build in
-            guard let file = build.file else { return nil }
-            return File(native: file, project: project)
+        files?.flatMap { build -> [File] in
+            guard let files = build.file?.flatten() else { return [] }
+            return files.map { native -> File in
+                File(native: native, project: project)
+            }
         } ?? []
     }
 }
 
+/// srcs
 extension Target {
     // MARK: Public
 
@@ -115,22 +116,18 @@ extension Target {
         project
             .files(.h)
             .labels
-            .filter { label in
-                label.hasPrefix("""
-                //\(name):
-                """)
-            }
+            .filter(isInPackage)
     }
 
     public var hpps: [String] {
         project
             .files(.hpp)
             .labels
-            .filter { label in
-                label.hasPrefix("""
-                //\(name):
-                """)
-            }
+            .filter(isInPackage)
+    }
+
+    public var srcFiles: [File] {
+        files(try? native.sourcesBuildPhase()?.files)
     }
 
     public var srcs: [String] {
@@ -161,10 +158,6 @@ extension Target {
         srcs(.metal)
     }
 
-    public var resources: [String] {
-        resourceFiles.labels
-    }
-
     // MARK: Internal
 
     func srcs(_ type: LastKnownFileType) -> [String] {
@@ -172,6 +165,44 @@ extension Target {
             file.isType(type)
         }.labels
     }
+}
+
+extension Target {
+    // MARK: Public
+
+    public var resourceFiles: [File] {
+        files(try? native.resourcesBuildPhase()?.files)
+    }
+
+    public var xibs: [String] {
+        resources(.xib)
+    }
+
+    public var storyboards: [String] {
+        resources(.storyboard)
+    }
+
+    public var assets: [String] {
+        resources(.asset)
+    }
+
+    public var strings: [String] {
+        resources(.strings)
+    }
+
+    public var stringsdict: [String] {
+        resources(.stringsdict)
+    }
+
+    public var allStrings: [String] {
+        strings + stringsdict
+    }
+
+    public var resources: [String] {
+        resourceFiles.labels
+    }
+
+    // MARK: Internal
 
     func resources(_ type: LastKnownFileType) -> [String] {
         resourceFiles.filter { file in
@@ -181,49 +212,76 @@ extension Target {
 }
 
 extension Target {
+    // MARK: Public
+
+    /// https://github.com/XCodeBazelize/Bazelize/issues/8
     /// use for `frameworks`
     public var importFrameworks: [String] {
-        #warning("todo import framework/xcframework/static...")
-        return []
+        []
     }
 
-    /// use for `frameworks`
+    public var frameworksLibrary: [String] {
+        _frameworksTarget.map { target -> String in
+            let name = target.name
+            return """
+            //\(name):\(name)_library
+            """
+        }
+    }
+
     public var frameworks: [String] {
-        native
-            .dependencies
-            .compactMap(\.target?.name)
-            .map { framework in
-                """
-                //\(framework):\(framework)
-                """
-            }
-    }
-
-    /// use for `xxx_library.deps`
-    ///
-    public var frameworks_library: [String] {
-        native
-            .dependencies
-            .compactMap(\.target?.name)
-            .map { framework in
-                """
-                //\(framework):\(framework)_library
-                """
-            }
+        _frameworksTarget.map { target -> String in
+            let name = target.name
+            return """
+            //\(name):\(name)
+            """
+        }
     }
 
     /// use for `sdk_frameworks`
-    public var sdkFrameworks: [String] {
-        let builds = (try? native.frameworksBuildPhase()?.files) ?? []
-        return builds.filter { build in
-            build.file?.sourceTree == .sdkRoot ||
-                (build.file?.path?.hasPrefix("System/") ?? false)
-        }.compactMap { build -> String? in
-            build.file?.name?.replacingOccurrences(of: ".framework", with: "")
-        }.map { framework in
-            """
-            \(framework)
-            """
+    ///
+    /// name
+    ///   nil                    // XCode Target
+    ///   AVFoundation.framework // SDK
+    /// path
+    ///   Framework2.framework
+    ///   Platforms/MacOSX.platform/Developer/SDKs/
+    ///     MacOSX13.1.sdk/System/Library/Frameworks/AVFoundation.framework
+    ///
+    /// Target(SDK)
+    ///   AVFoundation.framework -> AVFoundation
+    public var frameworksSDK: [String] {
+        _frameworks
+            .compactMap(\.native.name)
+            .filter { name in
+                name.hasSuffix(".framework")
+            }
+            .map { (name: String) in
+                name.replacingOccurrences(of: ".framework", with: "")
+            }
+    }
+
+    // MARK: Private
+
+    // use for `frameworks`
+    private var _frameworks: [File] {
+        let builds = (try? native.frameworksBuildPhase()?.files?.compactMap(\.file)) ?? []
+        return builds.map {
+            File(native: $0, project: project)
+        }
+    }
+
+    private var _frameworksTarget: [Target] {
+        let frameworks = _frameworks.map(\.native)
+        let targets = project.targets.compactMap { target in
+            target as? Target
+        }
+
+        return targets.filter { target in
+            guard let product = target.native.product else {
+                return false
+            }
+            return frameworks.contains(product)
         }
     }
 }

@@ -152,6 +152,7 @@ extension BuildSetting {
     }
 }
 
+/// GENERATE_INFOPLIST_FILE
 extension BuildSetting {
     // MARK: Public
 
@@ -172,8 +173,47 @@ extension BuildSetting {
                 return [newKey, Self.stringArray(value)]
             case .bool:
                 return [newKey, Self.bool(value)]
+            case .custom:
+                guard Self.isTrue(self[key] ?? "") else { return [] }
+                switch key {
+                case "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone":
+                    return [
+                        Self.key("INFOPLIST_KEY_UISupportedInterfaceOrientations~iPhone"),
+                        Self.stringArray(value),
+                    ]
+                case "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad":
+                    return [
+                        Self.key("INFOPLIST_KEY_UISupportedInterfaceOrientations~iPad"),
+                        Self.stringArray(value),
+                    ]
+                case "INFOPLIST_KEY_UIApplicationSceneManifest_Generation":
+                    guard Self.isTrue(value) else { return [] }
+                    return [
+                        Self.key("UIApplicationSceneManifest"),
+                        """
+                        <dict>
+                            <key>UIApplicationSupportsMultipleScenes</key>
+                            <true/>
+                        </dict>
+                        """,
+                    ]
+                case "INFOPLIST_KEY_UILaunchScreen_Generation":
+                    guard Self.isTrue(value) else { return [] }
+                    return [
+                        Self.key("UILaunchScreen"),
+                        """
+                        <dict>
+                            <key>UILaunchScreen</key>
+                            <dict/>
+                        </dict>
+                        """,
+                    ]
+                default: return []
+                }
             case .unknown:
                 return [Self.comment(newKey), Self.comment(value)]
+            case .empty:
+                return []
             }
         }.compactMap { $0 }
 
@@ -186,30 +226,52 @@ extension BuildSetting {
         case string
         case stringArray
         case bool
+        case custom
         case unknown
+        case empty
+
+        // MARK: Lifecycle
+
         fileprivate init(_ key: String) {
             switch key {
+            /// String
             case "INFOPLIST_KEY_UIMainStoryboardFile": fallthrough
             case "INFOPLIST_KEY_UILaunchStoryboardName":
                 self = .string
-            case "INFOPLIST_KEY_UISupportedInterfaceOrientations": fallthrough
-            case "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone": fallthrough
-            case "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad":
+            /// StringArray
+            case "INFOPLIST_KEY_UISupportedInterfaceOrientations":
                 self = .stringArray
+            /// Bool
             case "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents":
                 self = .bool
+            /// Custom
+            case "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone": fallthrough
+            case "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad": fallthrough
+            case "INFOPLIST_KEY_UIApplicationSceneManifest_Generation": fallthrough
+            case "INFOPLIST_KEY_UILaunchScreen_Generation":
+                self = .custom
             default:
                 self = .unknown
             }
         }
     }
+
+    /// <key>NSAccentColorName</key>
+    /// <string>AccentColor</string>
+//    private var ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: String? {
+//        self[#function]
+//    }
 }
 
 extension BuildSetting {
     // MARK: Internal
 
+    static func isTrue(_ value: String) -> Bool {
+        value == "YES"
+    }
+
     static func bool(_ value: String) -> String {
-        value == "YES" ? "<true/>" : "<false/>"
+        isTrue(value) ? "<true/>" : "<false/>"
     }
 
     static func string(_ value: String) -> String {
@@ -244,7 +306,6 @@ extension BuildSetting {
     private static func key(_ key: String) -> String {
         let newKey = key
             .delete(prefix: PLIST_PREFIX)
-            .replacingOccurrences(of: "_", with: "~")
 
         return "<key>\(newKey)</key>"
     }

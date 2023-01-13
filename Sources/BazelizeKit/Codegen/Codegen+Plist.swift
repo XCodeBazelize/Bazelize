@@ -73,6 +73,8 @@ extension Target {
 }
 
 /// plist_auto
+///
+/// plist properties written in XCode config with prefix `INFOPLIST_KEY_`
 extension Target {
     // MARK: Internal
 
@@ -107,6 +109,8 @@ extension Target {
 
 
 /// plist_default
+///
+/// Needed plist properties written in XCode config
 extension Target {
     // MARK: Internal
 
