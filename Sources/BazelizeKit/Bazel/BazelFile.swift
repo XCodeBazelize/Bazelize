@@ -21,6 +21,10 @@ extension BazelFile {
     }
 
     func write() throws {
-        try path.write(code)
+        try path.write(generationHeader + "\n\n" + code)
     }
 }
+
+private let generationMarker = "Generated using Bazelize"
+private let url = "https://github.com/XCodeBazelize/Bazelize"
+private let generationHeader = "# \(generationMarker) \(version) - \(url)"
