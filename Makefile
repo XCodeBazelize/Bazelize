@@ -1,9 +1,15 @@
+VERSION := 0.0.3
+
 .PHONY: install
 install: release
 	@cp .build/release/bazelize /usr/local/bin
 
+.PHONY: syncVersion
+syncVersion: 
+	@sed -i '' 's|\(version = "\)\(.*\)\("\)|\1$(VERSION)\3|' Sources/BazelizeKit/Bazel/Version.swift
+
 .PHONY: release
-release:
+release: syncVersion
 	swift build -c release
 
 .PHONY: coherent
