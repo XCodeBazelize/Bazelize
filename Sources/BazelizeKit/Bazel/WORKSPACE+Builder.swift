@@ -18,6 +18,7 @@ extension Workspace {
             rulesSwift(repo: .v1_5_0)
             rulesPod(repo: .v4_1_0_412495)
 //            rulesSPM(repo: .v0_11_2)
+            rulesSPM2()
 //            rulesHammer(repo: .v3_4_3_3)
             rulesXCodeProj(repo: .v0_11_0)
         }
@@ -103,6 +104,71 @@ extension Workspace {
             )
 
             spm_rules_dependencies()
+            """
+        }
+
+        mutating
+        public func rulesSPM2() {
+            _code = """
+            http_archive(
+                name = "cgrindel_swift_bazel",
+                sha256 = "fd77181e45fbb9ab6ddedf59f3f2d4cf0c173919a6de8d4a398d99fd965d5ce5",
+                strip_prefix = "swift_bazel-0.2.0",
+                urls = [
+                    "http://github.com/cgrindel/swift_bazel/archive/v0.2.0.tar.gz",
+                ],
+            )
+
+            load("@cgrindel_swift_bazel//:deps.bzl", "swift_bazel_dependencies")
+
+            swift_bazel_dependencies()
+
+            load("@cgrindel_bazel_starlib//:deps.bzl", "bazel_starlib_dependencies")
+
+            bazel_starlib_dependencies()
+
+            # MARK: - Gazelle
+
+            # gazelle:repo bazel_gazelle
+
+            load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+            load("@cgrindel_swift_bazel//:go_deps.bzl", "swift_bazel_go_dependencies")
+            load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+            # Declare Go dependencies before calling go_rules_dependencies.
+            swift_bazel_go_dependencies()
+
+            go_rules_dependencies()
+
+            go_register_toolchains(version = "1.19.1")
+
+            gazelle_dependencies()
+
+            # MARK: - Swift Toolchain
+
+            http_archive(
+                name = "build_bazel_rules_swift",
+                # Populate with your preferred release
+                # https://github.com/bazelbuild/rules_swift/releases
+            )
+
+            load(
+                "@build_bazel_rules_swift//swift:repositories.bzl",
+                "swift_rules_dependencies",
+            )
+            load("//:swift_deps.bzl", "swift_dependencies")
+
+            # gazelle:repository_macro swift_deps.bzl%swift_dependencies
+            swift_dependencies()
+
+            swift_rules_dependencies()
+
+            load(
+                "@build_bazel_rules_swift//swift:extras.bzl",
+                "swift_rules_extra_dependencies",
+            )
+
+            swift_rules_extra_dependencies()
             """
         }
 
