@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A8120D07297670E5004F3FD3 /* LocalLib1 in Frameworks */ = {isa = PBXBuildFile; productRef = A8120D06297670E5004F3FD3 /* LocalLib1 */; };
+		A8120D0929767375004F3FD3 /* LocalLib2 in Frameworks */ = {isa = PBXBuildFile; productRef = A8120D0829767375004F3FD3 /* LocalLib2 */; };
 		A849A669296D658B006BB98A /* Framework2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A8658AFC296D009500AEFC87 /* Framework2.framework */; };
 		A849A66A296D658B006BB98A /* Framework2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A8658AFC296D009500AEFC87 /* Framework2.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A849A673296E82BA006BB98A /* libStatic.a in Frameworks */ = {isa = PBXBuildFile; fileRef = A8658B25296D08BD00AEFC87 /* libStatic.a */; };
@@ -21,6 +23,7 @@
 		A8658B1E296D028E00AEFC87 /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8658B1D296D028E00AEFC87 /* Test.swift */; };
 		A8658B20296D02D000AEFC87 /* Test.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8658B1F296D02D000AEFC87 /* Test.swift */; };
 		A8658B28296D08BE00AEFC87 /* Static.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8658B27296D08BE00AEFC87 /* Static.swift */; };
+		A87053C729755F9200EE09CC /* AnyCodable in Frameworks */ = {isa = PBXBuildFile; productRef = A87053C629755F9200EE09CC /* AnyCodable */; };
 		A87F0AF2296C00F500FD92E0 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A87F0AF4296C00F500FD92E0 /* Localizable.strings */; };
 		A88A1BF6296903E6003972AA /* ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88A1BF5296903E6003972AA /* ExampleApp.swift */; };
 		A88A1BF8296903E6003972AA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88A1BF7296903E6003972AA /* ContentView.swift */; };
@@ -133,6 +136,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A8337967297664A800E292DC /* Local1 */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Local1; sourceTree = "<group>"; };
 		A849A66C296D66CC006BB98A /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.1.sdk/System/Library/Frameworks/AVFoundation.framework; sourceTree = DEVELOPER_DIR; };
 		A8658ADB296D008800AEFC87 /* Framework1.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Framework1.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A8658ADD296D008800AEFC87 /* Framework1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Framework1.h; sourceTree = "<group>"; };
@@ -205,7 +209,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A87053C729755F9200EE09CC /* AnyCodable in Frameworks */,
+				A8120D0929767375004F3FD3 /* LocalLib2 in Frameworks */,
 				A8658AEE296D008900AEFC87 /* Framework1.framework in Frameworks */,
+				A8120D07297670E5004F3FD3 /* LocalLib1 in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,6 +233,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A8337964297663DF00E292DC /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				A8337967297664A800E292DC /* Local1 */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
 		A8658ADC296D008800AEFC87 /* Framework1 */ = {
 			isa = PBXGroup;
 			children = (
@@ -279,6 +294,7 @@
 		A88A1BE9296903E6003972AA = {
 			isa = PBXGroup;
 			children = (
+				A8337964297663DF00E292DC /* Packages */,
 				A88A1BF4296903E6003972AA /* Example */,
 				A88A1C05296903E8003972AA /* ExampleTests */,
 				A88A1C0F296903E8003972AA /* ExampleUITests */,
@@ -476,6 +492,11 @@
 				A8658AED296D008900AEFC87 /* PBXTargetDependency */,
 			);
 			name = Example;
+			packageProductDependencies = (
+				A87053C629755F9200EE09CC /* AnyCodable */,
+				A8120D06297670E5004F3FD3 /* LocalLib1 */,
+				A8120D0829767375004F3FD3 /* LocalLib2 */,
+			);
 			productName = Example;
 			productReference = A88A1BF2296903E6003972AA /* Example.app */;
 			productType = "com.apple.product-type.application";
@@ -568,6 +589,9 @@
 				"zh-Hant",
 			);
 			mainGroup = A88A1BE9296903E6003972AA;
+			packageReferences = (
+				A87053C529755F9200EE09CC /* XCRemoteSwiftPackageReference "AnyCodable" */,
+			);
 			productRefGroup = A88A1BF3296903E6003972AA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1319,6 +1343,33 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A87053C529755F9200EE09CC /* XCRemoteSwiftPackageReference "AnyCodable" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Flight-School/AnyCodable";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.6.7;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A8120D06297670E5004F3FD3 /* LocalLib1 */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LocalLib1;
+		};
+		A8120D0829767375004F3FD3 /* LocalLib2 */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = LocalLib2;
+		};
+		A87053C629755F9200EE09CC /* AnyCodable */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A87053C529755F9200EE09CC /* XCRemoteSwiftPackageReference "AnyCodable" */;
+			productName = AnyCodable;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A88A1BEA296903E6003972AA /* Project object */;
 }
