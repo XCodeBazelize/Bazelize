@@ -14,9 +14,9 @@ import XcodeProj
 // MARK: - Project + XCodeProject
 
 extension Project: XCodeProject {
-    public var spm: [XCodeSPM] {
-        _spm
-    }
+//    public var spm: [XCodeSPM] {
+//        _spm
+//    }
 
     public var targets: [XCodeTarget] {
         _targets
@@ -38,7 +38,7 @@ extension Project: Encodable {
         try container.encode(projectPath.string, forKey: .projectPath)
 
         try container.encode(localSPM, forKey: .localSPM)
-        try container.encode(_spm, forKey: .spm)
+//        try container.encode(_spm, forKey: .spm)
 
         try container.encode(_targets, forKey: .targets)
         try container.encode(AnyCodable(config), forKey: .config)
@@ -67,11 +67,11 @@ public final class Project {
         self.projectPath = projectPath
         project = try XcodeProj(path: projectPath)
         native = project.pbxproj
-        _spm = native.frameworksBuildPhases
-            .compactMap(\.files)
-            .flatMap { $0 }
-            .compactMap(\.product)
-            .compactMap(RemoteSPMPackage.init)
+//        _spm = native.frameworksBuildPhases
+//            .compactMap(\.files)
+//            .flatMap { $0 }
+//            .compactMap(\.product)
+//            .compactMap(RemoteSPMPackage.init)
         self.preferConfig = preferConfig
     }
 
@@ -97,7 +97,7 @@ public final class Project {
 
     public func files(_ type: LastKnownFileType) -> [File] {
         all.filter { file in
-            file.isType(type)
+            file.lastKnownFileType == type
         }
     }
 
@@ -105,7 +105,7 @@ public final class Project {
 
     private let project: XcodeProj
     private let native: PBXProj
-    private let _spm: [RemoteSPMPackage]
+//    private let _spm: [RemoteSPMPackage]
 
 
     private var _targets: [Target] {

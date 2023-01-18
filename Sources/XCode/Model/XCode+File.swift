@@ -13,14 +13,13 @@ import XcodeProj
 // MARK: - File
 
 public final class File {
-    // MARK: Lifecycle
+    private unowned let project: XCodeProject
+    let native: PBXFileElement
 
     init(native: PBXFileElement, project: XCodeProject) {
         self.native = native
         self.project = project
     }
-
-    // MARK: Public
 
     /// root:     /Users/xxx/git/ABCDEF
     ///
@@ -42,9 +41,13 @@ public final class File {
         """
     }
 
+    private var ref: PBXFileReference? {
+        native as? PBXFileReference
+    }
+
     /// File type start with `sourcecode.`
     public var isSource: Bool {
-        guard let ref = native as? PBXFileReference else { return false }
+        guard let ref = ref else { return false }
         return ref.lastKnownFileType?.hasPrefix("sourcecode.") ?? false
     }
 
@@ -53,49 +56,13 @@ public final class File {
         native is PBXFileReference
     }
 
-    /// A8658ADB296D008800AEFC87 /* Framework1.framework */ =
-    /// {
-    ///     isa = PBXFileReference;
-    ///     explicitFileType = wrapper.framework;
-    ///     includeInIndex = 0;
-    ///     path = Framework1.framework;
-    ///     sourceTree = BUILT_PRODUCTS_DIR;
-    /// };
-    public var isFramework: Bool {
-        guard let ref = native as? PBXFileReference else { return false }
-        return ref.explicitFileType == "wrapper.framework"
+    public var lastKnownFileType: LastKnownFileType? {
+        .init(rawValue: ref?.lastKnownFileType ?? "")
     }
 
-    /// A8658B25296D08BD00AEFC87 /* libStatic.a */ =
-    /// {
-    ///     isa = PBXFileReference;
-    ///     explicitFileType = archive.ar;
-    ///     includeInIndex = 0;
-    ///     path = libStatic.a;
-    ///     sourceTree = BUILT_PRODUCTS_DIR;
-    /// };
-    public var isAr: Bool {
-        guard let ref = native as? PBXFileReference else { return false }
-        return ref.explicitFileType == "archive.ar"
+    public var explicitFileType: ExplicitFileType? {
+        .init(rawValue: ref?.explicitFileType ?? "")
     }
-
-    public var type: LastKnownFileType? {
-        guard let ref = native as? PBXFileReference else { return nil }
-        return .init(rawValue: ref.lastKnownFileType ?? "")
-    }
-
-    public func isType(_ type: LastKnownFileType) -> Bool {
-        guard let ref = native as? PBXFileReference else { return false }
-        return ref.lastKnownFileType == type.rawValue
-    }
-
-    // MARK: Internal
-
-    let native: PBXFileElement
-
-    // MARK: Private
-
-    private unowned let project: XCodeProject
 }
 
 extension PBXFileElement {

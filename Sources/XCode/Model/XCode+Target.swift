@@ -162,7 +162,7 @@ extension Target {
 
     func srcs(_ type: LastKnownFileType) -> [String] {
         srcFiles.filter { file in
-            file.isType(type)
+            file.lastKnownFileType == type
         }.labels
     }
 }
@@ -206,7 +206,7 @@ extension Target {
 
     func resources(_ type: LastKnownFileType) -> [String] {
         resourceFiles.filter { file in
-            file.isType(type)
+            file.lastKnownFileType == type
         }.labels
     }
 }
