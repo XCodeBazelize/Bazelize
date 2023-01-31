@@ -10,21 +10,21 @@ import PluginInterface
 import Util
 import XcodeProj
 
-extension XCodeSPMPackage {
-    public static func parse(_ native: XCSwiftPackageProductDependency) -> XCodeSPMPackage? {
+extension XCodeRemoteSPM {
+    public static func parse(_ native: XCSwiftPackageProductDependency) -> XCodeRemoteSPM? {
         let package = native.package
         guard
             let url = package?.repositoryURL,
-            let requirement = package?.versionRequirement else
-        {
-            return .local(path: "", targets: [])
+            let requirement = package?.versionRequirement
+        else {
+            return nil
         }
-        return .remote(url: url, version: requirement.version)
+        return XCodeRemoteSPM(url: url, version: requirement.version)
     }
 }
 
 extension XCRemoteSwiftPackageReference.VersionRequirement {
-    var version: XCodeSPMPackage.Version {
+    var version: XCodeRemoteSPM.Version {
         switch self {
         case .upToNextMajorVersion(let version): return .upToNextMajorVersion(version)
         case .upToNextMinorVersion(let version): return .upToNextMinorVersion(version)

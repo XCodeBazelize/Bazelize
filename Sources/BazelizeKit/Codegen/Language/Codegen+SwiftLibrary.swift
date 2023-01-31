@@ -15,10 +15,15 @@ extension Target {
     /// https://github.com/bazelbuild/rules_swift/blob/master/doc/rules.md#swift_library
     /// swift_library(name, alwayslink, copts, data, defines, deps, generated_header_name, generates_header, linkopts, linkstatic, module_name, private_deps, srcs, swiftc_inputs)
     func generateSwiftLibrary(_ builder: inout Build.Builder, _ kit: Kit) {
-        let plugins = kit.plugins.compactMap {
+        let plugin = kit.plugins.compactMap {
             $0[name]
-        }
-        let pluginsDep = plugins.flatMap(\.deps)
+        }.flatMap(\.deps)
+
+        let plugin2: [String] = kit.plugins2.compactMap(\.target)
+            .reduce([]) { origin, next in
+                let data = next[name] ?? []
+                return origin + data
+            }
 
         builder.load(.swift_library)
         builder.add(.swift_library) {
@@ -31,7 +36,8 @@ extension Target {
             "deps" => {
                 frameworksLibrary
                 applicationHost
-                pluginsDep
+                plugin
+                plugin2
             }
             "data" => {
                 if !assets.isEmpty {

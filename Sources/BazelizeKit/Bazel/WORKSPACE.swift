@@ -11,35 +11,16 @@ import Util
 
 /// /WORKSPACE
 struct Workspace: BazelFile {
-    // MARK: Lifecycle
+    let path: Path
+    private(set) var code = ""
+    public var builder = Build.Builder()
 
-    init(_ root: Path, _ build: (inout Builder) -> Void) {
-        var builder = Builder()
-        build(&builder)
+    mutating
+    func build() {
         code = builder.build()
-        path = root + "WORKSPACE"
     }
 
     init(_ root: Path) {
-        var builder = Builder()
-        builder.default()
-        code = builder.build()
         path = root + "WORKSPACE"
     }
-
-
-    // MARK: Public
-
-    // WORKSPACE
-    public func generate(_ path: Path) throws {
-        let workspace = path + "WORKSPACE"
-        Log.codeGenerate.info("Create `Workspace` at \(workspace.string, privacy: .public)")
-//        try _workspace.delete()
-        try workspace.write(code)
-    }
-
-    // MARK: Internal
-
-    let path: Path
-    let code: String
 }

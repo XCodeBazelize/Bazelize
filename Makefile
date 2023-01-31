@@ -40,8 +40,9 @@ Pod       := pinterest/PodToBUILD
 Hammer    := pinterest/xchammer
 XCodeProj := buildbuddy-io/rules_xcodeproj
 SPM       := cgrindel/rules_spm
+SPM2	  := cgrindel/swift_bazel
 
-REPOS    := Apple Swift Pod Hammer XCodeProj
+REPOS    := Apple Swift Pod Hammer XCodeProj 
 REPO_SPM := SPM
 
 

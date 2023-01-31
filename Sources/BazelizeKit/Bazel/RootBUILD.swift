@@ -12,16 +12,14 @@ import RuleBuilder
 
 /// /BUILD
 struct Build: BazelFile {
-    // MARK: Lifecycle
+    let path: Path
+    private(set) var code = ""
+    public var builder = Build.Builder()
 
     init(_ root: Path) {
         path = root + "BUILD"
     }
 
-    // MARK: Internal
-
-    let path: Path
-    private(set) var code = ""
 
     mutating
     func build() {
@@ -87,8 +85,4 @@ struct Build: BazelFile {
         ])
         """)
     }
-
-    // MARK: Private
-
-    private var builder = Build.Builder()
 }

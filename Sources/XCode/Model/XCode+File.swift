@@ -26,19 +26,24 @@ public final class File {
     /// fullPath: /Users/xxx/git/ABCDEF/DEF/Base.lproj/LaunchScreen.storyboard
     /// package:  DEF
     public var label: String? {
-        let root = project.workspacePath.string
-        guard let fullPath = try? native.fullPath(sourceRoot: root) else {
+        guard let path = relativePath else {
             return nil
         }
+        return project.transformToLabel(path)
+    }
 
-        if fullPath.hasPrefix(root + "/") {
-            let path = fullPath.delete(prefix: root + "/")
-            return project.transformToLabel(path)
+    public var relativePath: String? {
+        let root = project.workspacePath.string
+        let fullPath = fullPath ?? ""
+        guard fullPath.hasPrefix(root + "/") else {
+            return nil
         }
+        return fullPath.delete(prefix: root + "/")
+    }
 
-        return """
-        # \(fullPath)
-        """
+    public var fullPath: String? {
+        let root = project.workspacePath.string
+        return try? native.fullPath(sourceRoot: root)
     }
 
     private var ref: PBXFileReference? {

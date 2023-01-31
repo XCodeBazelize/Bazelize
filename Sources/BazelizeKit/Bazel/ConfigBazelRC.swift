@@ -34,6 +34,6 @@ struct BazelRC: BazelFile {
             """
             build:\(config) --//:mode=\(config)
             """
-        }.withNewLine
+        }.sorted().withNewLine
     }
 }

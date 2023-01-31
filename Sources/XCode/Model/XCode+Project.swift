@@ -14,10 +14,6 @@ import XcodeProj
 // MARK: - Project + XCodeProject
 
 extension Project: XCodeProject {
-//    public var spm: [XCodeSPM] {
-//        _spm
-//    }
-
     public var targets: [XCodeTarget] {
         _targets
     }
@@ -59,7 +55,12 @@ extension Project: Encodable {
 // MARK: - Project
 
 public final class Project {
-    // MARK: Lifecycle
+    private let project: XcodeProj
+    private let native: PBXProj
+
+    public let workspacePath: Path
+    public let projectPath: Path
+    public let preferConfig: String?
 
     public init(_ projectPath: Path, _ preferConfig: String?) async throws {
         let path = projectPath.parent()
@@ -67,24 +68,7 @@ public final class Project {
         self.projectPath = projectPath
         project = try XcodeProj(path: projectPath)
         native = project.pbxproj
-//        _spm = native.frameworksBuildPhases
-//            .compactMap(\.files)
-//            .flatMap { $0 }
-//            .compactMap(\.product)
-//            .compactMap(RemoteSPMPackage.init)
         self.preferConfig = preferConfig
-    }
-
-    // MARK: Public
-
-    public let workspacePath: Path
-    public let projectPath: Path
-    public let preferConfig: String?
-
-    /// https://github.com/XCodeBazelize/Bazelize/issues/15
-    public var localSPM: [String] {
-        // let groups = try? native.rootGroup()?.localSPM.compactMap { $0 }
-        []
     }
 
     public var all: [File] {
@@ -101,19 +85,26 @@ public final class Project {
         }
     }
 
-    // MARK: Private
+    public lazy var remoteSPM: [XCodeRemoteSPM] = native.frameworksBuildPhases
+        .compactMap(\.files)
+        .flatMap { $0 }
+        .compactMap(\.product)
+        .compactMap(XCodeRemoteSPM.parse)
 
-    private let project: XcodeProj
-    private let native: PBXProj
-//    private let _spm: [RemoteSPMPackage]
+    /// https://github.com/XCodeBazelize/Bazelize/issues/15
+    public lazy var localSPM: [XCodeLocalSPM] = files(.wrapper).compactMap { file in
+        guard let path = file.relativePath else { return nil }
+        guard let fullPath = file.fullPath else { return nil }
+        guard let (products, targets) = try? SPMParser.parse(path: fullPath) else { return nil }
+        return XCodeLocalSPM(path: path, products: products, targets: targets)
+    }
 
-
-    private var _targets: [Target] {
+    private lazy var _targets: [Target] = {
         let list = defaultConfigList
         return native.nativeTargets.map {
             Target(native: $0, defaultConfigList: list, project: self)
         }
-    }
+    }()
 }
 
 // extension PBXProj {
