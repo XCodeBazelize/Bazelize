@@ -7,7 +7,6 @@ extension Repo {
         case v4_0_0_2096f5c = "4.0.0-2096f5c"
         case v4_0_0_7673f06 = "4.0.0-7673f06"
         case v4_0_0_f96b657 = "4.0.0-f96b657"
-
         // MARK: Internal
 
         var version: String {
