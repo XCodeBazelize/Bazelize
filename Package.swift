@@ -23,6 +23,10 @@ let package = Package(
         .package(url: "https://github.com/yume190/SwiftCommand", from: "1.1.3"),
 
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4"),
+
+        .package(
+            url: "https://github.com/apple/swift-package-manager",
+            branch: "main"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -77,6 +81,7 @@ let package = Package(
                 "AnyCodable",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
+                .product(name: "SwiftPMDataModel-auto", package: "swift-package-manager"),
             ]),
         .testTarget(
             name: "XCodeTests",
