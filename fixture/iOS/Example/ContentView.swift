@@ -13,9 +13,15 @@ import SwiftUI
 #if canImport(AnyCodable)
 import AnyCodable
 #endif
+#if canImport(RxSwift)
+import RxSwift
+#endif
 
 #if canImport(LocalTarget1)
 import LocalTarget1
+#endif
+#if canImport(LocalTarget2)
+import LocalTarget2
 #endif
 
 // MARK: - ContentView
@@ -59,10 +65,17 @@ struct ContentView: View {
                 #if canImport(AnyCodable)
                 Text(type: AnyCodable.self)
                 #endif
+                #if canImport(RxSwift)
+                Text(type: MainScheduler.self)
+                #endif
                 #if canImport(LocalTarget1)
                 Text(type: LocalTarget1.self)
                 #endif
-            }
+                #if canImport(LocalTarget2)
+                Text(type: LocalTarget2.self)
+                #endif
+            }.background(Color.red)
+                .foregroundColor(Color.white)
         }
         .padding()
     }

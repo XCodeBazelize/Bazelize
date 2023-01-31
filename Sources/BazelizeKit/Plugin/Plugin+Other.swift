@@ -51,14 +51,15 @@ final class PluginSPM2: PluginBuiltin {
         guard let targets = local.products[product] else { return nil }
 
         return targets.map { target in
-            // TODO:
+            // TODO: ?
             ///
             /// change `//Local1/Sources/LocalTarget1`
             /// to     `@swiftpkg_local1//:Sources_LocalTarget1`
             ///
             /// @swiftpkg_\(local.path.lowercased())//:Sources_\(target)
+            /// # //\(local.path)/Sources/\(target)
             """
-            //\(local.path)/Sources/\(target)
+            @swiftpkg_\(local.path.lowercased())//:Sources_\(target)
             """
         }
     }

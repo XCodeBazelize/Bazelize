@@ -26,6 +26,9 @@ swift_library(
     testonly = False,
     deps = [
         "//Framework1:Framework1_library",
+        "@swiftpkg_anycodable//:Sources_AnyCodable",
+        "@swiftpkg_local1//:Sources_LocalTarget1",
+        "@swiftpkg_local1//:Sources_LocalTarget2",
     ],
     data = [
         ":Assets",

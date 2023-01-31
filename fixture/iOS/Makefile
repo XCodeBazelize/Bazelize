@@ -10,12 +10,16 @@ clear:
 build:
 	bazel build Example
 
+.PHONY: updatePkg
+updatePkg:
+	bazel run //:swift_update_pkgs
+
 .PHONY: run
-run:
+run: updatePkg
 	bazel run --config=Debug Example
 
 .PHONY: releaseRun
-releaseRun:
+releaseRun: updatePkg
 	bazel run --config=Release Example
 
 .PHONY: test
@@ -25,3 +29,9 @@ test:
 .PHONY: uitest
 uitest:
 	bazel test ExampleUITests
+
+
+# 
+# bazel run //:update_build_files
+# bazel test //...
+# --experimental_enable_bzlmod
