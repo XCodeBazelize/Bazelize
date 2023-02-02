@@ -1,6 +1,7 @@
 .PHONY: bazelize
 bazelize:
 	@bazelize --project Example.xcodeproj
+	@bazel run //:swift_update_pkgs
 
 .PHONY: clear
 clear:
@@ -15,11 +16,11 @@ updatePkg:
 	bazel run //:swift_update_pkgs
 
 .PHONY: run
-run: updatePkg
+run:
 	bazel run --config=Debug Example
 
 .PHONY: releaseRun
-releaseRun: updatePkg
+releaseRun:
 	bazel run --config=Release Example
 
 .PHONY: test

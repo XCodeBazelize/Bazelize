@@ -15,6 +15,13 @@ extension Target {
             .map { label in
                 label.delete(prefix: "//\(name):")
             }
+            .map { (label: String) in
+//                if label.hasPrefix("//:") {
+//                    return label.replacingOccurrences(of: "//:", with: "")
+//                }
+                // TODO: glob can't use `../`
+                label
+            }
 
         guard !files.isEmpty else { return }
 
