@@ -49,6 +49,7 @@ final class PluginSPM2: PluginBuiltin {
 
         guard let local = local else { return nil }
         guard let targets = local.products[product] else { return nil }
+        let path = Path(local.path).lastComponent.lowercased()
 
         return targets.map { target in
             // TODO: ?
@@ -59,7 +60,7 @@ final class PluginSPM2: PluginBuiltin {
             /// @swiftpkg_\(local.path.lowercased())//:Sources_\(target)
             /// # //\(local.path)/Sources/\(target)
             """
-            @swiftpkg_\(local.path.lowercased())//:Sources_\(target)
+            @swiftpkg_\(path)//:Sources_\(target)
             """
         }
     }
