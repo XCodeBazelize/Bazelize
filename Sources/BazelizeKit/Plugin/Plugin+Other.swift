@@ -196,8 +196,7 @@ final class PluginSPM2: PluginBuiltin {
                 name: "MySwiftPackage",
                 dependencies: [
             \(deps)
-                ]
-            )
+                ])
             """)
     }
 
