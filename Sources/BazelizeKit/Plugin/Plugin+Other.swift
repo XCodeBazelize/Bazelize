@@ -76,7 +76,7 @@ final class PluginSPM2: PluginBuiltin {
             return (target.name, all)
         }
 
-        return Dictionary(pair, uniquingKeysWith: { first, _ in first })
+        return pair.toDictionary()
     }
 
     override var workspace: String? {

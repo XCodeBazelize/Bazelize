@@ -26,7 +26,7 @@ enum SPMParser {
         }
 
         let pair = manifest.products.map { ($0.name, $0.targets) }
-        let products = Dictionary(pair, uniquingKeysWith: { first, _ in first })
+        let products = pair.toDictionary()
         let targets = manifest.targets.map { $0.name }
 
         let productsDetail = products.map { key, value in
