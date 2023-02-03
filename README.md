@@ -7,7 +7,7 @@ A cli tool turn your xcode project to bazel.
 ## Install
 
 ```sh
-mint install yume190/Bazelize
+mint install XCodeBazelize/Bazelize
 ```
 
 ## Usage
