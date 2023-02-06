@@ -1,5 +1,5 @@
 //
-//  PluginOther.swift
+//  PluginSPM2.swift
 //
 //
 //  Created by Yume on 2023/1/31.
@@ -13,6 +13,7 @@ import XcodeProj
 
 // MARK: - PluginSPM2
 
+/// http://github.com/cgrindel/swift_baze
 final class PluginSPM2: PluginBuiltin {
     let remotes: [XCodeRemoteSPM]
     let locals: [XCodeLocalSPM]
@@ -220,127 +221,6 @@ final class PluginSPM2: PluginBuiltin {
         # swift_bazel
         Make sure to update `swift_deps.bzl`.
         Please run `bazel run //:swift_update_pkgs` after bazelize.
-        """
-    }
-}
-
-// MARK: - PluginApple
-
-final class PluginApple: PluginBuiltin {
-    let repo: Repo.Apple = .v2_0_0
-
-    override var module: String? {
-        """
-        bazel_dep(name = "rules_apple", version = "2.0.0", repo_name = "build_bazel_rules_apple")
-        """
-    }
-
-    override var workspace: String? {
-        let version = repo.version
-        return """
-        # rules_apple
-        http_archive(
-            name = "build_bazel_rules_apple",
-            sha256 = "\(repo.sha256)",
-            url = "https://github.com/bazelbuild/rules_apple/releases/download/\(version)/rules_apple.\(version).tar.gz",
-        )
-
-        load(
-            "@build_bazel_rules_apple//apple:repositories.bzl",
-            "apple_rules_dependencies",
-        )
-
-        apple_rules_dependencies()
-
-        load(
-            "@build_bazel_apple_support//lib:repositories.bzl",
-            "apple_support_dependencies",
-        )
-
-        apple_support_dependencies()
-        """
-    }
-}
-
-// MARK: - PluginSwift
-
-final class PluginSwift: PluginBuiltin {
-    let repo: Repo.Swift = .v1_5_0
-
-    override var module: String? {
-        """
-        bazel_dep(name = "rules_swift", version = "\(repo.version)", repo_name = "build_bazel_rules_swift")
-        """
-    }
-
-    override var workspace: String? {
-        """
-        # rules_swift
-        http_archive(
-            name = "build_bazel_rules_swift",
-            sha256 = "\(repo.sha256)",
-            url = "https://github.com/bazelbuild/rules_swift/releases/download/\(repo.rawValue)/rules_swift.\(
-                repo
-                    .rawValue).tar.gz",
-        )
-
-        load(
-            "@build_bazel_rules_swift//swift:repositories.bzl",
-            "swift_rules_dependencies",
-        )
-
-        swift_rules_dependencies()
-
-        load(
-            "@build_bazel_rules_swift//swift:extras.bzl",
-            "swift_rules_extra_dependencies",
-        )
-
-        swift_rules_extra_dependencies()
-        """
-    }
-}
-
-// MARK: - PluginXCodeProj
-
-final class PluginXCodeProj: PluginBuiltin {
-    let repo: Repo.XCodeProj = .v0_11_0
-    override var module: String? {
-        """
-        bazel_dep(name = "rules_xcodeproj", version = "0.12.3")
-        """
-    }
-
-    override var workspace: String? {
-        """
-        # rules_xcodeproj
-        http_archive(
-            name = "com_github_buildbuddy_io_rules_xcodeproj",
-            sha256 = "\(repo.sha256)",
-            url = "https://github.com/buildbuddy-io/rules_xcodeproj/releases/download/\(repo.rawValue)/release.tar.gz",
-        )
-
-        load(
-            "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:repositories.bzl",
-            "xcodeproj_rules_dependencies",
-        )
-
-        xcodeproj_rules_dependencies()
-        """
-    }
-}
-
-// MARK: - PluginPlistFragment
-
-final class PluginPlistFragment: PluginBuiltin {
-    override var workspace: String? {
-        """
-        load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-        git_repository(
-            name = "Plist",
-            commit = "259ca0a5d77833728c18fa6365285559ce8cc0bf",
-            remote = "https://github.com/imWildCat/MinimalBazelFrameworkDemo",
-        )
         """
     }
 }

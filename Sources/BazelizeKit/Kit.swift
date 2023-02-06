@@ -39,6 +39,7 @@ public final class Kit {
         PluginSwift(self),
         PluginXCodeProj(self),
         PluginPlistFragment(self),
+        PluginLinker(self),
     ]
 
     // MARK: Lifecycle
