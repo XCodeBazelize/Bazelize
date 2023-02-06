@@ -16,7 +16,7 @@ extension Target {
     /// Builds and bundles an iOS Dynamic Framework.
     ///
     /// To use this framework for your app and extensions, list it in the frameworks attributes of those ios_application and/or ios_extension rules.
-    func generateFrameworkCode(_ builder: inout Build.Builder, _: Kit) {
+    func generateFrameworkCode(_ builder: CodeBuilder, _: Kit) {
         builder.load(.ios_framework)
         builder.add(.ios_framework) {
             "name" => name

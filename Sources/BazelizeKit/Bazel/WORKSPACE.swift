@@ -13,7 +13,7 @@ import Util
 struct Workspace: BazelFile {
     let path: Path
     private(set) var code = ""
-    public var builder = Build.Builder()
+    public var builder = CodeBuilder()
 
     mutating
     func build() {

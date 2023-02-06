@@ -14,7 +14,7 @@ import RuleBuilder
 struct Build: BazelFile {
     let path: Path
     private(set) var code = ""
-    public var builder = Build.Builder()
+    public var builder = CodeBuilder()
 
     init(_ root: Path) {
         path = root + "BUILD"

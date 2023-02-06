@@ -22,33 +22,33 @@ extension Target {
     }
 
     func generateCode(_ kit: Kit) -> String {
-        var builder = Build.Builder()
-        generateLibrary(&builder, kit)
+        var builder = CodeBuilder()
+        generateLibrary(builder, kit)
 
-        generateLoadPlistFragment(&builder)
-        generatePlistFile(&builder, kit)
-        generatePlistAuto(&builder)
-        generatePlistDefault(&builder)
+        generateLoadPlistFragment(builder)
+        generatePlistFile(builder, kit)
+        generatePlistAuto(builder)
+        generatePlistDefault(builder)
 
         let name = name
         let native = native
 
         switch native.productType {
         case .application:
-            generateStrings(&builder, kit)
-            generateApplicationCode(&builder, kit)
+            generateStrings(builder, kit)
+            generateApplicationCode(builder, kit)
         case .commandLineTool:
-            generateCommandLineApplicationCode(&builder, kit)
+            generateCommandLineApplicationCode(builder, kit)
         case .framework:
-            generateFrameworkCode(&builder, kit)
+            generateFrameworkCode(builder, kit)
 //        case .staticFramework: break
         case .staticLibrary:
-            generateStaticLibrary(&builder, kit)
+            generateStaticLibrary(builder, kit)
 //        case .appExtension: break
         case .unitTestBundle:
-            generateUnitTest(&builder, kit)
+            generateUnitTest(builder, kit)
         case .uiTestBundle:
-            generateUITest(&builder, kit)
+            generateUITest(builder, kit)
         default:
             Log.codeGenerate.warning("""
             Name: \(name, privacy: .public)

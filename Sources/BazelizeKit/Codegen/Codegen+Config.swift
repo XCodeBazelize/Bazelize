@@ -31,8 +31,8 @@ extension Project {
     }
 
     internal func generateBUILD(_ kit: Kit) throws {
-        var builder = Build.Builder()
-        let code = generateCode(&builder, kit)
+        var builder = CodeBuilder()
+        let code = generateCode(builder, kit)
         let build = kit.project.workspacePath + "BUILD"
         Log.codeGenerate.info("Create `BUILD` at \(build.string, privacy: .public)")
         try build.write(code)
@@ -54,7 +54,7 @@ extension Project {
     /// ```shell
     /// bazel build target --//:mode=debug
     /// ```
-    private func generateCode(_ builder: inout Build.Builder, _: Kit) -> String {
+    private func generateCode(_ builder: CodeBuilder, _: Kit) -> String {
         let configs = config?.keys.map { $0 } ?? []
         builder.load(.string_flag)
         builder.add(.string_flag) {

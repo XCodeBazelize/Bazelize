@@ -10,7 +10,7 @@ import RuleBuilder
 import XCode
 
 extension Target {
-    func generateStrings(_ builder: inout Build.Builder, _: Kit) {
+    func generateStrings(_ builder: CodeBuilder, _: Kit) {
         let files = allStrings
             .map { label in
                 label.delete(prefix: "//\(name):")

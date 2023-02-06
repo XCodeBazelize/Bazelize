@@ -10,7 +10,7 @@ import RuleBuilder
 import XCode
 
 extension Target {
-    func generateStaticLibrary(_ builder: inout Build.Builder, _: Kit) {
+    func generateStaticLibrary(_ builder: CodeBuilder, _: Kit) {
         builder.add("alias") {
             "name" => "\(name)"
             "actual" => "\(name)_library"

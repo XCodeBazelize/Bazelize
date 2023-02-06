@@ -22,7 +22,7 @@ extension Target {
     ///     "Base.lproj/Main.storyboard",
     ///     "Base.lproj/LaunchScreen.storyboard",
     /// ],
-    func generateAssets(_ builder: inout Build.Builder, _: Kit) {
+    func generateAssets(_ builder: CodeBuilder, _: Kit) {
         /// //Example:Assets.xcassets
         /// to
         ///           Assets.xcassets/**
