@@ -75,3 +75,33 @@ bzl_library(
     visibility = ["//visibility:public"],
     deps = ["@cgrindel_swift_bazel//swiftpkg:defs"],
 )
+
+load(
+    "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:defs.bzl",
+    "top_level_target",
+    "xcodeproj",
+)
+
+# Xcode
+xcodeproj(
+    name = "xcodeproj",
+    # Custom Project Name
+    project_name = "App",
+    tags = ["manual"],
+    top_level_targets = [
+        # main target, maybe some `ios_application`
+        top_level_target(":App", target_environments = ["device", "simulator"]),
+        # all other target
+        "//ExampleTests:ExampleTests",
+        "//Static2:Static2",
+        "//Static:Static",
+        "//ExampleUITests:ExampleUITests",
+        "//Framework2:Framework2",
+        "//Framework3:Framework3",
+        "//Framework1:Framework1",
+        "//Framework1Tests:Framework1Tests",
+        "//Example:Example",
+        "//Framework2Tests:Framework2Tests",
+        "//Framework3Tests:Framework3Tests",
+    ],
+)

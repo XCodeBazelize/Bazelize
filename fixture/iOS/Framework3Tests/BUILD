@@ -1,44 +1,34 @@
 # Generated using Bazelize 0.0.3 - https://github.com/XCodeBazelize/Bazelize
 
 load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
-load("@build_bazel_rules_apple//apple:ios.bzl", "ios_framework")
-load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
+load("@rules_cc//cc:defs.bzl", "objc_library")
 
-swift_library(
-    name = "Framework1_swift",
-    module_name = "Framework1",
+objc_library(
+    name = "Framework3Tests_objc",
+    module_name = "Framework3Tests",
     srcs = [
-        "//Framework1:Test.swift",
+        "//Framework3Tests:Framework3Tests.m",
     ],
-    testonly = False,
+    # hdrs = None,
+    # pch = None,
+    # copts = None,
+    # defines = None,
+    # linkopts = None,
+    # includes = None,
     deps = [
-        "//Static:Static_library",
-        "//Framework2:Framework2_library",
+        "//Framework3:Framework3_library",
     ],
-    # data = None,
-    defines = None,
     visibility = [
         "//visibility:private",
     ],
 )
 
 alias(
-    name = "Framework1_library",
-    actual = "Framework1_swift",
+    name = "Framework3Tests_library",
+    actual = "Framework3Tests_objc",
     visibility = [
         "//visibility:public",
-    ],
-)
-
-plist_fragment(
-    name = "plist_auto",
-    extension = "plist",
-    template = '''
-    <!--<key><key>NSHumanReadableCopyright</key></key>-->
-    <!--<key></key>-->
-    ''',
-    visibility = [
-        "//visibility:private",
     ],
 )
 
@@ -66,21 +56,11 @@ plist_fragment(
     ],
 )
 
-ios_framework(
-    name = "Framework1",
-    bundle_id = "com.bazel.Framework1",
-    families = [
-        "iphone",
-        "ipad",
-    ],
+ios_unit_test(
+    name = "Framework3Tests",
     minimum_os_version = "16.2",
-    infoplists = [
-        ":plist_auto",
-    ],
     deps = [
-        ":Framework1_library",
-        "//Static:Static",
-        "//Framework2:Framework2",
+        ":Framework3Tests_library",
     ],
     visibility = [
         "//visibility:public",

@@ -21,6 +21,11 @@
       "label": "@swiftpkg_local1//:Sources_LocalTarget2"
     },
     {
+      "name": "LocalTarget3",
+      "c99name": "LocalTarget3",
+      "label": "@swiftpkg_local1//:Sources_LocalTarget3"
+    },
+    {
       "name": "Local1Tests",
       "c99name": "Local1Tests",
       "label": "@swiftpkg_local1//:Tests_Local1Tests"
@@ -70,7 +75,8 @@
       "name": "LocalLib1",
       "type": "library",
       "target_labels": [
-        "@swiftpkg_local1//:Sources_LocalTarget1"
+        "@swiftpkg_local1//:Sources_LocalTarget1",
+        "@swiftpkg_local1//:Sources_LocalTarget3"
       ]
     },
     {
