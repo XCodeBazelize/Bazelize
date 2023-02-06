@@ -32,7 +32,7 @@ public final class Kit {
     /// plugins...
     var plugins: [Plugin]
 
-    lazy var plugins2: [PluginBuiltin] = [
+    lazy var builtinPlugins: [PluginBuiltin] = [
         PluginArchive(self),
         PluginSPM2(self),
         PluginApple(self),
@@ -76,7 +76,7 @@ extension Kit {
     }
 
     private final func tips() {
-        plugins2.compactMap(\.tip).forEach { tip in
+        builtinPlugins.compactMap(\.tip).forEach { tip in
             print(tip)
         }
 
@@ -89,7 +89,7 @@ extension Kit {
 // MARK: - Generate
 extension Kit {
     private final func generate() {
-//        generateModule()
+        generateModule()
         generateWorkspace()
         generateBuild()
         generateConfig()
@@ -97,8 +97,11 @@ extension Kit {
         generatePluginExtraFile()
     }
 
-    /// MODULE.bazel
+    /// {WORKSPACE}/MODULE.bazel
     private func generateModule() {
+        for plugin in builtinPlugins {
+            plugin.module(module.builder)
+        }
         try? module.write()
 
         let path = module.path
@@ -107,13 +110,10 @@ extension Kit {
 
     /// {WORKSPACE}/WORKSPACE
     private final func generateWorkspace() {
-        for code in plugins2.compactMap(\.workspace) {
-            workspace.builder.custom(code)
+        for plugin in builtinPlugins {
+            plugin.workspace(workspace.builder)
         }
-        workspace.build()
-
         try? workspace.write()
-
 
         let path = workspace.path
         Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
@@ -123,10 +123,9 @@ extension Kit {
     private final func generateBuild() {
         build.setup(config: project.config)
         build.exportUncategorizedFiles(self)
-        plugins2.compactMap(\.build).forEach { code in
-            build.builder.custom(code)
+        for plugin in builtinPlugins {
+            plugin.build(build.builder)
         }
-        build.build()
         try? build.write()
 
         let path = build.path
@@ -158,7 +157,7 @@ extension Kit {
     }
 
     private final func generatePluginExtraFile() {
-        plugins2.compactMap(\.custom).flatMap { $0 }.forEach { custom in
+        builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
             let path = Path(custom.path)
             try? path.write(custom.content)
         }
@@ -175,7 +174,7 @@ extension Kit {
     // MARK: Public
 
     public final func clear() {
-//        clearModule()
+        clearModule()
         clearWorkspace()
         clearBuild()
         clearConfig()
@@ -185,7 +184,7 @@ extension Kit {
 
     // MARK: Private
 
-    /// MODULE.bazel
+    /// {WORKSPACE}/MODULE.bazel
     private func clearModule() {
         try? module.clear()
     }
@@ -205,7 +204,6 @@ extension Kit {
         try? config.clear()
     }
 
-
     /// {WORKSPACE}/Target/BUILD
     private final func clearTargetBuild() {
         for build in targetsBuild {
@@ -213,5 +211,10 @@ extension Kit {
         }
     }
 
-    private final func clearPluginExtraFile() { }
+    private final func clearPluginExtraFile() {
+        builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
+            let path = Path(custom.path)
+            try? path.delete()
+        }
+    }
 }

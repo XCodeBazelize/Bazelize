@@ -18,9 +18,10 @@ class PluginBuiltin {
     var version: String { "0.0.1" }
     var url: String { "Builtin" }
 
-    var module: String? { nil }
-    var workspace: String? { nil }
-    var build: String? { nil }
+    func module(_: CodeBuilder) { }
+    func workspace(_: CodeBuilder) { }
+    func build(_: CodeBuilder) { }
+
     var target: [String: [String]]? { nil }
     var custom: [Custom]? { nil }
 

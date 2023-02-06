@@ -25,9 +25,9 @@ swift_library(
     ],
     testonly = False,
     deps = [
-        "//Static2:Static2_library",
-        "//Framework3:Framework3_library",
         "//Framework1:Framework1_library",
+        "//Framework3:Framework3_library",
+        "//Static2:Static2_library",
         "@swiftpkg_anycodable//:Sources_AnyCodable",
         "@swiftpkg_local1//:Sources_LocalTarget1",
         "@swiftpkg_local1//:Sources_LocalTarget2",
@@ -130,9 +130,9 @@ ios_application(
     ],
     deps = [
         ":Example_library",
-        "//Static2:Static2",
-        "//Framework3:Framework3",
         "//Framework1:Framework1",
+        "//Framework3:Framework3",
+        "//Static2:Static2",
     ],
     # sdk_frameworks = None,
     strings = [

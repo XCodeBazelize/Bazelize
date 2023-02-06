@@ -13,14 +13,15 @@ import Foundation
 
 /// https://github.com/keith/rules_apple_linker
 class PluginLinker: PluginBuiltin {
-    override var module: String? {
-        """
-        bazel_dep(name = "rules_apple_linker", version = "0.3.0")
-        """
+    override func module(_ builder: CodeBuilder) {
+        builder.custom(
+            """
+            bazel_dep(name = "rules_apple_linker", version = "0.3.0")
+            """)
     }
 
-    override var workspace: String? {
-        """
+    override func workspace(_ builder: CodeBuilder) {
+        builder.custom("""
         load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
         http_archive(
@@ -33,6 +34,6 @@ class PluginLinker: PluginBuiltin {
         load("@rules_apple_linker//:deps.bzl", "rules_apple_linker_deps")
 
         rules_apple_linker_deps()
-        """
+        """)
     }
 }

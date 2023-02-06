@@ -22,7 +22,7 @@ extension Target {
     }
 
     func generateCode(_ kit: Kit) -> String {
-        var builder = CodeBuilder()
+        let builder = CodeBuilder()
         generateLibrary(builder, kit)
 
         generateLoadPlistFragment(builder)

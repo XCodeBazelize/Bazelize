@@ -7,24 +7,28 @@
 
 import Foundation
 import PathKit
+import RuleBuilder
 
 /// https://github.com/bazelbuild/bazel-central-registry
 struct Module: BazelFile {
     let path: Path
-    let code = """
-    module(
-        name = "example",
-        version = "0.0.1",
-    )
-
-    bazel_dep(name = "bazel_skylib", version = "1.4.0")
-
-    # bazel_dep(name = "gazelle", version = "0.28.0")
-    # bazel_dep(name = "rules_go", version = "0.38.1")
-    # bazel_dep(name = "bazel_skylib_gazelle_plugin", version = "1.4.0", repo_name = "bazel_gazelle")
-    """
+    public let builder = CodeBuilder()
 
     init(_ root: Path) {
         path = root + "MODULE.bazel"
+
+        setup()
+    }
+
+    var code: String {
+        builder.build()
+    }
+
+    private func setup() {
+        builder.add("module") {
+            "name" => "example"
+            "version" => "0.0.1"
+        }
+        builder.moduleDep(name: "bazel_skylib", version: "version")
     }
 }

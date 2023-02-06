@@ -81,8 +81,8 @@ final class PluginSPM2: PluginBuiltin {
         return pair.toDictionary()
     }
 
-    override var workspace: String? {
-        """
+    override func workspace(_ builder: CodeBuilder) {
+        builder.custom("""
         http_archive(
             name = "cgrindel_swift_bazel",
             sha256 = "fd77181e45fbb9ab6ddedf59f3f2d4cf0c173919a6de8d4a398d99fd965d5ce5",
@@ -121,14 +121,21 @@ final class PluginSPM2: PluginBuiltin {
 
         # gazelle:repository_macro swift_deps.bzl%swift_dependencies
         swift_dependencies()
-        """
+        """)
     }
 
-    override var build: String? {
-        """
+    override func build(_ builder: CodeBuilder) {
+        builder.load("""
         load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+        """)
+        builder.load("""
         load("@cgrindel_swift_bazel//swiftpkg:defs.bzl", "swift_update_packages")
+        """)
+        builder.load("""
+        load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+        """)
 
+        builder.custom("""
         # Ignore the `.build` folder that is created by running Swift package manager
         # commands. The Swift Gazelle plugin executes some Swift package manager
         # commands to resolve external dependencies. This results in a `.build` file
@@ -172,15 +179,13 @@ final class PluginSPM2: PluginBuiltin {
             gazelle = ":gazelle_bin",
         )
 
-        load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
         bzl_library(
             name = "swift_deps",
             srcs = ["swift_deps.bzl"],
             visibility = ["//visibility:public"],
             deps = ["@cgrindel_swift_bazel//swiftpkg:defs"],
         )
-        """
+        """)
     }
 
     private var package: PluginBuiltin.Custom {

@@ -13,17 +13,14 @@ import RuleBuilder
 /// /BUILD
 struct Build: BazelFile {
     let path: Path
-    private(set) var code = ""
-    public var builder = CodeBuilder()
+    public let builder = CodeBuilder()
 
     init(_ root: Path) {
         path = root + "BUILD"
     }
 
-
-    mutating
-    func build() {
-        code = builder.build()
+    var code: String {
+        builder.build()
     }
 
     /// configs:
@@ -40,7 +37,6 @@ struct Build: BazelFile {
     /// ```shell
     /// bazel build target --//:mode=debug
     /// ```
-    mutating
     func setup(config: [String : XCodeBuildSetting]?) {
         guard let config = config else { return }
         let configs = config.keys.map { $0 }
@@ -60,7 +56,6 @@ struct Build: BazelFile {
     }
 
     /// export files not in [Bazel Package](https://bazel.build/concepts/build-ref)
-    mutating
     func exportUncategorizedFiles(_ kit: Kit) {
         let all = kit.project.all
             .filter(\.isFile)

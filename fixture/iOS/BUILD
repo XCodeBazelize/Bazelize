@@ -1,6 +1,14 @@
 # Generated using Bazelize 0.0.3 - https://github.com/XCodeBazelize/Bazelize
 
+load(
+    "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:defs.bzl",
+    "top_level_target",
+    "xcodeproj",
+)
+load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@cgrindel_swift_bazel//swiftpkg:defs.bzl", "swift_update_packages")
 
 string_flag(
     name = "mode",
@@ -20,9 +28,6 @@ config_setting(
         ":mode": "Release"
     },
 )
-
-load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
-load("@cgrindel_swift_bazel//swiftpkg:defs.bzl", "swift_update_packages")
 
 # Ignore the `.build` folder that is created by running Swift package manager
 # commands. The Swift Gazelle plugin executes some Swift package manager
@@ -67,19 +72,11 @@ gazelle(
     gazelle = ":gazelle_bin",
 )
 
-load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
 bzl_library(
     name = "swift_deps",
     srcs = ["swift_deps.bzl"],
     visibility = ["//visibility:public"],
     deps = ["@cgrindel_swift_bazel//swiftpkg:defs"],
-)
-
-load(
-    "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:defs.bzl",
-    "top_level_target",
-    "xcodeproj",
 )
 
 # Xcode
@@ -92,16 +89,16 @@ xcodeproj(
         # main target, maybe some `ios_application`
         top_level_target(":App", target_environments = ["device", "simulator"]),
         # all other target
+        "//Example:Example",
         "//ExampleTests:ExampleTests",
-        "//Static2:Static2",
-        "//Static:Static",
         "//ExampleUITests:ExampleUITests",
-        "//Framework2:Framework2",
-        "//Framework3:Framework3",
         "//Framework1:Framework1",
         "//Framework1Tests:Framework1Tests",
-        "//Example:Example",
+        "//Framework2:Framework2",
         "//Framework2Tests:Framework2Tests",
+        "//Framework3:Framework3",
         "//Framework3Tests:Framework3Tests",
+        "//Static:Static",
+        "//Static2:Static2",
     ],
 )

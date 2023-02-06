@@ -226,7 +226,7 @@ extension Target {
             return """
             //\(name):\(name)_library
             """
-        }
+        }.sorted()
     }
 
     public var frameworks: [String] {
@@ -235,7 +235,7 @@ extension Target {
             return """
             //\(name):\(name)
             """
-        }
+        }.sorted()
     }
 
     /// use for `sdk_frameworks`

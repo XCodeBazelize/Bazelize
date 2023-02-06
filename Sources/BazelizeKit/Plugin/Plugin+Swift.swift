@@ -13,14 +13,14 @@ import Foundation
 final class PluginSwift: PluginBuiltin {
     let repo: Repo.Swift = .v1_5_0
 
-    override var module: String? {
-        """
+    override func module(_ builder: CodeBuilder) {
+        builder.custom("""
         bazel_dep(name = "rules_swift", version = "\(repo.rawValue)", repo_name = "build_bazel_rules_swift")
-        """
+        """)
     }
 
-    override var workspace: String? {
-        """
+    override func workspace(_ builder: CodeBuilder) {
+        builder.custom("""
         # rules_swift
         http_archive(
             name = "build_bazel_rules_swift",
@@ -43,6 +43,6 @@ final class PluginSwift: PluginBuiltin {
         )
 
         swift_rules_extra_dependencies()
-        """
+        """)
     }
 }

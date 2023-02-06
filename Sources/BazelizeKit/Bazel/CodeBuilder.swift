@@ -24,6 +24,17 @@ extension CodeBuilder {
 }
 
 extension CodeBuilder {
+    /// bazel_dep
+    func moduleDep(name: String, version _: String, repo_name: String? = nil) {
+        add("bazel_dep") {
+            "name" => name
+            "version" => name
+            "repo_name" => repo_name
+        }
+    }
+}
+
+extension CodeBuilder {
     func load(_ rule: RulesObjc) {
         load(loadableRule: rule)
     }
@@ -119,7 +130,13 @@ extension CodeBuilder {
 extension CodeBuilder {
     func build() -> String {
         let loads = loads.sorted().joined(separator: "\n")
-        let codes = [loads] + codes
+        let codes: [String]
+        if loads.isEmpty {
+            codes = self.codes
+        } else {
+            codes = [loads] + self.codes
+        }
+
         return codes.joined(separator: "\n\n")
     }
 }

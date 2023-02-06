@@ -11,9 +11,9 @@ import Foundation
 
 final class PluginArchive: PluginBuiltin {
     override var name: String { "Bazel HTTP Archive" }
-    override var workspace: String? {
-        """
+    override func workspace(_ builder: CodeBuilder) {
+        builder.custom("""
         load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-        """
+        """)
     }
 }

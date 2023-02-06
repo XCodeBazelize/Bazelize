@@ -13,15 +13,16 @@ import Foundation
 final class PluginApple: PluginBuiltin {
     let repo: Repo.Apple = .v2_0_0
 
-    override var module: String? {
-        """
-        bazel_dep(name = "rules_apple", version = "\(repo.version)", repo_name = "build_bazel_rules_apple")
-        """
+    override func module(_ builder: CodeBuilder) {
+        builder.moduleDep(
+            name: "rules_apple",
+            version: repo.rawValue,
+            repo_name: "build_bazel_rules_apple")
     }
 
-    override var workspace: String? {
+    override func workspace(_ builder: CodeBuilder) {
         let version = repo.version
-        return """
+        builder.custom("""
         # rules_apple
         http_archive(
             name = "build_bazel_rules_apple",
@@ -42,6 +43,6 @@ final class PluginApple: PluginBuiltin {
         )
 
         apple_support_dependencies()
-        """
+        """)
     }
 }

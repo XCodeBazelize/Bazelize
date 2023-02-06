@@ -19,7 +19,8 @@ extension Target {
             $0[name]
         }.flatMap(\.deps)
 
-        let plugin2: [String] = kit.plugins2.compactMap(\.target)
+        let builtins: [String] = kit.builtinPlugins
+            .compactMap(\.target)
             .reduce([]) { origin, next in
                 let data = next[name] ?? []
                 return origin + data
@@ -37,7 +38,7 @@ extension Target {
                 frameworksLibrary
                 applicationHost
                 plugin
-                plugin2
+                builtins
             }
             "data" => {
                 if !assets.isEmpty {

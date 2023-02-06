@@ -12,14 +12,14 @@ import Foundation
 /// https://github.com/buildbuddy-io/rules_xcodeproj
 final class PluginXCodeProj: PluginBuiltin {
     let repo: Repo.XCodeProj = .v0_12_3
-    override var module: String? {
-        """
+    override func module(_ builder: CodeBuilder) {
+        builder.custom("""
         bazel_dep(name = "rules_xcodeproj", version = "\(repo.rawValue)")
-        """
+        """)
     }
 
-    override var workspace: String? {
-        """
+    override func workspace(_ builder: CodeBuilder) {
+        builder.custom("""
         # rules_xcodeproj
         http_archive(
             name = "com_github_buildbuddy_io_rules_xcodeproj",
@@ -33,7 +33,7 @@ final class PluginXCodeProj: PluginBuiltin {
         )
 
         xcodeproj_rules_dependencies()
-        """
+        """)
     }
 
     // TODO:
@@ -41,22 +41,26 @@ final class PluginXCodeProj: PluginBuiltin {
     /// custom project_name
     /// not support swift_library -> static library
     /// target_environments `device` need provision_profile
-    override var build: String? {
+    override func build(_ builder: CodeBuilder) {
         let targets = kit.project.targets
         let other = targets
             .map(\.name)
+            .sorted()
             .map { name in
                 """
                 "//\(name):\(name)",
                 """
             }.withNewLine.indent(2)
-        return """
+
+        builder.load("""
         load(
             "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:defs.bzl",
             "top_level_target",
             "xcodeproj",
         )
+        """)
 
+        builder.custom("""
         # Xcode
         xcodeproj(
             name = "xcodeproj",
@@ -70,6 +74,6 @@ final class PluginXCodeProj: PluginBuiltin {
         \(other)
             ],
         )
-        """
+        """)
     }
 }

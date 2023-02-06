@@ -12,15 +12,13 @@ import Util
 /// /WORKSPACE
 struct Workspace: BazelFile {
     let path: Path
-    private(set) var code = ""
-    public var builder = CodeBuilder()
-
-    mutating
-    func build() {
-        code = builder.build()
-    }
+    public let builder = CodeBuilder()
 
     init(_ root: Path) {
         path = root + "WORKSPACE"
+    }
+
+    var code: String {
+        builder.build()
     }
 }
