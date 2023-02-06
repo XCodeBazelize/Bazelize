@@ -107,10 +107,10 @@ plist_fragment(
 
 filegroup(
     name = "Strings",
-    srcs = glob([
-        "en.lproj/Localizable.strings",
-        "zh-Hant.lproj/Localizable.strings",
-    ]),
+    srcs = [
+        "//Example:en.lproj/Localizable.strings",
+        "//Example:zh-Hant.lproj/Localizable.strings",
+    ],
     visibility = [
         "//visibility:private",
     ],
