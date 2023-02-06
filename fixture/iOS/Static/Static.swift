@@ -7,8 +7,13 @@
 
 // MARK: - Static
 
-class Static { }
+public enum Static {
+    public static func test() -> String {
+        "Static+Swift"
+    }
+}
 
 public func test3() -> Int {
     3
 }
+

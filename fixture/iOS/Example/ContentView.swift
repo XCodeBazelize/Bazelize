@@ -8,7 +8,13 @@
 import Foundation
 import Framework1
 import Framework2
+import Framework3
+#if canImport(Static)
 import Static
+#endif
+#if canImport(Static2)
+import Static2
+#endif
 import SwiftUI
 #if canImport(AnyCodable)
 import AnyCodable
@@ -23,6 +29,9 @@ import LocalTarget1
 #if canImport(LocalTarget2)
 import LocalTarget2
 #endif
+#if canImport(LocalTarget3)
+import LocalTarget3
+#endif
 
 // MARK: - ContentView
 
@@ -35,12 +44,10 @@ struct ContentView: View {
                     .imageScale(.large)
                     .foregroundColor(.accentColor)
             }.background(Color.brown)
-                .foregroundColor(Color.white)
             VStack {
                 Text("Localize")
                 Text("hello")
             }.background(Color.red)
-                .foregroundColor(Color.white)
             VStack {
                 Text("Config")
                 #if YDebug
@@ -51,15 +58,18 @@ struct ContentView: View {
                 Text("None")
                 #endif
             }.background(Color.green)
-                .foregroundColor(Color.white)
             VStack {
                 Text("Frameworks")
-                Text("\(test1())")
-                Text("\(test2())")
-                Text("\(test3())")
-                Text("\(test4())")
+                Text(Framework1.test())
+                Text(Framework2.test())
+                Text(Framework3.test())
+                #if canImport(Static)
+                Text(Static.test())
+                #endif
+                #if canImport(Static2)
+                Text(Static2.test())
+                #endif
             }.background(Color.blue)
-                .foregroundColor(Color.white)
             VStack {
                 Text("SPM")
                 #if canImport(AnyCodable)
@@ -74,9 +84,13 @@ struct ContentView: View {
                 #if canImport(LocalTarget2)
                 Text(type: LocalTarget2.self)
                 #endif
+                #if canImport(LocalTarget3)
+                Text(type: LocalTarget3.self)
+                Text("\(LocalTarget3.test())")
+                #endif
             }.background(Color.red)
-                .foregroundColor(Color.white)
         }
+        .foregroundColor(Color.white)
         .padding()
     }
 }

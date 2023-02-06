@@ -9,10 +9,16 @@ import Foundation
 import Framework2
 import Static
 
-public func test1() -> Int {
-    1
-}
+public enum Framework1 {
+    public static func test() -> String {
+        "Framework1+Swift"
+    }
 
-public func test4() -> Int {
-    test1() + test3()
+    public static func test2() -> String {
+        Framework2.test()
+    }
+
+    public static func test3() -> String {
+        Static.test()
+    }
 }

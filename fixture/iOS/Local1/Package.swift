@@ -9,7 +9,7 @@ let package = Package(
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
             name: "LocalLib1",
-            targets: ["LocalTarget1"]),
+            targets: ["LocalTarget1", "LocalTarget3"]),
         .library(
             name: "LocalLib2",
             targets: ["LocalTarget2"]),
@@ -27,6 +27,8 @@ let package = Package(
         .target(
             name: "LocalTarget2",
             dependencies: ["RxSwift"]),
+        .target(
+            name: "LocalTarget3"),
         .testTarget(
             name: "Local1Tests",
             dependencies: ["LocalTarget1"]),

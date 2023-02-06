@@ -10,6 +10,6 @@ import XCTest
 
 final class Framework2Tests: XCTestCase {
     func testExample() throws {
-        XCTAssertEqual(test2(), 2)
+        XCTAssertEqual(Framework2.test(), "Framework2+Swift")
     }
 }

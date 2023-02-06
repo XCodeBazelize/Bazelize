@@ -13,11 +13,11 @@ import XCTest
 
 final class Framework1Tests: XCTestCase {
     func testFramework1() throws {
-        XCTAssertEqual(test1(), 1)
-        XCTAssertEqual(test4(), 4)
+        XCTAssertEqual(Framework1.test(), "Framework1+Swift")
+        XCTAssertEqual(Framework1.test2(), "Framework2+Swift")
     }
 
     func testFramework2() throws {
-        XCTAssertEqual(test2(), 2)
+        XCTAssertEqual(Framework2.test(), "Framework2+Swift")
     }
 }
