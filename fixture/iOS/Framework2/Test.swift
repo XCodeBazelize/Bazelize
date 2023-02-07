@@ -7,6 +7,8 @@
 
 import Foundation
 
-public func test2() -> Int {
-    2
+public enum Framework2 {
+    public static func test() -> String {
+        "Framework2+Swift"
+    }
 }

@@ -1,6 +1,7 @@
 .PHONY: bazelize
 bazelize:
 	@bazelize --project Example.xcodeproj
+	@bazel run //:swift_update_pkgs
 
 .PHONY: clear
 clear:
@@ -9,6 +10,10 @@ clear:
 .PHONY: build
 build:
 	bazel build Example
+
+.PHONY: updatePkg
+updatePkg:
+	bazel run //:swift_update_pkgs
 
 .PHONY: run
 run:
@@ -25,3 +30,9 @@ test:
 .PHONY: uitest
 uitest:
 	bazel test ExampleUITests
+
+
+# 
+# bazel run //:update_build_files
+# bazel test //...
+# --experimental_enable_bzlmod

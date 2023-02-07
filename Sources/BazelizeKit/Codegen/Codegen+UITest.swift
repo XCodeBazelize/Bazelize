@@ -12,12 +12,12 @@ import XCode
 extension Target {
     // MARK: Internal
 
-    func generateUITest(_ builder: inout Build.Builder, _ kit: Kit) {
+    func generateUITest(_ builder: CodeBuilder, _ kit: Kit) {
         switch prefer(\.sdk) {
-        case .iOS: generateIOSUITest(&builder, kit)
-        case .macOS: generateMacUITest(&builder, kit)
-        case .tvOS: generateTVUITest(&builder, kit)
-        case .watchOS: generateWatchUITest(&builder, kit)
+        case .iOS: generateIOSUITest(builder, kit)
+        case .macOS: generateMacUITest(builder, kit)
+        case .tvOS: generateTVUITest(builder, kit)
+        case .watchOS: generateWatchUITest(builder, kit)
         default: break
         }
     }
@@ -26,7 +26,7 @@ extension Target {
 
     /// https://github.com/bazelbuild/rules_swift/blob/master/doc/rules.md#swift_test
     /// ios_unit_test(name, data, deps, env, platform_type, runner, test_filter, test_host)
-    private func generateIOSUITest(_ builder: inout Build.Builder, _: Kit) {
+    private func generateIOSUITest(_ builder: CodeBuilder, _: Kit) {
         builder.load(.ios_ui_test)
         builder.add(.ios_ui_test) {
             "name" => "\(name)"
@@ -43,7 +43,7 @@ extension Target {
 
     /// https://github.com/bazelbuild/rules_apple/blob/2.0.0/doc/rules-macos.md#macos_ui_test
     /// macos_ui_test(name, data, deps, env, platform_type, runner, test_filter, test_host)
-    private func generateMacUITest(_ builder: inout Build.Builder, _: Kit) {
+    private func generateMacUITest(_ builder: CodeBuilder, _: Kit) {
         builder.load(.macos_ui_test)
         builder.add(.macos_ui_test) {
             "name" => "\(name)"
@@ -60,7 +60,7 @@ extension Target {
 
     /// https://github.com/bazelbuild/rules_apple/blob/master/doc/rules-tvos.md#tvos_ui_test
     /// tvos_ui_test(name, data, deps, env, platform_type, runner, test_filter, test_host)
-    private func generateTVUITest(_ builder: inout Build.Builder, _: Kit) {
+    private func generateTVUITest(_ builder: CodeBuilder, _: Kit) {
         builder.load(.tvos_ui_test)
         builder.add(.tvos_ui_test) {
             "name" => "\(name)"
@@ -77,7 +77,7 @@ extension Target {
 
     /// https://github.com/bazelbuild/rules_apple/blob/master/doc/rules-watchos.md#watchos_ui_test
     /// watchos_ui_test(name, data, deps, env, platform_type, runner, test_filter, test_host)
-    private func generateWatchUITest(_ builder: inout Build.Builder, _: Kit) {
+    private func generateWatchUITest(_ builder: CodeBuilder, _: Kit) {
         builder.load(.watchos_ui_test)
         builder.add(.watchos_ui_test) {
             "name" => "\(name)"

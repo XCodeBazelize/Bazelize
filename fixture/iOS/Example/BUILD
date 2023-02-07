@@ -26,6 +26,12 @@ swift_library(
     testonly = False,
     deps = [
         "//Framework1:Framework1_library",
+        "//Framework3:Framework3_library",
+        "//Static2:Static2_library",
+        "@swiftpkg_anycodable//:Sources_AnyCodable",
+        "@swiftpkg_local1//:Sources_LocalTarget1",
+        "@swiftpkg_local1//:Sources_LocalTarget2",
+        "@swiftpkg_local1//:Sources_LocalTarget3",
     ],
     data = [
         ":Assets",
@@ -101,10 +107,10 @@ plist_fragment(
 
 filegroup(
     name = "Strings",
-    srcs = glob([
-        "en.lproj/Localizable.strings",
-        "zh-Hant.lproj/Localizable.strings",
-    ]),
+    srcs = [
+        "//Example:en.lproj/Localizable.strings",
+        "//Example:zh-Hant.lproj/Localizable.strings",
+    ],
     visibility = [
         "//visibility:private",
     ],
@@ -125,6 +131,8 @@ ios_application(
     deps = [
         ":Example_library",
         "//Framework1:Framework1",
+        "//Framework3:Framework3",
+        "//Static2:Static2",
     ],
     # sdk_frameworks = None,
     strings = [

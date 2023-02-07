@@ -1,0 +1,171 @@
+{
+  "modules": [
+    {
+      "name": "AnyCodable",
+      "c99name": "AnyCodable",
+      "label": "@swiftpkg_anycodable//:Sources_AnyCodable"
+    },
+    {
+      "name": "AnyCodableTests",
+      "c99name": "AnyCodableTests",
+      "label": "@swiftpkg_anycodable//:Tests_AnyCodableTests"
+    },
+    {
+      "name": "LocalTarget1",
+      "c99name": "LocalTarget1",
+      "label": "@swiftpkg_local1//:Sources_LocalTarget1"
+    },
+    {
+      "name": "LocalTarget2",
+      "c99name": "LocalTarget2",
+      "label": "@swiftpkg_local1//:Sources_LocalTarget2"
+    },
+    {
+      "name": "LocalTarget3",
+      "c99name": "LocalTarget3",
+      "label": "@swiftpkg_local1//:Sources_LocalTarget3"
+    },
+    {
+      "name": "Local1Tests",
+      "c99name": "Local1Tests",
+      "label": "@swiftpkg_local1//:Tests_Local1Tests"
+    },
+    {
+      "name": "RxBlocking",
+      "c99name": "RxBlocking",
+      "label": "@swiftpkg_rxswift//:Sources_RxBlocking"
+    },
+    {
+      "name": "RxCocoa",
+      "c99name": "RxCocoa",
+      "label": "@swiftpkg_rxswift//:Sources_RxCocoa"
+    },
+    {
+      "name": "RxCocoaRuntime",
+      "c99name": "RxCocoaRuntime",
+      "label": "@swiftpkg_rxswift//:Sources_RxCocoaRuntime"
+    },
+    {
+      "name": "RxRelay",
+      "c99name": "RxRelay",
+      "label": "@swiftpkg_rxswift//:Sources_RxRelay"
+    },
+    {
+      "name": "RxSwift",
+      "c99name": "RxSwift",
+      "label": "@swiftpkg_rxswift//:Sources_RxSwift"
+    },
+    {
+      "name": "RxTest",
+      "c99name": "RxTest",
+      "label": "@swiftpkg_rxswift//:Sources_RxTest"
+    }
+  ],
+  "products": [
+    {
+      "identity": "anycodable",
+      "name": "AnyCodable",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_anycodable//:Sources_AnyCodable"
+      ]
+    },
+    {
+      "identity": "local1",
+      "name": "LocalLib1",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_local1//:Sources_LocalTarget1",
+        "@swiftpkg_local1//:Sources_LocalTarget3"
+      ]
+    },
+    {
+      "identity": "local1",
+      "name": "LocalLib2",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_local1//:Sources_LocalTarget2"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxBlocking",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxBlocking"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxBlocking-Dynamic",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxBlocking"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxCocoa",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxCocoa"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxCocoa-Dynamic",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxCocoa"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxRelay",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxRelay"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxRelay-Dynamic",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxRelay"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxSwift",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxSwift"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxSwift-Dynamic",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxSwift"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxTest",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxTest"
+      ]
+    },
+    {
+      "identity": "rxswift",
+      "name": "RxTest-Dynamic",
+      "type": "library",
+      "target_labels": [
+        "@swiftpkg_rxswift//:Sources_RxTest"
+      ]
+    }
+  ]
+}

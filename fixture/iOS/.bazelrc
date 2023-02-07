@@ -1,7 +1,7 @@
 import %workspace%/config.bazelrc
 
 build --disk_cache=cache
-
+# build --experimental_enable_bzlmod
 
 # build --apple_platform_type=ios
 # build --verbose_failures

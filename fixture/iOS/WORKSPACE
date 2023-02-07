@@ -2,10 +2,49 @@
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+http_archive(
+    name = "cgrindel_swift_bazel",
+    sha256 = "fd77181e45fbb9ab6ddedf59f3f2d4cf0c173919a6de8d4a398d99fd965d5ce5",
+    strip_prefix = "swift_bazel-0.2.0",
+    urls = [
+        "http://github.com/cgrindel/swift_bazel/archive/v0.2.0.tar.gz",
+    ],
+)
+
+load("@cgrindel_swift_bazel//:deps.bzl", "swift_bazel_dependencies")
+
+swift_bazel_dependencies()
+
+load("@cgrindel_bazel_starlib//:deps.bzl", "bazel_starlib_dependencies")
+
+bazel_starlib_dependencies()
+
+# MARK: - Gazelle
+
+# gazelle:repo bazel_gazelle
+
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@cgrindel_swift_bazel//:go_deps.bzl", "swift_bazel_go_dependencies")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+# Declare Go dependencies before calling go_rules_dependencies.
+swift_bazel_go_dependencies()
+
+go_rules_dependencies()
+
+go_register_toolchains(version = "1.19.1")
+
+gazelle_dependencies()
+
+load("//:swift_deps.bzl", "swift_dependencies")
+
+# gazelle:repository_macro swift_deps.bzl%swift_dependencies
+swift_dependencies()
+
 # rules_apple
 http_archive(
     name = "build_bazel_rules_apple",
-    # sha256 = "43737f28a578d8d8d7ab7df2fb80225a6b23b9af9655fcdc66ae38eb2abcf2ed",
+    sha256 = "43737f28a578d8d8d7ab7df2fb80225a6b23b9af9655fcdc66ae38eb2abcf2ed",
     url = "https://github.com/bazelbuild/rules_apple/releases/download/2.0.0/rules_apple.2.0.0.tar.gz",
 )
 
@@ -15,6 +54,20 @@ load(
 )
 
 apple_rules_dependencies()
+
+load(
+    "@build_bazel_apple_support//lib:repositories.bzl",
+    "apple_support_dependencies",
+)
+
+apple_support_dependencies()
+
+# rules_swift
+http_archive(
+    name = "build_bazel_rules_swift",
+    sha256 = "32f95dbe6a88eb298aaa790f05065434f32a662c65ec0a6aabdaf6881e4f169f",
+    url = "https://github.com/bazelbuild/rules_swift/releases/download/1.5.0/rules_swift.1.5.0.tar.gz",
+)
 
 load(
     "@build_bazel_rules_swift//swift:repositories.bzl",
@@ -30,48 +83,11 @@ load(
 
 swift_rules_extra_dependencies()
 
-load(
-    "@build_bazel_apple_support//lib:repositories.bzl",
-    "apple_support_dependencies",
-)
-
-apple_support_dependencies()
-
-# rules_swift
-http_archive(
-   name = "build_bazel_rules_swift",
-   sha256 = "32f95dbe6a88eb298aaa790f05065434f32a662c65ec0a6aabdaf6881e4f169f",
-   url = "https://github.com/bazelbuild/rules_swift/releases/download/1.5.0/rules_swift.1.5.0.tar.gz",
-)
-
-load(
-   "@build_bazel_rules_swift//swift:repositories.bzl",
-   "swift_rules_dependencies",
-)
-
-swift_rules_dependencies()
-
-load(
-   "@build_bazel_rules_swift//swift:extras.bzl",
-   "swift_rules_extra_dependencies",
-)
-
-swift_rules_extra_dependencies()
-
-# rules_pods
-http_archive(
-    name = "rules_pods",
-    urls = ["https://github.com/pinterest/PodToBUILD/releases/download/4.1.0-412495/PodToBUILD.zip"],
-    # sha256 = "c96bbfb6364a76e09d8239914990328e66074096038728f1a1b26c62d9081af6",
-)
-
-load("@rules_pods//BazelExtensions:workspace.bzl", "new_pod_repository")
-
 # rules_xcodeproj
 http_archive(
     name = "com_github_buildbuddy_io_rules_xcodeproj",
-    sha256 = "2533b977ac8540a30323fde7fdb6ca49219edd21d3753b69d43f39c576b11a88",
-    url = "https://github.com/buildbuddy-io/rules_xcodeproj/releases/download/0.11.0/release.tar.gz",
+    sha256 = "f3f9b6db442892af4d16c2819d921ef8607ef86276ca8c762b82800f5d6755ad",
+    url = "https://github.com/buildbuddy-io/rules_xcodeproj/releases/download/0.12.3/release.tar.gz",
 )
 
 load(
@@ -87,3 +103,16 @@ git_repository(
     commit = "259ca0a5d77833728c18fa6365285559ce8cc0bf",
     remote = "https://github.com/imWildCat/MinimalBazelFrameworkDemo",
 )
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "rules_apple_linker",
+    sha256 = "a8aecd86d9c63677a8f1a3849c52c05d4aed1d1d9c209db2904f53f8973731d4",
+    strip_prefix = "rules_apple_linker-0.3.0",
+    url = "https://github.com/keith/rules_apple_linker/archive/refs/tags/0.3.0.tar.gz",
+)
+
+load("@rules_apple_linker//:deps.bzl", "rules_apple_linker_deps")
+
+rules_apple_linker_deps()

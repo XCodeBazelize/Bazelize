@@ -11,7 +11,7 @@ import RuleBuilder
 import XCode
 
 extension Target {
-    func generateLoadPlistFragment(_ builder: inout Build.Builder) {
+    func generateLoadPlistFragment(_ builder: CodeBuilder) {
         let isGeneratePlist = plistContent != nil
         guard isGeneratePlist || isGeneratePlistAuto || isGeneratePlistDefault else {
             return
@@ -32,7 +32,7 @@ extension Target {
         return nil
     }
 
-    func generatePlistFile(_ builder: inout Build.Builder, _: Kit) {
+    func generatePlistFile(_ builder: CodeBuilder, _: Kit) {
         guard let plist = plistContent else { return }
         builder.add(RulesPlist.plist_fragment.rawValue) {
             "name" => "plist_file"
@@ -82,7 +82,7 @@ extension Target {
         isGeneratePlistAuto ? ":plist_auto" : nil
     }
 
-    func generatePlistAuto(_ builder: inout Build.Builder) {
+    func generatePlistAuto(_ builder: CodeBuilder) {
         if isGeneratePlistAuto {
             let plist = prefer(\.plist) ?? []
             builder.add(RulesPlist.plist_fragment.rawValue) {
@@ -118,7 +118,7 @@ extension Target {
         isGeneratePlistDefault ? ":plist_default" : nil
     }
 
-    func generatePlistDefault(_ builder: inout Build.Builder) {
+    func generatePlistDefault(_ builder: CodeBuilder) {
         if isGeneratePlistDefault {
             let plist = prefer(\.defaultPlist) ?? []
             builder.add(RulesPlist.plist_fragment.rawValue) {

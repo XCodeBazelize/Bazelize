@@ -18,9 +18,9 @@ public protocol XCodeProject: AnyObject {
     var projectPath: Path { get }
 
     /// relative path to local spm
-    var localSPM: [String] { get }
-
-    var spm: [XCodeSPM] { get }
+//    var localSPM: [String] { get }
+//
+//    var spm: [XCodeSPM] { get }
 
     var targets: [XCodeTarget] { get }
 

@@ -7,7 +7,6 @@ extension Repo {
         case v2_0_0_rc1 = "2.0.0-rc1"
         case v1_1_3 = "1.1.3"
         case v1_1_2 = "1.1.2"
-
         // MARK: Internal
 
         var version: String {

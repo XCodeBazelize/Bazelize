@@ -30,4 +30,5 @@ public enum LastKnownFileType: String {
     case storyboard = "file.storyboard"
 
     case wrapper
+    case folder
 }

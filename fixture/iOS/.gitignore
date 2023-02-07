@@ -180,3 +180,6 @@ lefthook.yml
 .vscode/*
 
 cache/
+
+bazel-*
+

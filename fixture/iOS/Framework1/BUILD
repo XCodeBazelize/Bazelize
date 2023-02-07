@@ -12,8 +12,8 @@ swift_library(
     ],
     testonly = False,
     deps = [
-        "//Static:Static_library",
         "//Framework2:Framework2_library",
+        "//Static:Static_library",
     ],
     # data = None,
     defines = None,
@@ -79,8 +79,8 @@ ios_framework(
     ],
     deps = [
         ":Framework1_library",
-        "//Static:Static",
         "//Framework2:Framework2",
+        "//Static:Static",
     ],
     visibility = [
         "//visibility:public",

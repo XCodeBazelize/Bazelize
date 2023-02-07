@@ -162,7 +162,7 @@ extension Target {
 
     func srcs(_ type: LastKnownFileType) -> [String] {
         srcFiles.filter { file in
-            file.isType(type)
+            file.lastKnownFileType == type
         }.labels
     }
 }
@@ -206,7 +206,7 @@ extension Target {
 
     func resources(_ type: LastKnownFileType) -> [String] {
         resourceFiles.filter { file in
-            file.isType(type)
+            file.lastKnownFileType == type
         }.labels
     }
 }
@@ -226,7 +226,7 @@ extension Target {
             return """
             //\(name):\(name)_library
             """
-        }
+        }.sorted()
     }
 
     public var frameworks: [String] {
@@ -235,7 +235,7 @@ extension Target {
             return """
             //\(name):\(name)
             """
-        }
+        }.sorted()
     }
 
     /// use for `sdk_frameworks`

@@ -37,7 +37,7 @@ struct ConfigList {
                 ($0.name, $0)
             } ?? []
 
-        return Dictionary(pair, uniquingKeysWith: { first, _ in first })
+        return pair.toDictionary()
     }
 
     /// For XCode Target ConfigList merge default ConfigList

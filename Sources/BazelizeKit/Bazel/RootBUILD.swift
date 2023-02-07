@@ -12,20 +12,15 @@ import RuleBuilder
 
 /// /BUILD
 struct Build: BazelFile {
-    // MARK: Lifecycle
+    let path: Path
+    public let builder = CodeBuilder()
 
     init(_ root: Path) {
         path = root + "BUILD"
     }
 
-    // MARK: Internal
-
-    let path: Path
-    private(set) var code = ""
-
-    mutating
-    func build() {
-        code = builder.build()
+    var code: String {
+        builder.build()
     }
 
     /// configs:
@@ -42,7 +37,6 @@ struct Build: BazelFile {
     /// ```shell
     /// bazel build target --//:mode=debug
     /// ```
-    mutating
     func setup(config: [String : XCodeBuildSetting]?) {
         guard let config = config else { return }
         let configs = config.keys.map { $0 }
@@ -62,7 +56,6 @@ struct Build: BazelFile {
     }
 
     /// export files not in [Bazel Package](https://bazel.build/concepts/build-ref)
-    mutating
     func exportUncategorizedFiles(_ kit: Kit) {
         let all = kit.project.all
             .filter(\.isFile)
@@ -87,8 +80,4 @@ struct Build: BazelFile {
         ])
         """)
     }
-
-    // MARK: Private
-
-    private var builder = Build.Builder()
 }

@@ -10,17 +10,17 @@ import Util
 import XCode
 
 extension Target {
-    func generateLibrary(_ builder: inout Build.Builder, _ kit: Kit) {
+    func generateLibrary(_ builder: CodeBuilder, _ kit: Kit) {
         let name = name
         let cFamily = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
 
-        generateAssets(&builder, kit)
+        generateAssets(builder, kit)
 
         switch (cFamily.isEmpty, srcs_swift.isEmpty) {
         case (true, false):
-            generateSwiftLibrary(&builder, kit)
+            generateSwiftLibrary(builder, kit)
         case (false, true):
-            generateObjcLibrary(&builder, kit)
+            generateObjcLibrary(builder, kit)
         case (false, false):
             /// TODO: mix objc & swift
             Log.codeGenerate.warning("TODO: mix objc & swift")
