@@ -69,16 +69,14 @@ final class PluginSPM2: PluginBuiltin {
     override var target: [String : [String]]? {
         let targets = kit.project.targets.compactMap { $0 as? Target }
 
-        let pair = targets.map { target in
+        return targets.map { target -> (String, [String]) in
             let deps = target.native.packageProductDependencies
 
             let remote = deps.compactMap(transformRemote)
             let local = deps.compactMap(transformLocal).flatMap { $0 }
             let all: [String] = Set(remote + local).sorted()
             return (target.name, all)
-        }
-
-        return pair.toDictionary()
+        }.toDictionary()
     }
 
     override func workspace(_ builder: CodeBuilder) {
