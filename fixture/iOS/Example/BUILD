@@ -32,6 +32,7 @@ swift_library(
         "@swiftpkg_local1//:Sources_LocalTarget1",
         "@swiftpkg_local1//:Sources_LocalTarget2",
         "@swiftpkg_local1//:Sources_LocalTarget3",
+        "//:SVProgressHUD",
     ],
     data = [
         ":Assets",
@@ -46,6 +47,7 @@ swift_library(
             "B",
         ]
     }),
+    # SVProgressHUD.xcframework
     visibility = [
         "//visibility:private",
     ],

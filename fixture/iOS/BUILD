@@ -8,6 +8,7 @@ load(
 load("@bazel_gazelle//:def.bzl", "gazelle", "gazelle_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@build_bazel_rules_apple//apple:apple.bzl", "apple_dynamic_xcframework_import")
 load("@cgrindel_swift_bazel//swiftpkg:defs.bzl", "swift_update_packages")
 
 string_flag(
@@ -100,5 +101,15 @@ xcodeproj(
         "//Framework3Tests:Framework3Tests",
         "//Static:Static",
         "//Static2:Static2",
+    ],
+)
+
+apple_dynamic_xcframework_import(
+    name = "SVProgressHUD",
+    xcframework_imports = glob([
+        "SVProgressHUD.xcframework/**",
+    ]),
+    visibility = [
+        "//visibility:public",
     ],
 )
