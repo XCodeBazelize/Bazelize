@@ -35,6 +35,10 @@ extension CodeBuilder {
 }
 
 extension CodeBuilder {
+    func load(_ rule: RulesApple.Apple) {
+        load(loadableRule: rule)
+    }
+
     func load(_ rule: RulesObjc) {
         load(loadableRule: rule)
     }
@@ -77,6 +81,10 @@ extension CodeBuilder {
 // MARK: - RuleBuild
 extension CodeBuilder {
     func add(_ rule: RulesObjc, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        add(rule: rule, builder: builder)
+    }
+
+    func add(_ rule: RulesApple.Apple, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 

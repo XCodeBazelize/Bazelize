@@ -6,23 +6,32 @@
 //
 
 import Foundation
+import SwiftUI
+
+// MARK: - Frameworks
 import Framework1
 import Framework2
 import Framework3
+
+// MARK: - Static
 #if canImport(Static)
 import Static
 #endif
 #if canImport(Static2)
 import Static2
 #endif
-import SwiftUI
+
+// MARK: - Remote SPM
 #if canImport(AnyCodable)
 import AnyCodable
 #endif
+
+// MARK: - Local SPM deps
 #if canImport(RxSwift)
 import RxSwift
 #endif
 
+// MARK: - Local SPM
 #if canImport(LocalTarget1)
 import LocalTarget1
 #endif
@@ -32,6 +41,9 @@ import LocalTarget2
 #if canImport(LocalTarget3)
 import LocalTarget3
 #endif
+
+// MARK: - Imported Framework
+import SVProgressHUDShare
 
 // MARK: - ContentView
 
@@ -89,6 +101,10 @@ struct ContentView: View {
                 Text("\(LocalTarget3.test())")
                 #endif
             }.background(Color.red)
+            VStack {
+                Text("Imported")
+                Text(type: SVProgressHUD.self)
+            }.background(Color.green)
         }
         .foregroundColor(Color.white)
         .padding()

@@ -217,7 +217,7 @@ extension Target {
     /// https://github.com/XCodeBazelize/Bazelize/issues/8
     /// use for `frameworks`
     public var importFrameworks: [String] {
-        []
+        _frameworks.compactMap(\.relativePath)
     }
 
     public var frameworksLibrary: [String] {

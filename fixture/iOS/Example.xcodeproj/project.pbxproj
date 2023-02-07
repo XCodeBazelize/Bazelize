@@ -33,6 +33,8 @@
 		A8658B28296D08BE00AEFC87 /* Static.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8658B27296D08BE00AEFC87 /* Static.swift */; };
 		A87053C729755F9200EE09CC /* AnyCodable in Frameworks */ = {isa = PBXBuildFile; productRef = A87053C629755F9200EE09CC /* AnyCodable */; };
 		A87F0AF2296C00F500FD92E0 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A87F0AF4296C00F500FD92E0 /* Localizable.strings */; };
+		A880B6FC2990F8FD000C5DCB /* SVProgressHUD.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = A880B6FB2990F8EC000C5DCB /* SVProgressHUD.xcframework */; };
+		A880B6FD2990F8FD000C5DCB /* SVProgressHUD.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A880B6FB2990F8EC000C5DCB /* SVProgressHUD.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A88A1BF6296903E6003972AA /* ExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88A1BF5296903E6003972AA /* ExampleApp.swift */; };
 		A88A1BF8296903E6003972AA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A88A1BF7296903E6003972AA /* ContentView.swift */; };
 		A88A1BFA296903E8003972AA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A88A1BF9296903E8003972AA /* Assets.xcassets */; };
@@ -168,6 +170,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				A8658AEF296D008900AEFC87 /* Framework1.framework in Embed Frameworks */,
+				A880B6FD2990F8FD000C5DCB /* SVProgressHUD.xcframework in Embed Frameworks */,
 				A83BC788298BBCDA00499A6C /* Framework3.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -210,6 +213,7 @@
 		A8658B27296D08BE00AEFC87 /* Static.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Static.swift; sourceTree = "<group>"; };
 		A87F0AF3296C00F500FD92E0 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A87F0AF5296C00FB00FD92E0 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		A880B6FB2990F8EC000C5DCB /* SVProgressHUD.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = SVProgressHUD.xcframework; sourceTree = "<group>"; };
 		A88A1BF2296903E6003972AA /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A88A1BF5296903E6003972AA /* ExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExampleApp.swift; sourceTree = "<group>"; };
 		A88A1BF7296903E6003972AA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -295,6 +299,7 @@
 				A8120D0929767375004F3FD3 /* LocalLib2 in Frameworks */,
 				A8658AEE296D008900AEFC87 /* Framework1.framework in Frameworks */,
 				A8120D07297670E5004F3FD3 /* LocalLib1 in Frameworks */,
+				A880B6FC2990F8FD000C5DCB /* SVProgressHUD.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,6 +392,7 @@
 		A8658B17296D00B000AEFC87 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A880B6FB2990F8EC000C5DCB /* SVProgressHUD.xcframework */,
 				A849A66C296D66CC006BB98A /* AVFoundation.framework */,
 			);
 			name = Frameworks;

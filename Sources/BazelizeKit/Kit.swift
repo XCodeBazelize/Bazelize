@@ -40,6 +40,7 @@ public final class Kit {
         PluginXCodeProj(self),
         PluginPlistFragment(self),
         PluginLinker(self),
+        PluginImported(self),
     ]
 
     // MARK: Lifecycle
