@@ -91,7 +91,6 @@ public final class Project {
         .compactMap(\.product)
         .compactMap(XCodeRemoteSPM.parse)
 
-    /// https://github.com/XCodeBazelize/Bazelize/issues/15
     public lazy var localSPM: [XCodeLocalSPM] = (files(.wrapper) + files(.folder)).compactMap { file in
         guard let path = file.relativePath else { return nil }
         guard let fullPath = file.fullPath else { return nil }
