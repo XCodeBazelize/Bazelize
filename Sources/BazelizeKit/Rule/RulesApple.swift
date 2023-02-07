@@ -84,12 +84,14 @@ enum RulesApple {
         case apple_dynamic_framework_import
         case apple_dynamic_xcframework_import
         case apple_static_framework_import
+        case apple_static_library
         case apple_static_xcframework
         case apple_static_xcframework_import
         case apple_universal_binary
         case apple_xcframework
         case local_provisioning_profile
         case provisioning_profile_repository
+        case provisioning_profile_repository_extension
     }
 
     enum Resource: String, LoadableRule {

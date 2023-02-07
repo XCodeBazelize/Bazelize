@@ -31,4 +31,7 @@ public enum LastKnownFileType: String {
 
     case wrapper
     case folder
+
+    case framework = "wrapper.framework"
+    case xcframework = "wrapper.xcframework"
 }

@@ -99,6 +99,14 @@ public final class Project {
         return XCodeLocalSPM(path: path, products: products, targets: targets)
     }
 
+    public lazy var frameworks: [File] = native.frameworksBuildPhases
+        .compactMap(\.files)
+        .flatMap { $0 }
+        .compactMap(\.file)
+        .map { file in
+            File(native: file, project: self)
+        }
+
     private lazy var _targets: [Target] = {
         let list = defaultConfigList
         return native.nativeTargets.map {
