@@ -24,7 +24,7 @@ jobs:
   lint:
     runs-on: macos-12
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.3.0
 
       - name: swiftformat installation
         run: |
@@ -41,13 +41,16 @@ jobs:
 
     strategy:
       matrix:
-        xcode: 
+        xcode:
+        - "14.2"
+        - "14.1"
+        - "14.0.1"
         - "13.4.1"
         - "13.4"
         - "13.3.1"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.3.0
 
     - name: Check Cocoapod Version
       run: pod --version
@@ -75,7 +78,7 @@ jobs:
       run: swift --version # Swift 5.3.3
 
     - name: SPM Cache ${{ matrix.xcode }}
-      uses: actions/cache@v2
+      uses: actions/cache@v3.2.4
       with:
         path: .build
         key: ${{ runner.os }}-${{ matrix.xcode }}-spm-${{ hashFiles('**/Package.resolved') }}
