@@ -1,4 +1,4 @@
-# Generated using Bazelize 0.0.3 - https://github.com/XCodeBazelize/Bazelize
+# Generated using Bazelize 0.0.4 - https://github.com/XCodeBazelize/Bazelize
 
 load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
 load("@rules_cc//cc:defs.bzl", "objc_library")

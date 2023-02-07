@@ -1,4 +1,4 @@
-# Generated using Bazelize 0.0.3 - https://github.com/XCodeBazelize/Bazelize
+# Generated using Bazelize 0.0.4 - https://github.com/XCodeBazelize/Bazelize
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
