@@ -90,3 +90,48 @@ jobs:
       
     - name: Run tests ${{ matrix.xcode }}
       run: make test
+
+  IntegrateIOS:
+    runs-on: macos-12
+    needs: [lint, build]
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: Build Bazelize
+        run: swift build -c release
+
+      - name: Install `bazelisk`
+        run: |
+          brew install bazelisk
+      
+      - name: Bazel Generation
+        run: |
+          cd fixtures/iOS
+          ../../.build/release/bazelize --project Example.xcodeproj
+
+      - name: Update SPM Deps
+        run: |
+          cd fixtures/iOS
+          bazel run //:swift_update_pkgs
+
+      - name: Build Application
+        run: |
+          cd fixtures/iOS
+          bazel build Example
+
+      - name: Unit Test
+        run: |
+          cd fixtures/iOS
+          bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
+
+      - name: UI Test
+        run: |
+          bazel test ExampleUITests
+
+      - name: SPM Cache ${{ matrix.xcode }}
+        uses: actions/cache@v3.2.4
+        with:
+          path: .build
+          key: ${{ runner.os }}-IntegrateIOS-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-IntegrateIOS-spm-
