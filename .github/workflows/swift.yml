@@ -60,10 +60,10 @@ jobs:
 
     - name: Update Cocoapod Repo
       run: pod repo update
-    
+
     # - name: Get Pod Spec
     #   run: pod spec cat --regex Bagel --version=1.4.0
-    
+
     - name: Xcode Select ${{ matrix.xcode }}
       run: |
         echo "Available Xcode versions:"
@@ -84,10 +84,10 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.xcode }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.xcode }}-spm-
-      
+
     - name: Build ${{ matrix.xcode }}
       run: make build
-      
+
     - name: Run tests ${{ matrix.xcode }}
       run: make test
 
@@ -100,12 +100,12 @@ jobs:
         uses: actions/cache@v3.2.4
         with:
           path: .build
-          key: ${{ runner.os }}-IntegrateIOS-spm-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-IntegrateIOS-spm-
-      
+            ${{ runner.os }}-spm-
+
       - name: Build Bazelize
-        run: swift build -c release
+        run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Upload Bazelize
         uses: actions/upload-artifact@v3
@@ -113,7 +113,6 @@ jobs:
           name: bazelize
           path: .build/apple/Products/Release/bazelize
           if-no-files-found: ignore # 'warn' or 'ignore' 
-
 
   IntegrateIOS:
     runs-on: macos-12
@@ -125,7 +124,7 @@ jobs:
         uses: actions/cache@v3.2.4
         with:
           path: fixture/iOS/cache
-          key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/Package.resolved') }}
+          key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/fixture/iOS/WORKSPACE') }}
           restore-keys: |
             ${{ runner.os }}-IntegrateIOS-fixture-ios-
 
@@ -138,7 +137,7 @@ jobs:
         with:
           name: bazelize
           path: bazelize
-      
+
       - name: Bazel Generation
         run: |
           cd fixture/iOS
