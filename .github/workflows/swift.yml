@@ -141,6 +141,7 @@ jobs:
         run: |
           ls -l
           pwd
+          chmod +x bazelize
 
       - name: Bazel Generation
         run: |
