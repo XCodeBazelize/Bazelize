@@ -138,14 +138,14 @@ jobs:
           name: bazelize
           path: bazelize
 
-      - name: Bazel Generation
-        run: |
-          ./bazelize --project fixture/iOS/Example.xcodeproj
-
       - name: Check
         run: |
           ls -l
           pwd
+
+      - name: Bazel Generation
+        run: |
+          ./bazelize --project fixture/iOS/Example.xcodeproj
 
       - name: Update SPM Deps
         run: |
