@@ -136,7 +136,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: bazelize
-          path: bazelize
 
       - name: Check
         run: |
@@ -148,16 +147,16 @@ jobs:
           ./bazelize --project fixture/iOS/Example.xcodeproj
 
       - name: Update SPM Deps
+        working-directory: fixture/iOS
         run: |
-          cd fixture/iOS
           bazel run //:swift_update_pkgs
 
       - name: Build Application
+        working-directory: fixture/iOS
         run: |
-          cd fixture/iOS
           bazel build Example
 
       - name: Unit Test
+        working-directory: fixture/iOS
         run: |
-          cd fixture/iOS
           bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
