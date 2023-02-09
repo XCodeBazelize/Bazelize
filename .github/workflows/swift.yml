@@ -134,4 +134,5 @@ jobs:
 
       - name: UI Test
         run: |
+          cd fixture/iOS
           bazel test ExampleUITests
