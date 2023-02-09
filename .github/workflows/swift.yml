@@ -161,3 +161,11 @@ jobs:
         working-directory: fixture/iOS
         run: |
           bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: iOS_Example.ipa
+          path: fixture/iOS/bazel-bin/Example/Example.ipa
+          if-no-files-found: ignore # 'warn' or 'ignore' 
+ 
