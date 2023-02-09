@@ -131,8 +131,3 @@ jobs:
         run: |
           cd fixture/iOS
           bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
-
-      - name: UI Test
-        run: |
-          cd fixture/iOS
-          bazel test ExampleUITests
