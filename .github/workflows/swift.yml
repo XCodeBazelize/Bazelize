@@ -140,8 +140,12 @@ jobs:
 
       - name: Bazel Generation
         run: |
-          cd fixture/iOS
-          ../../bazelize --project Example.xcodeproj
+          ./bazelize --project fixture/iOS/Example.xcodeproj
+
+      - name: Check
+        run: |
+          ls -l
+          pwd
 
       - name: Update SPM Deps
         run: |
