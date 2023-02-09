@@ -6,7 +6,9 @@
 //
 
 #import <XCTest/XCTest.h>
-@import Framework3;
+// @import Framework3;
+// #import <Framework3/Framework3.h>
+#import "Framework3/Framework3.h"
 
 @interface Framework3Tests : XCTestCase
 

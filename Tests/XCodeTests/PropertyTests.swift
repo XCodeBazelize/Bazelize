@@ -64,6 +64,7 @@ private struct Setting: XCodeBuildSetting {
     var bundleLoader: String? { nil }
 
     var swiftDefine: String? { nil }
+    var enableModules: Bool { false }
 
     // MARK: Private
 

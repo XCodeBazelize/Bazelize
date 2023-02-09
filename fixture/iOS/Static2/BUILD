@@ -12,11 +12,20 @@ objc_library(
     hdrs = [
         "//Static2:Static2.h",
     ],
+    enable_modules = True,
     # pch = None,
-    # copts = None,
+    copts = [
+        "-fblocks",
+        "-fobjc-arc",
+        "-fPIC",
+        "-fmodule-name=Static2",
+    ],
+    testonly = False,
     # defines = None,
     # linkopts = None,
-    # includes = None,
+    includes = [
+        ".",
+    ],
     # deps = None,
     visibility = [
         "//visibility:private",

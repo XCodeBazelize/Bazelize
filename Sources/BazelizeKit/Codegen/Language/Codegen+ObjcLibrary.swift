@@ -30,11 +30,22 @@ extension Target {
                 headers // TODO: pch
                 hpps
             }
+            "enable_modules" => select(\.enableModules).starlark
             "pch" => { }
-            "copts" => { }
+            "copts" => {
+                "-fblocks"
+                "-fobjc-arc"
+                "-fPIC"
+                "-fmodule-name=\(name)"
+            }
+            "testonly" => isTest
             "defines" => { }
             "linkopts" => { }
-            "includes" => { }
+            "includes" => {
+                /// public header "."
+                /// https://github.com/bazelbuild/bazel/issues/92
+                "."
+            }
             "deps" => {
                 frameworksLibrary
             }

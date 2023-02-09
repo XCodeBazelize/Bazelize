@@ -70,6 +70,9 @@ public protocol XCodeBuildSetting {
     /// ios application unittest `Allow testing Host Application APIs`
     /// BUNDLE_LOADER
     var bundleLoader: String? { get }
+
+    /// CLANG_ENABLE_MODULES
+    var enableModules: Bool { get }
 }
 
 // MARK: - SDK

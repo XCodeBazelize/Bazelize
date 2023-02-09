@@ -97,6 +97,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3.3.0
 
+      - name: SPM Cache ${{ matrix.xcode }}
+        uses: actions/cache@v3.2.4
+        with:
+          path: .build
+          key: ${{ runner.os }}-IntegrateIOS-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-IntegrateIOS-spm-
+
       - name: Build Bazelize
         run: swift build -c release
 
@@ -106,32 +114,24 @@ jobs:
       
       - name: Bazel Generation
         run: |
-          cd fixtures/iOS
+          cd fixture/iOS
           ../../.build/release/bazelize --project Example.xcodeproj
 
       - name: Update SPM Deps
         run: |
-          cd fixtures/iOS
+          cd fixture/iOS
           bazel run //:swift_update_pkgs
 
       - name: Build Application
         run: |
-          cd fixtures/iOS
+          cd fixture/iOS
           bazel build Example
 
       - name: Unit Test
         run: |
-          cd fixtures/iOS
+          cd fixture/iOS
           bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
 
       - name: UI Test
         run: |
           bazel test ExampleUITests
-
-      - name: SPM Cache ${{ matrix.xcode }}
-        uses: actions/cache@v3.2.4
-        with:
-          path: .build
-          key: ${{ runner.os }}-IntegrateIOS-spm-${{ hashFiles('**/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-IntegrateIOS-spm-

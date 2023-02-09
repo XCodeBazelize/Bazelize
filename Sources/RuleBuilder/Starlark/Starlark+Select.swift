@@ -47,6 +47,14 @@ extension Starlark.Select where T == [String] {
     }
 }
 
+extension Starlark.Select where T == Bool {
+    public var starlark: Starlark {
+        .select(map {
+            Starlark($0) ?? .none
+        })
+    }
+}
+
 // MARK: - Starlark.Select + Text
 
 extension Starlark.Select: Text where T == Starlark {
