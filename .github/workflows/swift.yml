@@ -63,16 +63,16 @@ jobs:
     
     # - name: Get Pod Spec
     #   run: pod spec cat --regex Bagel --version=1.4.0
-
+    
     - name: Xcode Select ${{ matrix.xcode }}
-      # You may pin to the exact commit or the version.
-      # uses: devbotsxyz/xcode-select@05f94658217eb8575f0aabd3b95e702a47995d21
-      uses: devbotsxyz/xcode-select@v1.1.0
-      with:
-        # Version to use (like '11.7', '12' or simply 'latest')
-        version: ${{ matrix.xcode }} # optional, default is latest
-        # Whether to select a beta release or not. Beta releases may not always be available.
-        beta: false # optional, default is false
+      run: |
+        echo "Available Xcode versions:"
+        ls /Applications | grep Xcode
+        echo "Choosing Xcode_${{ matrix.xcode }}.app"
+        sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+        xcodebuild -version
+        swift --version
+        swift package --version
 
     - name: Get swift version
       run: swift --version # Swift 5.3.3
@@ -91,31 +91,58 @@ jobs:
     - name: Run tests ${{ matrix.xcode }}
       run: make test
 
-  IntegrateIOS:
+  artifact:
     runs-on: macos-12
-    needs: [lint, build]
     steps:
       - uses: actions/checkout@v3.3.0
 
-      - name: SPM Cache ${{ matrix.xcode }}
+      - name: SPM Cache
         uses: actions/cache@v3.2.4
         with:
           path: .build
           key: ${{ runner.os }}-IntegrateIOS-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
             ${{ runner.os }}-IntegrateIOS-spm-
-
+      
       - name: Build Bazelize
         run: swift build -c release
+
+      - name: Upload Bazelize
+        uses: actions/upload-artifact@v3
+        with:
+          name: bazelize
+          path: .build/apple/Products/Release/bazelize
+          if-no-files-found: ignore # 'warn' or 'ignore' 
+
+
+  IntegrateIOS:
+    runs-on: macos-12
+    needs: [artifact]
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: Bazel iOS Cache
+        uses: actions/cache@v3.2.4
+        with:
+          path: fixture/iOS/cache
+          key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-IntegrateIOS-fixture-ios-
 
       - name: Install `bazelisk`
         run: |
           brew install bazelisk
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v3
+        with:
+          name: bazelize
+          path: bazelize
       
       - name: Bazel Generation
         run: |
           cd fixture/iOS
-          ../../.build/release/bazelize --project Example.xcodeproj
+          ../../bazelize --project Example.xcodeproj
 
       - name: Update SPM Deps
         run: |
