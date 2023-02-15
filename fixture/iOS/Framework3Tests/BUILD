@@ -11,11 +11,20 @@ objc_library(
         "//Framework3Tests:Framework3Tests.m",
     ],
     # hdrs = None,
+    enable_modules = True,
     # pch = None,
-    # copts = None,
+    copts = [
+        "-fblocks",
+        "-fobjc-arc",
+        "-fPIC",
+        "-fmodule-name=Framework3Tests",
+    ],
+    testonly = True,
     # defines = None,
     # linkopts = None,
-    # includes = None,
+    includes = [
+        ".",
+    ],
     deps = [
         "//Framework3:Framework3_library",
     ],

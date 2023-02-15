@@ -60,19 +60,19 @@ jobs:
 
     - name: Update Cocoapod Repo
       run: pod repo update
-    
+
     # - name: Get Pod Spec
     #   run: pod spec cat --regex Bagel --version=1.4.0
 
     - name: Xcode Select ${{ matrix.xcode }}
-      # You may pin to the exact commit or the version.
-      # uses: devbotsxyz/xcode-select@05f94658217eb8575f0aabd3b95e702a47995d21
-      uses: devbotsxyz/xcode-select@v1.1.0
-      with:
-        # Version to use (like '11.7', '12' or simply 'latest')
-        version: ${{ matrix.xcode }} # optional, default is latest
-        # Whether to select a beta release or not. Beta releases may not always be available.
-        beta: false # optional, default is false
+      run: |
+        echo "Available Xcode versions:"
+        ls /Applications | grep Xcode
+        echo "Choosing Xcode_${{ matrix.xcode }}.app"
+        sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+        xcodebuild -version
+        swift --version
+        swift package --version
 
     - name: Get swift version
       run: swift --version # Swift 5.3.3
@@ -84,9 +84,89 @@ jobs:
         key: ${{ runner.os }}-${{ matrix.xcode }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.xcode }}-spm-
-      
+
     - name: Build ${{ matrix.xcode }}
       run: make build
-      
+
     - name: Run tests ${{ matrix.xcode }}
       run: make test
+
+  artifact:
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: SPM Cache
+        uses: actions/cache@v3.2.4
+        with:
+          path: .build
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build Bazelize
+        run: swift build -c release --arch arm64 --arch x86_64
+
+      - name: Upload Bazelize
+        uses: actions/upload-artifact@v3
+        with:
+          name: bazelize
+          path: .build/apple/Products/Release/bazelize
+          if-no-files-found: ignore # 'warn' or 'ignore' 
+
+  IntegrateIOS:
+    runs-on: macos-12
+    needs: [artifact]
+    steps:
+      - uses: actions/checkout@v3.3.0
+
+      - name: Bazel iOS Cache
+        uses: actions/cache@v3.2.4
+        with:
+          path: fixture/iOS/cache
+          key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/fixture/iOS/WORKSPACE') }}
+          restore-keys: |
+            ${{ runner.os }}-IntegrateIOS-fixture-ios-
+
+      - name: Install `bazelisk`
+        run: |
+          brew install bazelisk
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v3
+        with:
+          name: bazelize
+
+      - name: Check
+        run: |
+          ls -l
+          pwd
+          chmod +x bazelize
+
+      - name: Bazel Generation
+        run: |
+          ./bazelize --project fixture/iOS/Example.xcodeproj
+
+      - name: Update SPM Deps
+        working-directory: fixture/iOS
+        run: |
+          bazel run //:swift_update_pkgs
+
+      - name: Build Application
+        working-directory: fixture/iOS
+        run: |
+          bazel build Example
+          cp bazel-bin/Example/Example.ipa .
+
+      - name: Unit Test
+        working-directory: fixture/iOS
+        run: |
+          bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: iOS_Example.ipa
+          path: fixture/iOS/Example.ipa
+          if-no-files-found: ignore # 'warn' or 'ignore' 
+ 

@@ -25,7 +25,13 @@ releaseRun:
 
 .PHONY: test
 test:
-	bazel test ExampleTests Framework1Tests Framework2Tests
+	bazel test \
+		--sandbox_debug \
+		ExampleTests \
+		Framework1Tests \
+		Framework2Tests \
+		Framework3Tests
+
 
 .PHONY: uitest
 uitest:

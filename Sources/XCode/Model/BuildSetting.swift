@@ -137,6 +137,11 @@ extension BuildSetting {
     public var bundleLoader: String? {
         self["BUNDLE_LOADER"]
     }
+
+    /// CLANG_ENABLE_MODULES
+    public var enableModules: Bool {
+        self["CLANG_ENABLE_MODULES"] == "YES"
+    }
 }
 
 // MARK: - PLIST Value -
