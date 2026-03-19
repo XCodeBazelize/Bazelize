@@ -14,7 +14,7 @@ final class PluginSwift: PluginBuiltin {
     let repo: Repo.Swift = .v3_4_1
 
     override func module(_ builder: CodeBuilder) {
-        builder.moduleDep(
+        builder.bazelDep(
             name: "rules_swift",
             version: repo.rawValue,
             repo_name: "build_bazel_rules_swift"

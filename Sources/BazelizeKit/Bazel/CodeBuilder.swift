@@ -25,7 +25,7 @@ extension CodeBuilder {
 
 extension CodeBuilder {
     /// bazel_dep
-    func moduleDep(name: String, version: String, repo_name: String? = nil) {
+    func bazelDep(name: String, version: String, repo_name: String? = nil) {
         add("bazel_dep") {
             "name" => name
             "version" => version

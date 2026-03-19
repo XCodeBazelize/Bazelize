@@ -29,6 +29,6 @@ struct Module: BazelFile {
             "name" => "example"
             "version" => "0.0.1"
         }
-        builder.moduleDep(name: "bazel_skylib", version: "1.9.0")
+        builder.bazelDep(name: "bazel_skylib", version: "1.9.0")
     }
 }
