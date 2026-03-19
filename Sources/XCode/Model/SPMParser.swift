@@ -14,7 +14,7 @@ import Workspace
 
 enum SPMParser {
     static func parse(path: String) throws -> (products: [String: [String]], targets: [String]) {
-        let packagePath = try AbsolutePath(validating: path)
+        let packagePath = try Basics.AbsolutePath(validating: path)
         let observability = ObservabilitySystem { _,_ in }
 
         let workspace = try Workspace(forRootPackage: packagePath)
