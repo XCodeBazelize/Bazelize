@@ -1,4 +1,4 @@
-// swift-tools-version:5.6
+// swift-tools-version:5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,29 +6,30 @@ import PackageDescription
 let package = Package(
     name: "Bazelize",
     platforms: [
-        .macOS(.v11),
+        .macOS(.v13),
     ],
     products: [
         .executable(name: "bazelize", targets: ["Bazelize"]),
-        .library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),
+//        .library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
 
-        .package(url: "https://github.com/tuist/XcodeProj", from: "8.8.0"),
-        .package(url: "https://github.com/Flight-School/AnyCodable", from: "0.6.6"),
-        .package(url: "https://github.com/jpsim/Yams", from: "5.0.1"),
+        .package(url: "https://github.com/tuist/XcodeProj", from: "9.10.1"),
+        .package(url: "https://github.com/Flight-School/AnyCodable", from: "0.6.7"),
+        .package(url: "https://github.com/jpsim/Yams", from: "6.2.1"),
         .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
 
         .package(url: "https://github.com/yume190/SwiftCommand", from: "1.1.3"),
 
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.0"),
 
         /// tag: swift-DEVELOPMENT-SNAPSHOT-2023-01-28-a
         /// support async command
         .package(
             url: "https://github.com/apple/swift-package-manager",
-            revision: "1cf758cd67f2ee5d4dbb4f33c2cb0ecea6235c96"),
+            branch: "swift-6.2.4-RELEASE"
+        ),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -89,20 +90,20 @@ let package = Package(
             name: "XCodeTests",
             dependencies: ["XCode"]),
 
-        .target(
-            name: "Cocoapod",
-            dependencies: [
-                "PluginInterface",
-                "Util",
-                "AnyCodable",
-                "PathKit",
-            ]),
-        .testTarget(
-            name: "CocoapodTests",
-            dependencies: ["Cocoapod"],
-            resources: [
-                .copy("Resource"),
-            ]),
+//        .target(
+//            name: "Cocoapod",
+//            dependencies: [
+//                "PluginInterface",
+//                "Util",
+//                "AnyCodable",
+//                "PathKit",
+//            ]),
+//        .testTarget(
+//            name: "CocoapodTests",
+//            dependencies: ["Cocoapod"],
+//            resources: [
+//                .copy("Resource"),
+//            ]),
 
         .target(
             name: "PluginInterface",
@@ -120,4 +121,5 @@ let package = Package(
 //        .testTarget(
 //            name: "SwiftBazelGenTests",
 //            dependencies: ["SwiftBazelGen"]),
-    ])
+    ]
+)

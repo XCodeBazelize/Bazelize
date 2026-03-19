@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import XCode
+import XcodeProj
 
 // MARK: - PluginXCodeProj
 
-/// https://github.com/buildbuddy-io/rules_xcodeproj
+/// https://github.com/MobileNativeFoundation/rules_xcodeproj
 final class PluginXCodeProj: PluginBuiltin {
-    let repo: Repo.XCodeProj = .v0_12_3
+    let repo: Repo.XCodeProj = .v3_6_0
     override func module(_ builder: CodeBuilder) {
         builder.custom("""
         bazel_dep(name = "rules_xcodeproj", version = "\(repo.rawValue)")

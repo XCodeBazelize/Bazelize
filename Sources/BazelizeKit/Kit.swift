@@ -34,7 +34,7 @@ public final class Kit {
 
     lazy var builtinPlugins: [PluginBuiltin] = [
         PluginArchive(self),
-        PluginSPM2(self),
+        PluginSwiftPM(self),
         PluginApple(self),
         PluginSwift(self),
         PluginXCodeProj(self),
@@ -111,13 +111,13 @@ extension Kit {
 
     /// {WORKSPACE}/WORKSPACE
     private final func generateWorkspace() {
-        for plugin in builtinPlugins {
-            plugin.workspace(workspace.builder)
-        }
-        try? workspace.write()
-
-        let path = workspace.path
-        Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
+//        for plugin in builtinPlugins {
+//            plugin.workspace(workspace.builder)
+//        }
+//        try? workspace.write()
+//
+//        let path = workspace.path
+//        Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
     }
 
     /// {WORKSPACE}/BUILD
@@ -160,6 +160,7 @@ extension Kit {
     private final func generatePluginExtraFile() {
         builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
             let path = Path(custom.path)
+            try? path.parent().mkpath()
             try? path.write(custom.content)
         }
 
