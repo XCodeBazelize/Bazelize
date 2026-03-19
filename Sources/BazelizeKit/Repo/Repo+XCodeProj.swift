@@ -2,11 +2,11 @@
 extension Repo {
     /// https://github.com/buildbuddy-io/rules_xcodeproj
     enum XCodeProj: String {
-        case v1_0_0rc1 = "1.0.0rc1"
-        case v0_12_3 = "0.12.3"
-        case v0_12_2 = "0.12.2"
-        case v0_12_0 = "0.12.0"
-        case v0_11_0 = "0.11.0"
+        case v3_6_0 = "3.6.0"
+        case v3_5_1 = "3.5.1"
+        case v3_4_1 = "3.4.1"
+        case v3_4_0 = "3.4.0"
+        case v3_3_0 = "3.3.0"
         // MARK: Internal
 
         var version: String {
@@ -18,11 +18,11 @@ extension Repo {
 
         var sha256: String {
             switch self {
-            case .v1_0_0rc1: return "0164d576945121361b28706a5bbe2ea6f834f93ae65062e5592544b728577d30"
-            case .v0_12_3: return "f3f9b6db442892af4d16c2819d921ef8607ef86276ca8c762b82800f5d6755ad"
-            case .v0_12_2: return "9c86784491854f205b075e5c4d8a838612d433d9454a226d270ad1a17ad8d634"
-            case .v0_12_0: return "630e3434b49e80783430ef470c0e9a7f1c8b4e648f789b9fe324fcd37ade8a19"
-            case .v0_11_0: return "2533b977ac8540a30323fde7fdb6ca49219edd21d3753b69d43f39c576b11a88"
+            case .v3_6_0: return "207fc87aa2573c9c942d247c1db2416d6feaefd2e5c730ec1d7e640018fb4ca0"
+            case .v3_5_1: return "dc3872fb50d16bbe7df035ea22eac4f79d0957036e226d6df9de5de389434393"
+            case .v3_4_1: return "b25cb08c7c6f0c813984ed029f97b40357453d359b5fe494170dbaf46cc9c7db"
+            case .v3_4_0: return "34473ab1756b357393ac45737718147a8a9b4a5607664bcc1b57fc203ffbf249"
+            case .v3_3_0: return "78e17fd58175334abf1cdec46caa09b60da9e6cf3a07d51a9ee540f1ba712799"
             }
         }
     }
