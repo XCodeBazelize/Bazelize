@@ -61,6 +61,8 @@ public final class Project {
     public let workspacePath: Path
     public let projectPath: Path
     public let preferConfig: String?
+    
+    private var packages: [String] = []
 
     public init(_ projectPath: Path, _ preferConfig: String?) async throws {
         let path = projectPath.parent()

@@ -32,9 +32,11 @@ public final class Kit {
     /// plugins...
     var plugins: [Plugin]
 
+    private lazy var pluginSPM = PluginSwiftPM(self)
     lazy var builtinPlugins: [PluginBuiltin] = [
-        PluginArchive(self),
-        PluginSwiftPM(self),
+        PluginHttpArchive(self),
+        PluginGitRepository(self),
+        pluginSPM,
         PluginApple(self),
         PluginSwift(self),
         PluginXCodeProj(self),
@@ -48,6 +50,8 @@ public final class Kit {
     public init(_ projPath: Path, _ preferConfig: String?) async throws {
         project = try await Project(projPath, preferConfig)
         plugins = []
+        
+        try await pluginSPM.loadPackageNames(projPath: projPath)
     }
 
     // MARK: Public

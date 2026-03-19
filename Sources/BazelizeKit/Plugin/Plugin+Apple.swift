@@ -17,32 +17,7 @@ final class PluginApple: PluginBuiltin {
         builder.bazelDep(
             name: "rules_apple",
             version: repo.rawValue,
-            repo_name: "build_bazel_rules_apple")
-    }
-
-    override func workspace(_ builder: CodeBuilder) {
-        let version = repo.version
-        builder.custom("""
-        # rules_apple
-        http_archive(
-            name = "build_bazel_rules_apple",
-            sha256 = "\(repo.sha256)",
-            url = "https://github.com/bazelbuild/rules_apple/releases/download/\(version)/rules_apple.\(version).tar.gz",
+            repo_name: "build_bazel_rules_apple"
         )
-
-        load(
-            "@build_bazel_rules_apple//apple:repositories.bzl",
-            "apple_rules_dependencies",
-        )
-
-        apple_rules_dependencies()
-
-        load(
-            "@build_bazel_apple_support//lib:repositories.bzl",
-            "apple_support_dependencies",
-        )
-
-        apple_support_dependencies()
-        """)
     }
 }

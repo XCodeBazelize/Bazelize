@@ -9,11 +9,20 @@ import Foundation
 
 // MARK: - PluginArchive
 
-final class PluginArchive: PluginBuiltin {
+final class PluginHttpArchive: PluginBuiltin {
     override var name: String { "Bazel HTTP Archive" }
-    override func workspace(_ builder: CodeBuilder) {
+    override func module(_ builder: CodeBuilder) {
         builder.custom("""
-        load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+        http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+        """)
+    }
+}
+
+final class PluginGitRepository: PluginBuiltin {
+    override var name: String { "Bazel Git Repository" }
+    override func module(_ builder: CodeBuilder) {
+        builder.custom("""
+        git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
         """)
     }
 }

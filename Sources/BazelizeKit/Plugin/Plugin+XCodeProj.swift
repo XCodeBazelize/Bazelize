@@ -20,24 +20,6 @@ final class PluginXCodeProj: PluginBuiltin {
         """)
     }
 
-    override func workspace(_ builder: CodeBuilder) {
-        builder.custom("""
-        # rules_xcodeproj
-        http_archive(
-            name = "com_github_buildbuddy_io_rules_xcodeproj",
-            sha256 = "\(repo.sha256)",
-            url = "https://github.com/buildbuddy-io/rules_xcodeproj/releases/download/\(repo.rawValue)/release.tar.gz",
-        )
-
-        load(
-            "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:repositories.bzl",
-            "xcodeproj_rules_dependencies",
-        )
-
-        xcodeproj_rules_dependencies()
-        """)
-    }
-
     // TODO:
     /// top target
     /// custom project_name
@@ -56,7 +38,7 @@ final class PluginXCodeProj: PluginBuiltin {
 
         builder.load("""
         load(
-            "@com_github_buildbuddy_io_rules_xcodeproj//xcodeproj:defs.bzl",
+            "@rules_xcodeproj//xcodeproj:defs.bzl",
             "top_level_target",
             "xcodeproj",
         )

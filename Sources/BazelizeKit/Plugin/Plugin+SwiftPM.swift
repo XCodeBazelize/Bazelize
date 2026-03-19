@@ -18,6 +18,14 @@ final class PluginSwiftPM: PluginBuiltin {
     private let repo: Repo.SPM = .v1_13_0
     let remotes: [XCodeRemoteSPM]
     let locals: [XCodeLocalSPM]
+    private var packages: [String] = []
+    func loadPackageNames(projPath: Path) async throws {
+        let packageSwift = package
+        let path = Path(packageSwift.path)
+        try path.write(packageSwift.content)
+        packages = try await SPMParser
+            .allPackageNames(path: projPath.parent().string)
+    }
 
     override init(_ kit: Kit) {
         remotes = kit.project.remoteSPM
@@ -39,19 +47,15 @@ final class PluginSwiftPM: PluginBuiltin {
         )
         """)
 
-        let repos = (["swift_deps_info"] + packageRepositories)
-            .map { #"    "\#($0)","# }
-            .joined(separator: "\n")
+        let names = packages.map {
+            "\(Self.repositoryName(module: $0))".quoted
+        }.joined(separator: ",")
         builder.custom("""
         use_repo(
             swift_deps,
-        \(repos)
+        \(names)
         )
         """)
-//        builder.add("use_repo") {
-//            "swift_deps_info"
-//            packageRepositories.map(\.quoted)
-//        }
     }
 
     private func transformRemote(_ product: XCSwiftPackageProductDependency) -> String? {
@@ -67,7 +71,7 @@ final class PluginSwiftPM: PluginBuiltin {
 
         /// @swiftpkg_swift_nio//:NIO
         return """
-        @swiftpkg_\(repo)//:\(product)
+        @\(Self.repositoryName(module: repo))//:\(product)
         """.replacingOccurrences(of: "-", with: "_")
     }
 
@@ -113,12 +117,9 @@ final class PluginSwiftPM: PluginBuiltin {
                 name: "MySwiftPackage",
                 dependencies: [
             \(deps)
-                ])
+                ]
+            )
             """)
-    }
-
-    override var custom: [PluginBuiltin.Custom]? {
-        [package]
     }
 
     override var tip: String? {
@@ -136,13 +137,15 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     private static func repositoryName(url: String) -> String {
-        let path = Path(url)
-        return "swiftpkg_\(sanitize(path.lastComponentWithoutExtension.lowercased()))"
+        return repositoryName(module: Path(url).lastComponentWithoutExtension)
     }
 
     private static func repositoryName(path: String) -> String {
-        let component = Path(path).lastComponent.lowercased()
-        return "swiftpkg_\(sanitize(component))"
+        return repositoryName(module: Path(path).lastComponent)
+    }
+    
+    private static func repositoryName(module: String) -> String {
+        return "swiftpkg_\(sanitize(module.lowercased()))"
     }
 
     private static func sanitize(_ value: String) -> String {

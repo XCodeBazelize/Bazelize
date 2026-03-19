@@ -12,8 +12,8 @@ import PathKit
 import TSCBasic
 import Workspace
 
-enum SPMParser {
-    static func parse(path: String) throws -> (products: [String: [String]], targets: [String]) {
+public enum SPMParser {
+    public static func parse(path: String) throws -> (products: [String: [String]], targets: [String]) {
         let packagePath = try Basics.AbsolutePath(validating: path)
         let observability = ObservabilitySystem { _,_ in }
 
@@ -22,7 +22,8 @@ enum SPMParser {
             workspace.loadRootManifest(
                 at: packagePath,
                 observabilityScope: observability.topScope,
-                completion: $0)
+                completion: $0
+            )
         }
 
         let pair = manifest.products.map { ($0.name, $0.targets) }
@@ -44,5 +45,20 @@ enum SPMParser {
         """)
 
         return (products, targets)
+    }
+    
+    public static func allPackageNames(path: String) async throws -> [String] {
+        let packagePath = try Basics.AbsolutePath(validating: path)
+        let observability = ObservabilitySystem { _,_ in }
+
+        let workspace = try Workspace(forRootPackage: packagePath)
+        let graph = try await workspace.loadPackageGraph(
+            rootPath: packagePath,
+            observabilityScope: observability.topScope
+        )
+        
+        return graph.packages.filter { package in
+            !graph.isRootPackage(package)
+        }.map(\.manifest.displayName)
     }
 }
