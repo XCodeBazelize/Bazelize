@@ -5,20 +5,76 @@ module(
     version = "0.0.1",
 )
 
+bazel_dep(name = "rules_cc", version = "0.2.17")
 bazel_dep(
     name = "bazel_skylib",
-    version = "bazel_skylib",
+    version = "1.9.0",
     # repo_name = None,
+)
+bazel_dep(name = "cgrindel_bazel_starlib", version = "0.30.0")
+bazel_dep(
+    name = "bazel_skylib_gazelle_plugin",
+    version = "1.9.0",
+    dev_dependency = True,
+)
+bazel_dep(
+    name = "gazelle",
+    version = "0.47.0",
+    dev_dependency = True,
+    repo_name = "bazel_gazelle",
 )
 
 bazel_dep(
     name = "rules_apple",
-    version = "rules_apple",
+    version = "4.3.3",
     repo_name = "build_bazel_rules_apple",
 )
 
-bazel_dep(name = "rules_swift", version = "1.5.0", repo_name = "build_bazel_rules_swift")
+bazel_dep(name = "rules_swift", version = "3.4.1", repo_name = "build_bazel_rules_swift")
 
-bazel_dep(name = "rules_xcodeproj", version = "0.12.3")
+bazel_dep(
+    name = "rules_xcodeproj",
+    version = "3.6.0",
+    repo_name = "com_github_buildbuddy_io_rules_xcodeproj",
+)
 
 bazel_dep(name = "rules_apple_linker", version = "0.3.0")
+bazel_dep(name = "rules_swift_package_manager", version = "1.13.0")
+bazel_dep(name = "swift_gazelle_plugin", version = "0.2.2", dev_dependency = True)
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+http_archive(
+    name = "cgrindel_swift_bazel",
+    sha256 = "8ae5c07565a5e6994787d2bdab4a6394af8b43387542a09f0868d45548ab6fb9",
+    strip_prefix = "rules_swift_package_manager-0.2.0",
+    urls = [
+        "https://github.com/cgrindel/swift_bazel/archive/refs/tags/v0.2.0.tar.gz",
+    ],
+)
+
+swift_deps = use_extension(
+    "@rules_swift_package_manager//:extensions.bzl",
+    "swift_deps",
+)
+
+swift_deps.from_package(
+    declare_swift_deps_info = True,
+    resolved = "//:Package.resolved",
+    swift = "//:Package.swift",
+)
+
+use_repo(
+    swift_deps,
+    "swift_deps_info",
+    "swiftpkg_anycodable",
+    "swiftpkg_local1",
+    "swiftpkg_rxswift",
+)
+
+git_repository(
+    name = "Plist",
+    commit = "259ca0a5d77833728c18fa6365285559ce8cc0bf",
+    remote = "https://github.com/imWildCat/MinimalBazelFrameworkDemo",
+)

@@ -28,10 +28,9 @@ swift_library(
         "//Framework1:Framework1_library",
         "//Framework3:Framework3_library",
         "//Static2:Static2_library",
-        "@swiftpkg_anycodable//:Sources_AnyCodable",
-        "@swiftpkg_local1//:Sources_LocalTarget1",
-        "@swiftpkg_local1//:Sources_LocalTarget2",
-        "@swiftpkg_local1//:Sources_LocalTarget3",
+        "@swiftpkg_anycodable//:AnyCodable",
+        "@swiftpkg_local1//:LocalLib1",
+        "@swiftpkg_local1//:LocalLib2",
         "//:SVProgressHUD",
     ],
     data = [

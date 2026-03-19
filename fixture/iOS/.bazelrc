@@ -1,3 +1,6 @@
+startup --batch
+startup --output_user_root=/tmp/bazelize-fixture-output
+
 import %workspace%/config.bazelrc
 
 build --disk_cache=cache
@@ -5,6 +8,8 @@ build --disk_cache=cache
 
 # build --apple_platform_type=ios
 # build --verbose_failures
+build --ios_simulator_device="iPhone 16"
+test --ios_simulator_device="iPhone 16"
 
 
 # build --macos_minimum_os=10.15
