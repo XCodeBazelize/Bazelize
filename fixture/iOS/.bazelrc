@@ -20,3 +20,4 @@ build --disk_cache=cache
 # # build --ios_simulator_device="iPhone 13"
 # # build --ios_simulator_version=15.5
 # # build --xcode_version=13.4.1
+common --enable_bzlmod
