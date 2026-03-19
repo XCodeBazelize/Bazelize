@@ -15,11 +15,11 @@ import XcodeProj
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/2 opts (swift/objc/link)
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/4 data(folder link/bundle/...)
 
-extension BuildSetting: XCodeBuildSetting { }
+extension BuildSettings: XCodeBuildSetting { }
 
 // MARK: - BuildSetting + Encodable
 
-extension BuildSetting: Encodable {
+extension BuildSettings: Encodable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(AnyCodable(setting))
@@ -28,7 +28,7 @@ extension BuildSetting: Encodable {
 
 // MARK: - BuildSetting
 
-public struct BuildSetting {
+public struct BuildSettings {
     // MARK: Lifecycle
 
     init(_ project: Project, _ name: String, _ setting: [String: Any]) {
@@ -51,7 +51,7 @@ public struct BuildSetting {
 
     // MARK: Internal
 
-    func merge(_ input: BuildSetting?) -> BuildSetting {
+    func merge(_ input: BuildSettings?) -> BuildSettings {
         guard let input = input else {
             return self
         }
@@ -64,11 +64,25 @@ public struct BuildSetting {
     }
 
     internal subscript(key: String) -> String? {
-        setting[key] as? String
+        let value = setting[key]
+        if let value = value as? String {
+            return value
+        }
+        
+        if let value = value as? BuildSetting {
+            switch value {
+            case let .string(string):
+                return string
+            case let .array(array):
+                return array.joined(separator: " ")
+            }
+        }
+        
+        return nil
     }
 }
 
-extension BuildSetting {
+extension BuildSettings {
     /// com.xxx.ABCDEF
     public var bundleID: String? {
         self["PRODUCT_BUNDLE_IDENTIFIER"]
@@ -145,7 +159,7 @@ extension BuildSetting {
 }
 
 // MARK: - PLIST Value -
-extension BuildSetting {
+extension BuildSettings {
     /// CFBundleName $(PRODUCT_NAME)
     /// CFBundleIdentifier $(PRODUCT_BUNDLE_IDENTIFIER)
     /// CFBundleExecutable $(EXECUTABLE_NAME)

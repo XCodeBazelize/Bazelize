@@ -32,7 +32,7 @@ private let PLIST_PREFIX = "INFOPLIST_KEY_"
 // MARK: - PLIST Key -
 
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/5
-extension BuildSetting {
+extension BuildSettings {
     // MARK: Public
 
     /// "YES"
@@ -71,7 +71,7 @@ extension BuildSetting {
     }
 }
 
-extension BuildSetting {
+extension BuildSettings {
     // MARK: Public
 
     public var defaultPlist: [String] {
@@ -153,7 +153,7 @@ extension BuildSetting {
 }
 
 /// GENERATE_INFOPLIST_FILE
-extension BuildSetting {
+extension BuildSettings {
     // MARK: Public
 
     public var plist: [String] {
@@ -263,7 +263,7 @@ extension BuildSetting {
 //    }
 }
 
-extension BuildSetting {
+extension BuildSettings {
     // MARK: Internal
 
     static func isTrue(_ value: String) -> Bool {

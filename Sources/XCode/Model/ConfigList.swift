@@ -29,10 +29,10 @@ struct ConfigList {
 
     // MARK: Internal
 
-    var buildSettings: [String: BuildSetting] {
-        let pair: [(String, BuildSetting)] = native?.buildConfigurations
+    var buildSettings: [String: BuildSettings] {
+        let pair: [(String, BuildSettings)] = native?.buildConfigurations
             .map {
-                BuildSetting(project, $0)
+                BuildSettings(project, $0)
             }.map {
                 ($0.name, $0)
             } ?? []
@@ -41,7 +41,7 @@ struct ConfigList {
     }
 
     /// For XCode Target ConfigList merge default ConfigList
-    func merge(_ config: ConfigList?) -> [String: BuildSetting] {
+    func merge(_ config: ConfigList?) -> [String: BuildSettings] {
         guard let config = config else {
             return buildSettings
         }
