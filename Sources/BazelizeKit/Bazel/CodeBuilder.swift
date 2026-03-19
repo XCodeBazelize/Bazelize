@@ -25,10 +25,10 @@ extension CodeBuilder {
 
 extension CodeBuilder {
     /// bazel_dep
-    func moduleDep(name: String, version _: String, repo_name: String? = nil) {
+    func moduleDep(name: String, version: String, repo_name: String? = nil) {
         add("bazel_dep") {
             "name" => name
-            "version" => name
+            "version" => version
             "repo_name" => repo_name
         }
     }
@@ -114,6 +114,10 @@ extension CodeBuilder {
 
     func add(_ rule: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         custom(StarlarkRule(rule, builder: builder).text)
+    }
+    
+    func execute(_ rule: String,) {
+        
     }
 
     /// append custom code.
