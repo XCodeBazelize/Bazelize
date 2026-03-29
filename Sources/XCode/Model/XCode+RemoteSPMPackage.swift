@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import PluginInterface
 import Util
 import XcodeProj
 

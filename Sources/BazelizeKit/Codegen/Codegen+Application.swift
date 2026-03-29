@@ -7,7 +7,6 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import RuleBuilder
 import XCode
 

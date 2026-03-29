@@ -7,16 +7,15 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import XcodeProj
 
 // MARK: - File
 
 public final class File {
-    private unowned let project: XCodeProject
+    private unowned let project: Project
     let native: PBXFileElement
 
-    init(native: PBXFileElement, project: XCodeProject) {
+    init(native: PBXFileElement, project: Project) {
         self.native = native
         self.project = project
     }

@@ -7,15 +7,7 @@
 
 import AnyCodable
 import Foundation
-import PluginInterface
 import XcodeProj
-
-// MARK: - BuildSetting + XCodeBuildSetting
-
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/2 opts (swift/objc/link)
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/4 data(folder link/bundle/...)
-
-extension BuildSettings: XCodeBuildSetting { }
 
 // MARK: - BuildSetting + Encodable
 
@@ -79,6 +71,41 @@ public struct BuildSettings {
         }
         
         return nil
+    }
+}
+
+public enum SDK: String, Encodable {
+    case iOS = "iphoneos"
+    case macOS = "macosx"
+    case tvOS = "appletvos"
+    case watchOS = "watchos"
+    case driverKit = "driverkit"
+    case auto = "auto"
+}
+
+public enum DeviceFamily: String {
+    case iphone = "1"
+    case ipad = "2"
+    case appletv = "3"
+    case applewatch = "4"
+    case homepod = "5"
+    case mac = "6"
+
+    public var code: String {
+        switch self {
+        case .iphone: return "iphone"
+        case .ipad: return "ipad"
+        case .appletv: return "appletv"
+        case .applewatch: return "applewatch"
+        case .homepod: return "homepod"
+        case .mac: return "mac"
+        }
+    }
+
+    public static func parse(_ code: String?) -> [DeviceFamily] {
+        code?.split(separator: ",")
+            .map(String.init)
+            .compactMap(DeviceFamily.init(rawValue:)) ?? []
     }
 }
 

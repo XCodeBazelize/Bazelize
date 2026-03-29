@@ -7,8 +7,9 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import Util
+import PluginLoader
+import XCode
 
 
 @_cdecl("createPlugin")
@@ -19,7 +20,7 @@ public func createPlugin() -> UnsafeMutableRawPointer {
 // MARK: - _PluginBuilder
 
 final class _PluginBuilder: PluginBuilder {
-    override final func build(_ proj: XCodeProject) async throws -> Plugin? {
+    override final func build(_ proj: Project) async throws -> Plugin? {
         try await Pod.load(proj)
     }
 }
@@ -92,7 +93,7 @@ extension Pod {
 extension Pod: Plugin {
     // MARK: Public
 
-    public static func load(_ proj: XCodeProject) async throws -> Pod? {
+    public static func load(_ proj: Project) async throws -> Pod? {
         try await parse(proj.workspacePath)
     }
 

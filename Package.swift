@@ -10,7 +10,6 @@ let package = Package(
     ],
     products: [
         .executable(name: "bazelize", targets: ["Bazelize"]),
-//        .library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -79,8 +78,6 @@ let package = Package(
             dependencies: [
                 "Util",
                 "RuleBuilder",
-                "PluginInterface",
-
                 "AnyCodable",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
@@ -88,38 +85,17 @@ let package = Package(
             ]),
         .testTarget(
             name: "XCodeTests",
-            dependencies: ["XCode"]),
-
-//        .target(
-//            name: "Cocoapod",
-//            dependencies: [
-//                "PluginInterface",
-//                "Util",
-//                "AnyCodable",
-//                "PathKit",
-//            ]),
-//        .testTarget(
-//            name: "CocoapodTests",
-//            dependencies: ["Cocoapod"],
-//            resources: [
-//                .copy("Resource"),
-//            ]),
-
-        .target(
-            name: "PluginInterface",
-            dependencies: ["PathKit"]),
+            dependencies: ["XCode"]
+        ),
 
         .target(
             name: "PluginLoader",
             dependencies: [
                 "PathKit",
-                "PluginInterface",
                 "Util",
+                "XCode",
                 "SwiftCommand",
-            ]),
-
-//        .testTarget(
-//            name: "SwiftBazelGenTests",
-//            dependencies: ["SwiftBazelGen"]),
+            ]
+        ),
     ]
 )

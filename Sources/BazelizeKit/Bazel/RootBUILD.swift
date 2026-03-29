@@ -7,8 +7,8 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import RuleBuilder
+import XCode
 
 /// /BUILD
 struct Build: BazelFile {
@@ -37,7 +37,7 @@ struct Build: BazelFile {
     /// ```shell
     /// bazel build target --//:mode=debug
     /// ```
-    func setup(config: [String : XCodeBuildSetting]?) {
+    func setup(config: [String : BuildSettings]?) {
         guard let config = config else { return }
         let configs = config.keys.map { $0 }
 

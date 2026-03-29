@@ -7,7 +7,7 @@
 
 import Foundation
 import PathKit
-import PluginInterface
+import XCode
 
 /// [config](https://bazel.build/docs/configurable-attributes)
 /// [.bazelrc](https://bazel.build/run/bazelrc)
@@ -28,7 +28,7 @@ struct BazelRC: BazelFile {
     /// build:debug --//:mode=debug
     /// bazel build --config=debug [PACKAGE:RULE]
     mutating
-    func setup(config: [String : XCodeBuildSetting]?) {
+    func setup(config: [String : BuildSettings]?) {
         let configs = config?.keys.map { $0 } ?? []
         code = configs.map { config in
             """

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PluginInterface
+import XCode
 
 private typealias InitFunction = @convention(c)
     () -> UnsafeMutableRawPointer
@@ -36,12 +36,12 @@ enum PluginLoader {
     /// }
     ///
     /// final class YourPluginBuilder: PluginBuilder {
-    ///     override final func build(_ proj: XCodeProject) async throws -> Plugin? {
+    ///     override final func build(_ proj: Project) async throws -> Plugin? {
     ///         try await Pod.load(proj)
     ///     }
     /// }
     /// ```
-    static func load(at path: String, proj: XCodeProject) async throws -> Plugin? {
+    static func load(at path: String, proj: Project) async throws -> Plugin? {
         let openRes = dlopen(path, RTLD_NOW|RTLD_LOCAL)
         if openRes != nil {
             defer {
@@ -54,7 +54,7 @@ enum PluginLoader {
             if sym != nil {
                 let f: InitFunction = unsafeBitCast(sym, to: InitFunction.self)
                 let pluginPointer = f()
-                let builder = Unmanaged<PluginInterface.PluginBuilder>.fromOpaque(pluginPointer).takeRetainedValue()
+                let builder = Unmanaged<PluginBuilder>.fromOpaque(pluginPointer).takeRetainedValue()
 
                 return try await builder.build(proj)
             } else {
@@ -69,4 +69,3 @@ enum PluginLoader {
         }
     }
 }
-

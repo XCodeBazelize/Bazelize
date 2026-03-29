@@ -5,14 +5,13 @@
 //  Created by Yume on 2022/8/3.
 //
 
-import PluginInterface
 import XcodeProj
 import XCTest
 @testable import XCode
 
 // MARK: - Setting
 
-private struct Setting: XCodeBuildSetting {
+private struct Setting {
     // MARK: Lifecycle
 
     init(_ setting: [String: Any]) {
@@ -33,7 +32,7 @@ private struct Setting: XCodeBuildSetting {
 
     var swiftVersion: String? { self[#function] }
 
-    var deviceFamily: [String] { [] }
+    var deviceFamily: [DeviceFamily] { [] }
 
     var sdk: SDK? { nil }
 
@@ -84,7 +83,7 @@ final class XCodeTests: XCTestCase {
         "iOS": "10.0",
         "macOS": "10.15",
     ])
-    private static let config: [String: XCodeBuildSetting] = [
+    private static let config: [String: Setting] = [
         "Release": release,
         "Debug": debug,
     ]
@@ -123,7 +122,7 @@ extension XCodeTests {
     }
 
     func testPreferNoValue() {
-        let config: [String: XCodeBuildSetting] = [:]
+        let config: [String: Setting] = [:]
         let code = config.prefer(config: "Release", \.iOS)
         XCTAssertEqual(code, nil)
     }

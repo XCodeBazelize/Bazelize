@@ -11,12 +11,12 @@ import SwiftCommand
 import SystemPackage
 import Util
 
-// MARK: - PluginBuilder
+// MARK: - PluginCompiler
 
 /// ~/.bazelize
 ///     git/XCodeBazelize_Bazelize
 ///     build/5.6/XCodeBazelize_Bazelize/1.0.0
-enum PluginBuilder {
+enum PluginCompiler {
     // MARK: Internal
 
     static func build(plugins: [PluginInfo]) throws -> [PluginInfo] {

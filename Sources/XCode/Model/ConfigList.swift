@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import PluginInterface
 import XcodeProj
 
 // MARK: - ConfigList

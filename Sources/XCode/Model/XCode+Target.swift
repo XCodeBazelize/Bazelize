@@ -7,12 +7,7 @@
 
 import AnyCodable
 import Foundation
-import PluginInterface
 import XcodeProj
-
-// MARK: - Target + XCodeTarget
-
-extension Target: XCodeTarget { }
 
 // MARK: - Target + Encodable
 
@@ -64,7 +59,7 @@ public final class Target {
     // MARK: Public
 
     public let native: PBXNativeTarget
-    public let config: [String: XCodeBuildSetting]
+    public let config: [String: BuildSettings]
 
     public unowned let project: Project
 
@@ -77,13 +72,13 @@ public final class Target {
     public var name: String { native.name }
 
 
-    public subscript(config: String) -> XCodeBuildSetting? {
+    public subscript(config: String) -> BuildSettings? {
         self.config[config]
     }
 
     // MARK: Private
 
-    private let originConfig: [String: XCodeBuildSetting]
+    private let originConfig: [String: BuildSettings]
 }
 
 extension Target {
@@ -273,9 +268,7 @@ extension Target {
 
     private var _frameworksTarget: [Target] {
         let frameworks = _frameworks.map(\.native)
-        let targets = project.targets.compactMap { target in
-            target as? Target
-        }
+        let targets = project.targets
 
         return targets.filter { target in
             guard let product = target.native.product else {

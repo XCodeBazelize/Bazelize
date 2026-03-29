@@ -7,15 +7,15 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import Util
+import XCode
 
 /// start -> load xcode
 /// start -> load plugin list
 /// load plugin list -> build plugin
 /// build plugin -> load plugin
 /// load xcode -> load plugin
-public func load(manifest: Path, _ proj: XCodeProject) async throws -> [Plugin] {
+public func load(manifest: Path, _ proj: Project) async throws -> [Plugin] {
     guard manifest.exists else {
         return []
     }
@@ -24,7 +24,7 @@ public func load(manifest: Path, _ proj: XCodeProject) async throws -> [Plugin] 
     let infos = try parseManifest(manifest)
 
     Log.pluginLoader.info("Build Plugins")
-    let buildPlugins = try PluginBuilder.build(plugins: infos)
+    let buildPlugins = try PluginCompiler.build(plugins: infos)
 
     Log.pluginLoader.info("Load Plugins")
     let result = try await withThrowingTaskGroup(of: Plugin?.self) { group -> [Plugin?] in

@@ -7,7 +7,6 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import XCode
 import XcodeProj
 
@@ -91,7 +90,7 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     override var target: [String : [String]]? {
-        let targets = kit.project.targets.compactMap { $0 as? Target }
+        let targets = kit.project.targets
 
         return targets.map { target -> (String, [String]) in
             let deps = target.native.packageProductDependencies ?? []

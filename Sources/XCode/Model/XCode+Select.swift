@@ -6,14 +6,13 @@
 //
 
 import Foundation
-import PluginInterface
 import RuleBuilder
 import XcodeProj
 
-extension Dictionary where Key == String, Value == XCodeBuildSetting {
+extension Dictionary where Key == String {
     // MARK: Public
 
-    public func select<T: Hashable>(_ keypath: KeyPath<XCodeBuildSetting, T>) -> Starlark.Select<T> {
+    public func select<T: Hashable>(_ keypath: KeyPath<Value, T>) -> Starlark.Select<T> {
         if checkSame(keypath) {
             return selectSame(keypath)
         }
@@ -22,7 +21,7 @@ extension Dictionary where Key == String, Value == XCodeBuildSetting {
 
     // MARK: Private
 
-    private func checkSame<T: Hashable>(_ keypath: KeyPath<XCodeBuildSetting, T>) -> Bool {
+    private func checkSame<T: Hashable>(_ keypath: KeyPath<Value, T>) -> Bool {
         let values: [T] = map { _, setting in
             setting[keyPath: keypath]
         }
@@ -30,14 +29,14 @@ extension Dictionary where Key == String, Value == XCodeBuildSetting {
         return Set<T>(values).count == 1
     }
 
-    private func selectSame<T>(_ keypath: KeyPath<XCodeBuildSetting, T>) -> Starlark.Select<T> {
+    private func selectSame<T>(_ keypath: KeyPath<Value, T>) -> Starlark.Select<T> {
         guard let value = first?.value[keyPath: keypath] else {
             return selectVarious(keypath)
         }
         return .same(value)
     }
 
-    private func selectVarious<T>(_ keypath: KeyPath<XCodeBuildSetting, T>) -> Starlark.Select<T> {
+    private func selectVarious<T>(_ keypath: KeyPath<Value, T>) -> Starlark.Select<T> {
         let result = mapValues { setting in
             setting[keyPath: keypath]
         }
@@ -46,7 +45,7 @@ extension Dictionary where Key == String, Value == XCodeBuildSetting {
 }
 
 extension Target {
-    public func select<T: Hashable>(_ keypath: KeyPath<XCodeBuildSetting, T>) -> Starlark.Select<T> {
+    public func select<T: Hashable>(_ keypath: KeyPath<BuildSettings, T>) -> Starlark.Select<T> {
         config.select(keypath)
     }
 }

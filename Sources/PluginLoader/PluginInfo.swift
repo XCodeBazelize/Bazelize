@@ -7,7 +7,6 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import Util
 
 let swift = "5.6"

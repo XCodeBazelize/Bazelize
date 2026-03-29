@@ -8,20 +8,7 @@
 import AnyCodable
 import Foundation
 import PathKit
-import PluginInterface
 import XcodeProj
-
-// MARK: - Project + XCodeProject
-
-extension Project: XCodeProject {
-    public var targets: [XCodeTarget] {
-        _targets
-    }
-
-    public var config: [String : XCodeBuildSetting]? {
-        defaultConfigList?.buildSettings
-    }
-}
 
 // MARK: - Project + Encodable
 
@@ -114,15 +101,60 @@ public final class Project {
             Target(native: $0, defaultConfigList: list, project: self)
         }
     }()
+
+    public var targets: [Target] {
+        _targets
+    }
+
+    public var config: [String: BuildSettings]? {
+        defaultConfigList?.buildSettings
+    }
 }
 
-// extension PBXProj {
 extension Project {
+    public func transformToLabel(_ relativePath: String?) -> String? {
+        guard let path = relativePath else { return nil }
+
+        let commentedLabel = """
+        # \(path)
+        """
+        guard let _package = path.split(separator: "/").first else {
+            return commentedLabel
+        }
+        let package = String(_package)
+        guard let restPath = path.delete(prefix: package + "/") else {
+            return commentedLabel
+        }
+
+        if check(package) {
+            return """
+            //\(package):\(restPath)
+            """
+        } else {
+            return """
+            //:\(package)/\(restPath)
+            """
+        }
+    }
+
     private var defaultConfigList: ConfigList? {
         let all = Set(native.configurationLists.map { ConfigList(self, $0) })
         let targets = native.nativeTargets
             .compactMap { ConfigList(self, $0.buildConfigurationList) }
 
         return all.subtracting(targets).first
+    }
+
+    private typealias Package = String
+
+    private func check(_ package: Package) -> Bool {
+        targets.map(\.name).contains(package)
+    }
+}
+
+extension String {
+    fileprivate func delete(prefix: String) -> String? {
+        guard hasPrefix(prefix) else { return nil }
+        return String(dropFirst(prefix.count))
     }
 }

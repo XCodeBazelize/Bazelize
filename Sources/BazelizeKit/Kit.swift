@@ -7,7 +7,6 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import PluginLoader
 import Util
 import XCode
@@ -23,9 +22,7 @@ public final class Kit {
     lazy var workspace = Workspace(project.workspacePath)
     lazy var build = Build(project.workspacePath)
     lazy var config = BazelRC(project.workspacePath)
-    lazy var targetsBuild = project.targets.compactMap {
-        $0 as? XCode.Target
-    }.map { target in
+    lazy var targetsBuild = project.targets.map { target in
         TargetBuild(project.workspacePath, target)
     }
 

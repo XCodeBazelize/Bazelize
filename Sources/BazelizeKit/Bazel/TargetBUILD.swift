@@ -8,7 +8,6 @@
 
 import Foundation
 import PathKit
-import PluginInterface
 import RuleBuilder
 import Util
 import XCode
