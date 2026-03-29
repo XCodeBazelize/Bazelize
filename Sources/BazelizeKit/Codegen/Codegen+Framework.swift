@@ -21,7 +21,7 @@ extension Target {
         builder.add(.ios_framework) {
             "name" => name
             "bundle_id" => prefer(\.bundleID)
-            "families" => prefer(\.deviceFamily)
+            "families" => prefer(\.deviceFamily)?.map(\.code)
             "minimum_os_version" => prefer(\.iOS)
             "infoplists" => {
                 plist_file

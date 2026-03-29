@@ -99,7 +99,7 @@ extension BuildSettings {
     }
 
     // SUPPORTED_PLATFORMS
-    public var deviceFamily: [String] {
+    public var deviceFamily: [DeviceFamily] {
         DeviceFamily.parse(self["TARGETED_DEVICE_FAMILY"])
     }
 

@@ -20,6 +20,14 @@ extension Target {
         case .macOS: buildMac(builder, kit)
         case .tvOS: buildTV(builder, kit)
         case .watchOS: buildWatch(builder, kit)
+        case .auto:
+            let family = prefer(\.deviceFamily)
+            guard let family else {
+                return
+            }
+            if family.contains(.iphone) {
+                buildIOS(builder, kit)
+            }
         default: break
         }
     }
@@ -74,7 +82,7 @@ extension Target {
         builder.add(.ios_application) {
             "name" => name
             "bundle_id" => prefer(\.bundleID)
-            "families" => prefer(\.deviceFamily)
+            "families" => prefer(\.deviceFamily)?.map(\.code)
             "minimum_os_version" => prefer(\.iOS)
             "infoplists" => {
                 plist_file
