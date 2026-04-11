@@ -39,6 +39,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 "PathKit",
                 "BazelizeKit",
+                "XCode2",
             ]),
 
         .target(
@@ -83,6 +84,19 @@ let package = Package(
                 .product(name: "XcodeProj", package: "XcodeProj"),
                 .product(name: "SwiftPMDataModel-auto", package: "swift-package-manager"),
             ]),
+        .target(
+            name: "XCode2",
+            dependencies: [
+                "PathKit",
+                "AnyCodable",
+
+                .product(name: "XcodeProj", package: "XcodeProj"),
+            ],
+            path: "Sources/XCode2"),
+        .testTarget(
+            name: "XCode2Tests",
+            dependencies: ["XCode2"]
+        ),
         .testTarget(
             name: "XCodeTests",
             dependencies: ["XCode"]

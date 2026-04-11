@@ -1,10 +1,3 @@
-//
-//  File.swift
-//
-//
-//  Created by Yume on 2022/7/1.
-//
-
 import Foundation
 
 // MARK: - SupportedPlatform

@@ -9,12 +9,27 @@ import ArgumentParser
 import BazelizeKit
 import Foundation
 import PathKit
+import XCode2
 
+@main
 struct Command: AsyncParsableCommand {
     static var configuration = CommandConfiguration(
         commandName: "bazelize",
         abstract: "A cli tool turn your xcode project to bazel.",
-        version: version)
+        version: version,
+        subcommands: [
+            GenerateCommand.self,
+            XCode2Command.self,
+        ],
+        defaultSubcommand: GenerateCommand.self
+    )
+}
+
+struct GenerateCommand: AsyncParsableCommand {
+    static var configuration = CommandConfiguration(
+        commandName: "generate",
+        abstract: "Generate Bazel files from an Xcode project."
+    )
 
     @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
     var project: String
@@ -45,5 +60,45 @@ struct Command: AsyncParsableCommand {
         } else {
             try await kit.run(Path(manifest))
         }
+    }
+}
+
+struct XCode2Command: AsyncParsableCommand {
+    static var configuration = CommandConfiguration(
+        commandName: "xcode2",
+        abstract: "Dump an Xcode project structure as JSON or print one target summary."
+    )
+
+    @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
+    var project: String
+
+    @Option(name: [.short], help: "Preferred config name used by project parsing")
+    var config: String?
+
+    @Option(name: [.customLong("print-target", withSingleDash: false)], help: "Print a human-readable summary for a single target")
+    var printTarget: String?
+
+    func run() async throws {
+        let path = Path.current + project
+        let dump = try XCode.Project.load(path: path, preferConfig: config)
+
+        if let printTarget {
+            guard let target = dump.targets.first(where: { $0.name == printTarget }) else {
+                throw ValidationError("Target '\(printTarget)' not found.")
+            }
+
+            print(XCode.TargetSummaryFormatter.format(project: dump, target: target))
+            return
+        }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+
+        let data = try encoder.encode(dump)
+        guard let json = String(data: data, encoding: .utf8) else {
+            throw ValidationError("Failed to encode JSON output.")
+        }
+
+        print(json)
     }
 }
