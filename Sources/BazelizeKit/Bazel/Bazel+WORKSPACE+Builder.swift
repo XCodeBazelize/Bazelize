@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension Workspace {
+extension Bazel.Workspace {
     public struct Builder {
         // MARK: Public
 

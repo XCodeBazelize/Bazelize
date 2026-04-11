@@ -18,12 +18,12 @@ import Yams
 public final class Kit {
     let project: Project
 
-    lazy var module = Module(project.workspacePath)
-    lazy var workspace = Workspace(project.workspacePath)
-    lazy var build = Build(project.workspacePath)
-    lazy var config = BazelRC(project.workspacePath)
+    lazy var module = Bazel.Module(project.workspacePath)
+    lazy var workspace = Bazel.Workspace(project.workspacePath)
+    lazy var build = Bazel.RootBuild(project.workspacePath)
+    lazy var config = Bazel.BazelRC(project.workspacePath)
     lazy var targetsBuild = project.targets.map { target in
-        TargetBuild(project.workspacePath, target)
+        Bazel.TargetBuild(project.workspacePath, target)
     }
 
     /// plugins...

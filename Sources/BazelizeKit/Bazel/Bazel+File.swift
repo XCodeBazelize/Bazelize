@@ -1,10 +1,3 @@
-//
-//  BazelFile.swift
-//
-//
-//  Created by Yume on 2022/12/8.
-//
-
 import Foundation
 import PathKit
 
@@ -23,6 +16,10 @@ extension BazelFile {
     func write() throws {
         try path.write(generationHeader + "\n\n" + code)
     }
+}
+
+extension Bazel {
+    typealias File = BazelFile
 }
 
 private let generationMarker = "Generated using Bazelize"
