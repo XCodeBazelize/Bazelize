@@ -30,6 +30,11 @@ final class StarlarkTests: XCTestCase {
         XCTAssertEqual(code.text, "\"test\"")
     }
 
+    func testTypedLabel() {
+        let code: Starlark = .label(.init("test"))
+        XCTAssertEqual(code.text, "\"test\"")
+    }
+
     func testNil() {
         let code: Starlark = nil
         XCTAssertEqual(code.text, "None")
@@ -133,8 +138,8 @@ extension StarlarkTests {
 
     func testSelectVarious() {
         let code = Starlark.Select.various([
-            "Release": "r",
-            "Debug": "d",
+            .config("Release"): "r",
+            .config("Debug"): "d",
         ]).starlark
 
         XCTAssertEqual(code.text, """
@@ -143,5 +148,81 @@ extension StarlarkTests {
             "//:Release": "r"
         })
         """)
+    }
+
+    func testSelectWithDefaultLabel() {
+        let code: Starlark = .select(
+            .various([
+                .config("Debug"): "d",
+                .default: "fallback",
+            ])
+        )
+
+        XCTAssertEqual(code.text, """
+        select({
+            "//:Debug": "d",
+            "//conditions:default": "fallback"
+        })
+        """)
+    }
+}
+
+// MARK: Statement
+extension StarlarkTests {
+    func testLoadStatement() {
+        let statement: Starlark.Statement = .load(
+            module: "@build_bazel_rules_swift//swift:swift.bzl",
+            symbols: [
+                "swift_library",
+                "swift_binary",
+                .init("swift_common", as: "common"),
+            ]
+        )
+
+        XCTAssertEqual(
+            statement.text,
+            #"load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library", "swift_binary", common = "swift_common")"#
+        )
+    }
+
+    func testCallStatement() {
+        let statement: Starlark.Statement = .call(
+            .init("bazel_dep", [
+                .named("name", "rules_swift"),
+                .named("version", "3.5.0"),
+            ])
+        )
+
+        XCTAssertEqual(statement.text, """
+        bazel_dep(
+            name = "rules_swift",
+            version = "3.5.0",
+        )
+        """)
+    }
+
+    func testLoadSymbolStringLiteral() {
+        let symbol: Starlark.LoadSymbol = "swift_library"
+        XCTAssertEqual(symbol.text, #""swift_library""#)
+    }
+
+    func testLabelStringLiteral() {
+        let label: Starlark.Label = "swift_library"
+        XCTAssertEqual(label.text, #""swift_library""#)
+    }
+
+    func testLabelDefault() {
+        let label: Starlark.Label = .default
+        XCTAssertEqual(label.text, #""//conditions:default""#)
+    }
+
+    func testLabelConfig() {
+        let label: Starlark.Label = .config("Debug")
+        XCTAssertEqual(label.text, #""//:Debug""#)
+    }
+
+    func testLabelNamed() {
+        let label: Starlark.Label = .named("//foo:bar")
+        XCTAssertEqual(label.text, #""//foo:bar""#)
     }
 }

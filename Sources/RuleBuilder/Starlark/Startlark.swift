@@ -12,7 +12,7 @@ public let None: Starlark = .none
 // MARK: - Starlark
 
 public indirect enum Starlark: Text {
-    case label(String)
+    case label(Label)
     case comment(String)
     case array([Starlark])
     case dictionary([String: Starlark])
@@ -30,19 +30,21 @@ public indirect enum Starlark: Text {
             guard let value = any else {
                 return nil
             }
-            self = .label(value)
+            self = .label(.init(value))
         case let any as [String?]:
             let result = any
                 .compactMap { $0 }
-                .map { Starlark.label($0) }
+                .map { Starlark.label(.init($0)) }
             self = Starlark(array: result)
         case let any as [String: String]:
             let result = any.mapValues {
-                Starlark.label($0)
+                Starlark.label(.init($0))
             }
             self = .dictionary(result)
 
         case let any as String:
+            self = .label(.init(any))
+        case let any as Label:
             self = .label(any)
         case let any as [Starlark]:
             self = Starlark(array: any)
@@ -60,9 +62,7 @@ public indirect enum Starlark: Text {
     public var text: String {
         switch self {
         case .label(let value):
-            return """
-            "\(value)"
-            """
+            return value.text
         case .comment(let value):
             return value.comment
         case .array(let value):
@@ -132,7 +132,7 @@ extension Starlark: ExpressibleByBooleanLiteral {
 
 extension Starlark: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        self = .label(value)
+        self = .label(.init(value))
     }
 }
 

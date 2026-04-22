@@ -37,8 +37,8 @@ extension Dictionary where Key == String {
     }
 
     private func selectVarious<T>(_ keypath: KeyPath<Value, T>) -> Starlark.Select<T> {
-        let result = mapValues { setting in
-            setting[keyPath: keypath]
+        let result: [Starlark.Label: T] = reduce(into: [:]) { partialResult, entry in
+            partialResult[.config(entry.key)] = entry.value[keyPath: keypath]
         }
         return .various(result)
     }

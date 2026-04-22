@@ -12,7 +12,7 @@ import Foundation
 extension Starlark {
     public enum Select<T> {
         case same(T)
-        case various([String: T])
+        case various([Label: T])
 
         public func map<U>(_ transform: (T) throws -> U) rethrows -> Select<U> {
             switch self {
@@ -58,6 +58,12 @@ extension Starlark.Select where T == Bool {
 // MARK: - Starlark.Select + Text
 
 extension Starlark.Select: Text where T == Starlark {
+//    config_setting(
+//        name = "Release",
+//        values = {
+//            "compilation_mode": "opt",
+//        },
+//    )
     /// select({
     ///    "//:Debug": "label1",
     ///    "//:Release": "label2",
@@ -69,7 +75,7 @@ extension Starlark.Select: Text where T == Starlark {
             return value.text
         case .various(let value):
             let pair = value.map { key, value in
-                ("//:\(key)", value)
+                (key.value, value)
             }
             let newValue = Starlark.dictionary(Dictionary(uniqueKeysWithValues: pair))
             return """
