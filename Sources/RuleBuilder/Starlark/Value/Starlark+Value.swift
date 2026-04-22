@@ -15,6 +15,7 @@ extension Starlark {
 
     public indirect enum Value: Text {
         case label(Label)
+        case string(String)
         case array([Value])
         case dictionary([String: Value])
         case bool(Bool)
@@ -64,6 +65,10 @@ extension Starlark {
             switch self {
             case .label(let value):
                 return value.text
+            case .string(let value):
+                return """
+                "\(value)"
+                """
             case .array(let value):
                 if value.isEmpty {
                     return Value.none.text

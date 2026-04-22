@@ -6,6 +6,10 @@ extension Starlark {
         case load(Load)
         case call(Call)
         
+        static func call(_ name: String) -> Statement {
+            .call(Call(name, []))
+        }
+        
         public var text: String {
             switch self {
             case let .comment(value):

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import BazelRules
 import RuleBuilder
 import Util
 
@@ -35,35 +36,35 @@ extension CodeBuilder {
 }
 
 extension CodeBuilder {
-    func load(_ rule: RulesApple.Apple) {
+    func load(_ rule: Rules.Apple.General) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesObjc) {
+    func load(_ rule: Rules.Objc) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.IOS) {
+    func load(_ rule: Rules.Apple.IOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.Mac) {
+    func load(_ rule: Rules.Apple.MacOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.TV) {
+    func load(_ rule: Rules.Apple.TVOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.Watch) {
+    func load(_ rule: Rules.Apple.WatchOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesSwift) {
+    func load(_ rule: Rules.Swift) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesConfig) {
+    func load(_ rule: Rules.Config) {
         load(loadableRule: rule)
     }
 
@@ -80,35 +81,35 @@ extension CodeBuilder {
 
 // MARK: - RuleBuild
 extension CodeBuilder {
-    func add(_ rule: RulesObjc, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Objc, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesApple.Apple, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.General, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesApple.IOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.IOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesApple.Mac, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.MacOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesApple.TV, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.TVOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesApple.Watch, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.WatchOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesSwift, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Swift, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: RulesConfig, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Config, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 

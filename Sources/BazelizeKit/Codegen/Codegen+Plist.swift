@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import BazelRules
 import PathKit
 import RuleBuilder
 import XCode
@@ -16,7 +17,7 @@ extension Target {
         guard isGeneratePlist || isGeneratePlistAuto || isGeneratePlistDefault else {
             return
         }
-        builder.load(loadableRule: RulesPlist.plist_fragment)
+        builder.load(loadableRule: Rules.Plist.plist_fragment)
     }
 }
 
@@ -34,7 +35,7 @@ extension Target {
 
     func generatePlistFile(_ builder: CodeBuilder, _: Kit) {
         guard let plist = plistContent else { return }
-        builder.add(RulesPlist.plist_fragment.rawValue) {
+        builder.add(Rules.Plist.plist_fragment.rawValue) {
             "name" => "plist_file"
             "extension" => "plist"
             "template" => Starlark.custom("""
@@ -85,7 +86,7 @@ extension Target {
     func generatePlistAuto(_ builder: CodeBuilder) {
         if isGeneratePlistAuto {
             let plist = prefer(\.plist) ?? []
-            builder.add(RulesPlist.plist_fragment.rawValue) {
+            builder.add(Rules.Plist.plist_fragment.rawValue) {
                 "name" => "plist_auto"
                 "extension" => "plist"
                 "template" => Starlark.custom("""
@@ -121,7 +122,7 @@ extension Target {
     func generatePlistDefault(_ builder: CodeBuilder) {
         if isGeneratePlistDefault {
             let plist = prefer(\.defaultPlist) ?? []
-            builder.add(RulesPlist.plist_fragment.rawValue) {
+            builder.add(Rules.Plist.plist_fragment.rawValue) {
                 "name" => "plist_default"
                 "extension" => "plist"
                 "template" => Starlark.custom("""
