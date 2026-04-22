@@ -20,6 +20,7 @@ struct Command: AsyncParsableCommand {
         subcommands: [
             GenerateCommand.self,
             XCode2Command.self,
+            RoadmapCommand.self,
         ],
         defaultSubcommand: GenerateCommand.self
     )
@@ -100,5 +101,29 @@ struct XCode2Command: AsyncParsableCommand {
         }
 
         print(json)
+    }
+}
+
+struct RoadmapCommand: AsyncParsableCommand {
+    static var configuration = CommandConfiguration(
+        commandName: "roadmap",
+        abstract: "Create the roadmap tree layout from an Xcode project."
+    )
+
+    @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
+    var project: String
+
+    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
+    var output: String
+
+    @Option(name: [.short], help: "Preferred config name used by project parsing")
+    var config: String?
+
+    func run() async throws {
+        let projectPath = Path.current + project
+        let outputPath = Path.current + output
+        let dump = try XCode.Project.load(path: projectPath, preferConfig: config)
+
+        try XCode.RoadmapTreeBuilder(output: outputPath).build(project: dump)
     }
 }

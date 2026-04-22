@@ -180,3 +180,5 @@ lefthook.yml
 .vscode/*
 
 cache/
+
+app/
