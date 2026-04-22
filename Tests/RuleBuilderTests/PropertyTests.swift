@@ -92,7 +92,7 @@ extension PropertyTests {
 extension PropertyTests {
     func testCommentSingle1() {
         let property = "families" => {
-            Starlark.comment("test")
+            StarlarkProperty.comment("test")
         }
         let result = """
         families = [
@@ -103,7 +103,7 @@ extension PropertyTests {
     }
 
     func testCommentSingle2() {
-        let property = "families" => Starlark.comment("test")
+        let property = "families" => StarlarkProperty.comment("test")
         let result = """
         # test
         # families = None,
@@ -128,7 +128,7 @@ extension PropertyTests {
     func testNilMulti() {
         let nilString: String? = nil
         let property = "families" => {
-            Starlark.comment("test")
+            StarlarkProperty.comment("test")
             nilString
             "1"
             nilString
@@ -145,4 +145,3 @@ extension PropertyTests {
         XCTAssertEqual(result, property.text)
     }
 }
-

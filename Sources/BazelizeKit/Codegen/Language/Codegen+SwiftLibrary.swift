@@ -60,7 +60,7 @@ extension Target {
 
     // MARK: Private
 
-    private var defines: Starlark {
+    private var defines: Starlark.Value {
         select(\.swiftDefine).map { text -> [String] in
             let flags: [String] = (text ?? "").split(separator: " ").map(String.init)
 

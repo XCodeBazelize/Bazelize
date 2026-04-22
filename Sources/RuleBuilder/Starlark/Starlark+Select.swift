@@ -26,38 +26,38 @@ extension Starlark {
 }
 
 extension Starlark.Select where T == String {
-    public var starlark: Starlark {
-        .select(map(Starlark.init))
+    public var starlark: Starlark.Value {
+        .select(map(Starlark.Value.init))
     }
 }
 
 extension Starlark.Select where T == String? {
-    public var starlark: Starlark {
+    public var starlark: Starlark.Value {
         .select(map {
-            Starlark($0) ?? None
+            Starlark.Value($0) ?? None
         })
     }
 }
 
 extension Starlark.Select where T == [String] {
-    public var starlark: Starlark {
+    public var starlark: Starlark.Value {
         .select(map {
-            Starlark($0) ?? .none
+            Starlark.Value($0) ?? .none
         })
     }
 }
 
 extension Starlark.Select where T == Bool {
-    public var starlark: Starlark {
+    public var starlark: Starlark.Value {
         .select(map {
-            Starlark($0) ?? .none
+            Starlark.Value($0) ?? .none
         })
     }
 }
 
 // MARK: - Starlark.Select + Text
 
-extension Starlark.Select: Text where T == Starlark {
+extension Starlark.Select: Text where T == Starlark.Value {
 //    config_setting(
 //        name = "Release",
 //        values = {
@@ -77,7 +77,7 @@ extension Starlark.Select: Text where T == Starlark {
             let pair = value.map { key, value in
                 (key.value, value)
             }
-            let newValue = Starlark.dictionary(Dictionary(uniqueKeysWithValues: pair))
+            let newValue = Starlark.Value.dictionary(Dictionary(uniqueKeysWithValues: pair))
             return """
             select(\(newValue.text))
             """

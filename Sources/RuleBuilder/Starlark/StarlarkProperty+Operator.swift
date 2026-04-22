@@ -20,13 +20,17 @@ extension String {
         StarlarkProperty(propertyName, starlark: .init(dictionary) ?? None)
     }
 
-    public static func =>(propertyName: String, starlark: Starlark) -> StarlarkProperty {
+    public static func =>(propertyName: String, starlark: Starlark.Value) -> StarlarkProperty {
         StarlarkProperty(propertyName, starlark: starlark)
+    }
+
+    public static func =>(propertyName: String, comment: StarlarkProperty.Comment) -> StarlarkProperty {
+        StarlarkProperty(propertyName, comment: comment)
     }
 }
 
 extension String {
-    public static func =>(propertyName: String, @StarlarkBuilder builder: () -> Starlark) -> StarlarkProperty {
+    public static func =>(propertyName: String, @StarlarkBuilder builder: () -> Starlark.Value) -> StarlarkProperty {
         StarlarkProperty(propertyName, builder: builder)
     }
 
@@ -42,7 +46,7 @@ extension String {
         }
     }
 
-    public static func =>(propertyName: String, starlarks: [Starlark]) -> StarlarkProperty {
+    public static func =>(propertyName: String, starlarks: [Starlark.Value]) -> StarlarkProperty {
         StarlarkProperty(propertyName) {
             starlarks
         }

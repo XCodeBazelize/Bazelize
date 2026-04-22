@@ -73,7 +73,7 @@ final class RuleTests: XCTestCase {
 
     func testWithComment() throws {
         let result = StarlarkRule("ios_framework") {
-            Starlark.comment("Before")
+            Starlark.Statement.comment("Before")
             "name" => "Test"
             "After"
         }.text
