@@ -15,11 +15,12 @@ import XcodeProj
 final class PluginXCodeProj: PluginBuiltin {
     let repo: Repo.XCodeProj = .v3_6_0
     override func module(_ builder: CodeBuilder) {
-        builder.custom("""
-        bazel_dep(name = "rules_xcodeproj", version = "\(repo.rawValue)")
-        """)
+        builder.bazelDep(
+            name: "rules_xcodeproj",
+            version: repo.rawValue
+        )
     }
-
+    
     // TODO:
     /// top target
     /// custom project_name
@@ -35,15 +36,12 @@ final class PluginXCodeProj: PluginBuiltin {
                 "//\(name):\(name)",
                 """
             }.withNewLine.indent(2)
-
-        builder.load("""
-        load(
-            "@rules_xcodeproj//xcodeproj:defs.bzl",
-            "top_level_target",
-            "xcodeproj",
+        
+        builder.load(
+            module: "@rules_xcodeproj//xcodeproj:defs.bzl",
+            symbols: ["top_level_target", "xcodeproj"]
         )
-        """)
-
+        
         builder.custom("""
         # Xcode
         xcodeproj(

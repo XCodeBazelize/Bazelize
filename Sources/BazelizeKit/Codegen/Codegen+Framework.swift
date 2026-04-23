@@ -32,7 +32,7 @@ extension Target {
                 ":\(name)_library"
                 frameworks
             }
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 }

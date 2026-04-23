@@ -13,7 +13,7 @@ extension Starlark {
         .glob(files)
     }
 
-    public indirect enum Value: Text {
+    public indirect enum Value: Sendable, Text {
         case label(Label)
         case string(String)
         case array([Value])

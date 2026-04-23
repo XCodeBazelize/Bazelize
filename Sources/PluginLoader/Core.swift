@@ -1,44 +1,44 @@
+////
+////  Core.swift
+////
+////
+////  Created by Yume on 2022/8/24.
+////
 //
-//  Core.swift
+//import Foundation
+//import PathKit
+//import Util
+//import XCode
 //
+///// start -> load xcode
+///// start -> load plugin list
+///// load plugin list -> build plugin
+///// build plugin -> load plugin
+///// load xcode -> load plugin
+//public func load(manifest: Path, _ proj: Project) async throws -> [Plugin] {
+//    guard manifest.exists else {
+//        return []
+//    }
 //
-//  Created by Yume on 2022/8/24.
+//    Log.pluginLoader.info("Parse Manifest: \(manifest.string)")
+//    let infos = try parseManifest(manifest)
 //
-
-import Foundation
-import PathKit
-import Util
-import XCode
-
-/// start -> load xcode
-/// start -> load plugin list
-/// load plugin list -> build plugin
-/// build plugin -> load plugin
-/// load xcode -> load plugin
-public func load(manifest: Path, _ proj: Project) async throws -> [Plugin] {
-    guard manifest.exists else {
-        return []
-    }
-
-    Log.pluginLoader.info("Parse Manifest: \(manifest.string)")
-    let infos = try parseManifest(manifest)
-
-    Log.pluginLoader.info("Build Plugins")
-    let buildPlugins = try PluginCompiler.build(plugins: infos)
-
-    Log.pluginLoader.info("Load Plugins")
-    let result = try await withThrowingTaskGroup(of: Plugin?.self) { group -> [Plugin?] in
-        let build = Path.home + ".bazelize" + "build" + swift
-        for plugin in buildPlugins {
-            for lib in plugin.libsName {
-                group.addTask {
-                    let path = (build + plugin.user_repo + lib).string
-                    return try await PluginLoader.load(at: path, proj: proj)
-                }
-            }
-        }
-
-        return try await group.all
-    }
-    return result.compactMap { $0 }
-}
+//    Log.pluginLoader.info("Build Plugins")
+//    let buildPlugins = try PluginCompiler.build(plugins: infos)
+//
+//    Log.pluginLoader.info("Load Plugins")
+//    let result = try await withThrowingTaskGroup(of: Plugin?.self) { group -> [Plugin?] in
+//        let build = Path.home + ".bazelize" + "build" + swift
+//        for plugin in buildPlugins {
+//            for lib in plugin.libsName {
+//                group.addTask {
+//                    let path = (build + plugin.user_repo + lib).string
+//                    return try await PluginLoader.load(at: path, proj: proj)
+//                }
+//            }
+//        }
+//
+//        return try await group.all
+//    }
+//    return result.compactMap { $0 }
+//}

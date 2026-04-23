@@ -2,7 +2,9 @@ import Foundation
 
 extension Starlark {
     public enum Statement: Text {
-        case comment(String)
+        case comment(Starlark.Comment)
+        case custom(String)
+        case newLine
         case load(Load)
         case call(Call)
         
@@ -13,7 +15,11 @@ extension Starlark {
         public var text: String {
             switch self {
             case let .comment(value):
-                return value.comment
+                return value.text
+            case let .custom(value):
+                return value
+            case .newLine:
+                return "\n"
             case let .load(load):
                 return load.text
             case let .call(call):

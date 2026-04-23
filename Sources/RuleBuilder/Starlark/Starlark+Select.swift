@@ -10,7 +10,7 @@ import Foundation
 // MARK: - Starlark.Select
 
 extension Starlark {
-    public enum Select<T> {
+    public enum Select<T: Sendable>: Sendable {
         case same(T)
         case various([Label: T])
 

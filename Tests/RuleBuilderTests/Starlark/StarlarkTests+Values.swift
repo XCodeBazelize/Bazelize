@@ -1,46 +1,54 @@
-import XCTest
+import Testing
 @testable import RuleBuilder
 
 extension StarlarkTests {
+    @Test
     func testLabelString() {
         let code: Starlark.Value = "test"
-        XCTAssertEqual(code.text, "\"test\"")
+        #expect(code.text == "\"test\"")
     }
 
+    @Test
     func testLabel() {
         let code: Starlark.Value = .label("test")
-        XCTAssertEqual(code.text, "\"test\"")
+        #expect(code.text == "\"test\"")
     }
 
+    @Test
     func testTypedLabel() {
         let code: Starlark.Value = .label(.init("test"))
-        XCTAssertEqual(code.text, "\"test\"")
+        #expect(code.text == "\"test\"")
     }
 
+    @Test
     func testNil() {
         let code: Starlark.Value = nil
-        XCTAssertEqual(code.text, "None")
+        #expect(code.text == "None")
     }
 
+    @Test
     func testNilString() {
         let nilString: String? = nil
         let code: Starlark.Value = build {
             nilString
         }
 
-        XCTAssertEqual(code.text, "None")
+        #expect(code.text == "None")
     }
 
+    @Test
     func testTrue() {
         let code: Starlark.Value = true
-        XCTAssertEqual(code.text, "True")
+        #expect(code.text == "True")
     }
 
+    @Test
     func testFalse() {
         let code: Starlark.Value = false
-        XCTAssertEqual(code.text, "False")
+        #expect(code.text == "False")
     }
 
+    @Test
     func testDictionary() {
         let code: Starlark.Value = [
             "b": "bbb",
@@ -55,9 +63,10 @@ extension StarlarkTests {
             "c": "ccc"
         }
         """
-        XCTAssertEqual(code.text, result)
+        #expect(code.text == result)
     }
 
+    @Test
     func testArray() {
         let code: Starlark.Value = ["1", "2"]
 
@@ -67,9 +76,10 @@ extension StarlarkTests {
             "2",
         ]
         """
-        XCTAssertEqual(code.text, result)
+        #expect(code.text == result)
     }
 
+    @Test
     func testArrayWithNilString() {
         let nilString: String? = nil
         let code = build {
@@ -82,7 +92,7 @@ extension StarlarkTests {
             ]
         }.text
 
-        XCTAssertEqual(code, """
+        #expect(code == """
         [
             "1",
             "2",
@@ -91,6 +101,7 @@ extension StarlarkTests {
         """)
     }
 
+    @Test
     func testArrayWithNilString2() {
         let nilString: String? = nil
         let code = build {
@@ -101,7 +112,7 @@ extension StarlarkTests {
             nilString
         }.text
 
-        XCTAssertEqual(code, """
+        #expect(code == """
         [
             "1",
             "2",

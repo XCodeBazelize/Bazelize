@@ -6,10 +6,10 @@
 //
 
 import Foundation
-import XCTest
+import Testing
 @testable import Cocoapod
 
-final class SPMTests: XCTestCase {
+struct SPMTests {
     // MARK: Internal
 
     /// Total 9 pod
@@ -30,37 +30,39 @@ final class SPMTests: XCTestCase {
     /// - SVProgressHUD (2.2.5)
     /// - TLPhotoPicker (2.1.6)
     /// - XLPagerTabStrip (9.0.0)
+    @Test
     func testParsePodfileLock() async throws {
         let code = try Self.strings("Podfile.lock")
         let lock = try PodfileLock.parse(code)
         let repos = try await lock.repos
-        XCTAssertEqual(repos.count, 9)
+        #expect(repos.count == 9)
 
-        XCTAssertEqual(repos[0].name, "AFNetworking")
-        XCTAssertEqual(repos[1].name, "Alamofire")
-        XCTAssertEqual(repos[2].name, "DataCompression")
-        XCTAssertEqual(repos[3].name, "Moya")
-        XCTAssertEqual(repos[4].name, "Peek")
-        XCTAssertEqual(repos[5].name, "RxSwift")
-        XCTAssertEqual(repos[6].name, "SVProgressHUD")
-        XCTAssertEqual(repos[7].name, "TLPhotoPicker")
-        XCTAssertEqual(repos[8].name, "XLPagerTabStrip")
+        #expect(repos[0].name == "AFNetworking")
+        #expect(repos[1].name == "Alamofire")
+        #expect(repos[2].name == "DataCompression")
+        #expect(repos[3].name == "Moya")
+        #expect(repos[4].name == "Peek")
+        #expect(repos[5].name == "RxSwift")
+        #expect(repos[6].name == "SVProgressHUD")
+        #expect(repos[7].name == "TLPhotoPicker")
+        #expect(repos[8].name == "XLPagerTabStrip")
 
-        XCTAssertEqual(repos[0].url, "https://github.com/AFNetworking/AFNetworking/archive/4.0.1.zip")
-        XCTAssertEqual(repos[1].url, "https://github.com/Alamofire/Alamofire/archive/5.6.1.zip")
-        XCTAssertEqual(
+        #expect(repos[0].url == "https://github.com/AFNetworking/AFNetworking/archive/4.0.1.zip")
+        #expect(repos[1].url == "https://github.com/Alamofire/Alamofire/archive/5.6.1.zip")
+        #expect(
             repos[2].url,
-            "https://github.com/mw99/DataCompression/archive/2c0d48be59acd5bdf1a5352d969d6f24bd7212c9.zip")
-        XCTAssertEqual(repos[3].url, "https://github.com/Moya/Moya/archive/15.0.0.zip")
-        XCTAssertEqual(repos[4].url, "https://github.com/shaps80/Peek/archive/5.3.0.zip")
-        XCTAssertEqual(repos[5].url, "https://github.com/ReactiveX/RxSwift/archive/6.5.0.zip")
-        XCTAssertEqual(repos[6].url, "https://github.com/SVProgressHUD/SVProgressHUD/archive/2.2.5.zip")
-        XCTAssertEqual(
+            == "https://github.com/mw99/DataCompression/archive/2c0d48be59acd5bdf1a5352d969d6f24bd7212c9.zip")
+        #expect(repos[3].url == "https://github.com/Moya/Moya/archive/15.0.0.zip")
+        #expect(repos[4].url == "https://github.com/shaps80/Peek/archive/5.3.0.zip")
+        #expect(repos[5].url == "https://github.com/ReactiveX/RxSwift/archive/6.5.0.zip")
+        #expect(repos[6].url == "https://github.com/SVProgressHUD/SVProgressHUD/archive/2.2.5.zip")
+        #expect(
             repos[7].url,
-            "https://github.com/tilltue/TLPhotoPicker/archive/0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7.zip")
-        XCTAssertEqual(repos[8].url, "https://github.com/xmartlabs/XLPagerTabStrip/archive/master.zip")
+            == "https://github.com/tilltue/TLPhotoPicker/archive/0d0cbbd2d20ed5fd36e5f4052209f5e2d9aaa8b7.zip")
+        #expect(repos[8].url == "https://github.com/xmartlabs/XLPagerTabStrip/archive/master.zip")
     }
 
+    @Test
     func testParsePodfile() async throws {
         let code = try Self.strings("Podfile")
         let podfile = try Podfile.parse(code)
@@ -77,7 +79,7 @@ final class SPMTests: XCTestCase {
         //Vendor/XLPagerTabStrip:XLPagerTabStrip
         """
 
-        XCTAssertEqual(result.joined(separator: "\n"), deps)
+        #expect(result.joined(separator: "\n") == deps)
     }
 
     // MARK: Private

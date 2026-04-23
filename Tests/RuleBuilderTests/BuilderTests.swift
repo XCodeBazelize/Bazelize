@@ -5,11 +5,11 @@
 //  Created by Yume on 2022/7/29.
 //
 
-import XCTest
+import Testing
 @testable import RuleBuilder
 
-final class RuleTests: XCTestCase {
-    static let target = """
+struct RuleTests {
+    private static let target = """
     ios_framework(
         name = "Test",
         bundle_id = "com.example.test",
@@ -20,33 +20,36 @@ final class RuleTests: XCTestCase {
     )
     """
 
-    func testRuleBuilderSimple() throws {
-        let result = StarlarkRule("ios_framework") {
+    @Test
+    func testRuleBuilderSimple() {
+        let result = Starlark.Statement.Call("ios_framework") {
             "name" => "Test"
             "bundle_id" => "com.example.test"
-            StarlarkProperty("families") {
+            "families" => {
                 "1"
                 "2"
             }
         }.text
-        XCTAssertEqual(Self.target, result)
+        #expect(result == Self.target)
     }
 
-    func testRuleBuilderArray() throws {
-        let result = StarlarkRule("ios_framework") {
+    @Test
+    func testRuleBuilderArray() {
+        let result = Starlark.Statement.Call("ios_framework") {
             "name" => "Test"
             "bundle_id" => "com.example.test"
-            StarlarkProperty("families") {
+            "families" => {
                 ["1", "2"]
             }
         }.text
-        XCTAssertEqual(Self.target, result)
+        #expect(result == Self.target)
     }
 
-    func testWithNil() throws {
+    @Test
+    func testWithNil() {
         let nilStr: String? = nil
 
-        let result = StarlarkRule("ios_framework") {
+        let result = Starlark.Statement.Call("ios_framework") {
             "name" => {
                 nilStr
             }
@@ -68,14 +71,15 @@ final class RuleTests: XCTestCase {
             ],
         )
         """
-        XCTAssertEqual(target, result)
+        #expect(result == target)
     }
 
-    func testWithComment() throws {
-        let result = StarlarkRule("ios_framework") {
-            Starlark.Statement.comment("Before")
+    @Test
+    func testWithComment() {
+        let result = Starlark.Statement.Call("ios_framework") {
+            Starlark.Statement.Argument.comment("Before")
             "name" => "Test"
-            "After"
+            Starlark.Statement.Argument.comment("After")
         }.text
 
         let target = """
@@ -85,11 +89,12 @@ final class RuleTests: XCTestCase {
             # After
         )
         """
-        XCTAssertEqual(target, result)
+        #expect(result == target)
     }
 
-    func testWithDictionary() throws {
-        let result = StarlarkRule("ios_framework") {
+    @Test
+    func testWithDictionary() {
+        let result = Starlark.Statement.Call("ios_framework") {
             "data" => [
                 "b": "b",
                 "a": "a",
@@ -104,11 +109,12 @@ final class RuleTests: XCTestCase {
             },
         )
         """
-        XCTAssertEqual(target, result)
+        #expect(result == target)
     }
 
-    func testWithBool() throws {
-        let result = StarlarkRule("ios_framework") {
+    @Test
+    func testWithBool() {
+        let result = Starlark.Statement.Call("ios_framework") {
             "data1" => true
             "data2" => false
         }.text
@@ -119,11 +125,12 @@ final class RuleTests: XCTestCase {
             data2 = False,
         )
         """
-        XCTAssertEqual(target, result)
+        #expect(result == target)
     }
 
-    func testWithNone() throws {
-        let result = StarlarkRule("ios_framework") {
+    @Test
+    func testWithNone() {
+        let result = Starlark.Statement.Call("ios_framework") {
             "data" => None
         }.text
 
@@ -132,11 +139,12 @@ final class RuleTests: XCTestCase {
             # data = None,
         )
         """
-        XCTAssertEqual(target, result)
+        #expect(result == target)
     }
 
-    func testWithEmptyDictionary() throws {
-        let result = StarlarkRule("ios_framework") {
+    @Test
+    func testWithEmptyDictionary() {
+        let result = Starlark.Statement.Call("ios_framework") {
             "data" => [:]
         }.text
 
@@ -146,6 +154,6 @@ final class RuleTests: XCTestCase {
             },
         )
         """
-        XCTAssertEqual(target, result)
+        #expect(result == target)
     }
 }

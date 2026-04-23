@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PathKit
+@preconcurrency import PathKit
 import SwiftCommand
 import SystemPackage
 import Util

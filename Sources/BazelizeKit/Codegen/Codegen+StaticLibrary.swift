@@ -14,7 +14,7 @@ extension Target {
         builder.add("alias") {
             "name" => "\(name)"
             "actual" => "\(name)_library"
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 }

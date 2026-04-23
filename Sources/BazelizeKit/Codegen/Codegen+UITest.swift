@@ -37,7 +37,7 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 
@@ -54,7 +54,7 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 
@@ -71,7 +71,7 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 
@@ -88,7 +88,7 @@ extension Target {
             "deps" => {
                 ":\(name)_library"
             }
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 }

@@ -56,7 +56,7 @@ public final class Kit {
     public final func run(_ mainfest: Path) async throws {
         defer { tips() }
 
-        try await loadPlugins(mainfest)
+//        try await loadPlugins(mainfest)
 
         generate()
     }
@@ -70,12 +70,12 @@ public final class Kit {
 
 
 extension Kit {
-    private final func loadPlugins(_ mainfest: Path) async throws {
-        plugins = try await PluginLoader.load(manifest: mainfest, project)
-        for plugin in plugins {
-            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
-        }
-    }
+//    private final func loadPlugins(_ mainfest: Path) async throws {
+//        plugins = try await PluginLoader.load(manifest: mainfest, project)
+//        for plugin in plugins {
+//            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
+//        }
+//    }
 
     private final func tips() {
         builtinPlugins.compactMap(\.tip).forEach { tip in

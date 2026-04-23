@@ -57,7 +57,7 @@ final class PluginImported: PluginBuiltin {
                 "xcframework_imports" => Starlark.glob([
                     "\(relativePath)/**",
                 ])
-                StarlarkProperty.Visibility.public
+                Starlark.Statement.Argument.Visibility.public
             }
         }
     }
@@ -74,7 +74,7 @@ final class PluginImported: PluginBuiltin {
                 "framework_imports" => Starlark.glob([
                     "\(relativePath)/**",
                 ])
-                StarlarkProperty.Visibility.public
+                Starlark.Statement.Argument.Visibility.public
             }
         }
     }

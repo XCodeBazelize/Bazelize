@@ -11,7 +11,7 @@ import Foundation
 import PathKit
 
 struct Command: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
         commandName: "bazelize",
         abstract: "A cli tool turn your xcode project to bazel.",
         version: version)

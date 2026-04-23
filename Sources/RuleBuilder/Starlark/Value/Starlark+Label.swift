@@ -1,7 +1,7 @@
 import Foundation
 
 extension Starlark {
-    public struct Label: Hashable, Text {
+    public struct Label: Sendable, Hashable, Text {
         public let value: String
 
         public init(_ value: String) {

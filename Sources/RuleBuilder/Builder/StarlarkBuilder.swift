@@ -39,9 +39,9 @@ public enum StarlarkBuilder {
         .init(expression)
     }
 
-    public static func buildExpression(_ expression: StarlarkProperty.Comment) -> Starlark.Value {
-        .custom(expression.text)
-    }
+//    public static func buildExpression(_ expression: Starlark.Statement.Argument.Comment) -> Starlark.Value {
+//        .custom(expression.text)
+//    }
 
     public static func buildExpression(_ expression: Bool) -> Starlark.Value {
         .bool(expression)

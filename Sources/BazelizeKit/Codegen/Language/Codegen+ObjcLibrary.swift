@@ -49,13 +49,13 @@ extension Target {
             "deps" => {
                 frameworksLibrary
             }
-            StarlarkProperty.Visibility.private
+            Starlark.Statement.Argument.Visibility.private
         }
 
         builder.add("alias") {
             "name" => "\(name)_library"
             "actual" => "\(name)_objc"
-            StarlarkProperty.Visibility.public
+            Starlark.Statement.Argument.Visibility.public
         }
     }
 }

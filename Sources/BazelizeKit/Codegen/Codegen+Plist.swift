@@ -43,7 +43,7 @@ extension Target {
             \(plist)
             '''
             """)
-            StarlarkProperty.Visibility.private
+            Starlark.Statement.Argument.Visibility.private
         }
     }
 
@@ -94,7 +94,7 @@ extension Target {
                 \(plist.withNewLine)
                 '''
                 """)
-                StarlarkProperty.Visibility.private
+                Starlark.Statement.Argument.Visibility.private
             }
         }
     }
@@ -130,7 +130,7 @@ extension Target {
                 \(plist.withNewLine)
                 '''
                 """)
-                StarlarkProperty.Visibility.private
+                Starlark.Statement.Argument.Visibility.private
             }
         }
     }

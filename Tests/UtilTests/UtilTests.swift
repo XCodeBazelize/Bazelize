@@ -6,10 +6,11 @@
 //
 
 import Foundation
-import XCTest
+import Testing
 @testable import Util
 
-final class UtilTests: XCTestCase {
+struct UtilTests {
+    @Test
     func testIndent1() throws {
         let origin = """
         1
@@ -22,9 +23,10 @@ final class UtilTests: XCTestCase {
          3
         """
 
-        XCTAssertEqual(origin.indent(1, " "), result)
+        #expect(origin.indent(1, " ") == result)
     }
 
+    @Test
     func testIndent2() throws {
         let origin = """
         1
@@ -37,9 +39,10 @@ final class UtilTests: XCTestCase {
           3
         """
 
-        XCTAssertEqual(origin.indent(2, " "), result)
+        #expect(origin.indent(2, " ") == result)
     }
 
+    @Test
     func testIndent2_1() throws {
         let origin = """
         1
@@ -52,6 +55,6 @@ final class UtilTests: XCTestCase {
               3
         """
 
-        XCTAssertEqual(origin.indent(2, " "), result)
+        #expect(origin.indent(2, " ") == result)
     }
 }

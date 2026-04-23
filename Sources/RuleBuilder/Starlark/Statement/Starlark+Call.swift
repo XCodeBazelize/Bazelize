@@ -1,4 +1,5 @@
 import Foundation
+import Util
 
 extension Starlark.Statement {
     public struct Call: Text {
@@ -8,6 +9,10 @@ extension Starlark.Statement {
         public init(_ name: String, _ arguments: [Argument] = []) {
             self.name = name
             self.arguments = arguments
+        }
+
+        public init(_ name: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+            self.init(name, builder())
         }
 
         public var text: String {
@@ -27,16 +32,35 @@ extension Starlark.Statement {
         }
     }
 
-    public enum Argument: Text {
+    public enum Argument: Sendable, Text {
+        case comment(Starlark.Comment)
         case positional(Starlark.Value)
         case named(String, Starlark.Value)
+
+        public static func named(_ name: String, @StarlarkBuilder builder: () -> Starlark.Value) -> Self {
+            .named(name, builder())
+        }
+
+        public static func comment(_ value: String) -> Self {
+            .comment(.init(value))
+        }
 
         public var text: String {
             switch self {
             case let .positional(value):
                 return "\(value.text),"
+            case let .comment(comment):
+                return comment.text
             case let .named(name, value):
-                return "\(name) = \(value.text),"
+                let renderedValue: String
+                switch value {
+                case .none:
+                    renderedValue = "# \(name) = None,"
+                default:
+                    renderedValue = "\(name) = \(value.text),"
+                }
+
+                return renderedValue
             }
         }
     }

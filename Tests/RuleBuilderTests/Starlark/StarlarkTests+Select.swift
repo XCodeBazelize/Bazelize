@@ -1,19 +1,21 @@
-import XCTest
+import Testing
 @testable import RuleBuilder
 
 extension StarlarkTests {
+    @Test
     func testSelectSame() {
         let code = Starlark.Select.same("test").starlark
-        XCTAssertEqual(code.text, "\"test\"")
+        #expect(code.text == "\"test\"")
     }
 
+    @Test
     func testSelectVarious() {
         let code = Starlark.Select.various([
             .config("Release"): "r",
             .config("Debug"): "d",
         ]).starlark
 
-        XCTAssertEqual(code.text, """
+        #expect(code.text == """
         select({
             "//:Debug": "d",
             "//:Release": "r"
@@ -21,6 +23,7 @@ extension StarlarkTests {
         """)
     }
 
+    @Test
     func testSelectWithDefaultLabel() {
         let code: Starlark.Value = .select(
             .various([
@@ -29,7 +32,7 @@ extension StarlarkTests {
             ])
         )
 
-        XCTAssertEqual(code.text, """
+        #expect(code.text == """
         select({
             "//:Debug": "d",
             "//conditions:default": "fallback"

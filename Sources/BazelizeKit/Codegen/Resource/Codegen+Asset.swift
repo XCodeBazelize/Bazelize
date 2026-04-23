@@ -43,7 +43,7 @@ extension Target {
         builder.add("filegroup") {
             "name" => "Assets"
             "srcs" => Starlark.glob(files)
-            StarlarkProperty.Visibility.private
+            Starlark.Statement.Argument.Visibility.private
         }
     }
 }

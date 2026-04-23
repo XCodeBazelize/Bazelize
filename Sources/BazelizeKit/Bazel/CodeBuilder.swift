@@ -13,15 +13,8 @@ import Util
 // MARK: - CodeBuilder
 
 public final class CodeBuilder {
-    private var loads: Set<String> = .init()
-    private var codes: [String] = []
-}
-
-extension CodeBuilder {
-    private var _code: String {
-        get { "" }
-        set { codes.append(newValue) }
-    }
+    private var loads: [String: Set<Starlark.Statement.LoadSymbol>] = [:]
+    private var statements: [Starlark.Statement] = []
 }
 
 extension CodeBuilder {
@@ -30,7 +23,9 @@ extension CodeBuilder {
         add("bazel_dep") {
             "name" => name
             "version" => version
-            "repo_name" => repo_name
+            if let repo_name {
+                "repo_name" => repo_name
+            }
         }
     }
 }
@@ -69,13 +64,25 @@ extension CodeBuilder {
     }
 
     /// load function at top of the file.
-
-    func load(_ code: String) {
-        loads.insert(code)
+    func load(module: String, symbols: [Starlark.Statement.LoadSymbol]) {
+        loads[module, default: []].formUnion(symbols)
     }
 
+    func load(_ statementLoad: Starlark.Statement.Load) {
+        self.load(
+            module: statementLoad.module,
+            symbols: statementLoad.symbols
+        )
+    }
+
+//    func load(_ code: String) {
+//        statements.append(.custom(code))
+//    }
+
     func load(loadableRule rule: LoadableRule) {
-        load(rule.load)
+        if case let .load(statementLoad) = rule.loadStatement {
+            load(statementLoad)
+        }
     }
 }
 
@@ -114,42 +121,44 @@ extension CodeBuilder {
     }
 
     func add(_ rule: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(StarlarkRule(rule, builder: builder).text)
+        statements.append(.call(.init(rule, builder: builder)))
     }
     
-    func execute(_ rule: String,) {
+    func execute(_ rule: String) {
         
     }
 
     /// append custom code.
-
     func custom(_ code: String) {
-        _code = code
+        statements.append(.custom(code))
     }
 
     // MARK: Private
 
-    private
-    func add(rule: BuildableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    private func add(rule: BuildableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
         add(rule.rule, builder: builder)
     }
 
-    private
-    func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(StarlarkRule(rule.rule, builder: builder).text)
+    private func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        statements.append(.call(.init(rule.rule, builder: builder)))
     }
 }
 
 extension CodeBuilder {
     func build() -> String {
-        let loads = loads.sorted().joined(separator: "\n")
-        let codes: [String]
-        if loads.isEmpty {
-            codes = self.codes
-        } else {
-            codes = [loads] + self.codes
-        }
+        let renderedLoads = loads
+            .map { module, symbols in
+                Starlark.Statement.Load(
+                    module: module,
+                    symbols: symbols.sorted {
+                        ($0.local ?? $0.exported, $0.exported) < ($1.local ?? $1.exported, $1.exported)
+                    }
+                ).text
+            }
+            .sorted()
 
-        return codes.joined(separator: "\n\n")
+        let renderedStatements = statements.map(\.text)
+        let sections = renderedLoads + renderedStatements
+        return sections.joined(separator: "\n")
     }
 }

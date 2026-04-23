@@ -6,12 +6,12 @@
 //
 
 import XcodeProj
-import XCTest
+import Testing
 @testable import XCode
 
 // MARK: - Setting
 
-private struct Setting {
+private struct Setting: @unchecked Sendable {
     // MARK: Lifecycle
 
     init(_ setting: [String: Any]) {
@@ -74,7 +74,7 @@ private struct Setting {
 
 // MARK: - XCodeTests
 
-final class XCodeTests: XCTestCase {
+struct XCodeTests {
     private static let release = Setting([
         "iOS": "9.0",
         "macOS": "10.15",
@@ -91,16 +91,18 @@ final class XCodeTests: XCTestCase {
 
 // MARK: Test Select
 extension XCodeTests {
+    @Test
     func testSelectSame() {
         let code = Self.config.select(\.macOS).starlark.text
-        XCTAssertEqual(code, """
+        #expect(code == """
         "10.15"
         """)
     }
 
+    @Test
     func testSelectVarious() {
         let code = Self.config.select(\.iOS).starlark.text
-        XCTAssertEqual(code, """
+        #expect(code == """
         select({
             "//:Debug": "10.0",
             "//:Release": "9.0"
@@ -111,19 +113,22 @@ extension XCodeTests {
 
 // MARK: Test Prefer
 extension XCodeTests {
+    @Test
     func testPreferHit() {
         let code = Self.config.prefer(config: "Release", \.iOS)
-        XCTAssertEqual(code, "9.0")
+        #expect(code == "9.0")
     }
 
+    @Test
     func testPreferNotHit() {
         let code = Self.config.prefer(config: "Release2", \.iOS)
-        XCTAssertEqual(code, "10.0")
+        #expect(code == "10.0")
     }
 
+    @Test
     func testPreferNoValue() {
         let config: [String: Setting] = [:]
         let code = config.prefer(config: "Release", \.iOS)
-        XCTAssertEqual(code, nil)
+        #expect(code == nil)
     }
 }

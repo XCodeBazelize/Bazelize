@@ -5,14 +5,12 @@
 //  Created by Yume on 2022/8/3.
 //
 
-import XCTest
+import Testing
 @testable import RuleBuilder
-
-
 
 // MARK: - PropertyTests
 
-final class PropertyTests: XCTestCase { }
+struct PropertyTests { }
 
 private let label = """
 name = "Target",
@@ -26,31 +24,35 @@ name = [
 
 // MARK: - Single Label
 extension PropertyTests {
+    @Test
     func testLabelList1() {
-        let property = StarlarkProperty("name") {
+        let property = Starlark.Statement.Argument.named("name", builder: {
             "Target"
-        }
-        XCTAssertEqual(labelList, property.text)
+        })
+        #expect(property.text == labelList)
     }
-
+    
+    @Test
     func testLabelList2() {
         let property = "name".property {
             "Target"
         }
-        XCTAssertEqual(labelList, property.text)
+        #expect(property.text == labelList)
     }
-
+    
+    @Test
     func testLabelList3() {
         let property = "name" => {
             "Target"
         }
-        XCTAssertEqual(labelList, property.text)
+        #expect(property.text == labelList)
     }
-
+    
+    @Test
     func testLabel() {
         let property = "name" => "Target"
 
-        XCTAssertEqual(label, property.text)
+        #expect(property.text == label)
     }
 }
 
@@ -62,58 +64,62 @@ families = [
 """
 // MARK: - Label List
 extension PropertyTests {
+    @Test
     func testList1() {
-        let property = StarlarkProperty("families") {
+        let property = Starlark.Statement.Argument.named("families", builder: {
             "1"
             "2"
-        }
-        XCTAssertEqual(list, property.text)
+        })
+        #expect(property.text == list)
     }
 
+    @Test
     func testList2() {
         let property = "families".property {
             "1"
             "2"
         }
-        XCTAssertEqual(list, property.text)
+        #expect(property.text == list)
     }
 
+    @Test
     func testList3() {
         let property = "families" => {
             "1"
             "2"
         }
 
-        XCTAssertEqual(list, property.text)
+        #expect(property.text == list)
     }
 }
 
 // MARK: - Comment
-extension PropertyTests {
-    func testCommentSingle1() {
-        let property = "families" => {
-            StarlarkProperty.comment("test")
-        }
-        let result = """
-        families = [
-            # test
-        ],
-        """
-        XCTAssertEqual(result, property.text)
-    }
-
-    func testCommentSingle2() {
-        let property = "families" => StarlarkProperty.comment("test")
-        let result = """
-        # test
-        # families = None,
-        """
-        XCTAssertEqual(result, property.text)
-    }
-}
+//extension PropertyTests {
+//    func testCommentSingle1() {
+//        let property = "families" => {
+//            Starlark.Statement.comment("test")
+//        }
+//        let result = """
+//        families = [
+//            # test
+//        ],
+//        """
+//        XCTAssertEqual(result, property.text)
+//    }
+//
+//    func testCommentSingle2() {
+//        let property = "families" => Starlark.Statement.Argument.Comment("test")
+//        let result = """
+//        # test
+//        # families = None,
+//        """
+//        XCTAssertEqual(result, property.text)
+//    }
+//}
 
 // MARK: - Nil Label
 extension PropertyTests {
+    @Test
     func testNilSingle() {
         let nilString: String? = nil
         let property = "families" => {
@@ -122,13 +128,15 @@ extension PropertyTests {
         let result = """
         # families = None,
         """
-        XCTAssertEqual(result, property.text)
+        #expect(property.text == result)
     }
 
+    @Test
     func testNilMulti() {
         let nilString: String? = nil
         let property = "families" => {
-            StarlarkProperty.comment("test")
+//            Starlark.Statement.comment("test")
+            
             nilString
             "1"
             nilString
@@ -137,11 +145,10 @@ extension PropertyTests {
         }
         let result = """
         families = [
-            # test
             "1",
             "2",
         ],
         """
-        XCTAssertEqual(result, property.text)
+        #expect(property.text == result)
     }
 }

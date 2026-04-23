@@ -18,7 +18,7 @@ extension Target {
         builder.add("filegroup") {
             "name" => "Strings"
             "srcs" => files
-            StarlarkProperty.Visibility.private
+            Starlark.Statement.Argument.Visibility.private
         }
     }
 }
