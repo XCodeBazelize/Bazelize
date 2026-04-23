@@ -46,6 +46,9 @@ let package = Package(
             dependencies: [
                 "RuleBuilder",
             ]),
+        .testTarget(
+            name: "BazelRulesTests",
+            dependencies: ["BazelRules"]),
         .target(
             name: "RuleBuilder",
             dependencies: [

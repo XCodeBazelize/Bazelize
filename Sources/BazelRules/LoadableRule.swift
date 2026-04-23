@@ -1,3 +1,4 @@
+
 //
 //  LoadableRule.swift
 //
@@ -8,51 +9,37 @@
 import Foundation
 import RuleBuilder
 
-// MARK: - BuildableRule
+// MARK: - CallableRule
 
-public protocol BuildableRule {
+public protocol CallableRule {
     /// The Bazel rule symbol name, for example `"ios_application"`.
     var rule: String { get }
 }
 
 // MARK: - LoadableRule
 
-public protocol LoadableRule: BuildableRule {
+public protocol LoadableRule: CallableRule {
     /// The loaded Starlark module path, for example
     /// `"@build_bazel_rules_apple//apple:ios.bzl"`.
-    static var target: String { get }
-
-    /// `load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")`
-    var load: String { get }
-
-    /// Structured `load(...)` statement form.
-    var loadStatement: Starlark.Statement { get }
+    var module: String { get }
 }
 
-public extension BuildableRule where Self: RawRepresentable, Self.RawValue == String {
+public extension CallableRule where Self: RawRepresentable, Self.RawValue == String {
     var rule: String {
         rawValue
     }
 }
 
-public extension LoadableRule {
-    var load: String {
-        """
-        load("\(Self.target)", "\(rule)")
-        """
+public extension CallableRule {
+    func call(
+        @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]
+    ) -> Starlark.Statement.Call {
+        .init(rule, builder: builder)
     }
 
-    var loadStatement: Starlark.Statement {
-        .load(
-            Starlark.Statement.Load(
-                module: Self.target,
-                symbols: [.init(rule)]
-            )
-        )
-    }
-
-    @available(*, deprecated, renamed: "loadStatement")
-    var load2: Starlark.Statement {
-        loadStatement
+    func statement(
+        @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]
+    ) -> Starlark.Statement {
+        .call(call(builder: builder))
     }
 }

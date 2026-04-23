@@ -54,6 +54,15 @@ extension PropertyTests {
 
         #expect(property.text == label)
     }
+
+    @Test
+    func testTypedLabel() {
+        let property = "name" => Starlark.Label.named("//Lib:Core")
+        let result = """
+        name = "//Lib:Core",
+        """
+        #expect(property.text == result)
+    }
 }
 
 private let list = """
@@ -90,6 +99,55 @@ extension PropertyTests {
         }
 
         #expect(property.text == list)
+    }
+
+    @Test
+    func testIntList() {
+        let property = "families" => [1, 2]
+        let result = """
+        families = [
+            1,
+            2,
+        ],
+        """
+        #expect(property.text == result)
+    }
+}
+
+extension PropertyTests {
+    @Test
+    func testInt() {
+        let property = "stamp" => 1
+        let result = """
+        stamp = 1,
+        """
+        #expect(property.text == result)
+    }
+
+    @Test
+    func testDictionaryValue() {
+        let property = "env" => Starlark.Value.dictionary(["FOO": .string("BAR")])
+        let result = """
+        env = {
+            "FOO": "BAR"
+        },
+        """
+        #expect(property.text == result)
+    }
+
+    @Test
+    func testSelectValue() {
+        let property = "value" => Starlark.Select<String>.various([
+            .config("Debug"): "debug",
+            .default: "release",
+        ])
+        let result = """
+        value = select({
+            "//:Debug": "debug",
+            "//conditions:default": "release"
+        }),
+        """
+        #expect(property.text == result)
     }
 }
 

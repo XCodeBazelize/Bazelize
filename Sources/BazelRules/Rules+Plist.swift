@@ -10,7 +10,9 @@ import Foundation
 /// Local plist fragment helper rules.
 extension Rules {
     public enum Plist: String, LoadableRule {
-        public static let target = "@Plist//build-system/ios-utils:plist_fragment.bzl"
+        public var module: String {
+            "@Plist//build-system/ios-utils:plist_fragment.bzl"
+        }
 
         case plist_fragment
     }

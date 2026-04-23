@@ -11,7 +11,7 @@ extension Starlark.Statement {
             self.arguments = arguments
         }
 
-        public init(_ name: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+        public init(_ name: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
             self.init(name, builder())
         }
 

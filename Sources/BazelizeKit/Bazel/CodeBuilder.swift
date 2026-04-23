@@ -80,47 +80,48 @@ extension CodeBuilder {
 //    }
 
     func load(loadableRule rule: LoadableRule) {
-        if case let .load(statementLoad) = rule.loadStatement {
-            load(statementLoad)
-        }
+        load(
+            module: rule.module,
+            symbols: [.init(rule.rule)]
+        )
     }
 }
 
 // MARK: - RuleBuild
 extension CodeBuilder {
-    func add(_ rule: Rules.Objc, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Objc, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Apple.General, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.General, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Apple.IOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.IOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Apple.MacOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.MacOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Apple.TVOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.TVOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Apple.WatchOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Apple.WatchOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Swift, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Swift, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: Rules.Config, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: Rules.Config, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule: rule, builder: builder)
     }
 
-    func add(_ rule: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    func add(_ rule: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         statements.append(.call(.init(rule, builder: builder)))
     }
     
@@ -135,11 +136,11 @@ extension CodeBuilder {
 
     // MARK: Private
 
-    private func add(rule: BuildableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    private func add(rule: CallableRule, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         add(rule.rule, builder: builder)
     }
 
-    private func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
+    private func add(loadableRule rule: LoadableRule, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         statements.append(.call(.init(rule.rule, builder: builder)))
     }
 }

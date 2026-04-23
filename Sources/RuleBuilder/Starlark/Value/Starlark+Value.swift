@@ -16,9 +16,10 @@ extension Starlark {
     public indirect enum Value: Sendable, Text {
         case label(Label)
         case string(String)
+        case int(Int)
+        case bool(Bool)
         case array([Value])
         case dictionary([String: Value])
-        case bool(Bool)
         case select(Starlark.Select<Value>)
         case glob([String])
         case custom(String)
@@ -52,6 +53,8 @@ extension Starlark {
                 self = Value(array: any)
             case let any as [String: Value]:
                 self = .dictionary(any)
+            case let any as Int:
+                self = .int(any)
             case let any as Bool:
                 self = .bool(any)
             default:
@@ -69,6 +72,8 @@ extension Starlark {
                 return """
                 "\(value)"
                 """
+            case .int(let value):
+                return "\(value)"
             case .array(let value):
                 if value.isEmpty {
                     return Value.none.text
@@ -133,6 +138,14 @@ extension Starlark.Value: ExpressibleByBooleanLiteral {
     }
 }
 
+// MARK: ExpressibleByIntegerLiteral
+
+extension Starlark.Value: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: Int) {
+        self = .int(value)
+    }
+}
+
 // MARK: ExpressibleByStringLiteral
 
 extension Starlark.Value: ExpressibleByStringLiteral {
@@ -178,5 +191,12 @@ extension Starlark.Value: ExpressibleByArrayLiteral {
 extension Starlark.Value: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, Starlark.Value)...) {
         self = .dictionary(Dictionary(uniqueKeysWithValues: elements))
+    }
+}
+
+
+extension Array where Element == Starlark.Value {
+    public var starlark: Starlark.Value {
+        .array(self)
     }
 }

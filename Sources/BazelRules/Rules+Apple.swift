@@ -8,13 +8,15 @@
 import Foundation
 import RuleBuilder
 
-/// https://github.com/bazelbuild/rules_apple/tree/master/doc
+/// https://github.com/bazelbuild/rules_apple/tree/main/doc
 extension Rules {
     public enum Apple {
         // MARK: - Platform Rules
         
         public enum IOS: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:ios.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:ios.bzl"
+            }
             
             case ios_application
             case ios_app_clip
@@ -36,7 +38,9 @@ extension Rules {
         }
         
         public enum MacOS: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:macos.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:macos.bzl"
+            }
             
             case macos_application
             case macos_bundle
@@ -55,7 +59,9 @@ extension Rules {
         }
         
         public enum TVOS: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:tvos.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:tvos.bzl"
+            }
             
             case tvos_application
             case tvos_extension
@@ -67,7 +73,9 @@ extension Rules {
         }
         
         public enum WatchOS: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:watchos.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:watchos.bzl"
+            }
             
             case watchos_application
             case watchos_extension
@@ -81,7 +89,9 @@ extension Rules {
         // MARK: - Shared Apple Rules
         
         public enum General: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:apple.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:apple.bzl"
+            }
             
             case apple_dynamic_framework_import
             case apple_dynamic_xcframework_import
@@ -97,7 +107,9 @@ extension Rules {
         }
         
         public enum Resources: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:resources.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:resources.bzl"
+            }
             
             case apple_bundle_import
             case apple_core_data_model
@@ -109,13 +121,17 @@ extension Rules {
         }
         
         public enum Versioning: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:versioning.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:versioning.bzl"
+            }
             
             case apple_bundle_version
         }
         
         public enum Packaging: String, LoadableRule {
-            public static let target = "@build_bazel_rules_apple//apple:packaging.bzl"
+            public var module: String {
+                "@build_bazel_rules_apple//apple:packaging.bzl"
+            }
             
             case xcarchive
             case xctrunner
@@ -126,15 +142,942 @@ extension Rules {
 @available(*, deprecated, renamed: "Rules.Apple")
 public typealias RulesApple = Rules.Apple
 
-extension Rules.Apple.IOS {
-    enum Action {
-//        static func ios_application() -> Starlark.Statement {
-//            
-////            builder.add(.ios_application) {
-////                "name" => name
-////                "bundle_id" => prefer(\.bundleID)
-////            }
-//            return .call(<#T##Starlark.Statement.Call#>)
-//        }
+public extension Rules.Apple.IOS {
+    enum Call {
+        /// Builds an `ios_application` target.
+        public static func ios_application(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            families: [String]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            sdk_frameworks: [String]? = nil,
+            strings: [Starlark.Label]? = nil,
+            testonly: Bool? = nil,
+            visibility: Starlark.Statement.Argument? = nil,
+            watch_application: Starlark.Label? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_application.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let families { "families" => families }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
+                if let strings { "strings" => strings }
+                if let testonly { "testonly" => testonly }
+                if let visibility { visibility }
+                if let watch_application { "watch_application" => watch_application }
+            }
+        }
+
+        /// Builds an `ios_framework` target.
+        public static func ios_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            families: [String]? = nil,
+            hdrs: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let families { "families" => families }
+                if let hdrs { "hdrs" => hdrs }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_static_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            families: [String]? = nil,
+            hdrs: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_static_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let families { "families" => families }
+                if let hdrs { "hdrs" => hdrs }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_dynamic_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            families: [String]? = nil,
+            hdrs: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_dynamic_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let families { "families" => families }
+                if let hdrs { "hdrs" => hdrs }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_extension(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            families: [String]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_extension.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let families { "families" => families }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_app_clip(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_app_clip.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `ios_unit_test` target.
+        public static func ios_unit_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_unit_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `ios_ui_test` target.
+        public static func ios_ui_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_ui_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_unit_test_suite(
+            name: String,
+            minimum_os_version: String? = nil,
+            runners: [Starlark.Label]? = nil,
+            tags: [String]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_unit_test_suite.call {
+                "name" => name
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runners { "runners" => runners }
+                if let tags { "tags" => tags }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_ui_test_suite(
+            name: String,
+            minimum_os_version: String? = nil,
+            runners: [Starlark.Label]? = nil,
+            tags: [String]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_ui_test_suite.call {
+                "name" => name
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runners { "runners" => runners }
+                if let tags { "tags" => tags }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func ios_build_test(
+            name: String,
+            minimum_os_version: String? = nil,
+            targets: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.IOS.ios_build_test.call {
+                "name" => name
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                "targets" => targets
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.MacOS {
+    enum Call {
+        /// Builds a `macos_application` target.
+        public static func macos_application(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.MacOS.macos_application.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func macos_extension(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.MacOS.macos_extension.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_command_line_application` target.
+        public static func macos_command_line_application(
+            name: String,
+            bundle_id: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.MacOS.macos_command_line_application.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_unit_test` target.
+        public static func macos_unit_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.MacOS.macos_unit_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_ui_test` target.
+        public static func macos_ui_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.MacOS.macos_ui_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func macos_build_test(
+            name: String,
+            minimum_os_version: String? = nil,
+            targets: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.MacOS.macos_build_test.call {
+                "name" => name
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                "targets" => targets
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.TVOS {
+    enum Call {
+        /// Builds a `tvos_application` target.
+        public static func tvos_application(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_application.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func tvos_extension(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_extension.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func tvos_static_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_static_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func tvos_dynamic_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_dynamic_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `tvos_unit_test` target.
+        public static func tvos_unit_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_unit_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `tvos_ui_test` target.
+        public static func tvos_ui_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_ui_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func tvos_build_test(
+            name: String,
+            minimum_os_version: String? = nil,
+            targets: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.TVOS.tvos_build_test.call {
+                "name" => name
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                "targets" => targets
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.WatchOS {
+    enum Call {
+        /// Builds a `watchos_application` target.
+        public static func watchos_application(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_application.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func watchos_extension(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            strings: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_extension.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func watchos_static_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_static_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func watchos_dynamic_framework(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_dynamic_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `watchos_unit_test` target.
+        public static func watchos_unit_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_unit_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `watchos_ui_test` target.
+        public static func watchos_ui_test(
+            name: String,
+            data: [Starlark.Label]? = nil,
+            deps: [Starlark.Label]? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_ui_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func watchos_build_test(
+            name: String,
+            minimum_os_version: String? = nil,
+            targets: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.WatchOS.watchos_build_test.call {
+                "name" => name
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                "targets" => targets
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.General {
+    enum Call {
+        /// Builds an `apple_static_library` target.
+        public static func apple_static_library(
+            name: String,
+            deps: [Starlark.Label],
+            avoid_deps: [Starlark.Label]? = nil,
+            data: [Starlark.Label]? = nil,
+            linkopts: [String]? = nil,
+            minimum_os_version: String? = nil,
+            platform_type: String? = nil,
+            sdk_dylibs: [String]? = nil,
+            sdk_frameworks: [String]? = nil,
+            testonly: Bool? = nil,
+            visibility: Starlark.Statement.Argument? = nil,
+            weak_sdk_frameworks: [String]? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.General.apple_static_library.call {
+                "name" => name
+                "deps" => deps
+                if let avoid_deps { "avoid_deps" => avoid_deps }
+                if let data { "data" => data }
+                if let linkopts { "linkopts" => linkopts }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let platform_type { "platform_type" => platform_type }
+                if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
+                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
+                if let testonly { "testonly" => testonly }
+                if let visibility { visibility }
+                if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
+            }
+        }
+
+        /// Builds an `apple_universal_binary` target.
+        public static func apple_universal_binary(
+            name: String,
+            binary: Starlark.Label,
+            minimum_os_version: String? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.General.apple_universal_binary.call {
+                "name" => name
+                "binary" => binary
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_xcframework` target.
+        public static func apple_xcframework(
+            name: String,
+            bundle_name: String? = nil,
+            deps: [Starlark.Label]? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            minimum_os_version: String? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.General.apple_xcframework.call {
+                "name" => name
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.Resources {
+    enum Call {
+        /// Builds an `apple_bundle_import` target.
+        public static func apple_bundle_import(
+            name: String,
+            bundle_imports: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Resources.apple_bundle_import.call {
+                "name" => name
+                "bundle_imports" => bundle_imports
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_core_data_model` target.
+        public static func apple_core_data_model(
+            name: String,
+            srcs: [Starlark.Label],
+            minimum_deployment_os_version: String? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Resources.apple_core_data_model.call {
+                "name" => name
+                "srcs" => srcs
+                if let minimum_deployment_os_version { "minimum_deployment_os_version" => minimum_deployment_os_version }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_core_ml_library` target.
+        public static func apple_core_ml_library(
+            name: String,
+            srcs: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Resources.apple_core_ml_library.call {
+                "name" => name
+                "srcs" => srcs
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_resource_bundle` target.
+        public static func apple_resource_bundle(
+            name: String,
+            resources: [Starlark.Label]? = nil,
+            structured_resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Resources.apple_resource_bundle.call {
+                "name" => name
+                if let resources { "resources" => resources }
+                if let structured_resources { "structured_resources" => structured_resources }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_resource_group` target.
+        public static func apple_resource_group(
+            name: String,
+            resources: [Starlark.Label]? = nil,
+            structured_resources: [Starlark.Label]? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Resources.apple_resource_group.call {
+                "name" => name
+                if let resources { "resources" => resources }
+                if let structured_resources { "structured_resources" => structured_resources }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `swift_apple_core_ml_library` target.
+        public static func swift_apple_core_ml_library(
+            name: String,
+            srcs: [Starlark.Label],
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Resources.swift_apple_core_ml_library.call {
+                "name" => name
+                "srcs" => srcs
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.Versioning {
+    enum Call {
+        /// Builds an `apple_bundle_version` target.
+        public static func apple_bundle_version(
+            name: String,
+            build_version: String? = nil,
+            short_version_string: String? = nil,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Versioning.apple_bundle_version.call {
+                "name" => name
+                if let build_version { "build_version" => build_version }
+                if let short_version_string { "short_version_string" => short_version_string }
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+public extension Rules.Apple.Packaging {
+    enum Call {
+        /// Builds an `xcarchive` target.
+        public static func xcarchive(
+            name: String,
+            bundle_name: String? = nil,
+            infoplists: [Starlark.Label]? = nil,
+            provisioning_profile: Starlark.Label? = nil,
+            target: Starlark.Label,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Packaging.xcarchive.call {
+                "name" => name
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let infoplists { "infoplists" => infoplists }
+                if let provisioning_profile { "provisioning_profile" => provisioning_profile }
+                "target" => target
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `xctrunner` target.
+        public static func xctrunner(
+            name: String,
+            device_type: String? = nil,
+            os_version: String? = nil,
+            test_bundle: Starlark.Label,
+            visibility: Starlark.Statement.Argument? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Apple.Packaging.xctrunner.call {
+                "name" => name
+                if let device_type { "device_type" => device_type }
+                if let os_version { "os_version" => os_version }
+                "test_bundle" => test_bundle
+                if let visibility { visibility }
+            }
+        }
     }
 }

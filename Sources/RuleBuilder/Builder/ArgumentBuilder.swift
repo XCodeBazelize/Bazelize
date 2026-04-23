@@ -1,5 +1,5 @@
 @resultBuilder
-public enum PropertyBuilder {
+public enum ArgumentBuilder {
     public typealias Target = Starlark.Statement.Argument
 
     public static func buildExpression(_ expression: Target) -> [Target] {

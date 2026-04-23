@@ -10,6 +10,7 @@ import BazelizeKit
 import Foundation
 import PathKit
 
+@main
 struct Command: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "bazelize",

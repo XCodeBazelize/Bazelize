@@ -8,8 +8,12 @@ extension Starlark {
         case load(Load)
         case call(Call)
         
-        static func call(_ name: String) -> Statement {
-            .call(Call(name, []))
+        public static func call(
+            rule: String,
+            properties: [ArgumentBuilder.Target]
+            
+        ) -> Statement {
+            .call(Call(rule, properties))
         }
         
         public var text: String {
