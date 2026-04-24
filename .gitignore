@@ -180,3 +180,7 @@ lefthook.yml
 .vscode/*
 
 cache/
+
+.codex-local-skills/
+.vendor/
+app/
