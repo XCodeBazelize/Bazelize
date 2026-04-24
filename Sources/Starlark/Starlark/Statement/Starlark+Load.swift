@@ -4,7 +4,7 @@ extension Starlark.Statement {
     public struct Load: Text {
         public let module: String
         public let symbols: [Starlark.Statement.LoadSymbol]
-        
+
         public var statemenet: Starlark.Statement {
             .load(self)
         }
@@ -49,6 +49,8 @@ extension Starlark.Statement.LoadSymbol: ExpressibleByStringLiteral {
     }
 }
 
+
+// MARK: - Starlark.Statement.Load + Comparable
 
 extension Starlark.Statement.Load: Comparable {
     public static func < (lhs: Self, rhs: Self) -> Bool {
