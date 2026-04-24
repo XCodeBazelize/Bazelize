@@ -24,11 +24,7 @@ jobs:
   lint:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
-
-      - name: swiftformat installation
-        run: |
-          brew install swiftformat
+      - uses: actions/checkout@v6
 
       - name: swiftformat --lint
         run: |
@@ -37,7 +33,7 @@ jobs:
     runs-on: macos-26
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Check Cocoapod Version
       run: pod --version
@@ -77,7 +73,7 @@ jobs:
   artifact:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: SPM Cache
         uses: actions/cache@v4
@@ -101,7 +97,7 @@ jobs:
     runs-on: macos-26
     needs: [artifact]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Bazel iOS Cache
         uses: actions/cache@v4
