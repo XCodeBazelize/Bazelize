@@ -538,8 +538,8 @@ public extension Rules.Swift {
         ///   Regular dependencies linked into the library.
         /// - `data: Starlark.Value?`
         ///   Runtime data made available to the target.
-        /// - `defines: [String]?`
-        ///   Compilation condition symbols.
+        /// - `defines: Starlark.Value?`
+        ///   Compilation condition symbols, including `select(...)` expressions.
         /// - `copts: [String]?`
         ///   C or Clang compilation flags.
         /// - `always_include_developer_search_paths: Bool?`
@@ -556,7 +556,7 @@ public extension Rules.Swift {
             srcs: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
-            defines: [String]? = nil,
+            defines: Starlark.Value? = nil,
             copts: [String]? = nil,
             always_include_developer_search_paths: Bool? = nil,
             clang_deps: Starlark.Value? = nil,
