@@ -94,7 +94,7 @@ struct RulesSwiftTests {
             private_deps: ["//LibPrivate:Impl"],
             swiftc_inputs: [":Config.json"],
             testonly: true,
-            visibility: Starlark.Statement.Argument.Visibility.public
+            visibility: .public
         )
 
         #expect(
@@ -152,7 +152,7 @@ struct RulesSwiftTests {
             stamp: 1,
             swiftc_inputs: [":Config.json"],
             testonly: true,
-            visibility: Starlark.Statement.Argument.Visibility.public
+            visibility: .public
         )
 
         #expect(
@@ -200,7 +200,7 @@ struct RulesSwiftTests {
             srcs: ["CoreTests.swift"],
             stamp: 0,
             swiftc_inputs: [":Config.json"],
-            visibility: Starlark.Statement.Argument.Visibility.private
+            visibility: .private
         )
 
         #expect(

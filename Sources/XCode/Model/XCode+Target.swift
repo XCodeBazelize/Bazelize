@@ -7,6 +7,7 @@
 
 import AnyCodable
 import Foundation
+import RuleBuilder
 import XcodeProj
 
 // MARK: - Target + Encodable
@@ -215,22 +216,32 @@ extension Target {
         _frameworks.compactMap(\.relativePath)
     }
 
-    public var frameworksLibrary: [String] {
-        _frameworksTarget.map { target -> String in
-            let name = target.name
-            return """
-            //\(name):\(name)_library
-            """
-        }.sorted()
+    public var frameworksLibrary: [Starlark.Label] {
+        _frameworksTarget
+            .map { target -> String in
+                let name = target.name
+                return """
+                //\(name):\(name)_library
+                """
+            }
+            .sorted()
+            .map {
+                Starlark.Label.named($0)
+            }
     }
 
-    public var frameworks: [String] {
-        _frameworksTarget.map { target -> String in
-            let name = target.name
-            return """
-            //\(name):\(name)
-            """
-        }.sorted()
+    public var frameworks: [Starlark.Label] {
+        _frameworksTarget
+            .map { target -> String in
+                let name = target.name
+                return """
+                //\(name):\(name)
+                """
+            }
+            .sorted()
+            .map {
+                Starlark.Label.named($0)
+            }
     }
 
     /// use for `sdk_frameworks`

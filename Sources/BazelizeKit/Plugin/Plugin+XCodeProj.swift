@@ -15,7 +15,7 @@ import XcodeProj
 final class PluginXCodeProj: PluginBuiltin {
     let repo: Repo.XCodeProj = .v3_6_0
     override func module(_ builder: CodeBuilder) {
-        builder.bazelDep(
+        builder.bazel_dep(
             name: "rules_xcodeproj",
             version: repo.rawValue
         )

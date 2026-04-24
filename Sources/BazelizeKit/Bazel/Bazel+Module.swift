@@ -30,8 +30,8 @@ extension Bazel {
                 "name" => "example"
                 "version" => "0.0.1"
             }
-            builder.bazelDep(name: "bazel_skylib", version: "1.9.0")
-            builder.bazelDep(name: "rules_cc", version: "0.2.17")
+            builder.bazel_dep(name: "bazel_skylib", version: "1.9.0")
+            builder.bazel_dep(name: "rules_cc", version: "0.2.17")
         }
     }
     

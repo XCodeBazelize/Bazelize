@@ -18,15 +18,14 @@ public final class CodeBuilder {
 }
 
 extension CodeBuilder {
-    /// bazel_dep
-    func bazelDep(name: String, version: String, repo_name: String? = nil) {
-        add("bazel_dep") {
-            "name" => name
-            "version" => version
-            if let repo_name {
-                "repo_name" => repo_name
-            }
-        }
+    func bazel_dep(name: String, version: String, repo_name: String? = nil) {
+        call(
+            Rules.Builtin.Call.bazel_dep(
+                name: name,
+                version: version,
+                repo_name: repo_name
+            )
+        )
     }
 }
 
@@ -89,59 +88,18 @@ extension CodeBuilder {
 
 // MARK: - RuleBuild
 extension CodeBuilder {
-    func add(_ rule: Rules.Objc, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Apple.General, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Apple.IOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Apple.MacOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Apple.TVOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Apple.WatchOS, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Swift, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: Rules.Config, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
+    // FIXME: (@yume190) todo remove add
     func add(_ rule: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         statements.append(.call(.init(rule, builder: builder)))
     }
     
-    func execute(_ rule: String) {
-        
+    func call(_ call: Starlark.Statement.Call) {
+        statements.append(.call(call))
     }
 
     /// append custom code.
     func custom(_ code: String) {
         statements.append(.custom(code))
-    }
-
-    // MARK: Private
-
-    private func add(rule: CallableRule, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        add(rule.rule, builder: builder)
-    }
-
-    private func add(loadableRule rule: LoadableRule, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        statements.append(.call(.init(rule.rule, builder: builder)))
     }
 }
 

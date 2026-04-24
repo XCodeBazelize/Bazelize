@@ -39,10 +39,10 @@ public extension Rules.Objc {
         /// Reference: [Bazel `objc_library`](https://bazel.build/reference/be/objective-c#objc_library)
         public static func objc_library(
             name: String,
-            srcs: [Starlark.Label]? = nil,
-            hdrs: [Starlark.Label]? = nil,
-            deps: [Starlark.Label]? = nil,
-            data: [Starlark.Label]? = nil,
+            srcs: Starlark.Value? = nil,
+            hdrs: Starlark.Value? = nil,
+            deps: Starlark.Value? = nil,
+            data: Starlark.Value? = nil,
             alwayslink: Bool? = nil,
             copts: [String]? = nil,
             defines: [String]? = nil,
@@ -50,14 +50,14 @@ public extension Rules.Objc {
             linkopts: [String]? = nil,
             module_map: Starlark.Label? = nil,
             module_name: String? = nil,
-            non_arc_srcs: [Starlark.Label]? = nil,
+            non_arc_srcs: Starlark.Value? = nil,
             pch: Starlark.Label? = nil,
             sdk_dylibs: [String]? = nil,
             sdk_frameworks: [String]? = nil,
             sdk_includes: [String]? = nil,
-            textual_hdrs: [Starlark.Label]? = nil,
+            textual_hdrs: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil,
             weak_sdk_frameworks: [String]? = nil
         ) -> Starlark.Statement.Call {
             Rules.Objc.objc_library.call {
@@ -90,14 +90,14 @@ public extension Rules.Objc {
         /// Reference: [Bazel `objc_import`](https://bazel.build/reference/be/objective-c#objc_import)
         public static func objc_import(
             name: String,
-            archives: [Starlark.Label]? = nil,
-            deps: [Starlark.Label]? = nil,
-            hdrs: [Starlark.Label]? = nil,
+            archives: Starlark.Value? = nil,
+            deps: Starlark.Value? = nil,
+            hdrs: Starlark.Value? = nil,
             sdk_dylibs: [String]? = nil,
             sdk_frameworks: [String]? = nil,
             alwayslink: Bool? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil,
             weak_sdk_frameworks: [String]? = nil
         ) -> Starlark.Statement.Call {
             Rules.Objc.objc_import.call {
@@ -121,9 +121,9 @@ public extension Rules.Objc {
             name: String,
             deps: [Starlark.Label],
             entry_classes: [String]? = nil,
-            jre_deps: [Starlark.Label]? = nil,
+            jre_deps: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Objc.j2objc_library.call {
                 "name" => name
@@ -141,9 +141,9 @@ public extension Rules.Objc {
         public static func available_xcodes(
             name: String,
             `default`: Starlark.Label,
-            versions: [Starlark.Label]? = nil,
+            versions: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Objc.available_xcodes.call {
                 "name" => name
@@ -162,9 +162,9 @@ public extension Rules.Objc {
             `default`: Starlark.Label? = nil,
             local_versions: Starlark.Label? = nil,
             remote_versions: Starlark.Label? = nil,
-            versions: [Starlark.Label]? = nil,
+            versions: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Objc.xcode_config.call {
                 "name" => name
@@ -189,7 +189,7 @@ public extension Rules.Objc {
             default_tvos_sdk_version: String? = nil,
             default_watchos_sdk_version: String? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Objc.xcode_version.call {
                 "name" => name

@@ -24,6 +24,10 @@ extension Starlark {
         case glob([String])
         case custom(String)
         case none
+        
+        public static func build(@StarlarkBuilder _ builder: () -> Self) -> Self {
+            builder()
+        }
 
         // MARK: Lifecycle
 

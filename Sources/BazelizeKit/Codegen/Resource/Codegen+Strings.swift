@@ -7,6 +7,7 @@
 
 import Foundation
 import RuleBuilder
+import BazelRules
 import XCode
 
 extension Target {
@@ -15,10 +16,14 @@ extension Target {
 
         guard !files.isEmpty else { return }
 
-        builder.add("filegroup") {
-            "name" => "Strings"
-            "srcs" => files
-            Starlark.Statement.Argument.Visibility.private
-        }
+        builder.call(
+            Rules.Builtin.Call.filegroup(
+                name: "Strings",
+                srcs: .build {
+                    files
+                },
+                visibility: .private
+            )
+        )
     }
 }

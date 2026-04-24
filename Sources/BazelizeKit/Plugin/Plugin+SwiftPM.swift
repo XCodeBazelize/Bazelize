@@ -33,7 +33,7 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     override func module(_ builder: CodeBuilder) {
-        builder.bazelDep(name: "rules_swift_package_manager", version: repo.rawValue)
+        builder.bazel_dep(name: "rules_swift_package_manager", version: repo.rawValue)
         builder.custom("""
         swift_deps = use_extension(
             "@rules_swift_package_manager//:extensions.bzl",

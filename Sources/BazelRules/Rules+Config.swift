@@ -57,13 +57,13 @@ public extension Rules.Config {
         ///   Required default value of the build setting.
         /// - `scope: String?`
         ///   Optional propagation scope, such as `"universal"`.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func bool_flag(
             name: String,
             build_setting_default: Bool,
             scope: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.bool_flag.call {
                 "name" => name
@@ -84,7 +84,7 @@ public extension Rules.Config {
             name: String,
             build_setting_default: Bool,
             scope: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.bool_setting.call {
                 "name" => name
@@ -93,7 +93,7 @@ public extension Rules.Config {
                     "scope" => scope
                 }
                 if let visibility {
-                    visibility
+                    visibility.argument
                 }
             }
         }
@@ -105,7 +105,7 @@ public extension Rules.Config {
             name: String,
             build_setting_default: Int,
             scope: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.int_flag.call {
                 "name" => name
@@ -126,7 +126,7 @@ public extension Rules.Config {
             name: String,
             build_setting_default: Int,
             scope: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.int_setting.call {
                 "name" => name
@@ -149,7 +149,7 @@ public extension Rules.Config {
             make_variable: String? = nil,
             scope: String? = nil,
             values: [String]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.string_flag.call {
                 "name" => name
@@ -178,7 +178,7 @@ public extension Rules.Config {
             make_variable: String? = nil,
             scope: String? = nil,
             values: [String]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.string_setting.call {
                 "name" => name
@@ -205,7 +205,7 @@ public extension Rules.Config {
             name: String,
             build_setting_default: [String],
             scope: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.string_list_flag.call {
                 "name" => name
@@ -226,7 +226,7 @@ public extension Rules.Config {
             name: String,
             build_setting_default: [String],
             scope: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Config.string_list_setting.call {
                 "name" => name

@@ -124,7 +124,7 @@ extension Kit {
     /// {WORKSPACE}/BUILD
     private final func generateBuild() {
         build.setup(config: project.config)
-        build.exportUncategorizedFiles(self)
+//        build.exportUncategorizedFiles(self)
         for plugin in builtinPlugins {
             plugin.build(build.builder)
         }

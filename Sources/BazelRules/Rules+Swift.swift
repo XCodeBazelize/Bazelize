@@ -98,14 +98,14 @@ public extension Rules.Swift {
         ///   C or Clang compilation flags forwarded through the target graph.
         /// - `module_name: String?`
         ///   Overrides the emitted Swift module name.
-        /// - `srcs: [Starlark.Label]`
+        /// - `srcs: Starlark.Value`
         ///   Required Swift source files that make up the library.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Regular propagated dependencies linked into the target.
-        /// - `data: [Starlark.Label]?`
+        /// - `data: Starlark.Value?`
         ///   Runtime data made available to the target.
-        /// - `defines: [String]?`
-        ///   Swift compilation condition symbols.
+        /// - `defines: Starlark.Value?`
+        ///   Swift compilation condition symbols, including `select(...)` expressions.
         /// - `generated_header_name: String?`
         ///   Customizes the generated Objective-C compatibility header name.
         /// - `generates_header: Bool?`
@@ -114,31 +114,31 @@ public extension Rules.Swift {
         ///   Linker flags passed through when linking downstream binaries or tests.
         /// - `linkstatic: Bool?`
         ///   Prefers static rather than dynamic linkage when supported.
-        /// - `private_deps: [Starlark.Label]?`
+        /// - `private_deps: Starlark.Value?`
         ///   Implementation-only dependencies when the toolchain supports them.
-        /// - `swiftc_inputs: [Starlark.Label]?`
+        /// - `swiftc_inputs: Starlark.Value?`
         ///   Extra files consumed by `swiftc`, such as config inputs.
         /// - `testonly: Bool?`
         ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_library(
             name: String,
             alwayslink: Bool = true,
             copts: [String]? = nil,
             module_name: String? = nil,
-            srcs: [Starlark.Label],
-            deps: [Starlark.Label]? = nil,
-            data: [Starlark.Label]? = nil,
-            defines: [String]? = nil,
+            srcs: Starlark.Value,
+            deps: Starlark.Value? = nil,
+            data: Starlark.Value? = nil,
+            defines: Starlark.Value? = nil,
             generated_header_name: String? = nil,
             generates_header: Bool? = nil,
             linkopts: [String]? = nil,
             linkstatic: Bool? = nil,
-            private_deps: [Starlark.Label]? = nil,
-            swiftc_inputs: [Starlark.Label]? = nil,
+            private_deps: Starlark.Value? = nil,
+            swiftc_inputs: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_library.call {
                 "name" => name
@@ -199,33 +199,33 @@ public extension Rules.Swift {
         ///   The Bazel target name.
         /// - `copts: [String]?`
         ///   C or Clang compilation flags forwarded through the target graph.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies linked into the executable.
         /// - `linkopts: [String]?`
         ///   Linker flags passed when linking the executable.
         /// - `module_name: String?`
         ///   Overrides the emitted Swift module name.
-        /// - `srcs: [Starlark.Label]?`
+        /// - `srcs: Starlark.Value?`
         ///   Swift source files that make up the executable.
         /// - `stamp: Int?`
         ///   Bazel stamping mode for build metadata.
-        /// - `swiftc_inputs: [Starlark.Label]?`
+        /// - `swiftc_inputs: Starlark.Value?`
         ///   Extra files consumed by `swiftc`, such as config inputs.
         /// - `testonly: Bool?`
         ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_binary(
             name: String,
             copts: [String]? = nil,
-            deps: [Starlark.Label]? = nil,
+            deps: Starlark.Value? = nil,
             linkopts: [String]? = nil,
             module_name: String? = nil,
-            srcs: [Starlark.Label]? = nil,
+            srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
-            swiftc_inputs: [Starlark.Label]? = nil,
+            swiftc_inputs: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_binary.call {
                 "name" => name
@@ -273,9 +273,9 @@ public extension Rules.Swift {
         ///   Command-line arguments passed when running the test.
         /// - `copts: [String]?`
         ///   C or Clang compilation flags forwarded through the target graph.
-        /// - `data: [Starlark.Label]?`
+        /// - `data: Starlark.Value?`
         ///   Runtime data made available to the test.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies linked into the test bundle.
         /// - `env: [String: String]?`
         ///   Environment variables set when the test runs.
@@ -283,27 +283,27 @@ public extension Rules.Swift {
         ///   Linker flags passed when linking the test bundle.
         /// - `module_name: String?`
         ///   Overrides the emitted Swift module name.
-        /// - `srcs: [Starlark.Label]?`
+        /// - `srcs: Starlark.Value?`
         ///   Swift source files that make up the test target.
         /// - `stamp: Int?`
         ///   Bazel stamping mode for build metadata.
-        /// - `swiftc_inputs: [Starlark.Label]?`
+        /// - `swiftc_inputs: Starlark.Value?`
         ///   Extra files consumed by `swiftc`, such as config inputs.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_test(
             name: String,
             args: [String]? = nil,
             copts: [String]? = nil,
-            data: [Starlark.Label]? = nil,
-            deps: [Starlark.Label]? = nil,
+            data: Starlark.Value? = nil,
+            deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             linkopts: [String]? = nil,
             module_name: String? = nil,
-            srcs: [Starlark.Label]? = nil,
+            srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
-            swiftc_inputs: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            swiftc_inputs: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_test.call {
                 "name" => name
@@ -348,15 +348,15 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `archives: [Starlark.Label]?`
+        /// - `archives: Starlark.Value?`
         ///   Precompiled Swift module archives or library artifacts.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies required by the imported module.
-        /// - `data: [Starlark.Label]?`
+        /// - `data: Starlark.Value?`
         ///   Runtime data made available to the imported module.
         /// - `module_name: String`
         ///   Required Swift module name exposed by the imported artifact.
-        /// - `plugins: [Starlark.Label]?`
+        /// - `plugins: Starlark.Value?`
         ///   Compiler plugins loaded by direct dependents of this import.
         /// - `swiftdoc: Starlark.Label?`
         ///   `.swiftdoc` file exposed by the imported module.
@@ -364,19 +364,19 @@ public extension Rules.Swift {
         ///   `.swiftinterface` file exposed by the imported module.
         /// - `swiftmodule: Starlark.Label?`
         ///   Precompiled `.swiftmodule` file exposed by the imported module.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_import(
             name: String,
-            archives: [Starlark.Label]? = nil,
-            deps: [Starlark.Label]? = nil,
-            data: [Starlark.Label]? = nil,
+            archives: Starlark.Value? = nil,
+            deps: Starlark.Value? = nil,
+            data: Starlark.Value? = nil,
             module_name: String,
-            plugins: [Starlark.Label]? = nil,
+            plugins: Starlark.Value? = nil,
             swiftdoc: Starlark.Label? = nil,
             swiftinterface: Starlark.Label? = nil,
             swiftmodule: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_import.call {
                 "name" => name
@@ -397,23 +397,23 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies required by the C module.
         /// - `hdrs: [String]?`
         ///   Header files exported by the module.
         /// - `module_map: Starlark.Label?`
         ///   Explicit module map file.
-        /// - `srcs: [Starlark.Label]?`
+        /// - `srcs: Starlark.Value?`
         ///   Source files that participate in the module.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_c_module(
             name: String,
-            deps: [Starlark.Label]? = nil,
+            deps: Starlark.Value? = nil,
             hdrs: [String]? = nil,
             module_map: Starlark.Label? = nil,
-            srcs: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            srcs: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_c_module.call {
                 "name" => name
@@ -430,20 +430,20 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Base dependencies being overlaid.
-        /// - `overlay_deps: [Starlark.Label]?`
+        /// - `overlay_deps: Starlark.Value?`
         ///   Additional overlay-only dependencies.
         /// - `srcs: [Starlark.Label]`
         ///   Required Swift overlay source files.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_overlay(
             name: String,
-            deps: [Starlark.Label]? = nil,
-            overlay_deps: [Starlark.Label]? = nil,
+            deps: Starlark.Value? = nil,
+            overlay_deps: Starlark.Value? = nil,
             srcs: [Starlark.Label],
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_overlay.call {
                 "name" => name
@@ -459,17 +459,17 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Swift library dependencies grouped by this target.
-        /// - `exports: [Starlark.Label]?`
+        /// - `exports: Starlark.Value?`
         ///   Dependencies re-exported by the group.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_library_group(
             name: String,
-            deps: [Starlark.Label]? = nil,
-            exports: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            deps: Starlark.Value? = nil,
+            exports: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_library_group.call {
                 "name" => name
@@ -484,14 +484,14 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies needed by the compiler plugin implementation.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_compiler_plugin(
             name: String,
-            deps: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            deps: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_compiler_plugin.call {
                 "name" => name
@@ -507,15 +507,15 @@ public extension Rules.Swift {
         ///   The Bazel target name.
         /// - `plugin: Starlark.Label`
         ///   The underlying plugin target to wrap.
-        /// - `toolchain_types: [Starlark.Label]?`
+        /// - `toolchain_types: Starlark.Value?`
         ///   Toolchain types supported by the universal wrapper.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func universal_swift_compiler_plugin(
             name: String,
             plugin: Starlark.Label,
-            toolchain_types: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            toolchain_types: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.universal_swift_compiler_plugin.call {
                 "name" => name
@@ -532,11 +532,11 @@ public extension Rules.Swift {
         ///   The Bazel target name.
         /// - `module_name: String?`
         ///   Swift module name exposed by the mixed-language target.
-        /// - `srcs: [Starlark.Label]?`
+        /// - `srcs: Starlark.Value?`
         ///   Swift and Objective-C source files in the target.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Regular dependencies linked into the library.
-        /// - `data: [Starlark.Label]?`
+        /// - `data: Starlark.Value?`
         ///   Runtime data made available to the target.
         /// - `defines: [String]?`
         ///   Compilation condition symbols.
@@ -544,24 +544,24 @@ public extension Rules.Swift {
         ///   C or Clang compilation flags.
         /// - `always_include_developer_search_paths: Bool?`
         ///   Whether to include developer search paths when building.
-        /// - `clang_deps: [Starlark.Label]?`
+        /// - `clang_deps: Starlark.Value?`
         ///   Additional Clang-specific dependencies.
         /// - `package_name: String?`
         ///   Optional package name used for module/package identity.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func mixed_language_library(
             name: String,
             module_name: String? = nil,
-            srcs: [Starlark.Label]? = nil,
-            deps: [Starlark.Label]? = nil,
-            data: [Starlark.Label]? = nil,
+            srcs: Starlark.Value? = nil,
+            deps: Starlark.Value? = nil,
+            data: Starlark.Value? = nil,
             defines: [String]? = nil,
             copts: [String]? = nil,
             always_include_developer_search_paths: Bool? = nil,
-            clang_deps: [Starlark.Label]? = nil,
+            clang_deps: Starlark.Value? = nil,
             package_name: String? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.mixed_language_library.call {
                 "name" => name
@@ -585,14 +585,14 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `package_groups: [Starlark.Label]?`
+        /// - `package_groups: Starlark.Value?`
         ///   Package groups granted access to the feature.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_feature_allowlist(
             name: String,
-            package_groups: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            package_groups: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_feature_allowlist.call {
                 "name" => name
@@ -608,17 +608,17 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies required by the generated gRPC library.
-        /// - `srcs: [Starlark.Label]?`
+        /// - `srcs: Starlark.Value?`
         ///   Source proto declarations or generated source inputs.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Visibility for the generated target.
         public static func swift_grpc_library(
             name: String,
-            deps: [Starlark.Label]? = nil,
-            srcs: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            deps: Starlark.Value? = nil,
+            srcs: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_grpc_library.call {
                 "name" => name
@@ -633,14 +633,14 @@ public extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `deps: [Starlark.Label]?`
+        /// - `deps: Starlark.Value?`
         ///   Dependencies required by the generated proto library.
-        /// - `visibility: Starlark.Statement.Argument?`
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Visibility for the generated target.
         public static func swift_proto_library(
             name: String,
-            deps: [Starlark.Label]? = nil,
-            visibility: Starlark.Statement.Argument? = nil
+            deps: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
         ) -> Starlark.Statement.Call {
             Rules.Swift.swift_proto_library.call {
                 "name" => name

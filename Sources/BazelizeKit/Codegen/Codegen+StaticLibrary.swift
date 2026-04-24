@@ -7,14 +7,17 @@
 
 import Foundation
 import RuleBuilder
+import BazelRules
 import XCode
 
 extension Target {
     func generateStaticLibrary(_ builder: CodeBuilder, _: Kit) {
-        builder.add("alias") {
-            "name" => "\(name)"
-            "actual" => "\(name)_library"
-            Starlark.Statement.Argument.Visibility.public
-        }
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: name,
+                actual: .named("\(name)_library"),
+                visibility: .public
+            )
+        )
     }
 }

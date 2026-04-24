@@ -5,6 +5,10 @@ public enum ArgumentBuilder {
     public static func buildExpression(_ expression: Target) -> [Target] {
         [expression]
     }
+    
+    public static func buildExpression(_ expression: Target.Visibility) -> [Target] {
+        [expression.argument]
+    }
 
     public static func buildBlock(_ components: Target...) -> [Target] {
         components

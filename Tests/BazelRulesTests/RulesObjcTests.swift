@@ -19,7 +19,7 @@ struct RulesObjcTests {
             hdrs: ["A.h"],
             deps: ["//Lib:Support"],
             sdk_frameworks: ["UIKit"],
-            visibility: Starlark.Statement.Argument.Visibility.public
+            visibility: .public
         )
 
         #expect(

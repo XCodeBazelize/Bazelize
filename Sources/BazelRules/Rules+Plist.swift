@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import RuleBuilder
 
 /// Local plist fragment helper rules.
 extension Rules {
@@ -20,3 +21,21 @@ extension Rules {
 
 @available(*, deprecated, renamed: "Rules.Plist")
 public typealias RulesPlist = Rules.Plist
+
+public extension Rules.Plist {
+    enum Call {
+        public static func plist_fragment(
+            name: String,
+            ext: String,
+            template: Starlark.Value,
+            visibility: Starlark.Statement.Argument.Visibility? = nil
+        ) -> Starlark.Statement.Call {
+            Rules.Plist.plist_fragment.call {
+                "name" => name
+                "extension" => ext
+                "template" => template
+                if let visibility { visibility }
+            }
+        }
+    }
+}

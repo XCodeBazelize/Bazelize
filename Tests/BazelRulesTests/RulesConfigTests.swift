@@ -17,7 +17,7 @@ struct RulesConfigTests {
             name: "feature_enabled",
             build_setting_default: true,
             scope: "universal",
-            visibility: Starlark.Statement.Argument.Visibility.public
+            visibility: .public
         )
 
         #expect(
@@ -78,6 +78,26 @@ struct RulesConfigTests {
                         "a",
                         "b",
                     ],
+                )
+                """
+        )
+    }
+
+    @Test
+    func testBuiltinConfigSettingCall() {
+        let call = Rules.Builtin.Call.config_setting(
+            name: "Debug",
+            flag_values: [":mode": "Debug"]
+        )
+
+        #expect(
+            call.text
+                == """
+                config_setting(
+                    name = "Debug",
+                    flag_values = {
+                        ":mode": "Debug"
+                    },
                 )
                 """
         )

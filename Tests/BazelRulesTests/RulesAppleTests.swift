@@ -22,7 +22,7 @@ struct RulesAppleTests {
             minimum_os_version: "18.0",
             sdk_frameworks: ["UIKit"],
             strings: [":Strings"],
-            visibility: Starlark.Statement.Argument.Visibility.public
+            visibility: .public
         )
 
         #expect(
@@ -74,6 +74,34 @@ struct RulesAppleTests {
                     ],
                     minimum_os_version = "18.0",
                     test_host = "//App:App",
+                )
+                """
+        )
+    }
+
+    @Test
+    func testIOSUITestTypedCall() {
+        let call = Rules.Apple.IOS.Call.ios_ui_test(
+            name: "AppUITests",
+            deps: [":AppUITests_library"],
+            minimum_os_version: "18.0",
+            test_host: "//App:App",
+            visibility: .public
+        )
+
+        #expect(
+            call.text
+                == """
+                ios_ui_test(
+                    name = "AppUITests",
+                    deps = [
+                        ":AppUITests_library",
+                    ],
+                    minimum_os_version = "18.0",
+                    test_host = "//App:App",
+                    visibility = [
+                        "//visibility:public",
+                    ],
                 )
                 """
         )
@@ -173,6 +201,102 @@ struct RulesAppleTests {
                     platform_type = "ios",
                     sdk_frameworks = [
                         "UIKit",
+                    ],
+                )
+                """
+        )
+    }
+
+    @Test
+    func testAppleDynamicFrameworkImportTypedCall() {
+        let call = Rules.Apple.General.Call.apple_dynamic_framework_import(
+            name: "FrameworkImport",
+            framework_imports: Starlark.glob(["Vendor/My.framework/**"]),
+            visibility: .public
+        )
+
+        #expect(
+            call.text
+                == """
+                apple_dynamic_framework_import(
+                    name = "FrameworkImport",
+                    framework_imports = glob([
+                        "Vendor/My.framework/**",
+                    ]),
+                    visibility = [
+                        "//visibility:public",
+                    ],
+                )
+                """
+        )
+    }
+
+    @Test
+    func testAppleDynamicXCFrameworkImportTypedCall() {
+        let call = Rules.Apple.General.Call.apple_dynamic_xcframework_import(
+            name: "XCFrameworkImport",
+            xcframework_imports: Starlark.glob(["Vendor/My.xcframework/**"]),
+            visibility: .public
+        )
+
+        #expect(
+            call.text
+                == """
+                apple_dynamic_xcframework_import(
+                    name = "XCFrameworkImport",
+                    xcframework_imports = glob([
+                        "Vendor/My.xcframework/**",
+                    ]),
+                    visibility = [
+                        "//visibility:public",
+                    ],
+                )
+                """
+        )
+    }
+
+    @Test
+    func testAppleStaticFrameworkImportTypedCall() {
+        let call = Rules.Apple.General.Call.apple_static_framework_import(
+            name: "FrameworkImport",
+            framework_imports: Starlark.glob(["Vendor/My.framework/**"]),
+            visibility: .public
+        )
+
+        #expect(
+            call.text
+                == """
+                apple_static_framework_import(
+                    name = "FrameworkImport",
+                    framework_imports = glob([
+                        "Vendor/My.framework/**",
+                    ]),
+                    visibility = [
+                        "//visibility:public",
+                    ],
+                )
+                """
+        )
+    }
+
+    @Test
+    func testAppleStaticXCFrameworkImportTypedCall() {
+        let call = Rules.Apple.General.Call.apple_static_xcframework_import(
+            name: "XCFrameworkImport",
+            xcframework_imports: Starlark.glob(["Vendor/My.xcframework/**"]),
+            visibility: .public
+        )
+
+        #expect(
+            call.text
+                == """
+                apple_static_xcframework_import(
+                    name = "XCFrameworkImport",
+                    xcframework_imports = glob([
+                        "Vendor/My.xcframework/**",
+                    ]),
+                    visibility = [
+                        "//visibility:public",
                     ],
                 )
                 """

@@ -14,7 +14,7 @@ final class PluginApple: PluginBuiltin {
     let repo: Repo.Apple = .v4_3_3
 
     override func module(_ builder: CodeBuilder) {
-        builder.bazelDep(
+        builder.bazel_dep(
             name: "rules_apple",
             version: repo.rawValue,
             repo_name: "build_bazel_rules_apple"
