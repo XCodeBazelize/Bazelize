@@ -123,8 +123,9 @@ jobs:
           chmod +x bazelize
 
       - name: Bazel Generation
+        working-directory: fixture/iOS
         run: |
-          ./bazelize --project fixture/iOS/Example.xcodeproj
+          ./bazelize --project Example.xcodeproj
 
       - name: Update SPM Deps
         working-directory: fixture/iOS
