@@ -125,7 +125,7 @@ jobs:
       - name: Bazel Generation
         working-directory: fixture/iOS
         run: |
-          ./bazelize --project Example.xcodeproj
+          ../../bazelize --project Example.xcodeproj
 
       - name: Update SPM Deps
         working-directory: fixture/iOS
