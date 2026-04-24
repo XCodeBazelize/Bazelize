@@ -1,14 +1,13 @@
+import RuleBuilder
 import Testing
 @testable import BazelRules
-import RuleBuilder
 
 struct RulesPlistTests {
     @Test
     func testPlistModule() {
         #expect(
             Rules.Plist.plist_fragment.module
-                == "@Plist//build-system/ios-utils:plist_fragment.bzl"
-        )
+                == "@Plist//build-system/ios-utils:plist_fragment.bzl")
     }
 
     @Test
@@ -22,8 +21,7 @@ struct RulesPlistTests {
             <string>Demo</string>
             '''
             """),
-            visibility: .private
-        )
+            visibility: .private)
 
         #expect(
             call.text
@@ -39,7 +37,6 @@ struct RulesPlistTests {
                         "//visibility:private",
                     ],
                 )
-                """
-        )
+                """)
     }
 }

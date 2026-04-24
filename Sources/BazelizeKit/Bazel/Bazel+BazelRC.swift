@@ -21,20 +21,20 @@ extension Bazel {
     struct BazelRC: BazelFile {
         let path: Path
         private(set) var code = ""
-        
+
         init(_ root: Path) {
             path = root + "config.bazelrc"
         }
-        
+
         /// build:debug --//:mode=debug
         /// bazel build --config=debug [PACKAGE:RULE]
         mutating
         func setup(config: [String : BuildSettings]?) {
             let configs = config?.keys.map { $0 } ?? []
             code = configs.map { config in
-            """
-            build:\(config) --//:mode=\(config)
-            """
+                """
+                build:\(config) --//:mode=\(config)
+                """
             }.sorted().withNewLine
         }
     }

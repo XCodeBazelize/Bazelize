@@ -14,16 +14,15 @@ extension StarlarkTests {
             .init(
                 module: "@build_bazel_rules_swift//swift:swift.bzl",
                 symbols: [
-                "swift_library",
-                "swift_binary",
-                .init("swift_common", as: "common"),
-                ]
-            )
-        )
+                    "swift_library",
+                    "swift_binary",
+                    .init("swift_common", as: "common"),
+                ]))
 
         #expect(
-            statement.text == #"load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library", "swift_binary", common = "swift_common")"#
-        )
+            statement
+                .text ==
+                #"load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library", "swift_binary", common = "swift_common")"#)
     }
 
     @Test
@@ -32,8 +31,7 @@ extension StarlarkTests {
             .init("bazel_dep", [
                 .named("name", "rules_swift"),
                 .named("version", "3.5.0"),
-            ])
-        )
+            ]))
 
         #expect(statement.text == """
         bazel_dep(

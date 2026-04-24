@@ -5,9 +5,9 @@
 //  Created by Yume on 2022/12/8.
 //
 
+import BazelRules
 import Foundation
 import PathKit
-import BazelRules
 import RuleBuilder
 import XCode
 
@@ -16,15 +16,15 @@ extension Bazel {
     struct RootBuild: BazelFile {
         let path: Path
         public let builder = CodeBuilder()
-        
+
         init(_ root: Path) {
             path = root + "BUILD"
         }
-        
+
         var code: String {
             builder.build()
         }
-        
+
         /// Generates repo-root build configuration selectors.
         ///
         /// This emits a `string_flag(name = "mode", ...)` plus one
@@ -67,31 +67,27 @@ extension Bazel {
             guard let config = config else { return }
             let configs = config.keys.sorted()
             guard let defaultConfig = configs.first else { return }
-            
+
             builder.load(.string_flag)
             builder.call(
                 Rules.Config.Call.string_flag(
                     name: "mode",
                     build_setting_default: defaultConfig,
-                    values: configs
-                )
-            )
-            
+                    values: configs))
+
             for config in configs {
                 builder.call(
                     Rules.Builtin.Call.config_setting(
                         name: config,
-                        flag_values: [":mode": config]
-                    )
-                )
+                        flag_values: [":mode": config]))
             }
         }
-        
+
         /// ~~export files not in~~
         /// [Bazel Package](https://bazel.build/concepts/build-ref)
         ///
         /// don't need to export files
-        func exportUncategorizedFiles(_ kit: Kit) {
+        func exportUncategorizedFiles(_: Kit) {
 //            let all = kit.project.all
 //                .filter(\.isFile)
 //                .compactMap(\.label)
@@ -104,9 +100,9 @@ extension Bazel {
 //                "\(label.delete(prefix: "//:"))"
 //                """
 //                }
-//            
+//
 //            guard all.count != 0 else { return }
-//            
+//
 //            builder.custom("")
 //            builder.custom("""
 //            # export files not in [Bazel Package](https://bazel.build/concepts/build-ref)

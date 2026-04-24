@@ -8,6 +8,8 @@
 import Foundation
 import RuleBuilder
 
+// MARK: - Rules.Plist
+
 /// Local plist fragment helper rules.
 extension Rules {
     public enum Plist: String, LoadableRule {
@@ -22,14 +24,17 @@ extension Rules {
 @available(*, deprecated, renamed: "Rules.Plist")
 public typealias RulesPlist = Rules.Plist
 
-public extension Rules.Plist {
-    enum Call {
+// MARK: - Rules.Plist.Call
+
+extension Rules.Plist {
+    public enum Call {
         public static func plist_fragment(
             name: String,
             ext: String,
             template: Starlark.Value,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Plist.plist_fragment.call {
                 "name" => name
                 "extension" => ext

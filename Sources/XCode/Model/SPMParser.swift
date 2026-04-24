@@ -22,8 +22,7 @@ public enum SPMParser {
             workspace.loadRootManifest(
                 at: packagePath,
                 observabilityScope: observability.topScope,
-                completion: $0
-            )
+                completion: $0)
         }
 
         let pair = manifest.products.map { ($0.name, $0.targets) }
@@ -46,7 +45,7 @@ public enum SPMParser {
 
         return (products, targets)
     }
-    
+
     public static func allPackageNames(path: String) async throws -> [String] {
         let packagePath = try Basics.AbsolutePath(validating: path)
         let observability = ObservabilitySystem { _,_ in }
@@ -54,9 +53,8 @@ public enum SPMParser {
         let workspace = try Workspace(forRootPackage: packagePath)
         let graph = try await workspace.loadPackageGraph(
             rootPath: packagePath,
-            observabilityScope: observability.topScope
-        )
-        
+            observabilityScope: observability.topScope)
+
         return graph.packages.filter { package in
             !graph.isRootPackage(package)
         }.map(\.manifest.displayName)

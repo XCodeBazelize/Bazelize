@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/8/8.
 //
 
-import Foundation
 import BazelRules
+import Foundation
 import RuleBuilder
 import XCode
 
@@ -42,20 +42,16 @@ extension Target {
                 includes: [
                     /// public header "."
                     /// https://github.com/bazelbuild/bazel/issues/92
-                    "."
+                    ".",
                 ],
                 module_name: name,
                 testonly: isTest,
-                visibility: .private
-            )
-        )
-        
+                visibility: .private))
+
         builder.call(
             Rules.Builtin.Call.alias(
                 name: "\(name)_library",
                 actual: .named("\(name)_objc"),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 }

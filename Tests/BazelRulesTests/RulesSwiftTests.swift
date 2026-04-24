@@ -1,46 +1,41 @@
+import RuleBuilder
 import Testing
 @testable import BazelRules
-import RuleBuilder
 
 struct RulesSwiftTests {
     @Test
     func testSwiftLibraryModule() {
         #expect(
             Rules.Swift.swift_library.module
-                == "@build_bazel_rules_swift//swift:swift_library.bzl"
-        )
+                == "@build_bazel_rules_swift//swift:swift_library.bzl")
     }
 
     @Test
     func testSwiftCompilerPluginModule() {
         #expect(
             Rules.Swift.swift_compiler_plugin.module
-                == "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl"
-        )
+                == "@build_bazel_rules_swift//swift:swift_compiler_plugin.bzl")
     }
 
     @Test
     func testSwiftOverlayModule() {
         #expect(
             Rules.Swift.swift_overlay.module
-                == "@build_bazel_rules_swift//swift:swift_overlay.bzl"
-        )
+                == "@build_bazel_rules_swift//swift:swift_overlay.bzl")
     }
 
     @Test
     func testSwiftLibraryGroupModule() {
         #expect(
             Rules.Swift.swift_library_group.module
-                == "@build_bazel_rules_swift//swift:swift_library_group.bzl"
-        )
+                == "@build_bazel_rules_swift//swift:swift_library_group.bzl")
     }
 
     @Test
     func testMixedLanguageLibraryModule() {
         #expect(
             Rules.Swift.mixed_language_library.module
-                == "@build_bazel_rules_swift//mixed_language:mixed_language_library.bzl"
-        )
+                == "@build_bazel_rules_swift//mixed_language:mixed_language_library.bzl")
     }
 
     @Test
@@ -59,8 +54,7 @@ struct RulesSwiftTests {
                         "A.swift",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -94,8 +88,7 @@ struct RulesSwiftTests {
             private_deps: ["//LibPrivate:Impl"],
             swiftc_inputs: [":Config.json"],
             testonly: true,
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -136,8 +129,7 @@ struct RulesSwiftTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -149,9 +141,7 @@ struct RulesSwiftTests {
                 .various([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
-                ])
-            )
-        )
+                ])))
 
         #expect(
             call.text
@@ -169,8 +159,7 @@ struct RulesSwiftTests {
                         "//conditions:default": None
                     }),
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -185,8 +174,7 @@ struct RulesSwiftTests {
             stamp: 1,
             swiftc_inputs: [":Config.json"],
             testonly: true,
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -215,8 +203,7 @@ struct RulesSwiftTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -228,9 +215,7 @@ struct RulesSwiftTests {
                 .various([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
-                ])
-            )
-        )
+                ])))
 
         #expect(
             call.text
@@ -248,8 +233,7 @@ struct RulesSwiftTests {
                         "//conditions:default": None
                     }),
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -266,8 +250,7 @@ struct RulesSwiftTests {
             srcs: ["CoreTests.swift"],
             stamp: 0,
             swiftc_inputs: [":Config.json"],
-            visibility: .private
-        )
+            visibility: .private)
 
         #expect(
             call.text
@@ -305,18 +288,15 @@ struct RulesSwiftTests {
                         "//visibility:private",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
     func testSwiftLibraryTypedStatementOmitsNilFields() {
         let statement = Starlark.Statement.call(
             Rules.Swift.Call.swift_library(
-            name: "Core",
-            srcs: ["A.swift"]
-            )
-        )
+                name: "Core",
+                srcs: ["A.swift"]))
 
         #expect(
             statement.text
@@ -328,7 +308,6 @@ struct RulesSwiftTests {
                         "A.swift",
                     ],
                 )
-                """
-        )
+                """)
     }
 }

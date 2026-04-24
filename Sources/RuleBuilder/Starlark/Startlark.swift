@@ -7,6 +7,4 @@
 
 import Foundation
 
-public enum Starlark {
-    
-}
+public enum Starlark { }

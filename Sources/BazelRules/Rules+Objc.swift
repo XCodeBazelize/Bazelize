@@ -8,21 +8,23 @@
 import Foundation
 import RuleBuilder
 
+// MARK: - Rules.Objc
+
 /// https://bazel.build/reference/be/objective-c
 extension Rules {
     public enum Objc: String, LoadableRule {
         public var module: String {
             "@rules_cc//cc:defs.bzl"
         }
-        
+
         // MARK: - Objective-C Rules
-        
+
         case objc_library
         case objc_import
         case j2objc_library
-        
+
         // MARK: - Xcode Configuration
-        
+
         case available_xcodes
         case xcode_config
         case xcode_version
@@ -32,8 +34,10 @@ extension Rules {
 @available(*, deprecated, renamed: "Rules.Objc")
 public typealias RulesObjc = Rules.Objc
 
-public extension Rules.Objc {
-    enum Call {
+// MARK: - Rules.Objc.Call
+
+extension Rules.Objc {
+    public enum Call {
         /// Builds an `objc_library` target.
         ///
         /// Reference: [Bazel `objc_library`](https://bazel.build/reference/be/objective-c#objc_library)
@@ -58,8 +62,9 @@ public extension Rules.Objc {
             textual_hdrs: Starlark.Value? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil,
-            weak_sdk_frameworks: [String]? = nil
-        ) -> Starlark.Statement.Call {
+            weak_sdk_frameworks: [String]? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Objc.objc_library.call {
                 "name" => name
                 if let srcs { "srcs" => srcs }
@@ -84,7 +89,7 @@ public extension Rules.Objc {
                 if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
             }
         }
-        
+
         /// Builds an `objc_import` target.
         ///
         /// Reference: [Bazel `objc_import`](https://bazel.build/reference/be/objective-c#objc_import)
@@ -98,8 +103,9 @@ public extension Rules.Objc {
             alwayslink: Bool? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil,
-            weak_sdk_frameworks: [String]? = nil
-        ) -> Starlark.Statement.Call {
+            weak_sdk_frameworks: [String]? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Objc.objc_import.call {
                 "name" => name
                 if let archives { "archives" => archives }
@@ -113,7 +119,7 @@ public extension Rules.Objc {
                 if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
             }
         }
-        
+
         /// Builds a `j2objc_library` target.
         ///
         /// Reference: [Bazel `j2objc_library`](https://bazel.build/reference/be/objective-c#j2objc_library)
@@ -123,8 +129,9 @@ public extension Rules.Objc {
             entry_classes: [String]? = nil,
             jre_deps: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Objc.j2objc_library.call {
                 "name" => name
                 "deps" => deps
@@ -134,7 +141,7 @@ public extension Rules.Objc {
                 if let visibility { visibility }
             }
         }
-        
+
         /// Builds an `available_xcodes` target.
         ///
         /// Reference: [Bazel `available_xcodes`](https://bazel.build/reference/be/objective-c#available_xcodes)
@@ -143,8 +150,9 @@ public extension Rules.Objc {
             `default`: Starlark.Label,
             versions: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Objc.available_xcodes.call {
                 "name" => name
                 "default" => `default`
@@ -153,7 +161,7 @@ public extension Rules.Objc {
                 if let visibility { visibility }
             }
         }
-        
+
         /// Builds an `xcode_config` target.
         ///
         /// Reference: [Bazel `xcode_config`](https://bazel.build/reference/be/objective-c#xcode_config)
@@ -164,8 +172,9 @@ public extension Rules.Objc {
             remote_versions: Starlark.Label? = nil,
             versions: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Objc.xcode_config.call {
                 "name" => name
                 if let `default` { "default" => `default` }
@@ -176,7 +185,7 @@ public extension Rules.Objc {
                 if let visibility { visibility }
             }
         }
-        
+
         /// Builds an `xcode_version` target.
         ///
         /// Reference: [Bazel `xcode_version`](https://bazel.build/reference/be/objective-c#xcode_version)
@@ -189,8 +198,9 @@ public extension Rules.Objc {
             default_tvos_sdk_version: String? = nil,
             default_watchos_sdk_version: String? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Objc.xcode_version.call {
                 "name" => name
                 "version" => version

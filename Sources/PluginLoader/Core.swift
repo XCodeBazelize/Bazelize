@@ -5,17 +5,17 @@
 ////  Created by Yume on 2022/8/24.
 ////
 //
-//import Foundation
-//import PathKit
-//import Util
-//import XCode
+// import Foundation
+// import PathKit
+// import Util
+// import XCode
 //
 ///// start -> load xcode
 ///// start -> load plugin list
 ///// load plugin list -> build plugin
 ///// build plugin -> load plugin
 ///// load xcode -> load plugin
-//public func load(manifest: Path, _ proj: Project) async throws -> [Plugin] {
+// public func load(manifest: Path, _ proj: Project) async throws -> [Plugin] {
 //    guard manifest.exists else {
 //        return []
 //    }
@@ -41,4 +41,4 @@
 //        return try await group.all
 //    }
 //    return result.compactMap { $0 }
-//}
+// }

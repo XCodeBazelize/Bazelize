@@ -8,6 +8,8 @@
 import Foundation
 import RuleBuilder
 
+// MARK: - Rules.Swift
+
 /// https://github.com/bazelbuild/rules_swift
 extension Rules {
     public enum Swift: String, LoadableRule {
@@ -73,15 +75,16 @@ extension Rules {
                 "@build_bazel_rules_swift//proto:swift_proto_library.bzl"
             }
         }
-
     }
 }
 
 @available(*, deprecated, renamed: "Rules.Swift")
 public typealias RulesSwift = Rules.Swift
 
-public extension Rules.Swift {
-    enum Call {
+// MARK: - Rules.Swift.Call
+
+extension Rules.Swift {
+    public enum Call {
         /// Builds a `swift_library` target.
         ///
         /// Reference: [rules_swift `swift_library`](https://github.com/bazelbuild/rules_swift/blob/main/doc/rules.md#swift_library)
@@ -138,8 +141,9 @@ public extension Rules.Swift {
             private_deps: Starlark.Value? = nil,
             swiftc_inputs: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_library.call {
                 "name" => name
                 "alwayslink" => alwayslink
@@ -150,7 +154,7 @@ public extension Rules.Swift {
                     "module_name" => module_name
                 }
                 "srcs" => srcs
-                    
+
                 if let deps {
                     "deps" => deps
                 }
@@ -225,8 +229,9 @@ public extension Rules.Swift {
             stamp: Int? = nil,
             swiftc_inputs: Starlark.Value? = nil,
             testonly: Bool? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_binary.call {
                 "name" => name
                 if let copts {
@@ -303,8 +308,9 @@ public extension Rules.Swift {
             srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
             swiftc_inputs: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_test.call {
                 "name" => name
                 if let args {
@@ -376,8 +382,9 @@ public extension Rules.Swift {
             swiftdoc: Starlark.Label? = nil,
             swiftinterface: Starlark.Label? = nil,
             swiftmodule: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_import.call {
                 "name" => name
                 if let archives { "archives" => archives }
@@ -413,8 +420,9 @@ public extension Rules.Swift {
             hdrs: [String]? = nil,
             module_map: Starlark.Label? = nil,
             srcs: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_c_module.call {
                 "name" => name
                 if let deps { "deps" => deps }
@@ -443,8 +451,9 @@ public extension Rules.Swift {
             deps: Starlark.Value? = nil,
             overlay_deps: Starlark.Value? = nil,
             srcs: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_overlay.call {
                 "name" => name
                 if let deps { "deps" => deps }
@@ -469,8 +478,9 @@ public extension Rules.Swift {
             name: String,
             deps: Starlark.Value? = nil,
             exports: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_library_group.call {
                 "name" => name
                 if let deps { "deps" => deps }
@@ -491,8 +501,9 @@ public extension Rules.Swift {
         public static func swift_compiler_plugin(
             name: String,
             deps: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_compiler_plugin.call {
                 "name" => name
                 if let deps { "deps" => deps }
@@ -515,8 +526,9 @@ public extension Rules.Swift {
             name: String,
             plugin: Starlark.Label,
             toolchain_types: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.universal_swift_compiler_plugin.call {
                 "name" => name
                 "plugin" => plugin
@@ -561,8 +573,9 @@ public extension Rules.Swift {
             always_include_developer_search_paths: Bool? = nil,
             clang_deps: Starlark.Value? = nil,
             package_name: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.mixed_language_library.call {
                 "name" => name
                 if let module_name { "module_name" => module_name }
@@ -592,8 +605,9 @@ public extension Rules.Swift {
         public static func swift_feature_allowlist(
             name: String,
             package_groups: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_feature_allowlist.call {
                 "name" => name
                 if let package_groups {
@@ -618,8 +632,9 @@ public extension Rules.Swift {
             name: String,
             deps: Starlark.Value? = nil,
             srcs: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_grpc_library.call {
                 "name" => name
                 if let deps { "deps" => deps }
@@ -640,8 +655,9 @@ public extension Rules.Swift {
         public static func swift_proto_library(
             name: String,
             deps: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Swift.swift_proto_library.call {
                 "name" => name
                 if let deps { "deps" => deps }

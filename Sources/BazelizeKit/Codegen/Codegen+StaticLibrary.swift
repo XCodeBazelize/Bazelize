@@ -5,9 +5,9 @@
 //  Created by Yume on 2023/1/10.
 //
 
+import BazelRules
 import Foundation
 import RuleBuilder
-import BazelRules
 import XCode
 
 extension Target {
@@ -16,8 +16,6 @@ extension Target {
             Rules.Builtin.Call.alias(
                 name: name,
                 actual: .named("\(name)_library"),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 }

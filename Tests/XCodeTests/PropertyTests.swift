@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/8/3.
 //
 
-import XcodeProj
 import Testing
+import XcodeProj
 @testable import XCode
 
 // MARK: - Setting
@@ -74,7 +74,7 @@ private struct Setting: @unchecked Sendable {
 
 // MARK: - XCodeTests
 
-struct XCodeTests {
+enum XCodeTests {
     private static let release = Setting([
         "iOS": "9.0",
         "macOS": "10.15",

@@ -17,7 +17,6 @@ class PluginLinker: PluginBuiltin {
         builder.custom(
             """
             bazel_dep(name = "rules_apple_linker", version = "0.3.0")
-            """
-        )
+            """)
     }
 }

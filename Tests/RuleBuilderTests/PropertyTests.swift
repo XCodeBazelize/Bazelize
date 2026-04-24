@@ -31,7 +31,7 @@ extension PropertyTests {
         })
         #expect(property.text == labelList)
     }
-    
+
     @Test
     func testLabelList2() {
         let property = "name".property {
@@ -39,7 +39,7 @@ extension PropertyTests {
         }
         #expect(property.text == labelList)
     }
-    
+
     @Test
     func testLabelList3() {
         let property = "name" => {
@@ -47,7 +47,7 @@ extension PropertyTests {
         }
         #expect(property.text == labelList)
     }
-    
+
     @Test
     func testLabel() {
         let property = "name" => "Target"
@@ -152,7 +152,7 @@ extension PropertyTests {
 }
 
 // MARK: - Comment
-//extension PropertyTests {
+// extension PropertyTests {
 //    func testCommentSingle1() {
 //        let property = "families" => {
 //            Starlark.Statement.comment("test")
@@ -173,7 +173,7 @@ extension PropertyTests {
 //        """
 //        XCTAssertEqual(result, property.text)
 //    }
-//}
+// }
 
 // MARK: - Nil Label
 extension PropertyTests {
@@ -194,7 +194,7 @@ extension PropertyTests {
         let nilString: String? = nil
         let property = "families" => {
 //            Starlark.Statement.comment("test")
-            
+
             nilString
             "1"
             nilString

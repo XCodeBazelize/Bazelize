@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - Starlark.Label
+
 extension Starlark {
     public struct Label: Sendable, Hashable, Text {
         public let value: String
@@ -23,6 +25,8 @@ extension Starlark {
         }
     }
 }
+
+// MARK: - Starlark.Label + ExpressibleByStringLiteral
 
 extension Starlark.Label: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {

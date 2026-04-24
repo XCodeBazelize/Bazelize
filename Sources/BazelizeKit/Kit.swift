@@ -47,13 +47,13 @@ public final class Kit {
     public init(_ projPath: Path, _ preferConfig: String?) async throws {
         project = try await Project(projPath, preferConfig)
         plugins = []
-        
+
         try await pluginSPM.loadPackageNames(projPath: projPath)
     }
 
     // MARK: Public
 
-    public final func run(_ mainfest: Path) async throws {
+    public final func run(_: Path) async throws {
         defer { tips() }
 
 //        try await loadPlugins(mainfest)

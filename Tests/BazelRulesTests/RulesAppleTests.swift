@@ -1,14 +1,13 @@
+import RuleBuilder
 import Testing
 @testable import BazelRules
-import RuleBuilder
 
 struct RulesAppleTests {
     @Test
     func testIOSModule() {
         #expect(
             Rules.Apple.IOS.ios_application.module
-                == "@build_bazel_rules_apple//apple:ios.bzl"
-        )
+                == "@build_bazel_rules_apple//apple:ios.bzl")
     }
 
     @Test
@@ -22,8 +21,7 @@ struct RulesAppleTests {
             minimum_os_version: "18.0",
             sdk_frameworks: ["UIKit"],
             strings: [":Strings"],
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -51,8 +49,7 @@ struct RulesAppleTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -61,8 +58,7 @@ struct RulesAppleTests {
             name: "AppTests",
             deps: [":AppTests_library"],
             minimum_os_version: "18.0",
-            test_host: "//App:App"
-        )
+            test_host: "//App:App")
 
         #expect(
             call.text
@@ -75,8 +71,7 @@ struct RulesAppleTests {
                     minimum_os_version = "18.0",
                     test_host = "//App:App",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -86,8 +81,7 @@ struct RulesAppleTests {
             deps: [":AppUITests_library"],
             minimum_os_version: "18.0",
             test_host: "//App:App",
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -103,8 +97,7 @@ struct RulesAppleTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -114,8 +107,7 @@ struct RulesAppleTests {
             bundle_id: "com.example.cli",
             deps: [":CLI_library"],
             infoplists: [":Info.plist"],
-            minimum_os_version: "15.0"
-        )
+            minimum_os_version: "15.0")
 
         #expect(
             call.text
@@ -131,8 +123,7 @@ struct RulesAppleTests {
                     ],
                     minimum_os_version = "15.0",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -140,8 +131,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.TVOS.Call.tvos_unit_test(
             name: "TVTests",
             deps: [":TVTests_library"],
-            minimum_os_version: "18.0"
-        )
+            minimum_os_version: "18.0")
 
         #expect(
             call.text
@@ -153,8 +143,7 @@ struct RulesAppleTests {
                     ],
                     minimum_os_version = "18.0",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -163,8 +152,7 @@ struct RulesAppleTests {
             name: "WatchApp",
             bundle_id: "com.example.watch",
             deps: [":WatchApp_library"],
-            minimum_os_version: "11.0"
-        )
+            minimum_os_version: "11.0")
 
         #expect(
             call.text
@@ -177,8 +165,7 @@ struct RulesAppleTests {
                     ],
                     minimum_os_version = "11.0",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -187,8 +174,7 @@ struct RulesAppleTests {
             name: "StaticLib",
             deps: [":Core"],
             platform_type: "ios",
-            sdk_frameworks: ["UIKit"]
-        )
+            sdk_frameworks: ["UIKit"])
 
         #expect(
             call.text
@@ -203,8 +189,7 @@ struct RulesAppleTests {
                         "UIKit",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -212,8 +197,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.General.Call.apple_dynamic_framework_import(
             name: "FrameworkImport",
             framework_imports: Starlark.glob(["Vendor/My.framework/**"]),
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -227,8 +211,7 @@ struct RulesAppleTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -236,8 +219,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.General.Call.apple_dynamic_xcframework_import(
             name: "XCFrameworkImport",
             xcframework_imports: Starlark.glob(["Vendor/My.xcframework/**"]),
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -251,8 +233,7 @@ struct RulesAppleTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -260,8 +241,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.General.Call.apple_static_framework_import(
             name: "FrameworkImport",
             framework_imports: Starlark.glob(["Vendor/My.framework/**"]),
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -275,8 +255,7 @@ struct RulesAppleTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -284,8 +263,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.General.Call.apple_static_xcframework_import(
             name: "XCFrameworkImport",
             xcframework_imports: Starlark.glob(["Vendor/My.xcframework/**"]),
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -299,16 +277,14 @@ struct RulesAppleTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
     func testAppleResourceBundleTypedCall() {
         let call = Rules.Apple.Resources.Call.apple_resource_bundle(
             name: "Assets",
-            resources: [":Images.xcassets"]
-        )
+            resources: [":Images.xcassets"])
 
         #expect(
             call.text
@@ -319,8 +295,7 @@ struct RulesAppleTests {
                         ":Images.xcassets",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -328,8 +303,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.Versioning.Call.apple_bundle_version(
             name: "Version",
             build_version: "1",
-            short_version_string: "1.0"
-        )
+            short_version_string: "1.0")
 
         #expect(
             call.text
@@ -339,8 +313,7 @@ struct RulesAppleTests {
                     build_version = "1",
                     short_version_string = "1.0",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -348,8 +321,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.Packaging.Call.xcarchive(
             name: "AppArchive",
             bundle_name: "App",
-            target: "//App:App"
-        )
+            target: "//App:App")
 
         #expect(
             call.text
@@ -359,8 +331,7 @@ struct RulesAppleTests {
                     bundle_name = "App",
                     target = "//App:App",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -369,8 +340,7 @@ struct RulesAppleTests {
             name: "ShareExt",
             bundle_id: "com.example.share",
             deps: [":ShareExt_library"],
-            minimum_os_version: "18.0"
-        )
+            minimum_os_version: "18.0")
 
         #expect(
             call.text
@@ -383,8 +353,7 @@ struct RulesAppleTests {
                     ],
                     minimum_os_version = "18.0",
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -392,8 +361,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.IOS.Call.ios_unit_test_suite(
             name: "UnitSuite",
             minimum_os_version: "18.0",
-            runners: [":Runner"]
-        )
+            runners: [":Runner"])
 
         #expect(
             call.text
@@ -405,8 +373,7 @@ struct RulesAppleTests {
                         ":Runner",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -414,8 +381,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.MacOS.Call.macos_build_test(
             name: "BuildCheck",
             minimum_os_version: "15.0",
-            targets: ["//App:App"]
-        )
+            targets: ["//App:App"])
 
         #expect(
             call.text
@@ -427,7 +393,6 @@ struct RulesAppleTests {
                         "//App:App",
                     ],
                 )
-                """
-        )
+                """)
     }
 }

@@ -14,17 +14,17 @@ extension Bazel {
     struct Module: BazelFile {
         let path: Path
         public let builder = CodeBuilder()
-        
+
         init(_ root: Path) {
             path = root + "MODULE.bazel"
-            
+
             setup()
         }
-        
+
         var code: String {
             builder.build()
         }
-        
+
         private func setup() {
             builder.add("module") {
                 "name" => "example"
@@ -34,5 +34,4 @@ extension Bazel {
             builder.bazel_dep(name: "rules_cc", version: "0.2.17")
         }
     }
-    
 }

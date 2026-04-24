@@ -17,7 +17,6 @@ final class PluginApple: PluginBuiltin {
         builder.bazel_dep(
             name: "rules_apple",
             version: repo.rawValue,
-            repo_name: "build_bazel_rules_apple"
-        )
+            repo_name: "build_bazel_rules_apple")
     }
 }

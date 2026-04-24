@@ -8,16 +8,18 @@
 import Foundation
 import RuleBuilder
 
+// MARK: - Rules.Apple
+
 /// https://github.com/bazelbuild/rules_apple/tree/main/doc
 extension Rules {
     public enum Apple {
         // MARK: - Platform Rules
-        
+
         public enum IOS: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:ios.bzl"
             }
-            
+
             case ios_application
             case ios_app_clip
             case ios_extension
@@ -27,40 +29,40 @@ extension Rules {
             case ios_framework
             case ios_static_framework
             case ios_dynamic_framework
-            
+
             case ios_ui_test
             case ios_ui_test_suite
             case ios_unit_test
             case ios_unit_test_suite
             case ios_build_test
         }
-        
+
         public enum MacOS: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:macos.bzl"
             }
-            
+
             case macos_application
             case macos_bundle
             case macos_command_line_application
             case macos_extension
-            
+
             case macos_ui_test
             case macos_unit_test
             case macos_build_test
-            
+
             case macos_dylib
             case macos_kernel_extension
             case macos_quick_look_plugin
             case macos_spotlight_importer
             case macos_xpc_service
         }
-        
+
         public enum TVOS: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:tvos.bzl"
             }
-            
+
             case tvos_application
             case tvos_extension
             case tvos_static_framework
@@ -69,12 +71,12 @@ extension Rules {
             case tvos_unit_test
             case tvos_build_test
         }
-        
+
         public enum WatchOS: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:watchos.bzl"
             }
-            
+
             case watchos_application
             case watchos_extension
             case watchos_static_framework
@@ -83,14 +85,14 @@ extension Rules {
             case watchos_unit_test
             case watchos_build_test
         }
-        
+
         // MARK: - Shared Apple Rules
-        
+
         public enum General: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:apple.bzl"
             }
-            
+
             case apple_dynamic_framework_import
             case apple_dynamic_xcframework_import
             case apple_static_framework_import
@@ -103,12 +105,12 @@ extension Rules {
             case provisioning_profile_repository
             case provisioning_profile_repository_extension
         }
-        
+
         public enum Resources: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:resources.bzl"
             }
-            
+
             case apple_bundle_import
             case apple_core_data_model
             case apple_core_ml_library
@@ -117,20 +119,20 @@ extension Rules {
             case swift_apple_core_ml_library
             case swift_intent_library
         }
-        
+
         public enum Versioning: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:versioning.bzl"
             }
-            
+
             case apple_bundle_version
         }
-        
+
         public enum Packaging: String, LoadableRule {
             public var module: String {
                 "@build_bazel_rules_apple//apple:packaging.bzl"
             }
-            
+
             case xcarchive
             case xctrunner
         }
@@ -140,8 +142,10 @@ extension Rules {
 @available(*, deprecated, renamed: "Rules.Apple")
 public typealias RulesApple = Rules.Apple
 
-public extension Rules.Apple.IOS {
-    enum Call {
+// MARK: - Rules.Apple.IOS.Call
+
+extension Rules.Apple.IOS {
+    public enum Call {
         /// Builds an `ios_application` target.
         public static func ios_application(
             name: String,
@@ -156,8 +160,9 @@ public extension Rules.Apple.IOS {
             strings: Starlark.Value? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil,
-            watch_application: Starlark.Label? = nil
-        ) -> Starlark.Statement.Call {
+            watch_application: Starlark.Label? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_application.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -187,8 +192,9 @@ public extension Rules.Apple.IOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -215,8 +221,9 @@ public extension Rules.Apple.IOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_static_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -243,8 +250,9 @@ public extension Rules.Apple.IOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_dynamic_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -270,8 +278,9 @@ public extension Rules.Apple.IOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_extension.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -294,8 +303,9 @@ public extension Rules.Apple.IOS {
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_app_clip.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -318,8 +328,9 @@ public extension Rules.Apple.IOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_unit_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -343,8 +354,9 @@ public extension Rules.Apple.IOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_ui_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -363,8 +375,9 @@ public extension Rules.Apple.IOS {
             minimum_os_version: String? = nil,
             runners: Starlark.Value? = nil,
             tags: [String]? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_unit_test_suite.call {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -379,8 +392,9 @@ public extension Rules.Apple.IOS {
             minimum_os_version: String? = nil,
             runners: Starlark.Value? = nil,
             tags: [String]? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_ui_test_suite.call {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -394,8 +408,9 @@ public extension Rules.Apple.IOS {
             name: String,
             minimum_os_version: String? = nil,
             targets: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.IOS.ios_build_test.call {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -406,8 +421,10 @@ public extension Rules.Apple.IOS {
     }
 }
 
-public extension Rules.Apple.MacOS {
-    enum Call {
+// MARK: - Rules.Apple.MacOS.Call
+
+extension Rules.Apple.MacOS {
+    public enum Call {
         /// Builds a `macos_application` target.
         public static func macos_application(
             name: String,
@@ -418,8 +435,9 @@ public extension Rules.Apple.MacOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.MacOS.macos_application.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -442,8 +460,9 @@ public extension Rules.Apple.MacOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.MacOS.macos_extension.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -464,8 +483,9 @@ public extension Rules.Apple.MacOS {
             deps: Starlark.Value? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.MacOS.macos_command_line_application.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -486,8 +506,9 @@ public extension Rules.Apple.MacOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.MacOS.macos_unit_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -511,8 +532,9 @@ public extension Rules.Apple.MacOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.MacOS.macos_ui_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -530,8 +552,9 @@ public extension Rules.Apple.MacOS {
             name: String,
             minimum_os_version: String? = nil,
             targets: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.MacOS.macos_build_test.call {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -542,8 +565,10 @@ public extension Rules.Apple.MacOS {
     }
 }
 
-public extension Rules.Apple.TVOS {
-    enum Call {
+// MARK: - Rules.Apple.TVOS.Call
+
+extension Rules.Apple.TVOS {
+    public enum Call {
         /// Builds a `tvos_application` target.
         public static func tvos_application(
             name: String,
@@ -554,8 +579,9 @@ public extension Rules.Apple.TVOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_application.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -578,8 +604,9 @@ public extension Rules.Apple.TVOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_extension.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -601,8 +628,9 @@ public extension Rules.Apple.TVOS {
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_static_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -623,8 +651,9 @@ public extension Rules.Apple.TVOS {
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_dynamic_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -647,8 +676,9 @@ public extension Rules.Apple.TVOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_unit_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -672,8 +702,9 @@ public extension Rules.Apple.TVOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_ui_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -691,8 +722,9 @@ public extension Rules.Apple.TVOS {
             name: String,
             minimum_os_version: String? = nil,
             targets: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.TVOS.tvos_build_test.call {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -703,8 +735,10 @@ public extension Rules.Apple.TVOS {
     }
 }
 
-public extension Rules.Apple.WatchOS {
-    enum Call {
+// MARK: - Rules.Apple.WatchOS.Call
+
+extension Rules.Apple.WatchOS {
+    public enum Call {
         /// Builds a `watchos_application` target.
         public static func watchos_application(
             name: String,
@@ -715,8 +749,9 @@ public extension Rules.Apple.WatchOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_application.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -739,8 +774,9 @@ public extension Rules.Apple.WatchOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_extension.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -762,8 +798,9 @@ public extension Rules.Apple.WatchOS {
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_static_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -784,8 +821,9 @@ public extension Rules.Apple.WatchOS {
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_dynamic_framework.call {
                 "name" => name
                 if let bundle_id { "bundle_id" => bundle_id }
@@ -808,8 +846,9 @@ public extension Rules.Apple.WatchOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_unit_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -833,8 +872,9 @@ public extension Rules.Apple.WatchOS {
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_ui_test.call {
                 "name" => name
                 if let data { "data" => data }
@@ -852,8 +892,9 @@ public extension Rules.Apple.WatchOS {
             name: String,
             minimum_os_version: String? = nil,
             targets: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.WatchOS.watchos_build_test.call {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -864,14 +905,17 @@ public extension Rules.Apple.WatchOS {
     }
 }
 
-public extension Rules.Apple.General {
-    enum Call {
+// MARK: - Rules.Apple.General.Call
+
+extension Rules.Apple.General {
+    public enum Call {
         /// Builds an `apple_dynamic_framework_import` target.
         public static func apple_dynamic_framework_import(
             name: String,
             framework_imports: Starlark.Value,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_dynamic_framework_import.call {
                 "name" => name
                 "framework_imports" => framework_imports
@@ -883,8 +927,9 @@ public extension Rules.Apple.General {
         public static func apple_static_framework_import(
             name: String,
             framework_imports: Starlark.Value,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_static_framework_import.call {
                 "name" => name
                 "framework_imports" => framework_imports
@@ -896,8 +941,9 @@ public extension Rules.Apple.General {
         public static func apple_dynamic_xcframework_import(
             name: String,
             xcframework_imports: Starlark.Value,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_dynamic_xcframework_import.call {
                 "name" => name
                 "xcframework_imports" => xcframework_imports
@@ -909,8 +955,9 @@ public extension Rules.Apple.General {
         public static func apple_static_xcframework_import(
             name: String,
             xcframework_imports: Starlark.Value,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_static_xcframework_import.call {
                 "name" => name
                 "xcframework_imports" => xcframework_imports
@@ -931,8 +978,9 @@ public extension Rules.Apple.General {
             sdk_frameworks: [String]? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil,
-            weak_sdk_frameworks: [String]? = nil
-        ) -> Starlark.Statement.Call {
+            weak_sdk_frameworks: [String]? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_static_library.call {
                 "name" => name
                 "deps" => deps
@@ -954,8 +1002,9 @@ public extension Rules.Apple.General {
             name: String,
             binary: Starlark.Label,
             minimum_os_version: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_universal_binary.call {
                 "name" => name
                 "binary" => binary
@@ -971,8 +1020,9 @@ public extension Rules.Apple.General {
             deps: Starlark.Value? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.General.apple_xcframework.call {
                 "name" => name
                 if let bundle_name { "bundle_name" => bundle_name }
@@ -985,14 +1035,17 @@ public extension Rules.Apple.General {
     }
 }
 
-public extension Rules.Apple.Resources {
-    enum Call {
+// MARK: - Rules.Apple.Resources.Call
+
+extension Rules.Apple.Resources {
+    public enum Call {
         /// Builds an `apple_bundle_import` target.
         public static func apple_bundle_import(
             name: String,
             bundle_imports: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Resources.apple_bundle_import.call {
                 "name" => name
                 "bundle_imports" => bundle_imports
@@ -1005,8 +1058,9 @@ public extension Rules.Apple.Resources {
             name: String,
             srcs: [Starlark.Label],
             minimum_deployment_os_version: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Resources.apple_core_data_model.call {
                 "name" => name
                 "srcs" => srcs
@@ -1019,8 +1073,9 @@ public extension Rules.Apple.Resources {
         public static func apple_core_ml_library(
             name: String,
             srcs: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Resources.apple_core_ml_library.call {
                 "name" => name
                 "srcs" => srcs
@@ -1033,8 +1088,9 @@ public extension Rules.Apple.Resources {
             name: String,
             resources: Starlark.Value? = nil,
             structured_resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Resources.apple_resource_bundle.call {
                 "name" => name
                 if let resources { "resources" => resources }
@@ -1048,8 +1104,9 @@ public extension Rules.Apple.Resources {
             name: String,
             resources: Starlark.Value? = nil,
             structured_resources: Starlark.Value? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Resources.apple_resource_group.call {
                 "name" => name
                 if let resources { "resources" => resources }
@@ -1062,8 +1119,9 @@ public extension Rules.Apple.Resources {
         public static func swift_apple_core_ml_library(
             name: String,
             srcs: [Starlark.Label],
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Resources.swift_apple_core_ml_library.call {
                 "name" => name
                 "srcs" => srcs
@@ -1073,15 +1131,18 @@ public extension Rules.Apple.Resources {
     }
 }
 
-public extension Rules.Apple.Versioning {
-    enum Call {
+// MARK: - Rules.Apple.Versioning.Call
+
+extension Rules.Apple.Versioning {
+    public enum Call {
         /// Builds an `apple_bundle_version` target.
         public static func apple_bundle_version(
             name: String,
             build_version: String? = nil,
             short_version_string: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Versioning.apple_bundle_version.call {
                 "name" => name
                 if let build_version { "build_version" => build_version }
@@ -1092,8 +1153,10 @@ public extension Rules.Apple.Versioning {
     }
 }
 
-public extension Rules.Apple.Packaging {
-    enum Call {
+// MARK: - Rules.Apple.Packaging.Call
+
+extension Rules.Apple.Packaging {
+    public enum Call {
         /// Builds an `xcarchive` target.
         public static func xcarchive(
             name: String,
@@ -1101,8 +1164,9 @@ public extension Rules.Apple.Packaging {
             infoplists: Starlark.Value? = nil,
             provisioning_profile: Starlark.Label? = nil,
             target: Starlark.Label,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Packaging.xcarchive.call {
                 "name" => name
                 if let bundle_name { "bundle_name" => bundle_name }
@@ -1119,8 +1183,9 @@ public extension Rules.Apple.Packaging {
             device_type: String? = nil,
             os_version: String? = nil,
             test_bundle: Starlark.Label,
-            visibility: Starlark.Statement.Argument.Visibility? = nil
-        ) -> Starlark.Statement.Call {
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
             Rules.Apple.Packaging.xctrunner.call {
                 "name" => name
                 if let device_type { "device_type" => device_type }

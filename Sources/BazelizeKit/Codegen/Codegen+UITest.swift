@@ -5,8 +5,8 @@
 //  Created by Yume on 2023/1/7.
 //
 
-import Foundation
 import BazelRules
+import Foundation
 import RuleBuilder
 import XCode
 
@@ -37,9 +37,7 @@ extension Target {
                 test_host: prefer(\.testTargetName).map { target in
                     .init("//\(target):\(target)")
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func generateMacUITest(_ builder: CodeBuilder, _: Kit) {
@@ -54,9 +52,7 @@ extension Target {
                 test_host: prefer(\.testTargetName).map { target in
                     .init("//\(target):\(target)")
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func generateTVUITest(_ builder: CodeBuilder, _: Kit) {
@@ -71,9 +67,7 @@ extension Target {
                 test_host: prefer(\.testTargetName).map { target in
                     .init("//\(target):\(target)")
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func generateWatchUITest(_ builder: CodeBuilder, _: Kit) {
@@ -88,8 +82,6 @@ extension Target {
                 test_host: prefer(\.testTargetName).map { target in
                     .init("//\(target):\(target)")
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 }

@@ -136,15 +136,15 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     private static func repositoryName(url: String) -> String {
-        return repositoryName(module: Path(url).lastComponentWithoutExtension)
+        repositoryName(module: Path(url).lastComponentWithoutExtension)
     }
 
     private static func repositoryName(path: String) -> String {
-        return repositoryName(module: Path(path).lastComponent)
+        repositoryName(module: Path(path).lastComponent)
     }
-    
+
     private static func repositoryName(module: String) -> String {
-        return "swiftpkg_\(sanitize(module.lowercased()))"
+        "swiftpkg_\(sanitize(module.lowercased()))"
     }
 
     private static func sanitize(_ value: String) -> String {

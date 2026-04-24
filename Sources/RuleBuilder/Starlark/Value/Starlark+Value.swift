@@ -24,7 +24,7 @@ extension Starlark {
         case glob([String])
         case custom(String)
         case none
-        
+
         public static func build(@StarlarkBuilder _ builder: () -> Self) -> Self {
             builder()
         }
@@ -126,15 +126,15 @@ extension Starlark {
     }
 }
 
-// MARK: ExpressibleByNilLiteral
+// MARK: - Starlark.Value + ExpressibleByNilLiteral
 
 extension Starlark.Value: ExpressibleByNilLiteral {
-    public init(nilLiteral: ()) {
+    public init(nilLiteral _: ()) {
         self = .none
     }
 }
 
-// MARK: ExpressibleByBooleanLiteral
+// MARK: - Starlark.Value + ExpressibleByBooleanLiteral
 
 extension Starlark.Value: ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: Bool) {
@@ -142,7 +142,7 @@ extension Starlark.Value: ExpressibleByBooleanLiteral {
     }
 }
 
-// MARK: ExpressibleByIntegerLiteral
+// MARK: - Starlark.Value + ExpressibleByIntegerLiteral
 
 extension Starlark.Value: ExpressibleByIntegerLiteral {
     public init(integerLiteral value: Int) {
@@ -150,7 +150,7 @@ extension Starlark.Value: ExpressibleByIntegerLiteral {
     }
 }
 
-// MARK: ExpressibleByStringLiteral
+// MARK: - Starlark.Value + ExpressibleByStringLiteral
 
 extension Starlark.Value: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
@@ -158,7 +158,7 @@ extension Starlark.Value: ExpressibleByStringLiteral {
     }
 }
 
-// MARK: ExpressibleByArrayLiteral
+// MARK: - Starlark.Value + ExpressibleByArrayLiteral
 
 extension Starlark.Value: ExpressibleByArrayLiteral {
     // MARK: Lifecycle
@@ -190,7 +190,7 @@ extension Starlark.Value: ExpressibleByArrayLiteral {
     }
 }
 
-// MARK: ExpressibleByDictionaryLiteral
+// MARK: - Starlark.Value + ExpressibleByDictionaryLiteral
 
 extension Starlark.Value: ExpressibleByDictionaryLiteral {
     public init(dictionaryLiteral elements: (String, Starlark.Value)...) {

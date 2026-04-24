@@ -47,11 +47,11 @@ extension Starlark.Statement {
 
         public var text: String {
             switch self {
-            case let .positional(value):
+            case .positional(let value):
                 return "\(value.text),"
-            case let .comment(comment):
+            case .comment(let comment):
                 return comment.text
-            case let .named(name, value):
+            case .named(let name, let value):
                 let renderedValue: String
                 switch value {
                 case .none:

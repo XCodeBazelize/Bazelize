@@ -17,10 +17,9 @@ final class PluginXCodeProj: PluginBuiltin {
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(
             name: "rules_xcodeproj",
-            version: repo.rawValue
-        )
+            version: repo.rawValue)
     }
-    
+
     // TODO:
     /// top target
     /// custom project_name
@@ -36,12 +35,11 @@ final class PluginXCodeProj: PluginBuiltin {
                 "//\(name):\(name)",
                 """
             }.withNewLine.indent(2)
-        
+
         builder.load(
             module: "@rules_xcodeproj//xcodeproj:defs.bzl",
-            symbols: ["top_level_target", "xcodeproj"]
-        )
-        
+            symbols: ["top_level_target", "xcodeproj"])
+
         builder.custom("""
         # Xcode
         xcodeproj(

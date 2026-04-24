@@ -1,14 +1,13 @@
+import RuleBuilder
 import Testing
 @testable import BazelRules
-import RuleBuilder
 
 struct RulesObjcTests {
     @Test
     func testObjcModule() {
         #expect(
             Rules.Objc.objc_library.module
-                == "@rules_cc//cc:defs.bzl"
-        )
+                == "@rules_cc//cc:defs.bzl")
     }
 
     @Test
@@ -19,8 +18,7 @@ struct RulesObjcTests {
             hdrs: ["A.h"],
             deps: ["//Lib:Support"],
             sdk_frameworks: ["UIKit"],
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -43,8 +41,7 @@ struct RulesObjcTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -52,8 +49,7 @@ struct RulesObjcTests {
         let call = Rules.Objc.Call.available_xcodes(
             name: "xcodes",
             default: ":xcode_16",
-            versions: [":xcode_16", ":xcode_15"]
-        )
+            versions: [":xcode_16", ":xcode_15"])
 
         #expect(
             call.text
@@ -66,8 +62,7 @@ struct RulesObjcTests {
                         ":xcode_15",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -76,8 +71,7 @@ struct RulesObjcTests {
             name: "xcode_16",
             version: "16.0",
             aliases: ["16", "16.0"],
-            default_ios_sdk_version: "18.0"
-        )
+            default_ios_sdk_version: "18.0")
 
         #expect(
             call.text
@@ -91,7 +85,6 @@ struct RulesObjcTests {
                     ],
                     default_ios_sdk_version = "18.0",
                 )
-                """
-        )
+                """)
     }
 }

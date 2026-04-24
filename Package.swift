@@ -27,8 +27,7 @@ let package = Package(
         /// support async command
         .package(
             url: "https://github.com/apple/swift-package-manager",
-            branch: "swift-6.2.4-RELEASE"
-        ),
+            branch: "swift-6.2.4-RELEASE"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -94,8 +93,7 @@ let package = Package(
             ]),
         .testTarget(
             name: "XCodeTests",
-            dependencies: ["XCode"]
-        ),
+            dependencies: ["XCode"]),
 
         .target(
             name: "PluginLoader",
@@ -104,7 +102,5 @@ let package = Package(
                 "Util",
                 "XCode",
                 "SwiftCommand",
-            ]
-        ),
-    ]
-)
+            ]),
+    ])

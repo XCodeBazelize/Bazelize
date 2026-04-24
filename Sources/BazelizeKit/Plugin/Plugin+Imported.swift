@@ -5,9 +5,9 @@
 //  Created by Yume on 2023/2/7.
 //
 
+import BazelRules
 import Foundation
 import PathKit
-import BazelRules
 import RuleBuilder
 import XCode
 
@@ -59,9 +59,7 @@ final class PluginImported: PluginBuiltin {
                     xcframework_imports: Starlark.glob([
                         "\(relativePath)/**",
                     ]),
-                    visibility: .public
-                )
-            )
+                    visibility: .public))
         }
     }
 
@@ -78,9 +76,7 @@ final class PluginImported: PluginBuiltin {
                     framework_imports: Starlark.glob([
                         "\(relativePath)/**",
                     ]),
-                    visibility: .public
-                )
-            )
+                    visibility: .public))
         }
     }
 }

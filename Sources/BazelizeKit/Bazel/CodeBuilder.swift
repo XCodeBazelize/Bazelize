@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/7/1.
 //
 
-import Foundation
 import BazelRules
+import Foundation
 import RuleBuilder
 import Util
 
@@ -23,9 +23,7 @@ extension CodeBuilder {
             Rules.Builtin.Call.bazel_dep(
                 name: name,
                 version: version,
-                repo_name: repo_name
-            )
-        )
+                repo_name: repo_name))
     }
 }
 
@@ -68,10 +66,9 @@ extension CodeBuilder {
     }
 
     func load(_ statementLoad: Starlark.Statement.Load) {
-        self.load(
+        load(
             module: statementLoad.module,
-            symbols: statementLoad.symbols
-        )
+            symbols: statementLoad.symbols)
     }
 
 //    func load(_ code: String) {
@@ -81,8 +78,7 @@ extension CodeBuilder {
     func load(loadableRule rule: LoadableRule) {
         load(
             module: rule.module,
-            symbols: [.init(rule.rule)]
-        )
+            symbols: [.init(rule.rule)])
     }
 }
 
@@ -92,7 +88,7 @@ extension CodeBuilder {
     func add(_ rule: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
         statements.append(.call(.init(rule, builder: builder)))
     }
-    
+
     func call(_ call: Starlark.Statement.Call) {
         statements.append(.call(call))
     }
@@ -111,8 +107,7 @@ extension CodeBuilder {
                     module: module,
                     symbols: symbols.sorted {
                         ($0.local ?? $0.exported, $0.exported) < ($1.local ?? $1.exported, $1.exported)
-                    }
-                ).text
+                    }).text
             }
             .sorted()
 

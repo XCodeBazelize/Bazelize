@@ -5,11 +5,11 @@
 //  Created by Yume on 2022/4/29.
 //
 
+import BazelRules
 import Foundation
 import PathKit
 import RuleBuilder
 import XCode
-import BazelRules
 
 extension Target {
     // MARK: Internal
@@ -47,9 +47,7 @@ extension Target {
                     // plist_default
                 },
                 minimum_os_version: prefer(\.macOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     // MARK: Private
@@ -73,9 +71,7 @@ extension Target {
                 resources: .build {
                     resources
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func buildIOS(_ builder: CodeBuilder, _: Kit) {
@@ -102,9 +98,7 @@ extension Target {
                         ":Strings"
                     }
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func buildMac(_ builder: CodeBuilder, _: Kit) {
@@ -122,9 +116,7 @@ extension Target {
                     plist_default
                 },
                 minimum_os_version: prefer(\.macOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func buildTV(_ builder: CodeBuilder, _: Kit) {
@@ -146,8 +138,6 @@ extension Target {
                 resources: .build {
                     resources
                 },
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 }

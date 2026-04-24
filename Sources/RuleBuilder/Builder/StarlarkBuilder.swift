@@ -10,21 +10,21 @@ import Foundation
 @resultBuilder
 public enum StarlarkBuilder {
     // MARK: - expression + basic?
-    
+
     public static func buildExpression(_ expression: Starlark.Label?) -> Starlark.Value {
         guard let expression else {
             return None
         }
         return .label(expression)
     }
-    
+
     public static func buildExpression(_ expression: String?) -> Starlark.Value {
         guard let expression else {
             return None
         }
         return .string(expression)
     }
-    
+
     public static func buildExpression(_ expression: Int?) -> Starlark.Value {
         guard let expression else {
             return None
@@ -38,38 +38,38 @@ public enum StarlarkBuilder {
         }
         return .bool(expression)
     }
-    
+
     public static func buildExpression(_ expression: [Starlark.Value]?) -> Starlark.Value {
         guard let expression else {
             return None
         }
         return .array(expression)
     }
-    
+
     public static func buildExpression(_ expression: [String: Starlark.Value]?) -> Starlark.Value {
         guard let expression else {
             return None
         }
         return .dictionary(expression)
     }
-    
+
     public static func buildExpression(_ expression: Starlark.Select<Starlark.Value>?) -> Starlark.Value {
         guard let expression else {
             return None
         }
         return .select(expression)
     }
-    
+
     // MARK: - expression + basic
-    
+
     public static func buildExpression(_ expression: Starlark.Label) -> Starlark.Value {
         .label(expression)
     }
-    
+
     public static func buildExpression(_ expression: String) -> Starlark.Value {
         .string(expression)
     }
-    
+
     public static func buildExpression(_ expression: Int) -> Starlark.Value {
         .int(expression)
     }
@@ -77,21 +77,21 @@ public enum StarlarkBuilder {
     public static func buildExpression(_ expression: Bool) -> Starlark.Value {
         .bool(expression)
     }
-    
+
     public static func buildExpression(_ expression: [Starlark.Value]) -> Starlark.Value {
         .array(expression)
     }
-    
+
     public static func buildExpression(_ expression: [String: Starlark.Value]) -> Starlark.Value {
         .dictionary(expression)
     }
-    
+
     public static func buildExpression(_ expression: Starlark.Select<Starlark.Value>) -> Starlark.Value {
         .select(expression)
     }
-    
+
     // MARK: - expression + basic array
-    
+
     public static func buildExpression(_ expression: [Starlark.Label]) -> Starlark.Value {
         expression
             .map { value in
@@ -99,7 +99,7 @@ public enum StarlarkBuilder {
             }
             .starlark
     }
-    
+
     public static func buildExpression(_ expression: [String]) -> Starlark.Value {
         expression
             .map { value in
@@ -107,7 +107,7 @@ public enum StarlarkBuilder {
             }
             .starlark
     }
-    
+
     public static func buildExpression(_ expression: [Int]) -> Starlark.Value {
         expression
             .map { value in
@@ -123,9 +123,9 @@ public enum StarlarkBuilder {
             }
             .starlark
     }
-    
+
     // MARK: - expression + other
-    
+
     public static func buildExpression(_ expression: Starlark.Value) -> Starlark.Value {
         expression
     }
@@ -143,7 +143,7 @@ public enum StarlarkBuilder {
     }
 
     // MARK: -
-    
+
     public static func buildBlock(_ components: Starlark.Value?...) -> Starlark.Value {
         let result = components.compactMap { $0 }
         return .init(result) ?? None

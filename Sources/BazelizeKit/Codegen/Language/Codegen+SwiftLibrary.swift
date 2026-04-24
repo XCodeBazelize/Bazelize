@@ -5,9 +5,9 @@
 //  Created by Yume on 2022/7/4.
 //
 
+import BazelRules
 import Foundation
 import RuleBuilder
-import BazelRules
 import XCode
 
 extension Target {
@@ -48,17 +48,13 @@ extension Target {
                 },
                 defines: defines,
                 testonly: isTest,
-                visibility: .private
-            )
-        )
+                visibility: .private))
 
         builder.call(
             Rules.Builtin.Call.alias(
                 name: "\(name)_library",
                 actual: .named("\(name)_swift"),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     // MARK: Private

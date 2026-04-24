@@ -2,7 +2,7 @@ extension Repo {
     /// http://github.com/cgrindel/rules_swift_package_manager
     enum SPM: String {
         case v1_13_0 = "1.13.0"
-        
+
         // MARK: Internal
 
         var version: String {
@@ -13,7 +13,7 @@ extension Repo {
         }
 
         var sha256: String {
-            return ""
+            ""
         }
     }
 }

@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import Foundation
 import BazelRules
+import Foundation
 import RuleBuilder
 import XCode
 
@@ -34,9 +34,7 @@ extension Target {
                     ":\(name)_library"
                 },
                 minimum_os_version: prefer(\.iOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func generateMacUnitTest(_ builder: CodeBuilder, _: Kit) {
@@ -48,9 +46,7 @@ extension Target {
                     ":\(name)_library"
                 },
                 minimum_os_version: prefer(\.macOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func generateTVUnitTest(_ builder: CodeBuilder, _: Kit) {
@@ -62,9 +58,7 @@ extension Target {
                     ":\(name)_library"
                 },
                 minimum_os_version: prefer(\.tvOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 
     private func generateWatchUnitTest(_ builder: CodeBuilder, _: Kit) {
@@ -76,8 +70,6 @@ extension Target {
                     ":\(name)_library"
                 },
                 minimum_os_version: prefer(\.watchOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 }

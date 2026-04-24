@@ -5,8 +5,8 @@
 //  Created by Yume on 2022/8/27.
 //
 
-import Foundation
 import BazelRules
+import Foundation
 import PathKit
 import RuleBuilder
 import XCode
@@ -44,9 +44,7 @@ extension Target {
                 \(plist)
                 '''
                 """),
-                visibility: .private
-            )
-        )
+                visibility: .private))
     }
 
     // MARK: Private
@@ -97,9 +95,7 @@ extension Target {
                     \(plist.withNewLine)
                     '''
                     """),
-                    visibility: .private
-                )
-            )
+                    visibility: .private))
         }
     }
 
@@ -135,9 +131,7 @@ extension Target {
                     \(plist.withNewLine)
                     '''
                     """),
-                    visibility: .private
-                )
-            )
+                    visibility: .private))
         }
     }
 

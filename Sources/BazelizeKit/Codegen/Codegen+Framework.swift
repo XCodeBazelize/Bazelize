@@ -5,9 +5,9 @@
 //  Created by Yume on 2022/4/29.
 //
 
+import BazelRules
 import Foundation
 import RuleBuilder
-import BazelRules
 import XCode
 
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
@@ -30,8 +30,6 @@ extension Target {
                     // plist_default
                 },
                 minimum_os_version: prefer(\.iOS),
-                visibility: .public
-            )
-        )
+                visibility: .public))
     }
 }

@@ -1,14 +1,13 @@
+import RuleBuilder
 import Testing
 @testable import BazelRules
-import RuleBuilder
 
 struct RulesConfigTests {
     @Test
     func testConfigModule() {
         #expect(
             Rules.Config.bool_flag.module
-                == "@bazel_skylib//rules:common_settings.bzl"
-        )
+                == "@bazel_skylib//rules:common_settings.bzl")
     }
 
     @Test
@@ -17,8 +16,7 @@ struct RulesConfigTests {
             name: "feature_enabled",
             build_setting_default: true,
             scope: "universal",
-            visibility: .public
-        )
+            visibility: .public)
 
         #expect(
             call.text
@@ -31,8 +29,7 @@ struct RulesConfigTests {
                         "//visibility:public",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
@@ -42,8 +39,7 @@ struct RulesConfigTests {
             build_setting_default: "debug",
             make_variable: "FLAVOR",
             scope: "universal",
-            values: ["debug", "release"]
-        )
+            values: ["debug", "release"])
 
         #expect(
             call.text
@@ -58,16 +54,14 @@ struct RulesConfigTests {
                         "release",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
     func testStringListSettingTypedCall() {
         let call = Rules.Config.Call.string_list_setting(
             name: "enabled_features",
-            build_setting_default: ["a", "b"]
-        )
+            build_setting_default: ["a", "b"])
 
         #expect(
             call.text
@@ -79,16 +73,14 @@ struct RulesConfigTests {
                         "b",
                     ],
                 )
-                """
-        )
+                """)
     }
 
     @Test
     func testBuiltinConfigSettingCall() {
         let call = Rules.Builtin.Call.config_setting(
             name: "Debug",
-            flag_values: [":mode": "Debug"]
-        )
+            flag_values: [":mode": "Debug"])
 
         #expect(
             call.text
@@ -99,7 +91,6 @@ struct RulesConfigTests {
                         ":mode": "Debug"
                     },
                 )
-                """
-        )
+                """)
     }
 }

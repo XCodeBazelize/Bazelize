@@ -14,11 +14,11 @@ extension Bazel {
     struct Workspace: BazelFile {
         let path: Path
         public let builder = CodeBuilder()
-        
+
         init(_ root: Path) {
             path = root + "WORKSPACE"
         }
-        
+
         var code: String {
             builder.build()
         }

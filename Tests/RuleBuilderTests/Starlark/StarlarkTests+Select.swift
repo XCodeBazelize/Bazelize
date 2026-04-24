@@ -29,8 +29,7 @@ extension StarlarkTests {
             .various([
                 .config("Debug"): "d",
                 .default: "fallback",
-            ])
-        )
+            ]))
 
         #expect(code.text == """
         select({

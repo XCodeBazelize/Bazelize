@@ -9,6 +9,6 @@ import Foundation
 
 extension Array {
     public func toDictionary<K: Hashable, V>() -> [K: V] where Element == (K, V) {
-        return Dictionary(self, uniquingKeysWith: { first, _ in first })
+        Dictionary(self, uniquingKeysWith: { first, _ in first })
     }
 }

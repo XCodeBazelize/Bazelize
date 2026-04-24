@@ -37,6 +37,8 @@ extension Starlark.Statement {
     }
 }
 
+// MARK: - Starlark.Statement.LoadSymbol + ExpressibleByStringLiteral
+
 extension Starlark.Statement.LoadSymbol: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self.init(value)

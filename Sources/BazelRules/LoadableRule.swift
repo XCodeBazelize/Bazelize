@@ -24,22 +24,24 @@ public protocol LoadableRule: CallableRule {
     var module: String { get }
 }
 
-public extension CallableRule where Self: RawRepresentable, Self.RawValue == String {
-    var rule: String {
+extension CallableRule where Self: RawRepresentable, Self.RawValue == String {
+    public var rule: String {
         rawValue
     }
 }
 
-public extension CallableRule {
-    func call(
-        @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]
-    ) -> Starlark.Statement.Call {
+extension CallableRule {
+    public func call(
+        @ArgumentBuilder builder: () -> [ArgumentBuilder.Target])
+        -> Starlark.Statement.Call
+    {
         .init(rule, builder: builder)
     }
 
-    func statement(
-        @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]
-    ) -> Starlark.Statement {
+    public func statement(
+        @ArgumentBuilder builder: () -> [ArgumentBuilder.Target])
+        -> Starlark.Statement
+    {
         .call(call(builder: builder))
     }
 }

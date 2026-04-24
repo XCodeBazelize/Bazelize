@@ -8,4 +8,4 @@
 import Foundation
 
 /// Namespace for Bazel rule families.
-public enum Rules {}
+public enum Rules { }
