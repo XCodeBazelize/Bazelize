@@ -112,8 +112,6 @@ extension CodeBuilder {
             .sorted()
             .map(\.statemenet)
 
-
-
         let sections = loadsStatement + [.newLine] + statements
         return sections
             .map(\.text)

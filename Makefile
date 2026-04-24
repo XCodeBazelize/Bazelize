@@ -1,8 +1,8 @@
-VERSION := 0.0.4
+VERSION := 0.0.5
 
 .PHONY: install
 install: release
-	@cp .build/release/bazelize /usr/local/bin
+	@sudo cp .build/release/bazelize /usr/local/bin
 
 .PHONY: syncVersion
 syncVersion: 
@@ -33,16 +33,12 @@ test:
 	swift test -v --skip CocoapodTests 2>&1 | xcpretty
 #	COCOAPOD=$(shell which pod) swift test -v 2>&1 | xcbeautify
 
-
 Apple     := bazelbuild/rules_apple
 Swift     := bazelbuild/rules_swift
-Pod       := pinterest/PodToBUILD
-Hammer    := pinterest/xchammer
 XCodeProj := buildbuddy-io/rules_xcodeproj
-SPM       := cgrindel/rules_spm
-SPM2	  := cgrindel/swift_bazel
+REPOS     := Apple Swift XCodeProj 
 
-REPOS    := Apple Swift Pod Hammer XCodeProj 
+SPM	     := cgrindel/rules_swift_package_manager
 REPO_SPM := SPM
 
 
