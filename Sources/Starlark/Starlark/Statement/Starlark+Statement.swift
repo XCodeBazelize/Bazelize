@@ -23,7 +23,7 @@ extension Starlark {
             case .custom(let value):
                 return value
             case .newLine:
-                return "\n"
+                return ""
             case .load(let load):
                 return load.text
             case .call(let call):

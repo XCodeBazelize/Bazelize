@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import RuleBuilder
+import Starlark
 
 // MARK: - CallableRule
 

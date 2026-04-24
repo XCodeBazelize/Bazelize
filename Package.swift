@@ -43,19 +43,19 @@ let package = Package(
         .target(
             name: "BazelRules",
             dependencies: [
-                "RuleBuilder",
+                "Starlark",
             ]),
         .testTarget(
             name: "BazelRulesTests",
             dependencies: ["BazelRules"]),
         .target(
-            name: "RuleBuilder",
+            name: "Starlark",
             dependencies: [
                 "Util",
             ]),
         .testTarget(
-            name: "RuleBuilderTests",
-            dependencies: ["RuleBuilder"]),
+            name: "StarlarkTests",
+            dependencies: ["Starlark"]),
 
         .target(
             name: "BazelizeKit",
@@ -65,7 +65,7 @@ let package = Package(
                 "BazelRules",
                 "XCode",
                 "Util",
-                "RuleBuilder",
+                "Starlark",
                 "PluginLoader",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
@@ -85,7 +85,7 @@ let package = Package(
             name: "XCode",
             dependencies: [
                 "Util",
-                "RuleBuilder",
+                "Starlark",
                 "AnyCodable",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),

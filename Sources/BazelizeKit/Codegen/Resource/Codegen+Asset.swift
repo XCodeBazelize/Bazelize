@@ -7,7 +7,7 @@
 
 import BazelRules
 import Foundation
-import RuleBuilder
+import Starlark
 import XCode
 
 extension Target {

@@ -8,7 +8,7 @@
 import BazelRules
 import Foundation
 import PathKit
-import RuleBuilder
+import Starlark
 import XCode
 
 extension Bazel {

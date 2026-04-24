@@ -8,7 +8,7 @@
 
 import Foundation
 import PathKit
-import RuleBuilder
+import Starlark
 import Util
 import XCode
 

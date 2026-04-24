@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import RuleBuilder
+import Starlark
 
 // MARK: - Rules.Config
 

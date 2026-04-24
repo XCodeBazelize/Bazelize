@@ -1,4 +1,4 @@
-import RuleBuilder
+import Starlark
 import Testing
 @testable import BazelRules
 

@@ -1,5 +1,5 @@
 import Testing
-@testable import RuleBuilder
+@testable import Starlark
 
 extension StarlarkTests {
     @Test

@@ -7,7 +7,7 @@
 
 import BazelRules
 import Foundation
-import RuleBuilder
+import Starlark
 import XCode
 
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)

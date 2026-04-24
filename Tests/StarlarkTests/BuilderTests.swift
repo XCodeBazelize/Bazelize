@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import RuleBuilder
+@testable import Starlark
 
 struct RuleTests {
     private static let target = """
@@ -21,7 +21,7 @@ struct RuleTests {
     """
 
     @Test
-    func testRuleBuilderSimple() {
+    func testStarlarkSimple() {
         let result = Starlark.Statement.Call("ios_framework") {
             "name" => "Test"
             "bundle_id" => "com.example.test"
@@ -34,7 +34,7 @@ struct RuleTests {
     }
 
     @Test
-    func testRuleBuilderArray() {
+    func testStarlarkArray() {
         let result = Starlark.Statement.Call("ios_framework") {
             "name" => "Test"
             "bundle_id" => "com.example.test"

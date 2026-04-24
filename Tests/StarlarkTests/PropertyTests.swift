@@ -6,7 +6,7 @@
 //
 
 import Testing
-@testable import RuleBuilder
+@testable import Starlark
 
 // MARK: - PropertyTests
 

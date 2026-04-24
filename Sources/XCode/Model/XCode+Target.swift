@@ -7,7 +7,7 @@
 
 import AnyCodable
 import Foundation
-import RuleBuilder
+import Starlark
 import XcodeProj
 
 // MARK: - Target + Encodable

@@ -7,7 +7,7 @@
 
 import Foundation
 import PathKit
-import RuleBuilder
+import Starlark
 
 extension Bazel {
     /// https://github.com/bazelbuild/bazel-central-registry

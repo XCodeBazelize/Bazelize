@@ -57,7 +57,7 @@ jobs:
       run: swift --version # Swift 5.3.3
 
     - name: SPM Cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: .build
         key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: SPM Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .build
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
@@ -87,7 +87,7 @@ jobs:
         run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Upload Bazelize
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bazelize
           path: .build/apple/Products/Release/bazelize
@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Bazel iOS Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: fixture/iOS/cache
           key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/fixture/iOS/WORKSPACE') }}
@@ -112,7 +112,7 @@ jobs:
           brew install bazelisk
 
       - name: Download Bazelize
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: bazelize
 
@@ -129,13 +129,12 @@ jobs:
       - name: Update SPM Deps
         working-directory: fixture/iOS
         run: |
-          bazel run //:swift_update_pkgs
+          bazel mod tidy
 
       - name: Build Application
         working-directory: fixture/iOS
         run: |
           bazel build Example
-          cp bazel-bin/Example/Example.ipa .
 
       - name: Unit Test
         working-directory: fixture/iOS
@@ -143,9 +142,9 @@ jobs:
           bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
 
       - name: Upload iOS Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: iOS_Example.ipa
-          path: fixture/iOS/Example.ipa
+          path: bazel-bin/Example/Example.ipa
           if-no-files-found: ignore # 'warn' or 'ignore' 
  

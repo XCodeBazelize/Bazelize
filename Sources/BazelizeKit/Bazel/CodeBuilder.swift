@@ -7,7 +7,7 @@
 
 import BazelRules
 import Foundation
-import RuleBuilder
+import Starlark
 import Util
 
 // MARK: - CodeBuilder
@@ -101,18 +101,22 @@ extension CodeBuilder {
 
 extension CodeBuilder {
     func build() -> String {
-        let renderedLoads = loads
+        let loadsStatement = loads
             .map { module, symbols in
                 Starlark.Statement.Load(
                     module: module,
                     symbols: symbols.sorted {
                         ($0.local ?? $0.exported, $0.exported) < ($1.local ?? $1.exported, $1.exported)
-                    }).text
+                    })
             }
             .sorted()
+            .map(\.statemenet)
+        
 
-        let renderedStatements = statements.map(\.text)
-        let sections = renderedLoads + renderedStatements
-        return sections.joined(separator: "\n")
+        
+        let sections = loadsStatement + [.newLine] + statements
+        return sections
+            .map(\.text)
+            .joined(separator: "\n")
     }
 }
