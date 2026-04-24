@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: macos-12
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v3.3.0
 
@@ -34,20 +34,7 @@ jobs:
         run: |
           swiftformat --lint --config .swiftformat .
   build:
-
-    # https://github.com/actions/virtual-environments
-    # https://github.com/actions/virtual-environments/blob/main/images/macos/macos-11-Readme.md
-    runs-on: macos-12
-
-    strategy:
-      matrix:
-        xcode:
-        - "14.2"
-        - "14.1"
-        - "14.0.1"
-        - "13.4.1"
-        - "13.4"
-        - "13.3.1"
+    runs-on: macos-26
 
     steps:
     - uses: actions/checkout@v3.3.0
@@ -64,12 +51,8 @@ jobs:
     # - name: Get Pod Spec
     #   run: pod spec cat --regex Bagel --version=1.4.0
 
-    - name: Xcode Select ${{ matrix.xcode }}
+    - name: Check Xcode Version
       run: |
-        echo "Available Xcode versions:"
-        ls /Applications | grep Xcode
-        echo "Choosing Xcode_${{ matrix.xcode }}.app"
-        sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
         xcodebuild -version
         swift --version
         swift package --version
@@ -77,22 +60,22 @@ jobs:
     - name: Get swift version
       run: swift --version # Swift 5.3.3
 
-    - name: SPM Cache ${{ matrix.xcode }}
+    - name: SPM Cache
       uses: actions/cache@v3.2.4
       with:
         path: .build
-        key: ${{ runner.os }}-${{ matrix.xcode }}-spm-${{ hashFiles('**/Package.resolved') }}
+        key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
-          ${{ runner.os }}-${{ matrix.xcode }}-spm-
+          ${{ runner.os }}-macos-26-spm-
 
-    - name: Build ${{ matrix.xcode }}
+    - name: Build
       run: make build
 
-    - name: Run tests ${{ matrix.xcode }}
+    - name: Run tests
       run: make test
 
   artifact:
-    runs-on: macos-12
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v3.3.0
 
@@ -115,7 +98,7 @@ jobs:
           if-no-files-found: ignore # 'warn' or 'ignore' 
 
   IntegrateIOS:
-    runs-on: macos-12
+    runs-on: macos-26
     needs: [artifact]
     steps:
       - uses: actions/checkout@v3.3.0
