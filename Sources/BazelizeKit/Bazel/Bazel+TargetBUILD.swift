@@ -8,7 +8,7 @@
 
 import Foundation
 import PathKit
-import RuleBuilder
+import Starlark
 import Util
 import XCode
 
@@ -16,27 +16,27 @@ extension Bazel {
     /// /{TARGET}/BUILD
     struct TargetBuild: BazelFile {
         // MARK: Lifecycle
-        
+
         init(_ root: Path, _ target: XCode.Target) {
             self.target = target
             targetPath = root + target.name
             path = targetPath + "BUILD"
         }
-        
+
         // MARK: Internal
-        
+
         let target: XCode.Target
-        
+
         let path: Path
         let targetPath: Path
         private(set) var code = ""
-        
-        
+
+
         mutating
         func setup(_ kit: Kit) {
             code = target.generateCode(kit)
         }
-        
+
         func mkpath() throws {
             do {
                 try targetPath.mkpath()

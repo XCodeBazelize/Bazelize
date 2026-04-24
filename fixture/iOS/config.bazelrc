@@ -1,4 +1,0 @@
-# Generated using Bazelize 0.0.4 - https://github.com/XCodeBazelize/Bazelize
-
-build:Debug --//:mode=Debug
-build:Release --//:mode=Release

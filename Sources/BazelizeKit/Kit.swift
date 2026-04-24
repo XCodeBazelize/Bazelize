@@ -47,16 +47,16 @@ public final class Kit {
     public init(_ projPath: Path, _ preferConfig: String?) async throws {
         project = try await Project(projPath, preferConfig)
         plugins = []
-        
+
         try await pluginSPM.loadPackageNames(projPath: projPath)
     }
 
     // MARK: Public
 
-    public final func run(_ mainfest: Path) async throws {
+    public final func run(_: Path) async throws {
         defer { tips() }
 
-        try await loadPlugins(mainfest)
+//        try await loadPlugins(mainfest)
 
         generate()
     }
@@ -70,12 +70,12 @@ public final class Kit {
 
 
 extension Kit {
-    private final func loadPlugins(_ mainfest: Path) async throws {
-        plugins = try await PluginLoader.load(manifest: mainfest, project)
-        for plugin in plugins {
-            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
-        }
-    }
+//    private final func loadPlugins(_ mainfest: Path) async throws {
+//        plugins = try await PluginLoader.load(manifest: mainfest, project)
+//        for plugin in plugins {
+//            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
+//        }
+//    }
 
     private final func tips() {
         builtinPlugins.compactMap(\.tip).forEach { tip in
@@ -124,7 +124,7 @@ extension Kit {
     /// {WORKSPACE}/BUILD
     private final func generateBuild() {
         build.setup(config: project.config)
-        build.exportUncategorizedFiles(self)
+//        build.exportUncategorizedFiles(self)
         for plugin in builtinPlugins {
             plugin.build(build.builder)
         }

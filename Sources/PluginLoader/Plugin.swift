@@ -21,7 +21,7 @@ open class PluginBuilder {
 
 // MARK: - Plugin
 
-public protocol Plugin: AnyObject {
+public protocol Plugin: AnyObject, Sendable {
     var name: String { get }
     var description: String { get }
     var version: String { get }

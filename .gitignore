@@ -181,4 +181,6 @@ lefthook.yml
 
 cache/
 
+.codex-local-skills/
+.vendor/
 app/

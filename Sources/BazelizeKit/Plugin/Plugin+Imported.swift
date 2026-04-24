@@ -5,9 +5,10 @@
 //  Created by Yume on 2023/2/7.
 //
 
+import BazelRules
 import Foundation
 import PathKit
-import RuleBuilder
+import Starlark
 import XCode
 
 // TODO: check static imported (xc)framework
@@ -52,13 +53,13 @@ final class PluginImported: PluginBuiltin {
         for file in files {
             guard let relativePath = file.relativePath else { continue }
             let name = Path(relativePath).lastComponentWithoutExtension
-            builder.add(.apple_dynamic_xcframework_import) {
-                "name" => name
-                "xcframework_imports" => Starlark.glob([
-                    "\(relativePath)/**",
-                ])
-                StarlarkProperty.Visibility.public
-            }
+            builder.call(
+                Rules.Apple.General.Call.apple_dynamic_xcframework_import(
+                    name: name,
+                    xcframework_imports: Starlark.glob([
+                        "\(relativePath)/**",
+                    ]),
+                    visibility: .public))
         }
     }
 
@@ -69,13 +70,13 @@ final class PluginImported: PluginBuiltin {
         for file in files {
             guard let relativePath = file.relativePath else { continue }
             let name = Path(relativePath).lastComponentWithoutExtension
-            builder.add(.apple_dynamic_framework_import) {
-                "name" => name
-                "framework_imports" => Starlark.glob([
-                    "\(relativePath)/**",
-                ])
-                StarlarkProperty.Visibility.public
-            }
+            builder.call(
+                Rules.Apple.General.Call.apple_dynamic_framework_import(
+                    name: name,
+                    framework_imports: Starlark.glob([
+                        "\(relativePath)/**",
+                    ]),
+                    visibility: .public))
         }
     }
 }

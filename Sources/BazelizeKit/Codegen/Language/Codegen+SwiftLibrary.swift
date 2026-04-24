@@ -5,15 +5,14 @@
 //  Created by Yume on 2022/7/4.
 //
 
+import BazelRules
 import Foundation
-import RuleBuilder
+import Starlark
 import XCode
 
 extension Target {
     // MARK: Internal
 
-    /// https://github.com/bazelbuild/rules_swift/blob/master/doc/rules.md#swift_library
-    /// swift_library(name, alwayslink, copts, data, defines, deps, generated_header_name, generates_header, linkopts, linkstatic, module_name, private_deps, srcs, swiftc_inputs)
     func generateSwiftLibrary(_ builder: CodeBuilder, _ kit: Kit) {
         let plugin = kit.plugins.compactMap {
             $0[name]
@@ -27,40 +26,40 @@ extension Target {
             }
 
         builder.load(.swift_library)
-        builder.add(.swift_library) {
-            "name" => "\(name)_swift"
-            "module_name" => name
-            "srcs" => {
-                srcs_swift
-            }
-            "testonly" => isTest
-            "deps" => {
-                frameworksLibrary
-                applicationHost
-                plugin
-                builtins
-            }
-            "data" => {
-                if !assets.isEmpty {
-                    ":Assets"
-                }
-                xibs
-                storyboards
-            }
-            "defines" => defines
-            StarlarkProperty.Visibility.private
-        }
+        builder.call(
+            Rules.Swift.Call.swift_library(
+                name: "\(name)_swift",
+                module_name: name,
+                srcs: .build {
+                    srcs_swift
+                },
+                deps: .build {
+                    frameworksLibrary
+                    applicationHost
+                    plugin
+                    builtins
+                },
+                data: .build {
+                    if !assets.isEmpty {
+                        ":Assets"
+                    }
+                    xibs
+                    storyboards
+                },
+                defines: defines,
+                testonly: isTest,
+                visibility: .private))
 
-        builder.add("alias") {
-            "name" => "\(name)_library"
-            "actual" => "\(name)_swift"
-            StarlarkProperty.Visibility.public
-        }
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: "\(name)_library",
+                actual: .named("\(name)_swift"),
+                visibility: .public))
     }
 
     // MARK: Private
 
-    private var defines: Starlark {
+    private var defines: Starlark.Value {
         select(\.swiftDefine).map { text -> [String] in
             let flags: [String] = (text ?? "").split(separator: " ").map(String.init)
 

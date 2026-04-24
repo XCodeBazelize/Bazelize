@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import RuleBuilder
+import Starlark
 import XcodeProj
 
 extension Dictionary where Key == String {

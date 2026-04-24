@@ -1,5 +1,3 @@
 import Foundation
 
-enum Bazel {
-    
-}
+enum Bazel { }

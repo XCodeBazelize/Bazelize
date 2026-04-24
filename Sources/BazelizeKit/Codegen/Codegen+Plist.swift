@@ -5,9 +5,10 @@
 //  Created by Yume on 2022/8/27.
 //
 
+import BazelRules
 import Foundation
 import PathKit
-import RuleBuilder
+import Starlark
 import XCode
 
 extension Target {
@@ -16,7 +17,7 @@ extension Target {
         guard isGeneratePlist || isGeneratePlistAuto || isGeneratePlistDefault else {
             return
         }
-        builder.load(loadableRule: RulesPlist.plist_fragment)
+        builder.load(loadableRule: Rules.Plist.plist_fragment)
     }
 }
 
@@ -25,7 +26,7 @@ extension Target {
 extension Target {
     // MARK: Internal
 
-    var plist_file: String? {
+    var plist_file: Starlark.Label? {
         if let _ = plistContent {
             return ":plist_file"
         }
@@ -34,16 +35,16 @@ extension Target {
 
     func generatePlistFile(_ builder: CodeBuilder, _: Kit) {
         guard let plist = plistContent else { return }
-        builder.add(RulesPlist.plist_fragment.rawValue) {
-            "name" => "plist_file"
-            "extension" => "plist"
-            "template" => Starlark.custom("""
-            '''
-            \(plist)
-            '''
-            """)
-            StarlarkProperty.Visibility.private
-        }
+        builder.call(
+            Rules.Plist.Call.plist_fragment(
+                name: "plist_file",
+                ext: "plist",
+                template: Starlark.custom("""
+                '''
+                \(plist)
+                '''
+                """),
+                visibility: .private))
     }
 
     // MARK: Private
@@ -78,23 +79,23 @@ extension Target {
 extension Target {
     // MARK: Internal
 
-    var plist_auto: String? {
+    var plist_auto: Starlark.Label? {
         isGeneratePlistAuto ? ":plist_auto" : nil
     }
 
     func generatePlistAuto(_ builder: CodeBuilder) {
         if isGeneratePlistAuto {
             let plist = prefer(\.plist) ?? []
-            builder.add(RulesPlist.plist_fragment.rawValue) {
-                "name" => "plist_auto"
-                "extension" => "plist"
-                "template" => Starlark.custom("""
-                '''
-                \(plist.withNewLine)
-                '''
-                """)
-                StarlarkProperty.Visibility.private
-            }
+            builder.call(
+                Rules.Plist.Call.plist_fragment(
+                    name: "plist_auto",
+                    ext: "plist",
+                    template: Starlark.custom("""
+                    '''
+                    \(plist.withNewLine)
+                    '''
+                    """),
+                    visibility: .private))
         }
     }
 
@@ -114,23 +115,23 @@ extension Target {
 extension Target {
     // MARK: Internal
 
-    var plist_default: String? {
+    var plist_default: Starlark.Label? {
         isGeneratePlistDefault ? ":plist_default" : nil
     }
 
     func generatePlistDefault(_ builder: CodeBuilder) {
         if isGeneratePlistDefault {
             let plist = prefer(\.defaultPlist) ?? []
-            builder.add(RulesPlist.plist_fragment.rawValue) {
-                "name" => "plist_default"
-                "extension" => "plist"
-                "template" => Starlark.custom("""
-                '''
-                \(plist.withNewLine)
-                '''
-                """)
-                StarlarkProperty.Visibility.private
-            }
+            builder.call(
+                Rules.Plist.Call.plist_fragment(
+                    name: "plist_default",
+                    ext: "plist",
+                    template: Starlark.custom("""
+                    '''
+                    \(plist.withNewLine)
+                    '''
+                    """),
+                    visibility: .private))
         }
     }
 

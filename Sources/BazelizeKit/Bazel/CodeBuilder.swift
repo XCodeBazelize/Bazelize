@@ -5,150 +5,116 @@
 //  Created by Yume on 2022/7/1.
 //
 
+import BazelRules
 import Foundation
-import RuleBuilder
+import Starlark
 import Util
 
 // MARK: - CodeBuilder
 
 public final class CodeBuilder {
-    private var loads: Set<String> = .init()
-    private var codes: [String] = []
+    private var loads: [String: Set<Starlark.Statement.LoadSymbol>] = [:]
+    private var statements: [Starlark.Statement] = []
 }
 
 extension CodeBuilder {
-    private var _code: String {
-        get { "" }
-        set { codes.append(newValue) }
-    }
-}
-
-extension CodeBuilder {
-    /// bazel_dep
-    func bazelDep(name: String, version: String, repo_name: String? = nil) {
-        add("bazel_dep") {
-            "name" => name
-            "version" => version
-            "repo_name" => repo_name
-        }
+    func bazel_dep(name: String, version: String, repo_name: String? = nil) {
+        call(
+            Rules.Builtin.Call.bazel_dep(
+                name: name,
+                version: version,
+                repo_name: repo_name))
     }
 }
 
 extension CodeBuilder {
-    func load(_ rule: RulesApple.Apple) {
+    func load(_ rule: Rules.Apple.General) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesObjc) {
+    func load(_ rule: Rules.Objc) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.IOS) {
+    func load(_ rule: Rules.Apple.IOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.Mac) {
+    func load(_ rule: Rules.Apple.MacOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.TV) {
+    func load(_ rule: Rules.Apple.TVOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesApple.Watch) {
+    func load(_ rule: Rules.Apple.WatchOS) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesSwift) {
+    func load(_ rule: Rules.Swift) {
         load(loadableRule: rule)
     }
 
-    func load(_ rule: RulesConfig) {
+    func load(_ rule: Rules.Config) {
         load(loadableRule: rule)
     }
 
     /// load function at top of the file.
-
-    func load(_ code: String) {
-        loads.insert(code)
+    func load(module: String, symbols: [Starlark.Statement.LoadSymbol]) {
+        loads[module, default: []].formUnion(symbols)
     }
 
+    func load(_ statementLoad: Starlark.Statement.Load) {
+        load(
+            module: statementLoad.module,
+            symbols: statementLoad.symbols)
+    }
+
+//    func load(_ code: String) {
+//        statements.append(.custom(code))
+//    }
+
     func load(loadableRule rule: LoadableRule) {
-        load(rule.load)
+        load(
+            module: rule.module,
+            symbols: [.init(rule.rule)])
     }
 }
 
 // MARK: - RuleBuild
 extension CodeBuilder {
-    func add(_ rule: RulesObjc, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
+    // FIXME: (@yume190) todo remove add
+    func add(_ rule: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
+        statements.append(.call(.init(rule, builder: builder)))
     }
 
-    func add(_ rule: RulesApple.Apple, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: RulesApple.IOS, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: RulesApple.Mac, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: RulesApple.TV, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: RulesApple.Watch, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: RulesSwift, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: RulesConfig, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule: rule, builder: builder)
-    }
-
-    func add(_ rule: String, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(StarlarkRule(rule, builder: builder).text)
-    }
-    
-    func execute(_ rule: String,) {
-        
+    func call(_ call: Starlark.Statement.Call) {
+        statements.append(.call(call))
     }
 
     /// append custom code.
-
     func custom(_ code: String) {
-        _code = code
-    }
-
-    // MARK: Private
-
-    private
-    func add(rule: BuildableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        add(rule.rule, builder: builder)
-    }
-
-    private
-    func add(loadableRule rule: LoadableRule, @PropertyBuilder builder: () -> [PropertyBuilder.Target]) {
-        custom(StarlarkRule(rule.rule, builder: builder).text)
+        statements.append(.custom(code))
     }
 }
 
 extension CodeBuilder {
     func build() -> String {
-        let loads = loads.sorted().joined(separator: "\n")
-        let codes: [String]
-        if loads.isEmpty {
-            codes = self.codes
-        } else {
-            codes = [loads] + self.codes
-        }
+        let loadsStatement = loads
+            .map { module, symbols in
+                Starlark.Statement.Load(
+                    module: module,
+                    symbols: symbols.sorted {
+                        ($0.local ?? $0.exported, $0.exported) < ($1.local ?? $1.exported, $1.exported)
+                    })
+            }
+            .sorted()
+            .map(\.statemenet)
 
-        return codes.joined(separator: "\n\n")
+        let sections = loadsStatement + [.newLine] + statements
+        return sections
+            .map(\.text)
+            .joined(separator: "\n")
     }
 }

@@ -1,4 +1,4 @@
-// swift-tools-version:5.7
+// swift-tools-version:6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -27,8 +27,7 @@ let package = Package(
         /// support async command
         .package(
             url: "https://github.com/apple/swift-package-manager",
-            branch: "swift-6.2.4-RELEASE"
-        ),
+            branch: "swift-6.2.4-RELEASE"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -43,22 +42,31 @@ let package = Package(
             ]),
 
         .target(
-            name: "RuleBuilder",
+            name: "BazelRules",
+            dependencies: [
+                "Starlark",
+            ]),
+        .testTarget(
+            name: "BazelRulesTests",
+            dependencies: ["BazelRules"]),
+        .target(
+            name: "Starlark",
             dependencies: [
                 "Util",
             ]),
         .testTarget(
-            name: "RuleBuilderTests",
-            dependencies: ["RuleBuilder"]),
+            name: "StarlarkTests",
+            dependencies: ["Starlark"]),
 
         .target(
             name: "BazelizeKit",
             dependencies: [
                 "Yams",
 
+                "BazelRules",
                 "XCode",
                 "Util",
-                "RuleBuilder",
+                "Starlark",
                 "PluginLoader",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
@@ -78,7 +86,7 @@ let package = Package(
             name: "XCode",
             dependencies: [
                 "Util",
-                "RuleBuilder",
+                "Starlark",
                 "AnyCodable",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
@@ -99,8 +107,7 @@ let package = Package(
         ),
         .testTarget(
             name: "XCodeTests",
-            dependencies: ["XCode"]
-        ),
+            dependencies: ["XCode"]),
 
         .target(
             name: "PluginLoader",
@@ -109,7 +116,5 @@ let package = Package(
                 "Util",
                 "XCode",
                 "SwiftCommand",
-            ]
-        ),
-    ]
-)
+            ]),
+    ])

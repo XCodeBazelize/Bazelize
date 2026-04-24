@@ -9,7 +9,7 @@ import AnyCodable
 import Foundation
 import XcodeProj
 
-// MARK: - BuildSetting + Encodable
+// MARK: - BuildSettings + Encodable
 
 extension BuildSettings: Encodable {
     public func encode(to encoder: Encoder) throws {
@@ -18,7 +18,7 @@ extension BuildSettings: Encodable {
     }
 }
 
-// MARK: - BuildSetting
+// MARK: - BuildSettings
 
 public struct BuildSettings {
     // MARK: Lifecycle
@@ -60,19 +60,21 @@ public struct BuildSettings {
         if let value = value as? String {
             return value
         }
-        
+
         if let value = value as? BuildSetting {
             switch value {
-            case let .string(string):
+            case .string(let string):
                 return string
-            case let .array(array):
+            case .array(let array):
                 return array.joined(separator: " ")
             }
         }
-        
+
         return nil
     }
 }
+
+// MARK: - SDK
 
 public enum SDK: String, Encodable {
     case iOS = "iphoneos"
@@ -80,8 +82,10 @@ public enum SDK: String, Encodable {
     case tvOS = "appletvos"
     case watchOS = "watchos"
     case driverKit = "driverkit"
-    case auto = "auto"
+    case auto
 }
+
+// MARK: - DeviceFamily
 
 public enum DeviceFamily: String {
     case iphone = "1"

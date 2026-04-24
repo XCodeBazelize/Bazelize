@@ -5,8 +5,9 @@
 //  Created by Yume on 2023/1/9.
 //
 
+import BazelRules
 import Foundation
-import RuleBuilder
+import Starlark
 import XCode
 
 extension Target {
@@ -15,10 +16,12 @@ extension Target {
 
         guard !files.isEmpty else { return }
 
-        builder.add("filegroup") {
-            "name" => "Strings"
-            "srcs" => files
-            StarlarkProperty.Visibility.private
-        }
+        builder.call(
+            Rules.Builtin.Call.filegroup(
+                name: "Strings",
+                srcs: .build {
+                    files
+                },
+                visibility: .private))
     }
 }

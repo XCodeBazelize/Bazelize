@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - PluginArchive
+// MARK: - PluginHttpArchive
 
 final class PluginHttpArchive: PluginBuiltin {
     override var name: String { "Bazel HTTP Archive" }
@@ -17,6 +17,8 @@ final class PluginHttpArchive: PluginBuiltin {
         """)
     }
 }
+
+// MARK: - PluginGitRepository
 
 final class PluginGitRepository: PluginBuiltin {
     override var name: String { "Bazel Git Repository" }

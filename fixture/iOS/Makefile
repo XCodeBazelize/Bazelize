@@ -1,11 +1,15 @@
 .PHONY: bazelize
 bazelize:
 	@bazelize --project Example.xcodeproj
-	@bazel run //:swift_update_pkgs
+	@bazel mod tidy
 
 .PHONY: clear
 clear:
 	@bazelize --project Example.xcodeproj --clear
+	-rm Package.swift
+	-rm Package.resolved 
+	-rm MODULE.bazel 
+	-rm MODULE.bazel.lock
 
 .PHONY: build
 build:
@@ -13,7 +17,7 @@ build:
 
 .PHONY: updatePkg
 updatePkg:
-	bazel run //:swift_update_pkgs
+	@bazel mod tidy
 
 .PHONY: run
 run:
