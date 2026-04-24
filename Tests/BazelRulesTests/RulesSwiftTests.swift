@@ -141,6 +141,39 @@ struct RulesSwiftTests {
     }
 
     @Test
+    func testSwiftLibraryTypedCallWithSelectDefines() {
+        let call = Rules.Swift.Call.swift_library(
+            name: "Core",
+            srcs: ["A.swift"],
+            defines: .select(
+                .various([
+                    .config("Debug"): ["DEBUG"],
+                    .default: [],
+                ])
+            )
+        )
+
+        #expect(
+            call.text
+                == """
+                swift_library(
+                    name = "Core",
+                    alwayslink = True,
+                    srcs = [
+                        "A.swift",
+                    ],
+                    defines = select({
+                        "//:Debug": [
+                            "DEBUG",
+                        ],
+                        "//conditions:default": None
+                    }),
+                )
+                """
+        )
+    }
+
+    @Test
     func testSwiftBinaryTypedCall() {
         let call = Rules.Swift.Call.swift_binary(
             name: "CLI",
@@ -181,6 +214,39 @@ struct RulesSwiftTests {
                     visibility = [
                         "//visibility:public",
                     ],
+                )
+                """
+        )
+    }
+
+    @Test
+    func testMixedLanguageLibraryTypedCallWithSelectDefines() {
+        let call = Rules.Swift.Call.mixed_language_library(
+            name: "Core",
+            srcs: ["A.swift", "B.m"],
+            defines: .select(
+                .various([
+                    .config("Debug"): ["DEBUG"],
+                    .default: [],
+                ])
+            )
+        )
+
+        #expect(
+            call.text
+                == """
+                mixed_language_library(
+                    name = "Core",
+                    srcs = [
+                        "A.swift",
+                        "B.m",
+                    ],
+                    defines = select({
+                        "//:Debug": [
+                            "DEBUG",
+                        ],
+                        "//conditions:default": None
+                    }),
                 )
                 """
         )
