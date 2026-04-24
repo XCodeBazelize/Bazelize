@@ -24,7 +24,7 @@ jobs:
   lint:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
 
       - name: swiftformat installation
         run: |
@@ -37,7 +37,7 @@ jobs:
     runs-on: macos-26
 
     steps:
-    - uses: actions/checkout@v3.3.0
+    - uses: actions/checkout@v4
 
     - name: Check Cocoapod Version
       run: pod --version
@@ -61,7 +61,7 @@ jobs:
       run: swift --version # Swift 5.3.3
 
     - name: SPM Cache
-      uses: actions/cache@v3.2.4
+      uses: actions/cache@v4
       with:
         path: .build
         key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
@@ -77,10 +77,10 @@ jobs:
   artifact:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
 
       - name: SPM Cache
-        uses: actions/cache@v3.2.4
+        uses: actions/cache@v4
         with:
           path: .build
           key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
@@ -91,7 +91,7 @@ jobs:
         run: swift build -c release --arch arm64 --arch x86_64
 
       - name: Upload Bazelize
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bazelize
           path: .build/apple/Products/Release/bazelize
@@ -101,10 +101,10 @@ jobs:
     runs-on: macos-26
     needs: [artifact]
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
 
       - name: Bazel iOS Cache
-        uses: actions/cache@v3.2.4
+        uses: actions/cache@v4
         with:
           path: fixture/iOS/cache
           key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/fixture/iOS/WORKSPACE') }}
@@ -116,7 +116,7 @@ jobs:
           brew install bazelisk
 
       - name: Download Bazelize
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: bazelize
 
@@ -147,7 +147,7 @@ jobs:
           bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
 
       - name: Upload iOS Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iOS_Example.ipa
           path: fixture/iOS/Example.ipa
