@@ -107,10 +107,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-IntegrateIOS-fixture-ios-
 
-      - name: Install `bazelisk`
-        run: |
-          brew install bazelisk
-
       - name: Download Bazelize
         uses: actions/download-artifact@v8
         with:
@@ -136,6 +132,11 @@ jobs:
         working-directory: fixture/iOS
         run: |
           bazel build Example
+      
+      - name: Copy IPA
+        working-directory: fixture/iOS
+        run: |
+          cp bazel-bin/Example/Example.ipa .
 
       - name: Unit Test
         working-directory: fixture/iOS
@@ -146,6 +147,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: iOS_Example.ipa
-          path: bazel-bin/Example/Example.ipa
+          path: fixture/iOS/Example.ipa
           if-no-files-found: ignore # 'warn' or 'ignore' 
  
