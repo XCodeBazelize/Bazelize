@@ -27,7 +27,7 @@ struct Command: AsyncParsableCommand {
 }
 
 struct GenerateCommand: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
         commandName: "generate",
         abstract: "Generate Bazel files from an Xcode project."
     )
@@ -65,7 +65,7 @@ struct GenerateCommand: AsyncParsableCommand {
 }
 
 struct XCode2Command: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
         commandName: "xcode2",
         abstract: "Dump an Xcode project structure as JSON or print one target summary."
     )
@@ -105,7 +105,7 @@ struct XCode2Command: AsyncParsableCommand {
 }
 
 struct RoadmapCommand: AsyncParsableCommand {
-    static var configuration = CommandConfiguration(
+    static let configuration = CommandConfiguration(
         commandName: "roadmap",
         abstract: "Create the roadmap tree layout from an Xcode project."
     )
