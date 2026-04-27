@@ -8,15 +8,22 @@ final class TargetSummaryFormatterTests: XCTestCase {
             productName: "Example",
             productType: "com.apple.product-type.application",
             configs: [
-                "Debug": [
-                    "SWIFT_VERSION": .string("5.9"),
-                ],
-                "Release": [
-                    "INFOPLIST_FILE": .string("Example/Info.plist"),
-                    "IPHONEOS_DEPLOYMENT_TARGET": .string("16.0"),
-                    "PRODUCT_BUNDLE_IDENTIFIER": .string("com.example.Example"),
-                    "SWIFT_VERSION": .string("5.9"),
-                ],
+                "Debug": .init(
+                    name: "Debug",
+                    setting: [
+                        "SWIFT_VERSION": "5.9",
+                    ]
+                ),
+                "Release": .init(
+                    name: "Release",
+                    setting: [
+                        "INFOPLIST_FILE": "Example/Info.plist",
+                        "IPHONEOS_DEPLOYMENT_TARGET": "16.0",
+                        "PRODUCT_BUNDLE_IDENTIFIER": "com.example.Example",
+                        "SWIFT_VERSION": "5.9",
+                        "TARGETED_DEVICE_FAMILY": "1 2",
+                    ]
+                ),
             ],
             metadata: .init(
                 bundleID: "com.example.Example",
@@ -92,5 +99,6 @@ final class TargetSummaryFormatterTests: XCTestCase {
         XCTAssertTrue(summary.contains("SDK Frameworks:"))
         XCTAssertTrue(summary.contains("Settings [Release]:"))
         XCTAssertTrue(summary.contains("PRODUCT_BUNDLE_IDENTIFIER = com.example.Example"))
+        XCTAssertTrue(summary.contains("TARGETED_DEVICE_FAMILY = 1 2"))
     }
 }

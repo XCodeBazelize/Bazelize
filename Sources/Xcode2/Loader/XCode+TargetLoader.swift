@@ -1,0 +1,293 @@
+import Foundation
+import PathKit
+import XcodeProj
+
+struct TargetLoader {
+    let native: PBXNativeTarget
+    unowned let project: ProjectLoader
+    let configList: ConfigListLoader
+    let mergedConfig: [String: XCode.BuildSettings]
+
+    init(native: PBXNativeTarget, project: ProjectLoader, defaultConfigList: ConfigListLoader?) {
+        self.native = native
+        self.project = project
+        configList = ConfigListLoader(native: native.buildConfigurationList)
+        mergedConfig = configList.merge(defaultConfigList)
+    }
+
+    var name: String { native.name }
+
+    var model: XCode.Target {
+        let buildPhases = native.buildPhases.map(XCode.BuildPhase.init)
+        let synchronizedFiles = synchronizedGroupFiles
+
+        let sourceFiles = unique(
+            fileModels(from: sourceBuildFiles, buildPhase: .sources) +
+                synchronizedFiles.filter { file in
+                    file.category == .source
+                }.map(\.file)
+        ) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+        let headerFiles = unique(
+            fileModels(from: headerBuildFiles, buildPhase: .headers) +
+                packageHeaders +
+                synchronizedFiles.filter { file in
+                    file.category == .header
+                }.map(\.file)
+        ) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+        let resourceFiles = unique(
+            fileModels(from: resourceBuildFiles, buildPhase: .resources) +
+                synchronizedFiles.filter { file in
+                    file.category == .resource
+                }.map(\.file)
+        ) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+        let frameworkFiles = fileModels(from: frameworkBuildFiles, buildPhase: .frameworks)
+        let copyFiles = fileModels(from: copyBuildFiles, buildPhase: .copyFiles)
+
+        let knownPaths = Set(
+            (sourceFiles + headerFiles + resourceFiles + frameworkFiles + copyFiles)
+                .compactMap(\.path)
+        )
+
+        let otherFiles = project.packageFiles(targetName: name)
+            .filter { file in
+                guard let path = file.relativePath else { return false }
+                return !knownPaths.contains(path)
+            }
+            .map { $0.file(buildPhase: nil, compilerFlags: nil, attributes: []) } +
+            synchronizedFiles.filter { file in
+                file.category == .other && !knownPaths.contains(file.file.path ?? "")
+            }.map(\.file)
+
+        return XCode.Target(
+            name: name,
+            productName: native.productName,
+            productType: native.productType?.rawValue,
+            configs: mergedConfig,
+            metadata: metadata,
+            buildPhases: buildPhases,
+            files: .init(
+                sources: sourceFiles,
+                headers: headerFiles,
+                resources: resourceFiles,
+                frameworks: frameworkFiles,
+                copyFiles: copyFiles,
+                others: unique(otherFiles) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+            ),
+            dependencies: dependencies
+        )
+    }
+
+    private var metadata: XCode.TargetMetadata {
+        let settings = selectedConfig ?? .init(name: "", setting: [:])
+
+        return .init(
+            bundleID: settings["PRODUCT_BUNDLE_IDENTIFIER"],
+            moduleName: settings["PRODUCT_MODULE_NAME"] ?? settings["PRODUCT_NAME"],
+            infoPlist: settings["INFOPLIST_FILE"],
+            deploymentTargets: deploymentTargets(from: settings),
+            codeSign: .init(
+                developmentTeam: settings["DEVELOPMENT_TEAM"],
+                codeSignStyle: settings["CODE_SIGN_STYLE"],
+                codeSignIdentity: settings["CODE_SIGN_IDENTITY"]
+            )
+        )
+    }
+
+    private var dependencies: XCode.Dependencies {
+        let frameworkNames = frameworkBuildFiles.compactMap { buildFile -> String? in
+            guard let file = buildFile.file else { return nil }
+            let wrapped = FileLoader(native: file, project: project)
+            guard !wrapped.isSDKFramework else { return nil }
+            return wrapped.name
+        }
+
+        let sdkFrameworks = frameworkBuildFiles.compactMap { buildFile -> String? in
+            guard let file = buildFile.file else { return nil }
+            let wrapped = FileLoader(native: file, project: project)
+            guard wrapped.isSDKFramework else { return nil }
+            return wrapped.frameworkName
+        }
+
+        let packageProducts = (native.packageProductDependencies ?? []).map { dependency in
+            XCode.PackageProductDependency(
+                productName: dependency.productName,
+                package: dependency.package?.repositoryURL
+            )
+        }
+
+        let targetDependencies = native.dependencies.compactMap { dependency in
+            dependency.target?.name ?? dependency.name
+        }
+
+        return .init(
+            targets: Set(targetDependencies).sorted(),
+            packageProducts: unique(packageProducts) { "\($0.productName)|\($0.package ?? "")" },
+            frameworks: Set(frameworkNames.compactMap { $0 }).sorted(),
+            sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted()
+        )
+    }
+
+    private var selectedConfig: XCode.BuildSettings? {
+        if let prefer = project.preferConfig, let hit = mergedConfig[prefer] {
+            return hit
+        }
+        return mergedConfig
+            .sorted { $0.key < $1.key }
+            .map(\.value)
+            .first
+    }
+
+    private var packageHeaders: [XCode.File] {
+        project.packageFiles(targetName: name)
+            .filter { file in
+                guard let type = file.fileType else { return false }
+                return type == "sourcecode.c.h" || type == "sourcecode.cpp.h"
+            }
+            .map { $0.file(buildPhase: BuildPhase.headers.rawValue, compilerFlags: nil, attributes: []) }
+    }
+
+    private var sourceBuildFiles: [PBXBuildFile] {
+        (try? native.sourcesBuildPhase()?.files) ?? []
+    }
+
+    private var headerBuildFiles: [PBXBuildFile] {
+        native.buildPhases
+            .compactMap { $0 as? PBXHeadersBuildPhase }
+            .compactMap(\.files)
+            .flatMap { $0 }
+    }
+
+    private var resourceBuildFiles: [PBXBuildFile] {
+        (try? native.resourcesBuildPhase()?.files) ?? []
+    }
+
+    private var frameworkBuildFiles: [PBXBuildFile] {
+        (try? native.frameworksBuildPhase()?.files) ?? []
+    }
+
+    private var copyBuildFiles: [PBXBuildFile] {
+        native.buildPhases
+            .compactMap { $0 as? PBXCopyFilesBuildPhase }
+            .compactMap(\.files)
+            .flatMap { $0 }
+    }
+
+    private var synchronizedGroupFiles: [SynchronizedFile] {
+        (native.fileSystemSynchronizedGroups ?? []).flatMap { group in
+            synchronizedFiles(in: group)
+        }
+    }
+
+    private func synchronizedFiles(in group: PBXFileSystemSynchronizedRootGroup) -> [SynchronizedFile] {
+        guard let relativeRoot = group.path else { return [] }
+        let root = project.workspacePath + relativeRoot
+        guard root.exists else { return [] }
+
+        let excluded = synchronizedExcludedPaths(group)
+        let compilerFlags = synchronizedCompilerFlags(group)
+
+        return (try? root.recursiveChildren())?
+            .filter(\.isFile)
+            .compactMap { file in
+                let relative = file.string.delete(prefix: project.workspacePath.string + "/")
+                guard let relative else { return nil }
+
+                let pathInGroup = relative.delete(prefix: relativeRoot + "/") ?? ""
+                guard !excluded.contains(pathInGroup), !excluded.contains(relative) else {
+                    return nil
+                }
+
+                return SynchronizedFile(
+                    path: relative,
+                    fullPath: file.string,
+                    compilerFlags: compilerFlags[pathInGroup] ?? compilerFlags[relative]
+                )
+            } ?? []
+    }
+
+    private func synchronizedExcludedPaths(_ group: PBXFileSystemSynchronizedRootGroup) -> Set<String> {
+        let buildExceptions = (group.exceptions ?? []).compactMap {
+            $0 as? PBXFileSystemSynchronizedBuildFileExceptionSet
+        }.filter { exception in
+            exception.target?.name == name
+        }
+
+        let membershipExceptions = buildExceptions
+            .compactMap(\.membershipExceptions)
+            .flatMap { $0 }
+
+        return Set(membershipExceptions)
+    }
+
+    private func synchronizedCompilerFlags(_ group: PBXFileSystemSynchronizedRootGroup) -> [String: String] {
+        let buildExceptions = (group.exceptions ?? []).compactMap {
+            $0 as? PBXFileSystemSynchronizedBuildFileExceptionSet
+        }.filter { exception in
+            exception.target?.name == name
+        }
+
+        return buildExceptions
+            .compactMap(\.additionalCompilerFlagsByRelativePath)
+            .reduce(into: [:]) { result, next in
+                result.merge(next) { first, _ in first }
+            }
+    }
+
+    private func fileModels(from buildFiles: [PBXBuildFile], buildPhase: BuildPhase) -> [XCode.File] {
+        buildFiles.compactMap { buildFile in
+            guard let file = buildFile.file else { return nil }
+            return FileLoader(native: file, project: project).file(
+                buildPhase: buildPhase.rawValue,
+                compilerFlags: buildFile.compilerFlags,
+                attributes: buildFile.attributes ?? []
+            )
+        }
+    }
+
+    private func deploymentTargets(from settings: XCode.BuildSettings) -> [String: String] {
+        [
+            "iOS": settings["IPHONEOS_DEPLOYMENT_TARGET"],
+            "macOS": settings["MACOSX_DEPLOYMENT_TARGET"],
+            "tvOS": settings["TVOS_DEPLOYMENT_TARGET"],
+            "watchOS": settings["WATCHOS_DEPLOYMENT_TARGET"],
+            "driverKit": settings["DRIVERKIT_DEPLOYMENT_TARGET"],
+        ].compactMapValues { $0 }
+    }
+}
+
+private extension XCode.BuildPhase {
+    init(phase: PBXBuildPhase) {
+        let destination: XCode.CopyFilesDestination?
+        if let copyPhase = phase as? PBXCopyFilesBuildPhase {
+            destination = .init(
+                path: copyPhase.dstPath,
+                subfolder: copyPhase.dstSubfolder?.rawValue,
+                subfolderSpec: copyPhase.dstSubfolderSpec?.rawValue
+            )
+        } else {
+            destination = nil
+        }
+
+        self.init(
+            type: phase.buildPhase.rawValue,
+            name: phase.name(),
+            files: (phase.files ?? []).compactMap { buildFile in
+                XCode.BuildPhaseFile(
+                    name: (buildFile.file as? PBXFileReference)?.name ??
+                        (buildFile.file as? PBXFileReference)?.path ??
+                        buildFile.product?.productName,
+                    path: buildFile.file?.path,
+                    fileType: (buildFile.file as? PBXFileReference)?.lastKnownFileType,
+                    compilerFlags: buildFile.compilerFlags,
+                    attributes: buildFile.attributes ?? []
+                )
+            },
+            inputPaths: (phase as? PBXShellScriptBuildPhase)?.inputPaths ?? [],
+            outputPaths: (phase as? PBXShellScriptBuildPhase)?.outputPaths ?? [],
+            inputFileListPaths: phase.inputFileListPaths ?? [],
+            outputFileListPaths: phase.outputFileListPaths ?? [],
+            shellScript: (phase as? PBXShellScriptBuildPhase)?.shellScript,
+            destination: destination
+        )
+    }
+}

@@ -482,7 +482,7 @@ private extension XCode.Target {
     }
 
     var appleFamiliesLiteral: String? {
-        guard let raw = selectedSettings["TARGETED_DEVICE_FAMILY"]?.summaryString else { return nil }
+        guard let raw = selectedSettings["TARGETED_DEVICE_FAMILY"] else { return nil }
         let families = raw
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) }
@@ -499,14 +499,14 @@ private extension XCode.Target {
         return "[" + families.map { #""\#($0)""# }.joined(separator: ", ") + "]"
     }
 
-    var selectedSettings: [String: XCode.JSONValue] {
+    var selectedSettings: XCode.BuildSettings {
         if let debug = configs["Debug"] {
             return debug
         }
         if let first = configs.keys.sorted().first, let value = configs[first] {
             return value
         }
-        return [:]
+        return .init(name: "", setting: [:])
     }
 
     func targetLibraryDeps(project: XCode.Project) -> [String] {
@@ -669,25 +669,6 @@ private extension Path {
         guard isSymlink else { return false }
         guard let destination = try? symlinkDestination().absolute() else { return false }
         return destination == absolute()
-    }
-}
-
-private extension XCode.JSONValue {
-    var summaryString: String? {
-        switch self {
-        case .string(let value):
-            return value
-        case .int(let value):
-            return String(value)
-        case .double(let value):
-            return String(value)
-        case .bool(let value):
-            return value ? "true" : "false"
-        case .array(let values):
-            return values.compactMap(\.summaryString).joined(separator: ",")
-        case .object, .null:
-            return nil
-        }
     }
 }
 

@@ -50,9 +50,9 @@ public extension XCode {
             if let selectedConfigName, let settings = target.configs[selectedConfigName] {
                 lines.append("")
                 lines.append("Settings [\(selectedConfigName)]:")
-                for key in settings.keys.sorted() {
-                    guard let value = settings[key] else { continue }
-                    lines.append("  \(key) = \(value.summaryText)")
+                for key in settings.setting.keys.sorted() {
+                    guard let value = settings.setting[key] else { continue }
+                    lines.append("  \(key) = \(value)")
                 }
             }
 
@@ -96,30 +96,5 @@ private extension XCode.PackageProductDependency {
             return "\(package) / \(productName)"
         }
         return productName
-    }
-}
-
-private extension XCode.JSONValue {
-    var summaryText: String {
-        switch self {
-        case .string(let value):
-            return value
-        case .bool(let value):
-            return value ? "true" : "false"
-        case .int(let value):
-            return String(value)
-        case .double(let value):
-            return String(value)
-        case .array(let value):
-            return "[" + value.map(\.summaryText).joined(separator: ", ") + "]"
-        case .object(let value):
-            let items = value.keys.sorted().compactMap { key -> String? in
-                guard let value = value[key] else { return nil }
-                return "\(key): \(value.summaryText)"
-            }
-            return "{" + items.joined(separator: ", ") + "}"
-        case .null:
-            return "null"
-        }
     }
 }

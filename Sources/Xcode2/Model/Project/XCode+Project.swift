@@ -1,12 +1,12 @@
 import PathKit
 
 public extension XCode {
-    struct Project: Codable {
+    struct Project: Encodable {
         public let name: String
         public let workspacePath: String
         public let projectPath: String
         public let preferConfig: String?
-        public let configs: [String: [String: JSONValue]]
+        public let configs: [String: BuildSettings]
         public let packages: Packages
         public let targets: [Target]
 
