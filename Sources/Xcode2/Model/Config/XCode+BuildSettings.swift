@@ -15,7 +15,7 @@ extension BuildSetting {
 public extension XCode {
     struct BuildSettings: Encodable {
         public let name: String
-        public let setting: [String: String]
+        private let setting: [String: String]
 
         public init(name: String, setting: [String: String]) {
             self.name = name
@@ -44,6 +44,10 @@ public extension XCode {
 
         public subscript(key: String) -> String? {
             setting[key]
+        }
+
+        var keys: [String] {
+            Array(setting.keys)
         }
     }
 }

@@ -406,13 +406,20 @@ public extension XCode {
         }
 
         private func generatedInfoPlist(target: XCode.Target) -> String {
+            let settings = target.selectedSettings
             let bundleID = target.metadata.bundleID ?? "com.example.\(target.name)"
             let bundleName = target.name
+            let shortVersion = settings.generatedPlist.marketingVersion ?? "1.0"
+            let bundleVersion = settings.generatedPlist.currentProjectVersion ?? "1"
             let packageType: String = switch target.roadmapKind {
             case .application: "APPL"
             case .framework: "FMWK"
             case .staticLibrary, .other: "BNDL"
             }
+            let extraEntries = settings.generatedPlist.entries
+                .map { "    \($0.replacingOccurrences(of: "\n", with: "\n    "))" }
+                .joined(separator: "\n")
+            let extraBlock = extraEntries.isEmpty ? "" : "\n\(extraEntries)"
             return """
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -425,11 +432,11 @@ public extension XCode {
                 <key>CFBundleExecutable</key>
                 <string>\(bundleName)</string>
                 <key>CFBundleShortVersionString</key>
-                <string>1.0</string>
+                <string>\(shortVersion)</string>
                 <key>CFBundlePackageType</key>
                 <string>\(packageType)</string>
                 <key>CFBundleVersion</key>
-                <string>1</string>
+                <string>\(bundleVersion)</string>\(extraBlock)
             </dict>
             </plist>
             """
@@ -482,21 +489,7 @@ private extension XCode.Target {
     }
 
     var appleFamiliesLiteral: String? {
-        guard let raw = selectedSettings["TARGETED_DEVICE_FAMILY"] else { return nil }
-        let families = raw
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .compactMap { code -> String? in
-                switch code {
-                case "1": return "iphone"
-                case "2": return "ipad"
-                case "3": return "tv"
-                case "4": return "watch"
-                default: return nil
-                }
-            }
-        guard !families.isEmpty else { return nil }
-        return "[" + families.map { #""\#($0)""# }.joined(separator: ", ") + "]"
+        selectedSettings.platform.appleFamiliesLiteral
     }
 
     var selectedSettings: XCode.BuildSettings {

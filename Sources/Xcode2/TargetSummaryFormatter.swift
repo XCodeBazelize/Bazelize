@@ -50,8 +50,8 @@ public extension XCode {
             if let selectedConfigName, let settings = target.configs[selectedConfigName] {
                 lines.append("")
                 lines.append("Settings [\(selectedConfigName)]:")
-                for key in settings.setting.keys.sorted() {
-                    guard let value = settings.setting[key] else { continue }
+                for key in settings.keys.sorted() {
+                    guard let value = settings[key] else { continue }
                     lines.append("  \(key) = \(value)")
                 }
             }

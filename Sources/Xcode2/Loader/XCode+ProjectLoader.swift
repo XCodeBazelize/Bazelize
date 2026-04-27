@@ -79,13 +79,34 @@ final class ProjectLoader {
     }
 
     private var localPackages: [XCode.LocalPackage] {
-        print("local")
-        return (rootProject?.localPackages ?? []).map { package in
-            .init(
+        let explicit = (rootProject?.localPackages ?? []).map { package in
+            XCode.LocalPackage(
                 name: package.name,
                 relativePath: package.relativePath
             )
         }
+        return Self.mergeLocalPackages(
+            explicit: explicit,
+            discovered: discoveredLocalPackages
+        )
+    }
+
+    private var discoveredLocalPackages: [XCode.LocalPackage] {
+        allFiles
+            .compactMap { FileLoader(native: $0, project: self) }
+            .compactMap { file in
+                guard let relativePath = file.relativePath else { return nil }
+                guard let fullPath = file.fullPath else { return nil }
+
+                let packageRoot = Path(fullPath)
+                guard packageRoot.isDirectory else { return nil }
+                guard (packageRoot + "Package.swift").exists else { return nil }
+
+                return XCode.LocalPackage(
+                    name: file.name ?? packageRoot.lastComponent,
+                    relativePath: relativePath
+                )
+            }
     }
 
     func packageFiles(targetName: String) -> [FileLoader] {
@@ -112,6 +133,22 @@ final class ProjectLoader {
         } else {
             return "//:\(package)/\(restPath)"
         }
+    }
+
+    static func mergeLocalPackages(
+        explicit: [XCode.LocalPackage],
+        discovered: [XCode.LocalPackage]
+    ) -> [XCode.LocalPackage] {
+        var result: [XCode.LocalPackage] = []
+        var seen = Set<String>()
+
+        for package in explicit + discovered {
+            if seen.insert(package.relativePath).inserted {
+                result.append(package)
+            }
+        }
+
+        return result
     }
 }
 

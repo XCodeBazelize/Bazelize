@@ -81,14 +81,14 @@ struct TargetLoader {
         let settings = selectedConfig ?? .init(name: "", setting: [:])
 
         return .init(
-            bundleID: settings["PRODUCT_BUNDLE_IDENTIFIER"],
-            moduleName: settings["PRODUCT_MODULE_NAME"] ?? settings["PRODUCT_NAME"],
-            infoPlist: settings["INFOPLIST_FILE"],
-            deploymentTargets: deploymentTargets(from: settings),
+            bundleID: settings.metadata.bundleID,
+            moduleName: settings.metadata.moduleName ?? settings.metadata.productName,
+            infoPlist: settings.plist.infoPlist,
+            deploymentTargets: settings.platform.deploymentTargets,
             codeSign: .init(
-                developmentTeam: settings["DEVELOPMENT_TEAM"],
-                codeSignStyle: settings["CODE_SIGN_STYLE"],
-                codeSignIdentity: settings["CODE_SIGN_IDENTITY"]
+                developmentTeam: settings.metadata.developmentTeam,
+                codeSignStyle: settings.metadata.codeSignStyle,
+                codeSignIdentity: settings.metadata.codeSignIdentity
             )
         )
     }
@@ -242,16 +242,6 @@ struct TargetLoader {
                 attributes: buildFile.attributes ?? []
             )
         }
-    }
-
-    private func deploymentTargets(from settings: XCode.BuildSettings) -> [String: String] {
-        [
-            "iOS": settings["IPHONEOS_DEPLOYMENT_TARGET"],
-            "macOS": settings["MACOSX_DEPLOYMENT_TARGET"],
-            "tvOS": settings["TVOS_DEPLOYMENT_TARGET"],
-            "watchOS": settings["WATCHOS_DEPLOYMENT_TARGET"],
-            "driverKit": settings["DRIVERKIT_DEPLOYMENT_TARGET"],
-        ].compactMapValues { $0 }
     }
 }
 
