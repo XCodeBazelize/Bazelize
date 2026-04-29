@@ -74,7 +74,7 @@ private struct Setting: @unchecked Sendable {
 
 // MARK: - XCodeTests
 
-enum XCodeTests {
+struct XCodeTests {
     private static let release = Setting([
         "iOS": "9.0",
         "macOS": "10.15",

@@ -95,6 +95,9 @@ private extension XCode.PackageProductDependency {
         if let package, !package.isEmpty {
             return "\(package) / \(productName)"
         }
+        if let packagePath, !packagePath.isEmpty {
+            return "\(packagePath) / \(productName)"
+        }
         return productName
     }
 }

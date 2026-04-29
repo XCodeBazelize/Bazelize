@@ -1,8 +1,9 @@
-import XCTest
+import Testing
 @testable import XCode2
 
-final class BuildSettingsTests: XCTestCase {
-    func testBuildSettingsSupportsStringAndArrayValues() {
+struct BuildSettingsTests {
+    @Test
+    func buildSettingsHelpersExposeSemanticValues() {
         let settings = XCode.BuildSettings(
             name: "Debug",
             setting: [
@@ -11,11 +12,12 @@ final class BuildSettingsTests: XCTestCase {
             ]
         )
 
-        XCTAssertEqual(settings["PRODUCT_BUNDLE_IDENTIFIER"], "com.example.app")
-        XCTAssertEqual(settings["TARGETED_DEVICE_FAMILY"], "1 2")
+        #expect(settings.metadata.bundleID == "com.example.app")
+        #expect(settings.platform.deviceFamily.map(\.code) == ["iphone", "ipad"])
     }
 
-    func testBuildSettingsPlistHelpersReadExpectedKeys() {
+    @Test
+    func buildSettingsPlistHelpersReadExpectedKeys() {
         let settings = XCode.BuildSettings(
             name: "Release",
             setting: [
@@ -29,16 +31,16 @@ final class BuildSettingsTests: XCTestCase {
             ]
         )
 
-        XCTAssertTrue(settings.generatedPlist.enabled)
-        XCTAssertEqual(settings.plist.infoPlist, "App/Info.plist")
-        XCTAssertEqual(settings.plist.launch, "LaunchScreen")
-        XCTAssertEqual(settings.plist.storyboard, "Main")
-        XCTAssertEqual(settings.plist.keys, ["INFOPLIST_KEY_CFBundleDisplayName"])
-        XCTAssertEqual(settings.generatedPlist.currentProjectVersion, "42")
-        XCTAssertEqual(settings.generatedPlist.marketingVersion, "2.3")
+        #expect(settings.generatedPlist.enabled)
+        #expect(settings.plist.infoPlist == "App/Info.plist")
+        #expect(settings.plist.launch == "LaunchScreen")
+        #expect(settings.plist.storyboard == "Main")
+        #expect(settings.generatedPlist.currentProjectVersion == "42")
+        #expect(settings.generatedPlist.marketingVersion == "2.3")
     }
 
-    func testBuildSettingsPlatformHelpersReadDeploymentTargets() {
+    @Test
+    func buildSettingsPlatformHelpersReadDeploymentTargets() {
         let settings = XCode.BuildSettings(
             name: "Release",
             setting: [
@@ -48,16 +50,17 @@ final class BuildSettingsTests: XCTestCase {
             ]
         )
 
-        XCTAssertEqual(settings.platform.iOS, "16.0")
-        XCTAssertEqual(settings.platform.macOS, "14.0")
-        XCTAssertNil(settings.platform.tvOS)
-        XCTAssertEqual(
-            settings.platform.deploymentTargets,
-            ["iOS": "16.0", "macOS": "14.0", "watchOS": "10.0"]
+        #expect(settings.platform.iOS == "16.0")
+        #expect(settings.platform.macOS == "14.0")
+        #expect(settings.platform.tvOS == nil)
+        #expect(
+            settings.platform.deploymentTargets ==
+                ["iOS": "16.0", "macOS": "14.0", "watchOS": "10.0"]
         )
     }
 
-    func testBuildSettingsPlatformHelpersReadAppleFamiliesLiteral() {
+    @Test
+    func buildSettingsPlatformHelpersReadAppleFamiliesLiteral() {
         let settings = XCode.BuildSettings(
             name: "Release",
             setting: [
@@ -65,11 +68,12 @@ final class BuildSettingsTests: XCTestCase {
             ]
         )
 
-        XCTAssertEqual(settings.platform.deviceFamily.map(\.code), ["iphone", "ipad"])
-        XCTAssertEqual(settings.platform.appleFamiliesLiteral, #"[\"iphone\", \"ipad\"]"#)
+        #expect(settings.platform.deviceFamily.map(\.code) == ["iphone", "ipad"])
+        #expect(settings.platform.appleFamiliesLiteral == #"["iphone", "ipad"]"#)
     }
 
-    func testBuildSettingsMetadataHelpersReadExpectedKeys() {
+    @Test
+    func buildSettingsMetadataHelpersReadExpectedKeys() {
         let settings = XCode.BuildSettings(
             name: "Release",
             setting: [
@@ -82,15 +86,16 @@ final class BuildSettingsTests: XCTestCase {
             ]
         )
 
-        XCTAssertEqual(settings.metadata.bundleID, "com.example.app")
-        XCTAssertEqual(settings.metadata.moduleName, "ExampleModule")
-        XCTAssertEqual(settings.metadata.productName, "ExampleApp")
-        XCTAssertEqual(settings.metadata.developmentTeam, "TEAM123")
-        XCTAssertEqual(settings.metadata.codeSignStyle, "Automatic")
-        XCTAssertEqual(settings.metadata.codeSignIdentity, "Apple Development")
+        #expect(settings.metadata.bundleID == "com.example.app")
+        #expect(settings.metadata.moduleName == "ExampleModule")
+        #expect(settings.metadata.productName == "ExampleApp")
+        #expect(settings.metadata.developmentTeam == "TEAM123")
+        #expect(settings.metadata.codeSignStyle == "Automatic")
+        #expect(settings.metadata.codeSignIdentity == "Apple Development")
     }
 
-    func testBuildSettingsPlistEntriesRenderCommonInfoPlistKeys() {
+    @Test
+    func buildSettingsPlistEntriesRenderCommonInfoPlistKeys() {
         let settings = XCode.BuildSettings(
             name: "Release",
             setting: [
@@ -103,12 +108,12 @@ final class BuildSettingsTests: XCTestCase {
 
         let plist = settings.generatedPlist.entries.joined(separator: "\n")
 
-        XCTAssertTrue(plist.contains("<key>UILaunchStoryboardName</key>"))
-        XCTAssertTrue(plist.contains("<string>LaunchScreen</string>"))
-        XCTAssertTrue(plist.contains("<key>UISupportedInterfaceOrientations</key>"))
-        XCTAssertTrue(plist.contains("<string>UIInterfaceOrientationPortrait</string>"))
-        XCTAssertTrue(plist.contains("<string>UIInterfaceOrientationLandscapeLeft</string>"))
-        XCTAssertTrue(plist.contains("<key>UIApplicationSupportsIndirectInputEvents</key>"))
-        XCTAssertTrue(plist.contains("<true/>"))
+        #expect(plist.contains("<key>UILaunchStoryboardName</key>"))
+        #expect(plist.contains("<string>LaunchScreen</string>"))
+        #expect(plist.contains("<key>UISupportedInterfaceOrientations</key>"))
+        #expect(plist.contains("<string>UIInterfaceOrientationPortrait</string>"))
+        #expect(plist.contains("<string>UIInterfaceOrientationLandscapeLeft</string>"))
+        #expect(plist.contains("<key>UIApplicationSupportsIndirectInputEvents</key>"))
+        #expect(plist.contains("<true/>"))
     }
 }

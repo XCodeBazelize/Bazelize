@@ -37,6 +37,7 @@ public extension XCode.BuildSettings {
             settings.keys.filter { key in
                 key.hasPrefix(plistPrefix)
             }
+            .sorted()
         }
 
         private func plistValue(_ key: String) -> String? {

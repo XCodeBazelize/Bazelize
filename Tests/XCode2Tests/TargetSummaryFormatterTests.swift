@@ -1,8 +1,9 @@
-import XCTest
+import Testing
 @testable import XCode2
 
-final class TargetSummaryFormatterTests: XCTestCase {
-    func testFormatTargetSummary() throws {
+struct TargetSummaryFormatterTests {
+    @Test
+    func formatTargetSummary() throws {
         let target = XCode.Target(
             name: "Example",
             productName: "Example",
@@ -65,14 +66,32 @@ final class TargetSummaryFormatterTests: XCTestCase {
                         attributes: []
                     ),
                 ],
-                frameworks: [],
+                frameworks: [
+                    .init(
+                        name: "SVProgressHUD.xcframework",
+                        path: "Vendor/SVProgressHUD.xcframework",
+                        fullPath: "/tmp/Vendor/SVProgressHUD.xcframework",
+                        label: "//Prebuilt:SVProgressHUD",
+                        fileType: "wrapper.xcframework",
+                        sourceTree: "<group>",
+                        buildPhase: "frameworks",
+                        compilerFlags: nil,
+                        attributes: []
+                    ),
+                ],
                 copyFiles: [],
                 others: []
             ),
             dependencies: .init(
                 targets: ["Framework1"],
-                packageProducts: [],
-                frameworks: [],
+                packageProducts: [
+                    .init(
+                        productName: "LocalLib1",
+                        package: nil,
+                        packagePath: "../Local1"
+                    ),
+                ],
+                frameworks: ["//Prebuilt:SVProgressHUD"],
                 sdkFrameworks: ["SwiftUI", "UIKit"]
             )
         )
@@ -89,16 +108,18 @@ final class TargetSummaryFormatterTests: XCTestCase {
 
         let summary = XCode.TargetSummaryFormatter.format(project: project, target: target)
 
-        XCTAssertTrue(summary.contains("Target: Example"))
-        XCTAssertTrue(summary.contains("Type: com.apple.product-type.application"))
-        XCTAssertTrue(summary.contains("Bundle ID: com.example.Example"))
-        XCTAssertTrue(summary.contains("Sources:"))
-        XCTAssertTrue(summary.contains("- Example/ExampleApp.swift"))
-        XCTAssertTrue(summary.contains("Resources:"))
-        XCTAssertTrue(summary.contains("Dependencies:"))
-        XCTAssertTrue(summary.contains("SDK Frameworks:"))
-        XCTAssertTrue(summary.contains("Settings [Release]:"))
-        XCTAssertTrue(summary.contains("PRODUCT_BUNDLE_IDENTIFIER = com.example.Example"))
-        XCTAssertTrue(summary.contains("TARGETED_DEVICE_FAMILY = 1 2"))
+        #expect(summary.contains("Target: Example"))
+        #expect(summary.contains("Type: com.apple.product-type.application"))
+        #expect(summary.contains("Bundle ID: com.example.Example"))
+        #expect(summary.contains("Sources:"))
+        #expect(summary.contains("- Example/ExampleApp.swift"))
+        #expect(summary.contains("Resources:"))
+        #expect(summary.contains("Dependencies:"))
+        #expect(summary.contains("../Local1 / LocalLib1"))
+        #expect(summary.contains("//Prebuilt:SVProgressHUD"))
+        #expect(summary.contains("SDK Frameworks:"))
+        #expect(summary.contains("Settings [Release]:"))
+        #expect(summary.contains("PRODUCT_BUNDLE_IDENTIFIER = com.example.Example"))
+        #expect(summary.contains("TARGETED_DEVICE_FAMILY = 1 2"))
     }
 }

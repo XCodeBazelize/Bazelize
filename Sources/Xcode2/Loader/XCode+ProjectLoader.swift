@@ -14,22 +14,22 @@ final class ProjectLoader {
     private let native: PBXProj
     private let path: Path
     let preferConfig: String?
-
+    
     init(path: Path, preferConfig: String?) throws {
         self.path = path
         self.preferConfig = preferConfig
         xcodeProj = try XcodeProj(path: path)
         native = xcodeProj.pbxproj
     }
-
+    
     var rootProject: PBXProject? {
         native.rootObject
     }
-
+    
     var workspacePath: Path {
         path.parent()
     }
-
+    
     func model() throws -> XCode.Project {
         return XCode.Project(
             name: rootProject?.name ?? path.lastComponentWithoutExtension,
@@ -48,7 +48,7 @@ final class ProjectLoader {
     private lazy var allFiles: [PBXFileElement] = {
         (try? native.rootGroup()?.flatten()) ?? []
     }()
-
+    
     private lazy var targets: [TargetLoader] = {
         native.nativeTargets.map {
             TargetLoader(
@@ -58,16 +58,19 @@ final class ProjectLoader {
             )
         }
     }()
-
+    
     private lazy var defaultConfigList: ConfigListLoader? = {
         let all = Set(native.configurationLists.map { ConfigListLoader(native: $0) })
         let targetLists = native.nativeTargets.map {
             ConfigListLoader(native: $0.buildConfigurationList)
         }
-
+        
         return all.subtracting(targetLists).first
     }()
+}
 
+// MARK: - SwiftPM
+extension ProjectLoader {
     private var remotePackages: [XCode.RemotePackage] {
         (rootProject?.remotePackages ?? []).map { package in
             .init(
@@ -117,22 +120,53 @@ final class ProjectLoader {
             }
     }
 
-    func transformToLabel(_ relativePath: String?) -> String? {
+    func packageName(for file: PBXFileElement) -> String? {
+        for target in native.nativeTargets {
+            if targetOwnsFile(target: target, file: file) {
+                return target.name
+            }
+        }
+
+        return nil
+    }
+
+    var localPackagePathByProduct: [String: String] {
+        var result: [String: String] = [:]
+
+        for package in localPackages {
+            let packageRoot = workspacePath + package.relativePath
+            let manifest = packageRoot + "Package.swift"
+            guard let content = try? String(contentsOfFile: manifest.string) else { continue }
+
+            for product in content.swiftPackageProductNames {
+                result[product] = package.relativePath
+            }
+        }
+
+        return result
+    }
+
+    enum LabelKind {
+        case source(packageName: String?)
+        case prebuilt
+        
+        var packageName: String {
+            switch self {
+            case .source(let packageName):
+                return packageName ?? ""
+            case .prebuilt:
+                return "Prebuilt"
+            }
+        }
+    }
+    
+    func transformToLabel(
+        _ relativePath: String?,
+        _ kind: LabelKind
+    ) -> String? {
         guard let path = relativePath else { return nil }
-
-        let commentedLabel = "# \(path)"
-        guard let package = path.split(separator: "/").first.map(String.init) else {
-            return commentedLabel
-        }
-        guard let restPath = path.delete(prefix: package + "/") else {
-            return commentedLabel
-        }
-
-        if targets.map(\.name).contains(package) {
-            return "//\(package):\(restPath)"
-        } else {
-            return "//:\(package)/\(restPath)"
-        }
+        
+        return "//\(kind.packageName):\(path)"
     }
 
     static func mergeLocalPackages(
@@ -152,6 +186,27 @@ final class ProjectLoader {
     }
 }
 
+private extension ProjectLoader {
+    func targetOwnsFile(target: PBXNativeTarget, file: PBXFileElement) -> Bool {
+        if target.buildPhases.contains(where: { phase in
+            phase.files?.contains(where: { $0.file === file }) == true
+        }) {
+            return true
+        }
+
+        guard let filePath = try? file.fullPath(sourceRoot: workspacePath.string) else {
+            return false
+        }
+
+        return (target.fileSystemSynchronizedGroups ?? []).contains(where: { group in
+            guard let root = try? group.fullPath(sourceRoot: workspacePath.string) else {
+                return false
+            }
+            return filePath == root || filePath.hasPrefix(root + "/")
+        })
+    }
+}
+
 private extension XCRemoteSwiftPackageReference.VersionRequirement {
     var stringValue: String {
         switch self {
@@ -167,6 +222,18 @@ private extension XCRemoteSwiftPackageReference.VersionRequirement {
             return "branch(\(branch))"
         case .revision(let revision):
             return "revision(\(revision))"
+        }
+    }
+}
+
+private extension String {
+    var swiftPackageProductNames: [String] {
+        let pattern = #"\.library\s*\(\s*name:\s*"([^"]+)""#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        let range = NSRange(startIndex..., in: self)
+        return regex.matches(in: self, range: range).compactMap { match in
+            guard let capture = Range(match.range(at: 1), in: self) else { return nil }
+            return String(self[capture])
         }
     }
 }

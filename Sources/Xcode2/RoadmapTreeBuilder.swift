@@ -525,6 +525,11 @@ private extension XCode.Target {
                 return "@\(repo)//:\(product.productName)"
             }
 
+            if let packagePath = product.packagePath, !packagePath.isEmpty {
+                let repo = "swiftpkg_" + sanitizeRepo(Path(packagePath).lastComponent.lowercased())
+                return "@\(repo)//:\(product.productName)"
+            }
+
             if let repo = localRepos[product.productName] {
                 return "@\(repo)//:\(product.productName)"
             }

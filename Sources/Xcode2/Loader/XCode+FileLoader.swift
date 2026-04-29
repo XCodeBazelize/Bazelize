@@ -2,6 +2,49 @@ import Foundation
 import PathKit
 import XcodeProj
 
+enum KnownFileType: String {
+    case swift = "sourcecode.swift"
+    case objc = "sourcecode.c.objc"
+    case objcxx = "sourcecode.cpp.objcpp"
+    case c = "sourcecode.c.c"
+    case cpp = "sourcecode.cpp.cpp"
+    case cHeader = "sourcecode.c.h"
+    case cppHeader = "sourcecode.cpp.h"
+    case metal = "sourcecode.metal"
+    case staticLibrary = "archive.ar"
+    case xib = "file.xib"
+    case storyboard = "file.storyboard"
+    case xcassets = "folder.assetcatalog"
+    case strings = "text.plist.strings"
+    case stringsdict = "text.plist.stringsdict"
+    case plist = "text.plist.xml"
+    case xcframework = "wrapper.xcframework"
+    case framework = "wrapper.framework"
+
+    init?(path: String) {
+        switch Path(path).extension?.lowercased() {
+        case "swift": self = .swift
+        case "m": self = .objc
+        case "mm": self = .objcxx
+        case "c": self = .c
+        case "cc", "cp", "cpp", "cxx": self = .cpp
+        case "h": self = .cHeader
+        case "hh", "hpp", "hxx": self = .cppHeader
+        case "metal": self = .metal
+        case "a": self = .staticLibrary
+        case "xib": self = .xib
+        case "storyboard": self = .storyboard
+        case "xcassets": self = .xcassets
+        case "strings": self = .strings
+        case "stringsdict": self = .stringsdict
+        case "plist": self = .plist
+        case "xcframework": self = .xcframework
+        case "framework": self = .framework
+        default: return nil
+        }
+    }
+}
+
 struct FileLoader {
     let native: PBXFileElement
     unowned let project: ProjectLoader
@@ -10,12 +53,8 @@ struct FileLoader {
         native.name ?? native.path
     }
 
-    var label: String? {
-        project.transformToLabel(relativePath)
-    }
-
     var packageName: String? {
-        relativePath?.split(separator: "/").first.map(String.init)
+        project.packageName(for: native)
     }
 
     var relativePath: String? {
@@ -42,6 +81,24 @@ struct FileLoader {
             .replacingOccurrences(of: ".xcframework", with: "")
     }
 
+    var frameworkIdentity: String? {
+        guard let name else { return nil }
+
+        if name.hasSuffix(".framework") {
+            return name.replacingOccurrences(of: ".framework", with: "")
+        }
+
+        if name.hasSuffix(".xcframework") {
+            return name.replacingOccurrences(of: ".xcframework", with: "")
+        }
+
+        if name.hasPrefix("lib"), name.hasSuffix(".a") {
+            return String(name.dropFirst(3).dropLast(2))
+        }
+
+        return name
+    }
+
     var isSDKFramework: Bool {
         sourceTree == PBXSourceTree.sdkRoot.description ||
             sourceTree == PBXSourceTree.developerDir.description
@@ -56,13 +113,36 @@ struct FileLoader {
             name: name,
             path: relativePath ?? native.path,
             fullPath: fullPath,
-            label: label,
+            label: label(buildPhase: buildPhase),
             fileType: fileType,
             sourceTree: sourceTree,
             buildPhase: buildPhase,
             compilerFlags: compilerFlags,
             attributes: attributes
         )
+    }
+
+    func label(buildPhase: String?) -> String? {
+        if buildPhase == BuildPhase.frameworks.rawValue, canUsePrebuiltLabel {
+            return project.transformToLabel(relativePath, .prebuilt)
+        }
+        return project.transformToLabel(
+            relativePath,
+            .source(packageName: packageName)
+        )
+    }
+
+    private var canUsePrebuiltLabel: Bool {
+        if let typedFileType, typedFileType.isBinaryArtifact {
+            return true
+        }
+
+        guard let name else { return false }
+        return name.hasSuffix(".a")
+    }
+
+    private var typedFileType: KnownFileType? {
+        fileType.flatMap(KnownFileType.init(rawValue:))
     }
 }
 
@@ -71,6 +151,7 @@ struct SynchronizedFile {
         case source
         case header
         case resource
+        case binary
         case other
     }
 
@@ -83,49 +164,11 @@ struct SynchronizedFile {
     }
 
     var fileType: String? {
-        switch Path(path).extension?.lowercased() {
-        case "swift": return "sourcecode.swift"
-        case "m": return "sourcecode.c.objc"
-        case "mm": return "sourcecode.cpp.objcpp"
-        case "c": return "sourcecode.c.c"
-        case "cc", "cp", "cpp", "cxx": return "sourcecode.cpp.cpp"
-        case "h": return "sourcecode.c.h"
-        case "hh", "hpp", "hxx": return "sourcecode.cpp.h"
-        case "metal": return "sourcecode.metal"
-        case "xib": return "file.xib"
-        case "storyboard": return "file.storyboard"
-        case "xcassets": return "folder.assetcatalog"
-        case "strings": return "text.plist.strings"
-        case "stringsdict": return "text.plist.stringsdict"
-        case "plist": return "text.plist.xml"
-        case "xcframework": return "wrapper.xcframework"
-        case "framework": return "wrapper.framework"
-        default: return nil
-        }
+        typedFileType?.rawValue
     }
 
     var category: Category {
-        switch fileType {
-        case "sourcecode.swift",
-             "sourcecode.c.objc",
-             "sourcecode.cpp.objcpp",
-             "sourcecode.c.c",
-             "sourcecode.cpp.cpp",
-             "sourcecode.metal":
-            return .source
-        case "sourcecode.c.h",
-             "sourcecode.cpp.h":
-            return .header
-        case "file.xib",
-             "file.storyboard",
-             "folder.assetcatalog",
-             "text.plist.strings",
-             "text.plist.stringsdict",
-             "text.plist.xml":
-            return .resource
-        default:
-            return .other
-        }
+        typedFileType?.category ?? .other
     }
 
     var file: XCode.File {
@@ -147,7 +190,36 @@ struct SynchronizedFile {
         case .source: return BuildPhase.sources.rawValue
         case .header: return BuildPhase.headers.rawValue
         case .resource: return BuildPhase.resources.rawValue
+        case .binary: return nil
         case .other: return nil
+        }
+    }
+
+    private var typedFileType: KnownFileType? {
+        KnownFileType(path: path)
+    }
+}
+
+private extension KnownFileType {
+    var category: SynchronizedFile.Category {
+        switch self {
+        case .swift, .objc, .objcxx, .c, .cpp, .metal:
+            return .source
+        case .cHeader, .cppHeader:
+            return .header
+        case .xib, .storyboard, .xcassets, .strings, .stringsdict, .plist:
+            return .resource
+        case .staticLibrary, .xcframework, .framework:
+            return .binary
+        }
+    }
+
+    var isBinaryArtifact: Bool {
+        switch self {
+        case .staticLibrary, .xcframework, .framework:
+            return true
+        default:
+            return false
         }
     }
 }

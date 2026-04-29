@@ -94,10 +94,25 @@ struct TargetLoader {
     }
 
     private var dependencies: XCode.Dependencies {
-        let frameworkNames = frameworkBuildFiles.compactMap { buildFile -> String? in
+        let targetDependencies = native.dependencies.compactMap { dependency in
+            dependency.target?.name ?? dependency.name
+        }
+        let targetDependencyIdentities = Set(targetDependencies)
+
+        let frameworks = frameworkBuildFiles.compactMap { buildFile -> String? in
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
             guard !wrapped.isSDKFramework else { return nil }
+
+            if let identity = wrapped.frameworkIdentity, targetDependencyIdentities.contains(identity) {
+                return nil
+            }
+
+            if let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
+               label.hasPrefix("//Prebuilt:") {
+                return label
+            }
+
             return wrapped.name
         }
 
@@ -111,18 +126,15 @@ struct TargetLoader {
         let packageProducts = (native.packageProductDependencies ?? []).map { dependency in
             XCode.PackageProductDependency(
                 productName: dependency.productName,
-                package: dependency.package?.repositoryURL
+                package: dependency.package?.repositoryURL,
+                packagePath: project.localPackagePathByProduct[dependency.productName]
             )
-        }
-
-        let targetDependencies = native.dependencies.compactMap { dependency in
-            dependency.target?.name ?? dependency.name
         }
 
         return .init(
             targets: Set(targetDependencies).sorted(),
             packageProducts: unique(packageProducts) { "\($0.productName)|\($0.package ?? "")" },
-            frameworks: Set(frameworkNames.compactMap { $0 }).sorted(),
+            frameworks: Set(frameworks.compactMap { $0 }).sorted(),
             sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted()
         )
     }
