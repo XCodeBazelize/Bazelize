@@ -1,5 +1,7 @@
-public extension XCode {
-    struct BuildPhase: Codable {
+// MARK: - XCode.BuildPhase
+
+extension XCode {
+    public struct BuildPhase: Codable {
         public let type: String
         public let name: String?
         public let files: [BuildPhaseFile]

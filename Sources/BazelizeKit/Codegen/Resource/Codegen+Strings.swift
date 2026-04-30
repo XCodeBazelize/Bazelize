@@ -8,7 +8,6 @@
 import BazelRules
 import Foundation
 import Starlark
-import XCode
 
 extension Target {
     func generateStrings(_ builder: CodeBuilder, _: Kit) {

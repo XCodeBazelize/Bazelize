@@ -7,7 +7,6 @@
 
 import Foundation
 import Util
-import XCode
 
 extension Target {
     func generateLibrary(_ builder: CodeBuilder, _ kit: Kit) {

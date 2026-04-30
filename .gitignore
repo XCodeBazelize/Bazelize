@@ -184,3 +184,4 @@ cache/
 .codex-local-skills/
 .vendor/
 app/
+Generated/

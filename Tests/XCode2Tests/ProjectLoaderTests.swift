@@ -15,8 +15,7 @@ struct ProjectLoaderTests {
 
         let merged = ProjectLoader.mergeLocalPackages(
             explicit: explicit,
-            discovered: discovered
-        )
+            discovered: discovered)
 
         #expect(merged.map(\.relativePath) == ["Local1", "Local2", "Local3"])
         #expect(merged.first?.name == "Local1")

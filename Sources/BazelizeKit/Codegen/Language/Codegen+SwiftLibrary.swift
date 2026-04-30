@@ -1,19 +1,8 @@
-//
-//  Codegen+SwiftLibrary.swift
-//
-//
-//  Created by Yume on 2022/7/4.
-//
-
-import BazelRules
-import Foundation
-import Starlark
-import XCode
-
 extension Target {
     // MARK: Internal
 
     func generateSwiftLibrary(_ builder: CodeBuilder, _ kit: Kit) {
+        let project = kit.project
         let plugin = kit.plugins.compactMap {
             $0[name]
         }.flatMap(\.deps)
@@ -35,7 +24,7 @@ extension Target {
                 },
                 deps: .build {
                     frameworksLibrary
-                    applicationHost
+                    applicationHost(project: project)
                     plugin
                     builtins
                 },
@@ -46,7 +35,7 @@ extension Target {
                     xibs
                     storyboards
                 },
-                defines: defines,
+                defines: defines(project: project),
                 testonly: isTest,
                 visibility: .private))
 
@@ -59,8 +48,8 @@ extension Target {
 
     // MARK: Private
 
-    private var defines: Starlark.Value {
-        select(\.swiftDefine).map { text -> [String] in
+    private func defines(project: Project) -> Starlark.Value {
+        select(\.swiftDefine, project: project).map { text -> [String] in
             let flags: [String] = (text ?? "").split(separator: " ").map(String.init)
 
             var isPreviousDefine = false
@@ -89,10 +78,10 @@ extension Target {
     /// TEST_HOST
     ///     $(BUILT_PRODUCTS_DIR)/Example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example
     ///     build/Debug-iphoneos/Example.app//Example
-    private var applicationHost: String? {
+    private func applicationHost(project _: Project) -> String? {
         guard let host = prefer(\.testHost) else { return nil }
         guard let _ = prefer(\.bundleLoader) else { return nil }
         guard let targetName = host.components(separatedBy: "/").last else { return nil }
-        return "//\(targetName):\(targetName)_library"
+        return "//Targets/\(targetName):\(targetName)_library"
     }
 }

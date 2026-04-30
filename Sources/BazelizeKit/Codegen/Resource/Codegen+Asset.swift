@@ -1,15 +1,3 @@
-//
-//  Asset.swift
-//
-//
-//  Created by Yume on 2023/1/9.
-//
-
-import BazelRules
-import Foundation
-import Starlark
-import XCode
-
 extension Target {
     /// https://thanhvu.dev/en/2021/07/16/migrating-ios-project-to-bazel-part-2-2/
     /// filegroup(
@@ -29,7 +17,7 @@ extension Target {
         ///           Assets.xcassets/**
         let files = assets
             .map { label in
-                "\(label.delete(prefix: "//\(name):"))/**"
+                "\(label)/**"
             }
             .map { (label: String) in
 //                if label.hasPrefix("//:") {

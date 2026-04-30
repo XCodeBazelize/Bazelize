@@ -7,7 +7,6 @@
 
 import Foundation
 import PathKit
-import XCode
 
 extension Bazel {
     /// [config](https://bazel.build/docs/configurable-attributes)

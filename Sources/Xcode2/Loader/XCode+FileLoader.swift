@@ -2,6 +2,8 @@ import Foundation
 import PathKit
 import XcodeProj
 
+// MARK: - KnownFileType
+
 enum KnownFileType: String {
     case swift = "sourcecode.swift"
     case objc = "sourcecode.c.objc"
@@ -44,6 +46,8 @@ enum KnownFileType: String {
         }
     }
 }
+
+// MARK: - FileLoader
 
 struct FileLoader {
     let native: PBXFileElement
@@ -118,8 +122,7 @@ struct FileLoader {
             sourceTree: sourceTree,
             buildPhase: buildPhase,
             compilerFlags: compilerFlags,
-            attributes: attributes
-        )
+            attributes: attributes)
     }
 
     func label(buildPhase: String?) -> String? {
@@ -128,8 +131,7 @@ struct FileLoader {
         }
         return project.transformToLabel(
             relativePath,
-            .source(packageName: packageName)
-        )
+            .source(packageName: packageName))
     }
 
     private var canUsePrebuiltLabel: Bool {
@@ -145,6 +147,8 @@ struct FileLoader {
         fileType.flatMap(KnownFileType.init(rawValue:))
     }
 }
+
+// MARK: - SynchronizedFile
 
 struct SynchronizedFile {
     enum Category {
@@ -181,8 +185,7 @@ struct SynchronizedFile {
             sourceTree: "<group>",
             buildPhase: buildPhase,
             compilerFlags: compilerFlags,
-            attributes: []
-        )
+            attributes: [])
     }
 
     private var buildPhase: String? {
@@ -200,8 +203,8 @@ struct SynchronizedFile {
     }
 }
 
-private extension KnownFileType {
-    var category: SynchronizedFile.Category {
+extension KnownFileType {
+    fileprivate var category: SynchronizedFile.Category {
         switch self {
         case .swift, .objc, .objcxx, .c, .cpp, .metal:
             return .source
@@ -214,7 +217,7 @@ private extension KnownFileType {
         }
     }
 
-    var isBinaryArtifact: Bool {
+    fileprivate var isBinaryArtifact: Bool {
         switch self {
         case .staticLibrary, .xcframework, .framework:
             return true

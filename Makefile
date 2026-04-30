@@ -33,27 +33,14 @@ test:
 	swift test -v --skip CocoapodTests 2>&1 | xcpretty
 #	COCOAPOD=$(shell which pod) swift test -v 2>&1 | xcbeautify
 
-Apple     := bazelbuild/rules_apple
-Swift     := bazelbuild/rules_swift
-XCodeProj := buildbuddy-io/rules_xcodeproj
-REPOS     := Apple Swift XCodeProj 
-
-SPM	     := cgrindel/rules_swift_package_manager
-REPO_SPM := SPM
-
-
-# user/repo rule_name output_file_path
-# python3 git_release.py bazelbuild/rules_apple Apple Sources/BazelizeKit/Rule/Rule+Apple.swift
-$(REPOS):
-	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5 normal
-
-$(REPO_SPM):
-	python3 git_release.py $($@) $@ Sources/BazelizeKit/Repo/Repo+$@.swift 5 archive
-
-rules: $(REPOS)
-
-spm: $(REPO_SPM)
-
 .PHONY: bazelize
 bazelize: install
 	cd fixture/iOS && make bazelize
+
+.PHONY: update-repo-enums
+update-repo-enums:
+	swift package plugin --allow-network-connections all --allow-writing-to-package-directory repo-enum
+	
+.PHONY: replace
+replace: update-repo-enums
+	cp Generated/*.swift Sources/BazelizeKit/Repo/

@@ -1,27 +1,14 @@
-//
-//  Codegen+Application.swift
-//
-//
-//  Created by Yume on 2022/4/29.
-//
-
-import BazelRules
-import Foundation
-import PathKit
-import Starlark
-import XCode
-
 extension Target {
     // MARK: Internal
 
     func generateApplicationCode(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.sdk) {
+        switch prefer(\.platform.sdk) {
         case .iOS: buildIOS(builder, kit)
         case .macOS: buildMac(builder, kit)
         case .tvOS: buildTV(builder, kit)
         case .watchOS: buildWatch(builder, kit)
         case .auto:
-            let family = prefer(\.deviceFamily)
+            let family = prefer(\.platform.deviceFamily)
             guard let family else {
                 return
             }
@@ -37,7 +24,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_command_line_application(
                 name: name,
-                bundle_id: prefer(\.bundleID),
+                bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
                 },
@@ -46,7 +33,7 @@ extension Target {
                     plist_auto
                     // plist_default
                 },
-                minimum_os_version: prefer(\.macOS),
+                minimum_os_version: prefer(\.platform.macOS),
                 visibility: .public))
     }
 
@@ -57,7 +44,7 @@ extension Target {
         builder.call(
             Rules.Apple.WatchOS.Call.watchos_application(
                 name: name,
-                bundle_id: prefer(\.bundleID),
+                bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
                     frameworks
@@ -67,7 +54,7 @@ extension Target {
                     plist_auto
                     plist_default
                 },
-                minimum_os_version: prefer(\.watchOS),
+                minimum_os_version: prefer(\.platform.watchOS),
                 resources: .build {
                     resources
                 },
@@ -79,19 +66,19 @@ extension Target {
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
-                bundle_id: prefer(\.bundleID),
+                bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
                     frameworks
                 },
-                families: prefer(\.deviceFamily)?.map(\.code),
+                families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
                     plist_file
                     plist_auto
                     plist_default
                 },
                 // "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
-                minimum_os_version: prefer(\.iOS),
+                minimum_os_version: prefer(\.platform.iOS),
                 sdk_frameworks: frameworksSDK,
                 strings: .build {
                     if !allStrings.isEmpty {
@@ -106,7 +93,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_application(
                 name: name,
-                bundle_id: prefer(\.bundleID),
+                bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
                 },
@@ -115,7 +102,7 @@ extension Target {
                     plist_auto
                     plist_default
                 },
-                minimum_os_version: prefer(\.macOS),
+                minimum_os_version: prefer(\.platform.macOS),
                 visibility: .public))
     }
 
@@ -124,7 +111,7 @@ extension Target {
         builder.call(
             Rules.Apple.TVOS.Call.tvos_application(
                 name: name,
-                bundle_id: prefer(\.bundleID),
+                bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
                     frameworks
@@ -134,7 +121,7 @@ extension Target {
                     plist_auto
                     plist_default
                 },
-                minimum_os_version: prefer(\.tvOS),
+                minimum_os_version: prefer(\.platform.tvOS),
                 resources: .build {
                     resources
                 },

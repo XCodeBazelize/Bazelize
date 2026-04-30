@@ -9,12 +9,14 @@ import BazelRules
 import Foundation
 import PathKit
 import Starlark
-import XCode
 
 extension Target {
-    func generateLoadPlistFragment(_ builder: CodeBuilder) {
-        let isGeneratePlist = plistContent != nil
-        guard isGeneratePlist || isGeneratePlistAuto || isGeneratePlistDefault else {
+    func generateLoadPlistFragment(_ builder: CodeBuilder, _ kit: Kit) {
+        guard
+            plistContent(project: kit.project) != nil ||
+            isGeneratePlistAuto(project: kit.project) ||
+            isGeneratePlistDefault(project: kit.project)
+        else {
             return
         }
         builder.load(loadableRule: Rules.Plist.plist_fragment)
@@ -27,14 +29,14 @@ extension Target {
     // MARK: Internal
 
     var plist_file: Starlark.Label? {
-        if let _ = plistContent {
+        if configs.values.contains(where: { $0.plist.infoPlist != nil }) {
             return ":plist_file"
         }
         return nil
     }
 
-    func generatePlistFile(_ builder: CodeBuilder, _: Kit) {
-        guard let plist = plistContent else { return }
+    func generatePlistFile(_ builder: CodeBuilder, _ kit: Kit) {
+        guard let plist = plistContent(project: kit.project) else { return }
         builder.call(
             Rules.Plist.Call.plist_fragment(
                 name: "plist_file",
@@ -49,11 +51,12 @@ extension Target {
 
     // MARK: Private
 
-    private var plistContent: String? {
-        guard let plistPath = prefer(\.infoPlist) else {
+    private func plistContent(project: Project?) -> String? {
+        guard let project else { return nil }
+        guard let plistPath = prefer(\.plist.infoPlist) else {
             return nil
         }
-        let path: Path = project.workspacePath + plistPath
+        let path = Path(project.workspacePath) + plistPath
 
         guard let content: String = try? path.read() else { return nil }
         guard
@@ -80,12 +83,13 @@ extension Target {
     // MARK: Internal
 
     var plist_auto: Starlark.Label? {
-        isGeneratePlistAuto ? ":plist_auto" : nil
+        configs.values.contains(where: { !$0.generatedPlist.entries.isEmpty }) ? ":plist_auto" : nil
     }
 
-    func generatePlistAuto(_ builder: CodeBuilder) {
-        if isGeneratePlistAuto {
-            let plist = prefer(\.plist) ?? []
+    func generatePlistAuto(_ builder: CodeBuilder, _: Kit) {
+        let settings = selectedSettings
+        let plist = settings.generatedPlist.entries
+        if !plist.isEmpty {
             builder.call(
                 Rules.Plist.Call.plist_fragment(
                     name: "plist_auto",
@@ -101,10 +105,10 @@ extension Target {
 
     // MARK: Private
 
-    private var isGeneratePlistAuto: Bool {
-        let isAutoGen = prefer(\.generateInfoPlist) ?? false
-        let isEmptyPlist = (prefer(\.plist) ?? []).isEmpty
-        return isAutoGen && !isEmptyPlist
+    private func isGeneratePlistAuto(project: Project?) -> Bool {
+        guard project != nil else { return false }
+        let settings = selectedSettings
+        return settings.generatedPlist.enabled && !settings.generatedPlist.entries.isEmpty
     }
 }
 
@@ -116,12 +120,12 @@ extension Target {
     // MARK: Internal
 
     var plist_default: Starlark.Label? {
-        isGeneratePlistDefault ? ":plist_default" : nil
+        configs.values.contains(where: { !defaultPlistFragments(for: $0).isEmpty }) ? ":plist_default" : nil
     }
 
-    func generatePlistDefault(_ builder: CodeBuilder) {
-        if isGeneratePlistDefault {
-            let plist = prefer(\.defaultPlist) ?? []
+    func generatePlistDefault(_ builder: CodeBuilder, _: Kit) {
+        let plist = defaultPlistFragments(for: selectedSettings)
+        if !plist.isEmpty {
             builder.call(
                 Rules.Plist.Call.plist_fragment(
                     name: "plist_default",
@@ -137,8 +141,27 @@ extension Target {
 
     // MARK: Private
 
-    private var isGeneratePlistDefault: Bool {
-        let plist = prefer(\.defaultPlist) ?? []
-        return !plist.isEmpty
+    private func isGeneratePlistDefault(project: Project?) -> Bool {
+        guard project != nil else { return false }
+        return !defaultPlistFragments(for: selectedSettings).isEmpty
+    }
+
+    private func defaultPlistFragments(for settings: BuildSettings) -> [String] {
+        let defaults = [
+            ("CFBundleName", "$(PRODUCT_NAME)"),
+            ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
+            ("CFBundleVersion", settings.generatedPlist.currentProjectVersion ?? "$(CURRENT_PROJECT_VERSION)"),
+            ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
+            ("CFBundlePackageType", "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"),
+            ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
+            ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "$(MARKETING_VERSION)"),
+        ]
+
+        return defaults.map { key, value in
+            """
+            <key>\(key)</key>
+            <string>\(value)</string>
+            """
+        }
     }
 }

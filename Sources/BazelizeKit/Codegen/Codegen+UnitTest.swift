@@ -8,13 +8,12 @@
 import BazelRules
 import Foundation
 import Starlark
-import XCode
 
 extension Target {
     // MARK: Internal
 
     func generateUnitTest(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.sdk) {
+        switch prefer(\.platform.sdk) {
         case .iOS: generateIOSUnitTest(builder, kit)
         case .macOS: generateMacUnitTest(builder, kit)
         case .tvOS: generateTVUnitTest(builder, kit)
@@ -33,7 +32,7 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.iOS),
+                minimum_os_version: prefer(\.platform.iOS),
                 visibility: .public))
     }
 
@@ -45,7 +44,7 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.macOS),
+                minimum_os_version: prefer(\.platform.macOS),
                 visibility: .public))
     }
 
@@ -57,7 +56,7 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.tvOS),
+                minimum_os_version: prefer(\.platform.tvOS),
                 visibility: .public))
     }
 
@@ -69,7 +68,7 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.watchOS),
+                minimum_os_version: prefer(\.platform.watchOS),
                 visibility: .public))
     }
 }

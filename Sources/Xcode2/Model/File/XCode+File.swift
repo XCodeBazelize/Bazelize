@@ -1,5 +1,5 @@
-public extension XCode {
-    struct File: Codable {
+extension XCode {
+    public struct File: Codable {
         public let name: String?
         public let path: String?
         public let fullPath: String?

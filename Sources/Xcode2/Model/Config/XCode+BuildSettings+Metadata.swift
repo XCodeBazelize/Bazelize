@@ -1,11 +1,11 @@
 import Foundation
 
-public extension XCode.BuildSettings {
-    var metadata: Metadata {
+extension XCode.BuildSettings {
+    public var metadata: Metadata {
         .init(settings: self)
     }
 
-    struct Metadata {
+    public struct Metadata {
         fileprivate let settings: XCode.BuildSettings
 
         public var bundleID: String? {

@@ -9,29 +9,31 @@ import Foundation
 import PathKit
 import XcodeProj
 
+// MARK: - ProjectLoader
+
 final class ProjectLoader {
     private let xcodeProj: XcodeProj
     private let native: PBXProj
     private let path: Path
     let preferConfig: String?
-    
+
     init(path: Path, preferConfig: String?) throws {
         self.path = path
         self.preferConfig = preferConfig
         xcodeProj = try XcodeProj(path: path)
         native = xcodeProj.pbxproj
     }
-    
+
     var rootProject: PBXProject? {
         native.rootObject
     }
-    
+
     var workspacePath: Path {
         path.parent()
     }
-    
+
     func model() throws -> XCode.Project {
-        return XCode.Project(
+        XCode.Project(
             name: rootProject?.name ?? path.lastComponentWithoutExtension,
             workspacePath: workspacePath.string,
             projectPath: path.string,
@@ -39,32 +41,25 @@ final class ProjectLoader {
             configs: defaultConfigList?.configs ?? [:],
             packages: .init(
                 remote: remotePackages,
-                local: localPackages
-            ),
-            targets: targets.map(\.model)
-        )
+                local: localPackages),
+            targets: targets.map(\.model))
     }
 
-    private lazy var allFiles: [PBXFileElement] = {
-        (try? native.rootGroup()?.flatten()) ?? []
-    }()
-    
-    private lazy var targets: [TargetLoader] = {
-        native.nativeTargets.map {
-            TargetLoader(
-                native: $0,
-                project: self,
-                defaultConfigList: defaultConfigList
-            )
-        }
-    }()
-    
+    private lazy var allFiles: [PBXFileElement] = (try? native.rootGroup()?.flatten()) ?? []
+
+    private lazy var targets: [TargetLoader] = native.nativeTargets.map {
+        TargetLoader(
+            native: $0,
+            project: self,
+            defaultConfigList: defaultConfigList)
+    }
+
     private lazy var defaultConfigList: ConfigListLoader? = {
         let all = Set(native.configurationLists.map { ConfigListLoader(native: $0) })
         let targetLists = native.nativeTargets.map {
             ConfigListLoader(native: $0.buildConfigurationList)
         }
-        
+
         return all.subtracting(targetLists).first
     }()
 }
@@ -76,8 +71,7 @@ extension ProjectLoader {
             .init(
                 name: package.name,
                 repositoryURL: package.repositoryURL,
-                requirement: package.versionRequirement?.stringValue
-            )
+                version: package.versionRequirement?.requirementValue)
         }
     }
 
@@ -85,13 +79,11 @@ extension ProjectLoader {
         let explicit = (rootProject?.localPackages ?? []).map { package in
             XCode.LocalPackage(
                 name: package.name,
-                relativePath: package.relativePath
-            )
+                relativePath: package.relativePath)
         }
         return Self.mergeLocalPackages(
             explicit: explicit,
-            discovered: discoveredLocalPackages
-        )
+            discovered: discoveredLocalPackages)
     }
 
     private var discoveredLocalPackages: [XCode.LocalPackage] {
@@ -107,8 +99,7 @@ extension ProjectLoader {
 
                 return XCode.LocalPackage(
                     name: file.name ?? packageRoot.lastComponent,
-                    relativePath: relativePath
-                )
+                    relativePath: relativePath)
             }
     }
 
@@ -149,7 +140,7 @@ extension ProjectLoader {
     enum LabelKind {
         case source(packageName: String?)
         case prebuilt
-        
+
         var packageName: String {
             switch self {
             case .source(let packageName):
@@ -159,20 +150,22 @@ extension ProjectLoader {
             }
         }
     }
-    
+
     func transformToLabel(
         _ relativePath: String?,
-        _ kind: LabelKind
-    ) -> String? {
+        _ kind: LabelKind)
+        -> String?
+    {
         guard let path = relativePath else { return nil }
-        
+
         return "//\(kind.packageName):\(path)"
     }
 
     static func mergeLocalPackages(
         explicit: [XCode.LocalPackage],
-        discovered: [XCode.LocalPackage]
-    ) -> [XCode.LocalPackage] {
+        discovered: [XCode.LocalPackage])
+        -> [XCode.LocalPackage]
+    {
         var result: [XCode.LocalPackage] = []
         var seen = Set<String>()
 
@@ -186,11 +179,13 @@ extension ProjectLoader {
     }
 }
 
-private extension ProjectLoader {
-    func targetOwnsFile(target: PBXNativeTarget, file: PBXFileElement) -> Bool {
-        if target.buildPhases.contains(where: { phase in
-            phase.files?.contains(where: { $0.file === file }) == true
-        }) {
+extension ProjectLoader {
+    private func targetOwnsFile(target: PBXNativeTarget, file: PBXFileElement) -> Bool {
+        if
+            target.buildPhases.contains(where: { phase in
+                phase.files?.contains(where: { $0.file === file }) == true
+            })
+        {
             return true
         }
 
@@ -207,27 +202,27 @@ private extension ProjectLoader {
     }
 }
 
-private extension XCRemoteSwiftPackageReference.VersionRequirement {
-    var stringValue: String {
+extension XCRemoteSwiftPackageReference.VersionRequirement {
+    fileprivate var requirementValue: XCode.RemotePackage.Requirement {
         switch self {
         case .upToNextMajorVersion(let version):
-            return "upToNextMajorVersion(\(version))"
+            return .upToNextMajorVersion(version)
         case .upToNextMinorVersion(let version):
-            return "upToNextMinorVersion(\(version))"
+            return .upToNextMinorVersion(version)
         case .range(let from, let to):
-            return "range(\(from)...\(to))"
+            return .range(from: from, to: to)
         case .exact(let version):
-            return "exact(\(version))"
+            return .exact(version)
         case .branch(let branch):
-            return "branch(\(branch))"
+            return .branch(branch)
         case .revision(let revision):
-            return "revision(\(revision))"
+            return .revision(revision)
         }
     }
 }
 
-private extension String {
-    var swiftPackageProductNames: [String] {
+extension String {
+    fileprivate var swiftPackageProductNames: [String] {
         let pattern = #"\.library\s*\(\s*name:\s*"([^"]+)""#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(startIndex..., in: self)

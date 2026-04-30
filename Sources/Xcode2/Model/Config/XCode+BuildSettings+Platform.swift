@@ -1,12 +1,27 @@
 import Foundation
 
-public extension XCode.BuildSettings {
-    var platform: Platform {
+// MARK: - SDK
+
+public enum SDK: String, Hashable {
+    case iOS = "iphoneos"
+    case macOS = "macosx"
+    case tvOS = "appletvos"
+    case watchOS = "watchos"
+    case driverKit = "driverkit"
+    case auto
+}
+
+extension XCode.BuildSettings {
+    public var platform: Platform {
         .init(settings: self)
     }
 
-    struct Platform {
+    public struct Platform {
         fileprivate let settings: XCode.BuildSettings
+
+        public var sdk: SDK? {
+            SDK(rawValue: settings["SDKROOT"] ?? "")
+        }
 
         public var iOS: String? {
             settings["IPHONEOS_DEPLOYMENT_TARGET"]

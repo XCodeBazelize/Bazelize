@@ -7,8 +7,7 @@ struct ConfigListLoader: Hashable {
         (native?.buildConfigurations ?? []).map { config in
             (
                 config.name,
-                .init(config)
-            )
+                .init(config))
         }.toDictionary()
     }
 
@@ -21,8 +20,7 @@ struct ConfigListLoader: Hashable {
         return configs.map { name, current in
             (
                 name,
-                current.merged(with: defaults[name])
-            )
+                current.merged(with: defaults[name]))
         }.toDictionary()
     }
 

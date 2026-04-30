@@ -1,5 +1,7 @@
-public extension XCode {
-    struct Dependencies: Codable {
+// MARK: - XCode.Dependencies
+
+extension XCode {
+    public struct Dependencies: Codable {
         public let targets: [String]
         public let packageProducts: [PackageProductDependency]
         public let frameworks: [String]

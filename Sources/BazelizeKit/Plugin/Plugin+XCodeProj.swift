@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import XCode
 import XcodeProj
 
 // MARK: - PluginXCodeProj
@@ -32,7 +31,7 @@ final class PluginXCodeProj: PluginBuiltin {
             .sorted()
             .map { name in
                 """
-                "//\(name):\(name)",
+                "//Targets/\(name):\(name)",
                 """
             }.withNewLine.indent(2)
 

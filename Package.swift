@@ -40,6 +40,12 @@ let package = Package(
                 "BazelizeKit",
                 "XCode2",
             ]),
+        .executableTarget(
+            name: "RepoEnumGenerator",
+            dependencies: [
+                "RepoEnumCore",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]),
 
         .target(
             name: "BazelRules",
@@ -62,14 +68,36 @@ let package = Package(
             name: "BazelizeKit",
             dependencies: [
                 "Yams",
+                "PathKit",
 
                 "BazelRules",
-                "XCode",
+                "XCode2",
                 "Util",
                 "Starlark",
                 "PluginLoader",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
+            ]),
+        .target(
+            name: "RepoEnumCore",
+            dependencies: [
+                "Yams",
+            ]),
+        .plugin(
+            name: "RepoEnumPlugin",
+            capability: .command(
+                intent: .custom(
+                    verb: "repo-enum",
+                    description: "Generate Repo+*.swift files from GitHub tags."),
+                permissions: [
+                    .allowNetworkConnections(
+                        scope: .all(),
+                        reason: "Fetch GitHub tags for configured repositories."),
+                    .writeToPackageDirectory(
+                        reason: "Write generated Repo enum files into the package directory."),
+                ]),
+            dependencies: [
+                "RepoEnumGenerator",
             ]),
 
         .target(
@@ -103,8 +131,10 @@ let package = Package(
             path: "Sources/XCode2"),
         .testTarget(
             name: "XCode2Tests",
-            dependencies: ["XCode2"]
-        ),
+            dependencies: ["XCode2", "BazelizeKit"]),
+        .testTarget(
+            name: "RepoEnumCoreTests",
+            dependencies: ["RepoEnumCore"]),
         .testTarget(
             name: "XCodeTests",
             dependencies: ["XCode"]),

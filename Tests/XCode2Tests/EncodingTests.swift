@@ -11,8 +11,7 @@ struct EncodingTests {
             resources: [],
             frameworks: [],
             copyFiles: [],
-            others: []
-        )
+            others: [])
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]

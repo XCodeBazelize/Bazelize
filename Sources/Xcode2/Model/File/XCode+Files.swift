@@ -1,5 +1,7 @@
-public extension XCode {
-    struct Files: Codable {
+// MARK: - XCode.Files
+
+extension XCode {
+    public struct Files: Codable {
         public let sources: [File]
         public let headers: [File]
         public let resources: [File]

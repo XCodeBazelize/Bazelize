@@ -1,3 +1,4 @@
+import BazelizeKit
 import Foundation
 import PathKit
 import Testing
@@ -5,18 +6,18 @@ import Testing
 
 struct RoadmapTreeBuilderTests {
     @Test
-    func buildCreatesTargetTreeAndSymlinks() throws {
+    func buildCreatesTargetTreeAndSymlinks() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "fixture/iOS/Example.xcodeproj"
-        let project = try XCode.Project.load(path: projectPath, preferConfig: nil)
 
         let output = Path(NSTemporaryDirectory()) + UUID().uuidString
         defer { try? output.delete() }
 
-        try XCode.RoadmapTreeBuilder(output: output).build(project: project)
+        let kit = try await Kit(projectPath, nil, outputPath: output)
+        try await kit.run(projectPath)
 
         #expect((output + "BUILD").exists)
         #expect((output + "MODULE.bazel").exists)
@@ -24,46 +25,48 @@ struct RoadmapTreeBuilderTests {
         #expect((output + "Prebuilt").exists)
         #expect((output + "Prebuilt/BUILD").exists)
         #expect((output + "Prebuilt/SVProgressHUD.xcframework").exists)
-        #expect((output + "Example/Sources").exists)
-        #expect((output + "Example/Generated").exists)
-        #expect((output + "Example/BUILD").exists)
-        #expect((output + "Framework1/BUILD").exists)
-        #expect((output + "Static2/BUILD").exists)
+        #expect((output + "Targets/Example/Sources").exists)
+        #expect((output + "Targets/Example/Generated").exists)
+        #expect((output + "Targets/Example/BUILD").exists)
+        #expect((output + "Targets/Framework1/BUILD").exists)
+        #expect((output + "Targets/Static2/BUILD").exists)
 
-        let exampleDir = output + "Example/Sources/Example"
+        let exampleDir = output + "Targets/Example/Sources/Example"
         #expect(exampleDir.isDirectory)
         #expect(!exampleDir.isSymlink)
+        #expect(!(exampleDir + "BUILD").exists)
 
-        let exampleApp = output + "Example/Sources/Example/ExampleApp.swift"
+        let exampleApp = output + "Targets/Example/Sources/Example/ExampleApp.swift"
         #expect(exampleApp.isSymlink)
         #expect(
             try exampleApp.symlinkDestination().absolute().string ==
-                (projectPath.parent() + "Example/ExampleApp.swift").absolute().string
-        )
+                (projectPath.parent() + "Example/ExampleApp.swift").absolute().string)
 
-        let previewAsset = output + "Example/Sources/Example/Preview Content/Preview Assets.xcassets/Contents.json"
+        let previewAsset = output + "Targets/Example/Sources/Example/Preview Content/Preview Assets.xcassets/Contents.json"
         #expect(previewAsset.isSymlink)
         #expect(
             try previewAsset.symlinkDestination().absolute().string ==
-                (projectPath.parent() + "Example/Preview Content/Preview Assets.xcassets/Contents.json").absolute().string
-        )
+                (projectPath.parent() + "Example/Preview Content/Preview Assets.xcassets/Contents.json").absolute().string)
 
-        let exampleBuild = try String(contentsOfFile: (output + "Example/BUILD").string)
+        let exampleBuild = try String(contentsOfFile: (output + "Targets/Example/BUILD").string)
         #expect(exampleBuild.contains("ios_application("))
         #expect(exampleBuild.contains("name = \"Example\""))
         #expect(exampleBuild.contains("swift_library("))
+        #expect(exampleBuild.contains("name = \"Example_swift\""))
+        #expect(exampleBuild.contains("alias("))
         #expect(exampleBuild.contains("name = \"Example_library\""))
-        #expect(exampleBuild.contains("//Framework1:Framework1"))
+        #expect(exampleBuild.contains("//Targets/Framework1:Framework1_library"))
         #expect(exampleBuild.contains("//Prebuilt:SVProgressHUD"))
         #expect(exampleBuild.contains("@swiftpkg_anycodable//:AnyCodable"))
         #expect(exampleBuild.contains("@swiftpkg_local1//:LocalLib1"))
         #expect(exampleBuild.contains("@swiftpkg_local1//:LocalLib2"))
+        #expect(exampleBuild.contains("plist_fragment("))
 
-        let frameworkBuild = try String(contentsOfFile: (output + "Framework1/BUILD").string)
+        let frameworkBuild = try String(contentsOfFile: (output + "Targets/Framework1/BUILD").string)
         #expect(frameworkBuild.contains("ios_framework("))
         #expect(frameworkBuild.contains("name = \"Framework1\""))
 
-        let static2Build = try String(contentsOfFile: (output + "Static2/BUILD").string)
+        let static2Build = try String(contentsOfFile: (output + "Targets/Static2/BUILD").string)
         #expect(static2Build.contains("objc_library("))
         #expect(static2Build.contains("name = \"Static2_objc\""))
 

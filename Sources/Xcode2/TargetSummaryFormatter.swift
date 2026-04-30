@@ -1,7 +1,9 @@
 import Foundation
 
-public extension XCode {
-    enum TargetSummaryFormatter {
+// MARK: - XCode.TargetSummaryFormatter
+
+extension XCode {
+    public enum TargetSummaryFormatter {
         public static func format(project: XCode.Project, target: XCode.Target) -> String {
             var lines: [String] = []
 
@@ -84,14 +86,14 @@ public extension XCode {
     }
 }
 
-private extension XCode.File {
-    var summaryPath: String {
+extension XCode.File {
+    fileprivate var summaryPath: String {
         path ?? name ?? fullPath ?? label ?? "<unknown>"
     }
 }
 
-private extension XCode.PackageProductDependency {
-    var summaryText: String {
+extension XCode.PackageProductDependency {
+    fileprivate var summaryText: String {
         if let package, !package.isEmpty {
             return "\(package) / \(productName)"
         }

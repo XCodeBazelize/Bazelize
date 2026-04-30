@@ -1,58 +1,35 @@
-//
-//  Target+Codegen.swift
-//
-//
-//  Created by Yume on 2022/4/29.
-//
-
-import Foundation
-import PathKit
 import Util
-import XCode
 
 extension Target {
-    var isTest: Bool {
-        switch native.productType {
-        case .unitTestBundle: fallthrough
-        case .ocUnitTestBundle: fallthrough
-        case .uiTestBundle:
-            return true
-        default: return false
-        }
-    }
-
     func generateCode(_ kit: Kit) -> String {
         let builder = CodeBuilder()
         generateLibrary(builder, kit)
 
-        generateLoadPlistFragment(builder)
+        generateLoadPlistFragment(builder, kit)
         generatePlistFile(builder, kit)
-        generatePlistAuto(builder)
-        generatePlistDefault(builder)
+        generatePlistAuto(builder, kit)
+        generatePlistDefault(builder, kit)
 
         let name = name
-        let native = native
 
-        switch native.productType {
-        case .application:
+        switch productType {
+        case "com.apple.product-type.application":
             generateStrings(builder, kit)
             generateApplicationCode(builder, kit)
-        case .commandLineTool:
+        case "com.apple.product-type.tool":
             generateCommandLineApplicationCode(builder, kit)
-        case .framework:
+        case "com.apple.product-type.framework":
             generateFrameworkCode(builder, kit)
-//        case .staticFramework: break
-        case .staticLibrary:
+        case "com.apple.product-type.library.static":
             generateStaticLibrary(builder, kit)
-//        case .appExtension: break
-        case .unitTestBundle:
+        case "com.apple.product-type.bundle.unit-test":
             generateUnitTest(builder, kit)
-        case .uiTestBundle:
+        case "com.apple.product-type.bundle.ui-testing":
             generateUITest(builder, kit)
         default:
             Log.codeGenerate.warning("""
             Name: \(name, privacy: .public)
-            Type: \(native.productType?.rawValue ?? "") not gen
+            Type: \(productType ?? "") not gen
             """)
         }
         return builder.build()

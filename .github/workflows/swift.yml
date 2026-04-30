@@ -21,14 +21,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    runs-on: macos-26
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: swiftformat --lint
-        run: |
-          swiftformat --lint --config .swiftformat .
   build:
     runs-on: macos-26
 

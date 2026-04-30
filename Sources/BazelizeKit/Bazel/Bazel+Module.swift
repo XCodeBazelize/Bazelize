@@ -14,6 +14,8 @@ extension Bazel {
     struct Module: BazelFile {
         let path: Path
         public let builder = CodeBuilder()
+        private let skylib: Repo.BazelSkylib = .v1_9_1
+        private let cc: Repo.RulesCC = .v0_2_18
 
         init(_ root: Path) {
             path = root + "MODULE.bazel"
@@ -30,8 +32,12 @@ extension Bazel {
                 "name" => "example"
                 "version" => "0.0.1"
             }
-            builder.bazel_dep(name: "bazel_skylib", version: "1.9.0")
-            builder.bazel_dep(name: "rules_cc", version: "0.2.17")
+            builder.bazel_dep(
+                name: "bazel_skylib",
+                version: skylib.rawValue)
+            builder.bazel_dep(
+                name: "rules_cc",
+                version: cc.rawValue)
         }
     }
 }

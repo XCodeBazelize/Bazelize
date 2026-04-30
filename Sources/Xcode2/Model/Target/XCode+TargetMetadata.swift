@@ -1,5 +1,5 @@
-public extension XCode {
-    struct TargetMetadata: Codable {
+extension XCode {
+    public struct TargetMetadata: Codable {
         public let bundleID: String?
         public let moduleName: String?
         public let infoPlist: String?

@@ -11,6 +11,8 @@ import Foundation
 import PathKit
 import XCode2
 
+// MARK: - Command
+
 @main
 struct Command: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
@@ -20,20 +22,23 @@ struct Command: AsyncParsableCommand {
         subcommands: [
             GenerateCommand.self,
             XCode2Command.self,
-            RoadmapCommand.self,
+//            RoadmapCommand.self,
         ],
-        defaultSubcommand: GenerateCommand.self
-    )
+        defaultSubcommand: GenerateCommand.self)
 }
+
+// MARK: - GenerateCommand
 
 struct GenerateCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "generate",
-        abstract: "Generate Bazel files from an Xcode project."
-    )
+        abstract: "Generate Bazel files from an Xcode project.")
 
     @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
     var project: String
+
+    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
+    var output: String
 
     @Option(name: [.short], help: "Debug/Release")
     var config = "Release"
@@ -49,7 +54,11 @@ struct GenerateCommand: AsyncParsableCommand {
 
     func run() async throws {
         let path = Path.current + project
-        let kit = try await Kit(path, config)
+        let outputPath = Path.current + output
+        let kit = try await Kit(
+            path,
+            config,
+            outputPath: outputPath)
 
         guard !clear else {
             kit.clear()
@@ -64,11 +73,12 @@ struct GenerateCommand: AsyncParsableCommand {
     }
 }
 
+// MARK: - XCode2Command
+
 struct XCode2Command: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "xcode2",
-        abstract: "Dump an Xcode project structure as JSON or print one target summary."
-    )
+        abstract: "Dump an Xcode project structure as JSON or print one target summary.")
 
     @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
     var project: String
@@ -76,7 +86,9 @@ struct XCode2Command: AsyncParsableCommand {
     @Option(name: [.short], help: "Preferred config name used by project parsing")
     var config: String?
 
-    @Option(name: [.customLong("print-target", withSingleDash: false)], help: "Print a human-readable summary for a single target")
+    @Option(
+        name: [.customLong("print-target", withSingleDash: false)],
+        help: "Print a human-readable summary for a single target")
     var printTarget: String?
 
     func run() async throws {
@@ -101,29 +113,5 @@ struct XCode2Command: AsyncParsableCommand {
         }
 
         print(json)
-    }
-}
-
-struct RoadmapCommand: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(
-        commandName: "roadmap",
-        abstract: "Create the roadmap tree layout from an Xcode project."
-    )
-
-    @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
-    var project: String
-
-    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
-    var output: String
-
-    @Option(name: [.short], help: "Preferred config name used by project parsing")
-    var config: String?
-
-    func run() async throws {
-        let projectPath = Path.current + project
-        let outputPath = Path.current + output
-        let dump = try XCode.Project.load(path: projectPath, preferConfig: config)
-
-        try XCode.RoadmapTreeBuilder(output: outputPath).build(project: dump)
     }
 }

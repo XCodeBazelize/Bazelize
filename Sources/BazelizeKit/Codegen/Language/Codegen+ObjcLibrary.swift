@@ -8,7 +8,6 @@
 import BazelRules
 import Foundation
 import Starlark
-import XCode
 
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/7
 

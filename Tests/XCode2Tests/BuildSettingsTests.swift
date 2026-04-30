@@ -9,8 +9,7 @@ struct BuildSettingsTests {
             setting: [
                 "PRODUCT_BUNDLE_IDENTIFIER": "com.example.app",
                 "TARGETED_DEVICE_FAMILY": "1 2",
-            ]
-        )
+            ])
 
         #expect(settings.metadata.bundleID == "com.example.app")
         #expect(settings.platform.deviceFamily.map(\.code) == ["iphone", "ipad"])
@@ -28,8 +27,7 @@ struct BuildSettingsTests {
                 "INFOPLIST_KEY_UIMainStoryboardFile": "Main",
                 "CURRENT_PROJECT_VERSION": "42",
                 "MARKETING_VERSION": "2.3",
-            ]
-        )
+            ])
 
         #expect(settings.generatedPlist.enabled)
         #expect(settings.plist.infoPlist == "App/Info.plist")
@@ -47,16 +45,14 @@ struct BuildSettingsTests {
                 "IPHONEOS_DEPLOYMENT_TARGET": "16.0",
                 "MACOSX_DEPLOYMENT_TARGET": "14.0",
                 "WATCHOS_DEPLOYMENT_TARGET": "10.0",
-            ]
-        )
+            ])
 
         #expect(settings.platform.iOS == "16.0")
         #expect(settings.platform.macOS == "14.0")
         #expect(settings.platform.tvOS == nil)
         #expect(
             settings.platform.deploymentTargets ==
-                ["iOS": "16.0", "macOS": "14.0", "watchOS": "10.0"]
-        )
+                ["iOS": "16.0", "macOS": "14.0", "watchOS": "10.0"])
     }
 
     @Test
@@ -65,8 +61,7 @@ struct BuildSettingsTests {
             name: "Release",
             setting: [
                 "TARGETED_DEVICE_FAMILY": "1 2",
-            ]
-        )
+            ])
 
         #expect(settings.platform.deviceFamily.map(\.code) == ["iphone", "ipad"])
         #expect(settings.platform.appleFamiliesLiteral == #"["iphone", "ipad"]"#)
@@ -83,8 +78,7 @@ struct BuildSettingsTests {
                 "DEVELOPMENT_TEAM": "TEAM123",
                 "CODE_SIGN_STYLE": "Automatic",
                 "CODE_SIGN_IDENTITY": "Apple Development",
-            ]
-        )
+            ])
 
         #expect(settings.metadata.bundleID == "com.example.app")
         #expect(settings.metadata.moduleName == "ExampleModule")
@@ -103,8 +97,7 @@ struct BuildSettingsTests {
                 "INFOPLIST_KEY_UILaunchStoryboardName": "LaunchScreen",
                 "INFOPLIST_KEY_UISupportedInterfaceOrientations": "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft",
                 "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
-            ]
-        )
+            ])
 
         let plist = settings.generatedPlist.entries.joined(separator: "\n")
 

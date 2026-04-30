@@ -8,13 +8,13 @@ struct TargetSummaryFormatterTests {
             name: "Example",
             productName: "Example",
             productType: "com.apple.product-type.application",
+            preferConfig: "Release",
             configs: [
                 "Debug": .init(
                     name: "Debug",
                     setting: [
                         "SWIFT_VERSION": "5.9",
-                    ]
-                ),
+                    ]),
                 "Release": .init(
                     name: "Release",
                     setting: [
@@ -23,8 +23,7 @@ struct TargetSummaryFormatterTests {
                         "PRODUCT_BUNDLE_IDENTIFIER": "com.example.Example",
                         "SWIFT_VERSION": "5.9",
                         "TARGETED_DEVICE_FAMILY": "1 2",
-                    ]
-                ),
+                    ]),
             ],
             metadata: .init(
                 bundleID: "com.example.Example",
@@ -34,9 +33,7 @@ struct TargetSummaryFormatterTests {
                 codeSign: .init(
                     developmentTeam: nil,
                     codeSignStyle: "Automatic",
-                    codeSignIdentity: nil
-                )
-            ),
+                    codeSignIdentity: nil)),
             buildPhases: [],
             files: .init(
                 sources: [
@@ -49,8 +46,7 @@ struct TargetSummaryFormatterTests {
                         sourceTree: "<group>",
                         buildPhase: "sources",
                         compilerFlags: nil,
-                        attributes: []
-                    ),
+                        attributes: []),
                 ],
                 headers: [],
                 resources: [
@@ -63,8 +59,7 @@ struct TargetSummaryFormatterTests {
                         sourceTree: "<group>",
                         buildPhase: "resources",
                         compilerFlags: nil,
-                        attributes: []
-                    ),
+                        attributes: []),
                 ],
                 frameworks: [
                     .init(
@@ -76,25 +71,20 @@ struct TargetSummaryFormatterTests {
                         sourceTree: "<group>",
                         buildPhase: "frameworks",
                         compilerFlags: nil,
-                        attributes: []
-                    ),
+                        attributes: []),
                 ],
                 copyFiles: [],
-                others: []
-            ),
+                others: []),
             dependencies: .init(
                 targets: ["Framework1"],
                 packageProducts: [
                     .init(
                         productName: "LocalLib1",
                         package: nil,
-                        packagePath: "../Local1"
-                    ),
+                        packagePath: "../Local1"),
                 ],
                 frameworks: ["//Prebuilt:SVProgressHUD"],
-                sdkFrameworks: ["SwiftUI", "UIKit"]
-            )
-        )
+                sdkFrameworks: ["SwiftUI", "UIKit"]))
 
         let project = XCode.Project(
             name: "Example",
@@ -103,8 +93,7 @@ struct TargetSummaryFormatterTests {
             preferConfig: "Release",
             configs: [:],
             packages: .init(remote: [], local: []),
-            targets: [target]
-        )
+            targets: [target])
 
         let summary = XCode.TargetSummaryFormatter.format(project: project, target: target)
 

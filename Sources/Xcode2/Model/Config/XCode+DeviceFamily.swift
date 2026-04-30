@@ -1,7 +1,7 @@
 import Foundation
 
-public extension XCode {
-    enum DeviceFamily: String {
+extension XCode {
+    public enum DeviceFamily: String {
         case iphone = "1"
         case ipad = "2"
         case appletv = "3"

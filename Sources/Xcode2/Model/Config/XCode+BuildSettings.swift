@@ -12,8 +12,10 @@ extension BuildSetting {
     }
 }
 
-public extension XCode {
-    struct BuildSettings: Encodable {
+// MARK: - XCode.BuildSettings
+
+extension XCode {
+    public struct BuildSettings: Encodable {
         public let name: String
         private let setting: [String: String]
 
@@ -25,8 +27,7 @@ public extension XCode {
         init(_ config: XCBuildConfiguration) {
             self.init(
                 name: config.name,
-                setting: config.buildSettings.mapValues(\.value)
-            )
+                setting: config.buildSettings.mapValues(\.value))
         }
 
         func merged(with defaults: BuildSettings?) -> BuildSettings {
@@ -38,8 +39,7 @@ public extension XCode {
                 name: name,
                 setting: setting.merging(defaults.setting) { current, _ in
                     current
-                }
-            )
+                })
         }
 
         public subscript(key: String) -> String? {
@@ -50,4 +50,13 @@ public extension XCode {
             Array(setting.keys)
         }
     }
+}
+
+extension XCode.BuildSettings {
+    public var swiftVersion: String? { self["SWIFT_VERSION"] }
+    public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
+    public var testTargetName: String? { self["TEST_TARGET_NAME"] }
+    public var testHost: String? { self["TEST_HOST"] }
+    public var bundleLoader: String? { self["BUNDLE_LOADER"] }
+    public var enableModules: Bool { self["CLANG_ENABLE_MODULES"] == "YES" }
 }

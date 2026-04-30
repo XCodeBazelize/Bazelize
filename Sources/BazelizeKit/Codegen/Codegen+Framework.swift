@@ -1,15 +1,3 @@
-//
-//  Codegen+Framework.swift
-//
-//
-//  Created by Yume on 2022/4/29.
-//
-
-import BazelRules
-import Foundation
-import Starlark
-import XCode
-
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
 
 extension Target {
@@ -18,18 +6,18 @@ extension Target {
         builder.call(
             Rules.Apple.IOS.Call.ios_framework(
                 name: name,
-                bundle_id: prefer(\.bundleID),
+                bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
                     frameworks
                 },
-                families: prefer(\.deviceFamily)?.map(\.code),
+                families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
                     plist_file
                     plist_auto
                     // plist_default
                 },
-                minimum_os_version: prefer(\.iOS),
+                minimum_os_version: prefer(\.platform.iOS),
                 visibility: .public))
     }
 }

@@ -1,1 +1,1 @@
-public enum XCode {}
+public enum XCode { }

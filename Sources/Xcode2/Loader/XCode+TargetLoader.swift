@@ -2,15 +2,19 @@ import Foundation
 import PathKit
 import XcodeProj
 
+// MARK: - TargetLoader
+
 struct TargetLoader {
     let native: PBXNativeTarget
     unowned let project: ProjectLoader
+    let preferConfig: String?
     let configList: ConfigListLoader
     let mergedConfig: [String: XCode.BuildSettings]
 
     init(native: PBXNativeTarget, project: ProjectLoader, defaultConfigList: ConfigListLoader?) {
         self.native = native
         self.project = project
+        preferConfig = project.preferConfig
         configList = ConfigListLoader(native: native.buildConfigurationList)
         mergedConfig = configList.merge(defaultConfigList)
     }
@@ -25,28 +29,24 @@ struct TargetLoader {
             fileModels(from: sourceBuildFiles, buildPhase: .sources) +
                 synchronizedFiles.filter { file in
                     file.category == .source
-                }.map(\.file)
-        ) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+                }.map(\.file)) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
         let headerFiles = unique(
             fileModels(from: headerBuildFiles, buildPhase: .headers) +
                 packageHeaders +
                 synchronizedFiles.filter { file in
                     file.category == .header
-                }.map(\.file)
-        ) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+                }.map(\.file)) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
         let resourceFiles = unique(
             fileModels(from: resourceBuildFiles, buildPhase: .resources) +
                 synchronizedFiles.filter { file in
                     file.category == .resource
-                }.map(\.file)
-        ) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
+                }.map(\.file)) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
         let frameworkFiles = fileModels(from: frameworkBuildFiles, buildPhase: .frameworks)
         let copyFiles = fileModels(from: copyBuildFiles, buildPhase: .copyFiles)
 
         let knownPaths = Set(
             (sourceFiles + headerFiles + resourceFiles + frameworkFiles + copyFiles)
-                .compactMap(\.path)
-        )
+                .compactMap(\.path))
 
         let otherFiles = project.packageFiles(targetName: name)
             .filter { file in
@@ -62,6 +62,7 @@ struct TargetLoader {
             name: name,
             productName: native.productName,
             productType: native.productType?.rawValue,
+            preferConfig: preferConfig,
             configs: mergedConfig,
             metadata: metadata,
             buildPhases: buildPhases,
@@ -71,10 +72,8 @@ struct TargetLoader {
                 resources: resourceFiles,
                 frameworks: frameworkFiles,
                 copyFiles: copyFiles,
-                others: unique(otherFiles) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }
-            ),
-            dependencies: dependencies
-        )
+                others: unique(otherFiles) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }),
+            dependencies: dependencies)
     }
 
     private var metadata: XCode.TargetMetadata {
@@ -88,9 +87,7 @@ struct TargetLoader {
             codeSign: .init(
                 developmentTeam: settings.metadata.developmentTeam,
                 codeSignStyle: settings.metadata.codeSignStyle,
-                codeSignIdentity: settings.metadata.codeSignIdentity
-            )
-        )
+                codeSignIdentity: settings.metadata.codeSignIdentity))
     }
 
     private var dependencies: XCode.Dependencies {
@@ -108,8 +105,10 @@ struct TargetLoader {
                 return nil
             }
 
-            if let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
-               label.hasPrefix("//Prebuilt:") {
+            if
+                let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
+                label.hasPrefix("//Prebuilt:")
+            {
                 return label
             }
 
@@ -127,16 +126,14 @@ struct TargetLoader {
             XCode.PackageProductDependency(
                 productName: dependency.productName,
                 package: dependency.package?.repositoryURL,
-                packagePath: project.localPackagePathByProduct[dependency.productName]
-            )
+                packagePath: project.localPackagePathByProduct[dependency.productName])
         }
 
         return .init(
             targets: Set(targetDependencies).sorted(),
             packageProducts: unique(packageProducts) { "\($0.productName)|\($0.package ?? "")" },
             frameworks: Set(frameworks.compactMap { $0 }).sorted(),
-            sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted()
-        )
+            sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted())
     }
 
     private var selectedConfig: XCode.BuildSettings? {
@@ -212,8 +209,7 @@ struct TargetLoader {
                 return SynchronizedFile(
                     path: relative,
                     fullPath: file.string,
-                    compilerFlags: compilerFlags[pathInGroup] ?? compilerFlags[relative]
-                )
+                    compilerFlags: compilerFlags[pathInGroup] ?? compilerFlags[relative])
             } ?? []
     }
 
@@ -251,21 +247,19 @@ struct TargetLoader {
             return FileLoader(native: file, project: project).file(
                 buildPhase: buildPhase.rawValue,
                 compilerFlags: buildFile.compilerFlags,
-                attributes: buildFile.attributes ?? []
-            )
+                attributes: buildFile.attributes ?? [])
         }
     }
 }
 
-private extension XCode.BuildPhase {
-    init(phase: PBXBuildPhase) {
+extension XCode.BuildPhase {
+    fileprivate init(phase: PBXBuildPhase) {
         let destination: XCode.CopyFilesDestination?
         if let copyPhase = phase as? PBXCopyFilesBuildPhase {
             destination = .init(
                 path: copyPhase.dstPath,
                 subfolder: copyPhase.dstSubfolder?.rawValue,
-                subfolderSpec: copyPhase.dstSubfolderSpec?.rawValue
-            )
+                subfolderSpec: copyPhase.dstSubfolderSpec?.rawValue)
         } else {
             destination = nil
         }
@@ -281,15 +275,13 @@ private extension XCode.BuildPhase {
                     path: buildFile.file?.path,
                     fileType: (buildFile.file as? PBXFileReference)?.lastKnownFileType,
                     compilerFlags: buildFile.compilerFlags,
-                    attributes: buildFile.attributes ?? []
-                )
+                    attributes: buildFile.attributes ?? [])
             },
             inputPaths: (phase as? PBXShellScriptBuildPhase)?.inputPaths ?? [],
             outputPaths: (phase as? PBXShellScriptBuildPhase)?.outputPaths ?? [],
             inputFileListPaths: phase.inputFileListPaths ?? [],
             outputFileListPaths: phase.outputFileListPaths ?? [],
             shellScript: (phase as? PBXShellScriptBuildPhase)?.shellScript,
-            destination: destination
-        )
+            destination: destination)
     }
 }

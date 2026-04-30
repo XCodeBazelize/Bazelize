@@ -2,18 +2,18 @@ import Foundation
 
 private let plistPrefix = "INFOPLIST_KEY_"
 
-public extension XCode.BuildSettings {
+extension XCode.BuildSettings {
     // MARK: Info.plist
 
-    var plist: Plist {
+    public var plist: Plist {
         .init(settings: self)
     }
 
-    var generatedPlist: GeneratedPlist {
+    public var generatedPlist: GeneratedPlist {
         .init(settings: self)
     }
 
-    struct Plist {
+    public struct Plist {
         fileprivate let settings: XCode.BuildSettings
 
         /// "ABCDEF/Info.plist"
@@ -45,7 +45,7 @@ public extension XCode.BuildSettings {
         }
     }
 
-    struct GeneratedPlist {
+    public struct GeneratedPlist {
         fileprivate let settings: XCode.BuildSettings
 
         /// "YES"
@@ -154,6 +154,8 @@ public extension XCode.BuildSettings {
         }
     }
 }
+
+// MARK: - PlistDecision
 
 private enum PlistDecision {
     case string

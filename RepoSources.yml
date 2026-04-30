@@ -1,0 +1,16 @@
+- name: Apple
+  url: https://github.com/bazelbuild/rules_apple
+- name: Swift
+  url: https://github.com/bazelbuild/rules_swift
+- name: XCodeProj
+  url: https://github.com/MobileNativeFoundation/rules_xcodeproj
+- name: SwiftPM
+  url: https://github.com/cgrindel/rules_swift_package_manager
+- name: AppleLinker
+  url: https://github.com/keith/rules_apple_linker
+- name: Bazel
+  url: https://github.com/bazelbuild/bazel
+- name: BazelSkylib
+  url: https://github.com/bazelbuild/bazel-skylib
+- name: RulesCC
+  url: https://github.com/bazelbuild/rules_cc

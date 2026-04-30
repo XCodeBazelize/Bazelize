@@ -5,11 +5,8 @@
 //  Created by Yume on 2022/4/29.
 //
 
-import Foundation
-import PathKit
 import PluginLoader
 import Util
-import XCode
 import XcodeProj
 import Yams
 
@@ -17,19 +14,23 @@ import Yams
 
 public final class Kit {
     let project: Project
+    let outputRoot: Path
 
-    lazy var module = Bazel.Module(project.workspacePath)
-    lazy var workspace = Bazel.Workspace(project.workspacePath)
-    lazy var build = Bazel.RootBuild(project.workspacePath)
-    lazy var config = Bazel.BazelRC(project.workspacePath)
+    private lazy var roadmap = Bazel.Roadmap(output: outputRoot, project: project)
+    lazy var version = Bazel.Version(outputRoot)
+    lazy var module = Bazel.Module(outputRoot)
+    lazy var build = Bazel.RootBuild(outputRoot)
+    lazy var config = Bazel.BazelRC(outputRoot)
+    lazy var prebuilt = Bazel.PrebuiltBuild(outputRoot)
     lazy var targetsBuild = project.targets.map { target in
-        Bazel.TargetBuild(project.workspacePath, target)
+        Bazel.TargetBuild(outputRoot, target)
     }
 
     /// plugins...
     var plugins: [Plugin]
 
     private lazy var pluginSPM = PluginSwiftPM(self)
+
     lazy var builtinPlugins: [PluginBuiltin] = [
         PluginHttpArchive(self),
         PluginGitRepository(self),
@@ -39,13 +40,13 @@ public final class Kit {
         PluginXCodeProj(self),
         PluginPlistFragment(self),
         PluginLinker(self),
-        PluginImported(self),
     ]
 
     // MARK: Lifecycle
 
-    public init(_ projPath: Path, _ preferConfig: String?) async throws {
-        project = try await Project(projPath, preferConfig)
+    public init(_ projPath: Path, _ preferConfig: String?, outputPath: Path? = nil) async throws {
+        project = try Project.load(path: projPath, preferConfig: preferConfig)
+        outputRoot = outputPath ?? Path(project.workspacePath)
         plugins = []
 
         try await pluginSPM.loadPackageNames(projPath: projPath)
@@ -57,8 +58,7 @@ public final class Kit {
         defer { tips() }
 
 //        try await loadPlugins(mainfest)
-
-        generate()
+        try generate()
     }
 
     public final func dump() throws {
@@ -90,83 +90,92 @@ extension Kit {
 
 // MARK: - Generate
 extension Kit {
-    private final func generate() {
-        generateModule()
-        generateWorkspace()
-        generateBuild()
-        generateConfig()
-        generateTargetBuild()
-        generatePluginExtraFile()
+    private final func generate() throws {
+        try generateRoadmap()
+        try generateVersion()
+        try generateModule()
+        try generateBuild()
+        try generateConfig()
+        try generatePrebuiltBuild()
+        try generateTargetBuild()
+        try generatePluginExtraFile()
+    }
+
+    private func generateRoadmap() throws {
+        try roadmap.prepare()
+    }
+
+    private func generateVersion() throws {
+        try version.path.write(version.code)
     }
 
     /// {WORKSPACE}/MODULE.bazel
-    private func generateModule() {
+    private func generateModule() throws {
         for plugin in builtinPlugins {
             plugin.module(module.builder)
         }
-        try? module.write()
+        try module.write()
 
         let path = module.path
         Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
     }
 
-    /// {WORKSPACE}/WORKSPACE
-    private final func generateWorkspace() {
-//        for plugin in builtinPlugins {
-//            plugin.workspace(workspace.builder)
-//        }
-//        try? workspace.write()
-//
-//        let path = workspace.path
-//        Log.codeGenerate.info("Create `Workspace` at \(path, privacy: .public)")
-    }
-
     /// {WORKSPACE}/BUILD
-    private final func generateBuild() {
+    private final func generateBuild() throws {
         build.setup(config: project.config)
+
 //        build.exportUncategorizedFiles(self)
         for plugin in builtinPlugins {
             plugin.build(build.builder)
         }
-        try? build.write()
+        try build.write()
 
         let path = build.path
         Log.codeGenerate.info("Create `BUILD` at \(path, privacy: .public)")
     }
 
     /// {WORKSPACE}/config.bazelrc
-    private final func generateConfig() {
+    private final func generateConfig() throws {
         config.setup(config: project.config)
-        try? config.write()
+        try config.write()
 
         let path = config.path
         Log.codeGenerate.info("Create `config.bazelrc` at \(path, privacy: .public)")
     }
 
+    private final func generatePrebuiltBuild() throws {
+        prebuilt.setup(self)
+        try prebuilt.path.parent().mkpath()
+        try prebuilt.write()
+
+        let path = prebuilt.path
+        Log.codeGenerate.info("Create `Prebuilt/BUILD` at \(path, privacy: .public)")
+    }
+
 
     /// {WORKSPACE}/Target/BUILD
-    private final func generateTargetBuild() {
+    private final func generateTargetBuild() throws {
         for build in targetsBuild {
             var build = build
 
-            try? build.mkpath()
+            try build.mkpath()
             build.setup(self)
-            try? build.write()
+            try build.write()
 
             let path = build.path
             Log.codeGenerate.info("Create BUILD at \(path, privacy: .public)")
         }
     }
 
-    private final func generatePluginExtraFile() {
-        builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
-            let path = Path(custom.path)
-            try? path.parent().mkpath()
-            try? path.write(custom.content)
+    private final func generatePluginExtraFile() throws {
+        try builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
+            let path = resolvedOutputPath(custom.path)
+            try path.parent().mkpath()
+            try path.write(custom.content)
         }
 
-        plugins.forEach { plugin in
-            try? plugin.generateFile(project.workspacePath)
+        try plugins.forEach { plugin in
+            try plugin.generateFile(outputRoot)
         }
     }
 }
@@ -178,9 +187,9 @@ extension Kit {
 
     public final func clear() {
         clearModule()
-        clearWorkspace()
         clearBuild()
         clearConfig()
+        clearPrebuiltBuild()
         clearTargetBuild()
         clearPluginExtraFile()
     }
@@ -190,11 +199,6 @@ extension Kit {
     /// {WORKSPACE}/MODULE.bazel
     private func clearModule() {
         try? module.clear()
-    }
-
-    /// {WORKSPACE}/WORKSPACE
-    private final func clearWorkspace() {
-        try? workspace.clear()
     }
 
     /// {WORKSPACE}/BUILD
@@ -207,6 +211,10 @@ extension Kit {
         try? config.clear()
     }
 
+    private final func clearPrebuiltBuild() {
+        try? prebuilt.clear()
+    }
+
     /// {WORKSPACE}/Target/BUILD
     private final func clearTargetBuild() {
         for build in targetsBuild {
@@ -216,8 +224,13 @@ extension Kit {
 
     private final func clearPluginExtraFile() {
         builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
-            let path = Path(custom.path)
+            let path = resolvedOutputPath(custom.path)
             try? path.delete()
         }
+    }
+
+    private func resolvedOutputPath(_ path: String) -> Path {
+        let custom = Path(path)
+        return custom.isAbsolute ? custom : outputRoot + custom
     }
 }
