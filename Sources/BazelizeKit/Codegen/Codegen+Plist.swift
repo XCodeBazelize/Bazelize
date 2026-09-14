@@ -136,11 +136,44 @@ extension Target {
                 continue
             }
 
+            if isInvalidVersion(key: key.name, value: element.stringValue ?? "") {
+                Log.codeGenerate.warning("""
+                Drop Info.plist key \(key.name, privacy: .public) of \
+                \(name, privacy: .public): value is not a valid version
+                """)
+                continue
+            }
+
             result.append(key.xml)
             result.append(xml)
         }
 
         return result
+    }
+
+    /// Xcode ships whatever the `Info.plist` says and lets a release script fill
+    /// the real number in later — MacPass writes a literal `UNDEFINED`. rules_apple
+    /// validates the format instead, so an unusable value is dropped and the
+    /// build-setting default takes over.
+    private func isInvalidVersion(key: String, value: String) -> Bool {
+        guard let pattern = Self.versionPatterns[key] else { return false }
+        guard !value.contains("$(") else { return false }
+        return value.range(of: pattern, options: .regularExpression) == nil
+    }
+
+    /// What rules_apple accepts for each key, mirroring its `plisttool`.
+    private static let versionPatterns: [String: String] = [
+        "CFBundleVersion": #"^[0-9]+(\.[0-9]+){0,3}([a-z]+[0-9]{1,3})?$"#,
+        "CFBundleShortVersionString": #"^[0-9]+(\.[0-9]+){0,3}$"#,
+    ]
+
+    /// A build setting is no better a source than the `Info.plist`: MacPass sets
+    /// `CURRENT_PROJECT_VERSION` to `${CURRENT_PROJECT_VERSION}`, which is neither a
+    /// version nor something `plist_fragment` can carry.
+    private func version(_ value: String?, key: String) -> String? {
+        guard let value, !value.isEmpty, !value.contains("$") else { return nil }
+        guard let pattern = Self.versionPatterns[key] else { return value }
+        return value.range(of: pattern, options: .regularExpression) == nil ? nil : value
     }
 }
 
@@ -319,10 +352,12 @@ extension Target {
             /// `plisttool` cannot resolve these, and rules_apple rejects a bundle
             /// without them, so an unset setting falls back to Xcode's own template
             /// values instead of a literal `$(SETTING)`.
-            ("CFBundleVersion", settings.generatedPlist.currentProjectVersion ?? "1"),
+            ("CFBundleVersion", version(settings.generatedPlist.currentProjectVersion, key: "CFBundleVersion") ?? "1"),
             ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
             ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
-            ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "1.0"),
+            (
+                "CFBundleShortVersionString",
+                version(settings.generatedPlist.marketingVersion, key: "CFBundleShortVersionString") ?? "1.0"),
         ]
 
         return defaults
