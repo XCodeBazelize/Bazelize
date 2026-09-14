@@ -88,11 +88,14 @@ extension XCode.BuildSettings {
 }
 
 extension XCode.BuildSettings {
+    /// Xcode spells a reference `$(NAME)` or `${NAME}` and allows a modifier:
+    /// `$(PRODUCT_NAME:rfc1034identifier)`.
+    private static let referencePattern = #"\$[({]([A-Za-z0-9_]+)(?::([A-Za-z0-9_]+))?[)}]"#
+
     private func resolved(_ value: String?, visited: Set<String>) -> String? {
         guard let value else { return nil }
 
-        let pattern = #"\$\(([A-Za-z0-9_]+)\)"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return value }
+        guard let regex = try? NSRegularExpression(pattern: Self.referencePattern) else { return value }
 
         let matches = regex.matches(
             in: value,
@@ -102,7 +105,6 @@ extension XCode.BuildSettings {
         var result = value
         for match in matches.reversed() {
             guard
-                match.numberOfRanges == 2,
                 let wholeRange = Range(match.range(at: 0), in: value),
                 let keyRange = Range(match.range(at: 1), in: value)
             else {
@@ -114,9 +116,31 @@ extension XCode.BuildSettings {
                 continue
             }
 
-            result.replaceSubrange(wholeRange, with: replacement)
+            let modifier = Range(match.range(at: 2), in: value).map { String(value[$0]) }
+            result.replaceSubrange(wholeRange, with: Self.apply(modifier, to: replacement))
         }
 
         return result
+    }
+
+    private static func apply(_ modifier: String?, to value: String) -> String {
+        switch modifier {
+        case "rfc1034identifier":
+            return value.map { character in
+                character.isLetter || character.isNumber || character == "." || character == "-"
+                    ? String(character)
+                    : "-"
+            }.joined()
+        case "identifier", "c99extidentifier":
+            return value.map { character in
+                character.isLetter || character.isNumber ? String(character) : "_"
+            }.joined()
+        case "lower":
+            return value.lowercased()
+        case "upper":
+            return value.uppercased()
+        default:
+            return value
+        }
     }
 }
