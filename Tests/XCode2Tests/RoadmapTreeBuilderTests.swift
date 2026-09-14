@@ -129,7 +129,7 @@ struct RoadmapTreeBuilderTests {
 
         let cliBuild = try String(contentsOfFile: (output + "Targets/iina-cli/BUILD").string)
         #expect(cliBuild.contains("module_name = \"iina_cli\""))
-        #expect(cliBuild.contains("minimum_os_version = \"11\""))
+        #expect(cliBuild.contains("minimum_os_version = \"10.15\""))
 
         let pluginBuild = try String(contentsOfFile: (output + "Targets/iina-plugin/BUILD").string)
         #expect(pluginBuild.contains("module_name = \"iina_plugin\""))
@@ -153,7 +153,7 @@ struct RoadmapTreeBuilderTests {
         #expect(!appBuild.contains("additional_contents = {"))
         #expect(appBuild.contains("@swiftpkg_grmustache.swift//:Mustache"))
         #expect(appBuild.contains("macos_application("))
-        #expect(appBuild.contains("minimum_os_version = \"11\""))
+        #expect(appBuild.contains("minimum_os_version = \"10.15\""))
 
         let nightlyOutput = Path(NSTemporaryDirectory()) + UUID().uuidString
         defer { try? nightlyOutput.delete() }

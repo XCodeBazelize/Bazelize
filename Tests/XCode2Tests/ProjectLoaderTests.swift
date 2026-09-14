@@ -50,7 +50,7 @@ struct ProjectLoaderTests {
         let target = try #require(project.targets.first { $0.name == "iina-cli" })
 
         #expect(target.prefer(\.platform.sdk) == .macOS)
-        #expect(target.prefer(\.platform.macOS) == "11")
+        #expect(target.prefer(\.platform.macOS) == "10.15")
     }
 
     @Test
