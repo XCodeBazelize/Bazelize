@@ -132,6 +132,12 @@ final class PluginSwiftPM: PluginBuiltin {
                 case .upToNextMinorVersion(let version):
                     return #"        .package(url: "\#(url)", .upToNextMinor(from: "\#(version)")),"#
                 case .exact(let version):
+                    /// An exact version names one commit, and upstream deleting or
+                    /// re-tagging it makes the manifest unresolvable. Xcode's own pin
+                    /// records the revision, so use it when it is available.
+                    if let revision = pinnedRevision(url: url) {
+                        return #"        .package(url: "\#(url)", revision: "\#(revision)"), // \#(version)"#
+                    }
                     return #"        .package(url: "\#(url)", exact: "\#(version)"),"#
                 case .branch(let branch):
                     return #"        .package(url: "\#(url)", branch: "\#(branch)"),"#
@@ -175,6 +181,35 @@ final class PluginSwiftPM: PluginBuiltin {
         guard let content = try? String(contentsOfFile: resolved.string, encoding: .utf8) else { return nil }
 
         return .init(path: "Package.resolved", content: content)
+    }
+
+    /// Revisions Xcode already resolved, keyed by package identity.
+    private lazy var pinnedRevisions: [String: String] = {
+        guard let projectPath else { return [:] }
+
+        let resolved = projectPath + "project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+        guard
+            let data = try? Data(contentsOf: URL(fileURLWithPath: resolved.string)),
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let pins = json["pins"] as? [[String: Any]]
+        else {
+            return [:]
+        }
+
+        return pins.reduce(into: [String: String]()) { result, pin in
+            guard
+                let identity = pin["identity"] as? String,
+                let state = pin["state"] as? [String: Any],
+                let revision = state["revision"] as? String
+            else {
+                return
+            }
+            result[identity] = revision
+        }
+    }()
+
+    private func pinnedRevision(url: String) -> String? {
+        pinnedRevisions[Self.repositoryModuleName(url: url).lowercased()]
     }
 
     override var custom: [PluginBuiltin.Custom]? {
