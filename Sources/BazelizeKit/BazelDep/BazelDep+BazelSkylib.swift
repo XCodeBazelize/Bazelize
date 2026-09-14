@@ -4,7 +4,6 @@ extension BazelDep {
         static let latest: BazelSkylib = .v1_9_2
 
         case v1_9_2 = "1.9.2"
-        case v1_9_1 = "1.9.1"
         case v1_9_0 = "1.9.0"
         case v1_8_2 = "1.8.2"
         case v1_8_1 = "1.8.1"
@@ -21,21 +20,6 @@ extension BazelDep {
         case v1_2_1 = "1.2.1"
         case v1_2_0 = "1.2.0"
         case v1_1_1 = "1.1.1"
-        case v1_1_0 = "1.1.0"
         case v1_0_3 = "1.0.3"
-        case v1_0_2 = "1.0.2"
-        case v1_0_1 = "1.0.1"
-        case v1_0_0 = "1.0.0"
-        case v0_9_0 = "0.9.0"
-        case v0_8_0 = "0.8.0"
-        case v0_7_0 = "0.7.0"
-        case v0_6_0 = "0.6.0"
-        case v0_5_0 = "0.5.0"
-        case v0_4_0 = "0.4.0"
-        case v0_3_1 = "0.3.1"
-        case v0_3_0 = "0.3.0"
-        case v0_2_0 = "0.2.0"
-        case v0_1_1 = "0.1.1"
-        case v0_1_0 = "0.1.0"
     }
 }
