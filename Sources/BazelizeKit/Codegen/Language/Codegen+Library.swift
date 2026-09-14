@@ -54,13 +54,14 @@ extension Target {
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + clangDialectCopts,
+                ] + clangDialectCopts + clangDefineFlags,
                 clang_srcs: .build {
                     srcs_c
                     srcs_cpp
                     srcs_objc
                     srcs_objcpp
                     internalHeaderFiles(project: project)
+                    definesHeader
                 },
                 data: .build {
                     if !assets.isEmpty {

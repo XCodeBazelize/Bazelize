@@ -24,6 +24,7 @@ extension Target {
                     srcs_objc
                     srcs_objcpp
                     internalHeaderFiles(project: project)
+                    definesHeader
                 },
                 hdrs: .build {
                     // FIXME: (@yume190) TODO: pch
@@ -37,7 +38,7 @@ extension Target {
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ],
+                ] + clangDefineFlags,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
                 module_name: codegenModuleName,

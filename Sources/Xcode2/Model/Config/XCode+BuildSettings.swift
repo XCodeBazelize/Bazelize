@@ -81,10 +81,38 @@ extension XCode.BuildSettings {
             }
     }
 
+    /// `GCC_PREPROCESSOR_DEFINITIONS`, without Xcode's `$(inherited)` marker.
+    ///
+    /// Xcode passes each entry through a shell, so a value is often quoted
+    /// (`ID='@"com.example"'`); Bazel hands `defines` to the compiler directly and
+    /// the quotes would end up inside the macro.
+    public var preprocessorDefinitions: [String] {
+        (self["GCC_PREPROCESSOR_DEFINITIONS"] ?? "")
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !$0.isEmpty && $0 != "$(inherited)" }
+            .map { definition in
+                guard let separator = definition.firstIndex(of: "=") else { return definition }
+                let key = definition[..<separator]
+                let value = definition[definition.index(after: separator)...]
+                return "\(key)=\(value.unquoted)"
+            }
+    }
+
     public var testTargetName: String? { self["TEST_TARGET_NAME"] }
     public var testHost: String? { self["TEST_HOST"] }
     public var bundleLoader: String? { self["BUNDLE_LOADER"] }
     public var enableModules: Bool { self["CLANG_ENABLE_MODULES"] == "YES" }
+}
+
+extension StringProtocol {
+    /// Strips one layer of shell quoting.
+    fileprivate var unquoted: String {
+        for quote in ["'", "\""] where hasPrefix(quote) && hasSuffix(quote) && count > 1 {
+            return String(dropFirst().dropLast())
+        }
+        return String(self)
+    }
 }
 
 extension XCode.BuildSettings {

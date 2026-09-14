@@ -62,6 +62,25 @@ extension Bazel {
 
             try prepareSiblingHeaders(target: target, project: project, sourcesRoot: sourcesRoot)
             try prepareModuleHeaders(target: target, project: project, targetRoot: targetRoot)
+            try prepareDefinesHeader(target: target, targetRoot: targetRoot)
+        }
+
+        /// `GCC_PREPROCESSOR_DEFINITIONS` as a header the compiles force-include.
+        private func prepareDefinesHeader(target: Target, targetRoot: Path) throws {
+            guard let relativePath = target.definesHeader else { return }
+
+            let definitions = (target.prefer(\.preprocessorDefinitions) ?? []).map { definition in
+                guard let separator = definition.firstIndex(of: "=") else {
+                    return "#define \(definition) 1"
+                }
+                let key = definition[..<separator]
+                let value = definition[definition.index(after: separator)...]
+                return "#define \(key) \(value)"
+            }
+
+            let destination = targetRoot + relativePath
+            try destination.parent().mkpath()
+            try destination.write((["// Generated using Bazelize"] + definitions).withNewLine)
         }
 
         /// Xcode copies a target's published headers into one flat directory inside

@@ -76,8 +76,6 @@ extension Target {
 
         /// "." keeps a public header reachable by its own relative path.
         /// https://github.com/bazelbuild/bazel/issues/92
-        /// "." keeps a public header reachable by its own relative path.
-        /// https://github.com/bazelbuild/bazel/issues/92
         ///
         /// ".." is the `Targets/` root: a package is named after its target, so it
         /// makes `#import <Module/Module-Swift.h>` — the generated Swift header Xcode
@@ -86,6 +84,30 @@ extension Target {
         return Array(Set(directories + [".", ".."])).sorted()
     }
 
+    /// `GCC_PREPROCESSOR_DEFINITIONS`, materialized as a force-included header.
+    ///
+    /// Neither the rules' `defines` attribute nor a `-D` copt survives a value like
+    /// `ID=@"com.x"`: Bazel re-tokenizes the former and the rules_swift worker's
+    /// param files mangle the quoting of the latter. A header force-included with
+    /// `-include` needs no quoting at all, and Xcode does not propagate these
+    /// definitions to dependents either.
+    static let definesHeaderPath = "Generated/BazelizeDefines.h"
+
+    var definesHeader: String? {
+        (prefer(\.preprocessorDefinitions) ?? []).isEmpty ? nil : Self.definesHeaderPath
+    }
+
+    var clangDefineFlags: [String] {
+        guard let definesHeader else { return [] }
+        return ["-include", "Targets/\(name)/\(definesHeader)"]
+    }
+
+    /// The same header, force-included into `swiftc`'s clang importer so a bridging
+    /// or umbrella header can rely on the definitions.
+    func clangDefineCopts() -> [String] {
+        guard let definesHeader else { return [] }
+        return ["-Xcc", "-include", "-Xcc", "Targets/\(name)/\(definesHeader)"]
+    }
 
     /// The same include paths, spelled for `swiftc`'s clang importer.
     ///
