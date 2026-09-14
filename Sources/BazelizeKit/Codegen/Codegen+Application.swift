@@ -66,6 +66,7 @@ extension Target {
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
+                app_icons: appIcons,
                 bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
@@ -93,6 +94,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_application(
                 name: name,
+                app_icons: appIcons,
                 bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
@@ -126,5 +128,14 @@ extension Target {
                     resources
                 },
                 visibility: .public))
+    }
+
+    private var appIcons: Starlark.Value? {
+        guard let iconName = prefer(\.assetCatalog.appIconName) else { return nil }
+        let iconGlobs = assets.map { asset in
+            "\(asset)/\(iconName).appiconset/**"
+        }
+        guard !iconGlobs.isEmpty else { return nil }
+        return Starlark.glob(iconGlobs)
     }
 }

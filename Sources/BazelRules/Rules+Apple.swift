@@ -149,6 +149,7 @@ extension Rules.Apple.IOS {
         /// Builds an `ios_application` target.
         public static func ios_application(
             name: String,
+            app_icons: Starlark.Value? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
@@ -165,6 +166,7 @@ extension Rules.Apple.IOS {
         {
             Rules.Apple.IOS.ios_application.call {
                 "name" => name
+                if let app_icons { "app_icons" => app_icons }
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
@@ -428,6 +430,7 @@ extension Rules.Apple.MacOS {
         /// Builds a `macos_application` target.
         public static func macos_application(
             name: String,
+            app_icons: Starlark.Value? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
@@ -440,6 +443,7 @@ extension Rules.Apple.MacOS {
         {
             Rules.Apple.MacOS.macos_application.call {
                 "name" => name
+                if let app_icons { "app_icons" => app_icons }
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
