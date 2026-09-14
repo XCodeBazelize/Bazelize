@@ -1,6 +1,9 @@
 extension Repo {
     /// https://github.com/bazelbuild/rules_swift
     enum Swift: String {
+        static let latest: Swift = .v4_0_1
+
+        case v4_0_1 = "4.0.1"
         case v3_6_1 = "3.6.1"
         case v3_6_0 = "3.6.0"
         case v3_5_0 = "3.5.0"

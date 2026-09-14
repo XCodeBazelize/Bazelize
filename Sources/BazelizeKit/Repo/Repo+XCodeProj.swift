@@ -1,6 +1,9 @@
 extension Repo {
     /// https://github.com/MobileNativeFoundation/rules_xcodeproj
     enum XCodeProj: String {
+        static let latest: XCodeProj = .v4_1_0
+
+        case v4_1_0 = "4.1.0"
         case v4_0_1 = "4.0.1"
         case v4_0_0 = "4.0.0"
         case v3_6_0 = "3.6.0"

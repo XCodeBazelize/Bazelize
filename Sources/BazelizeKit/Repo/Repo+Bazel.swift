@@ -1,10 +1,16 @@
 extension Repo {
     /// https://github.com/bazelbuild/bazel
     enum Bazel: String {
+        static let latest: Bazel = .v9_2_0
+
+        case v9_2_0 = "9.2.0"
+        case v9_1_1 = "9.1.1"
         case v9_1_0 = "9.1.0"
         case v9_0_2 = "9.0.2"
         case v9_0_1 = "9.0.1"
         case v9_0_0 = "9.0.0"
+        case v8_8_0 = "8.8.0"
+        case v8_7_0 = "8.7.0"
         case v8_6_0 = "8.6.0"
         case v8_5_1 = "8.5.1"
         case v8_5_0 = "8.5.0"

@@ -1,6 +1,14 @@
 extension Repo {
     /// https://github.com/bazelbuild/rules_cc
     enum RulesCC: String {
+        static let latest: RulesCC = .v0_2_24
+
+        case v0_2_24 = "0.2.24"
+        case v0_2_23 = "0.2.23"
+        case v0_2_22 = "0.2.22"
+        case v0_2_21 = "0.2.21"
+        case v0_2_20 = "0.2.20"
+        case v0_2_19 = "0.2.19"
         case v0_2_18 = "0.2.18"
         case v0_2_17 = "0.2.17"
         case v0_2_16 = "0.2.16"

@@ -1,6 +1,20 @@
 extension Repo {
     /// https://github.com/cgrindel/rules_swift_package_manager
     enum SwiftPM: String {
+        static let latest: SwiftPM = .v1_24_0
+
+        case v1_24_0 = "1.24.0"
+        case v1_23_0 = "1.23.0"
+        case v1_22_0 = "1.22.0"
+        case v1_21_0 = "1.21.0"
+        case v1_20_0 = "1.20.0"
+        case v1_19_0 = "1.19.0"
+        case v1_18_1 = "1.18.1"
+        case v1_18_0 = "1.18.0"
+        case v1_17_1 = "1.17.1"
+        case v1_17_0 = "1.17.0"
+        case v1_16_1 = "1.16.1"
+        case v1_16_0 = "1.16.0"
         case v1_15_0 = "1.15.0"
         case v1_14_0 = "1.14.0"
         case v1_13_0 = "1.13.0"

@@ -1,6 +1,9 @@
 extension Repo {
     /// https://github.com/bazelbuild/rules_apple
     enum Apple: String {
+        static let latest: Apple = .v5_0_0
+
+        case v5_0_0 = "5.0.0"
         case v4_5_3 = "4.5.3"
         case v4_5_2 = "4.5.2"
         case v4_5_1 = "4.5.1"

@@ -1,6 +1,9 @@
 extension Repo {
     /// https://github.com/bazelbuild/bazel-skylib
     enum BazelSkylib: String {
+        static let latest: BazelSkylib = .v1_9_2
+
+        case v1_9_2 = "1.9.2"
         case v1_9_1 = "1.9.1"
         case v1_9_0 = "1.9.0"
         case v1_8_2 = "1.8.2"
