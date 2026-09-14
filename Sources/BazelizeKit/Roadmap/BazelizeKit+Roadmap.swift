@@ -34,7 +34,7 @@ extension Bazel {
             try generatedRoot.mkpath()
 
             var materializedDirectories = Set<String>()
-            for relativePath in target.pathsForRoadmapTree {
+            for relativePath in target.pathsForRoadmapTree(project: project) {
                 let normalizedPath = relativePath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
                 let hasMaterializedAncestor = materializedDirectories.contains { existing in
                     normalizedPath == existing || normalizedPath.hasPrefix(existing + "/")
@@ -131,9 +131,9 @@ extension Bazel {
 }
 
 extension XCode2.XCode.Target {
-    fileprivate var pathsForRoadmapTree: [String] {
+    fileprivate func pathsForRoadmapTree(project: Project) -> [String] {
         let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
-        let candidates = (allFiles.compactMap(\.roadmapRelativePath) + settingReferencedPaths).sorted {
+        let candidates = (allFiles.compactMap(\.roadmapRelativePath) + settingReferencedPaths + headerSearchPaths(project: project)).sorted {
             let lhsDepth = $0.split(separator: "/").count
             let rhsDepth = $1.split(separator: "/").count
             if lhsDepth == rhsDepth {

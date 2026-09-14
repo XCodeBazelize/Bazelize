@@ -64,6 +64,23 @@ extension XCode.BuildSettings {
     public var swiftVersion: String? { self["SWIFT_VERSION"] }
     public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
     public var bridgingHeader: String? { self["SWIFT_OBJC_BRIDGING_HEADER"] }
+
+    /// `HEADER_SEARCH_PATHS` plus `USER_HEADER_SEARCH_PATHS`, without Xcode's
+    /// `$(inherited)` marker.
+    public var headerSearchPaths: [String] {
+        ["HEADER_SEARCH_PATHS", "USER_HEADER_SEARCH_PATHS"]
+            .compactMap { self[$0] }
+            .flatMap { value in
+                value.split(separator: " ").map(String.init)
+            }
+            .map { path in
+                path.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            }
+            .filter { path in
+                !path.isEmpty && path != "$(inherited)"
+            }
+    }
+
     public var testTargetName: String? { self["TEST_TARGET_NAME"] }
     public var testHost: String? { self["TEST_HOST"] }
     public var bundleLoader: String? { self["BUNDLE_LOADER"] }

@@ -24,7 +24,7 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
-                copts: swiftCopts,
+                copts: swiftCopts(project: project),
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
@@ -95,15 +95,20 @@ extension Target {
         return ["-parse-as-library"]
     }
 
-    var swiftCopts: [String]? {
-        let copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts
+    func swiftCopts(project: Project) -> [String]? {
+        var copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts
+        if bridgingHeader != nil {
+            copts += swiftIncludeCopts(project: project)
+        }
         return copts.isEmpty ? nil : copts
     }
 
     /// Same flags minus the bridging header: a mixed-language target exposes those
-    /// declarations through its own clang module instead.
-    var moduleSwiftCopts: [String]? {
-        parseAsLibraryCopts.isEmpty ? nil : parseAsLibraryCopts
+    /// declarations through its own clang module instead. The module's headers can
+    /// still reach for the target's include paths, so `swiftc` needs them too.
+    func moduleSwiftCopts(project: Project) -> [String]? {
+        let copts = parseAsLibraryCopts + swiftIncludeCopts(project: project)
+        return copts.isEmpty ? nil : copts
     }
 
     /// `swift_library` has no `sdk_frameworks`, so system frameworks and dylibs from

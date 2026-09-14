@@ -26,18 +26,76 @@ extension Target {
     func internalHeaderFiles(project: Project) -> [String] {
         let module = Set(moduleHeaderFiles(project: project))
         let siblings = siblingHeaderPaths(project: project).map { "Sources/\($0)" }
-        return Array(Set(projectHeaders + siblings).subtracting(module)).sorted()
+        let searched = searchPathHeaderFiles(project: project)
+        return Array(Set(projectHeaders + siblings + searched).subtracting(module)).sorted()
+    }
+
+    /// Headers reachable only through `HEADER_SEARCH_PATHS`.
+    ///
+    /// Bazel sandboxes compile actions, so an include path is useless unless the
+    /// headers behind it are declared inputs.
+    func searchPathHeaderFiles(project: Project) -> [String] {
+        let workspace = Path(project.workspacePath)
+
+        return headerSearchPaths(project: project).flatMap { directory -> [String] in
+            let root = workspace + directory
+            guard root.isDirectory, let children = try? root.recursiveChildren() else { return [] }
+
+            return children
+                .filter(\.isHeader)
+                .compactMap { child -> String? in
+                    let absolute = child.absolute().string
+                    let prefix = root.absolute().string + "/"
+                    guard absolute.hasPrefix(prefix) else { return nil }
+                    return "Sources/\(directory)/\(absolute.dropFirst(prefix.count))"
+                }
+        }
     }
 
     func headerIncludes(project: Project) -> [String] {
         let all = moduleHeaderFiles(project: project) + internalHeaderFiles(project: project)
         let directories = all.map { header in
             Path(header).parent().string
+        } + headerSearchPaths(project: project).map { path in
+            "Sources/\(path)"
         }
 
         /// "." keeps a public header reachable by its own relative path.
         /// https://github.com/bazelbuild/bazel/issues/92
         return Array(Set(directories + ["."])).sorted()
+    }
+
+    /// The same include paths, spelled for `swiftc`'s clang importer.
+    ///
+    /// Bazel resolves the `includes` attribute relative to the package, raw `-I`
+    /// flags relative to the execution root.
+    func swiftIncludeCopts(project: Project) -> [String] {
+        headerIncludes(project: project)
+            .filter { $0 != "." }
+            .flatMap { directory in
+                ["-Xcc", "-ITargets/\(name)/\(directory)"]
+            }
+    }
+
+    /// Workspace-relative `HEADER_SEARCH_PATHS` entries.
+    ///
+    /// Xcode resolves them against the project; anything outside the workspace
+    /// cannot be materialized into the target tree and is dropped.
+    func headerSearchPaths(project: Project) -> [String] {
+        let workspace = Path(project.workspacePath).absolute().string
+
+        return (prefer(\.headerSearchPaths) ?? []).compactMap { path -> String? in
+            let normalized = Path(path).normalize().string
+            guard normalized != "." else { return nil }
+
+            if !normalized.hasPrefix("/") {
+                return normalized
+            }
+
+            let prefix = workspace + "/"
+            guard normalized.hasPrefix(prefix) else { return nil }
+            return String(normalized.dropFirst(prefix.count))
+        }
     }
 
     /// Workspace-relative headers that sit next to the target's compiled sources.
