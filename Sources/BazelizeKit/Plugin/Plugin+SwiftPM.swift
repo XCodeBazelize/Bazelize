@@ -21,7 +21,11 @@ final class PluginSwiftPM: PluginBuiltin {
     let remotes: [RemotePackage]
     let locals: [LocalPackage]
     private var packages: [String] = []
+    private var projectPath: Path?
+
     func loadPackageNames(projPath: Path) async throws {
+        projectPath = projPath
+
         let packageSwift = package
         let workspace = projPath.parent()
         let path = workspace + packageSwift.path
@@ -154,8 +158,23 @@ final class PluginSwiftPM: PluginBuiltin {
             """)
     }
 
+    /// Seeds Xcode's own pins so the first `swift package resolve` keeps the versions
+    /// the project builds against instead of floating every package to its newest
+    /// release. Never overwrites an existing file: after the first run the resolved
+    /// graph belongs to SwiftPM and Bazel.
+    private var packageResolved: PluginBuiltin.Custom? {
+        guard !remotes.isEmpty else { return nil }
+        guard let projectPath else { return nil }
+        guard !(kit.outputRoot + "Package.resolved").exists else { return nil }
+
+        let resolved = projectPath + "project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+        guard let content = try? String(contentsOfFile: resolved.string, encoding: .utf8) else { return nil }
+
+        return .init(path: "Package.resolved", content: content)
+    }
+
     override var custom: [PluginBuiltin.Custom]? {
-        [package]
+        [package, packageResolved].compactMap { $0 }
     }
 
     override var tip: String? {
