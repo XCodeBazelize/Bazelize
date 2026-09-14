@@ -12,7 +12,7 @@ import PathKit
 
 /// http://github.com/cgrindel/rules_swift_package_manager
 final class PluginSwiftPM: PluginBuiltin {
-    private let repo: Repo.SwiftPM = .v1_15_0
+    private let repo: Repo.SwiftPM = .latest
     let remotes: [RemotePackage]
     let locals: [LocalPackage]
     private var packages: [String] = []

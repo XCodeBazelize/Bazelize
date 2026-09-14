@@ -11,7 +11,7 @@ import Foundation
 
 /// https://github.com/bazelbuild/rules_apple
 final class PluginApple: PluginBuiltin {
-    let repo: Repo.Apple = .v4_5_3
+    let repo: Repo.Apple = .latest
 
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(

@@ -12,7 +12,7 @@ import XcodeProj
 
 /// https://github.com/MobileNativeFoundation/rules_xcodeproj
 final class PluginXCodeProj: PluginBuiltin {
-    let repo: Repo.XCodeProj = .v4_0_1
+    let repo: Repo.XCodeProj = .latest
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(
             name: "rules_xcodeproj",
