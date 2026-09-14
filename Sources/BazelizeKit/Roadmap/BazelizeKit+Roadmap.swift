@@ -63,6 +63,22 @@ extension Bazel {
             try prepareSiblingHeaders(target: target, project: project, sourcesRoot: sourcesRoot)
             try prepareModuleHeaders(target: target, project: project, targetRoot: targetRoot)
             try prepareDefinesHeader(target: target, targetRoot: targetRoot)
+            try prepareEntitlements(target: target, project: project, targetRoot: targetRoot)
+        }
+
+        /// The entitlements Xcode signs with, expanded: rules_apple substitutes no
+        /// build setting, and its `plisttool` fails on a variable it cannot resolve.
+        private func prepareEntitlements(target: Target, project: Project, targetRoot: Path) throws {
+            guard
+                let relativePath = target.entitlementsPath,
+                let content = target.entitlementsContent(project: project)
+            else {
+                return
+            }
+
+            let destination = targetRoot + relativePath
+            try destination.parent().mkpath()
+            try destination.write(content)
         }
 
         /// `GCC_PREPROCESSOR_DEFINITIONS` as a header the compiles force-include.

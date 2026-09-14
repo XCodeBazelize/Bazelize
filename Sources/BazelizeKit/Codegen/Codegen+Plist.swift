@@ -128,7 +128,7 @@ extension Target {
 
             guard !keys.contains(key.name) else { continue }
 
-            if xml.hasUnresolvedBuildSettingReference {
+            if xml.hasUnresolvedBuildSettingReference() {
                 Log.codeGenerate.warning("""
                 Drop Info.plist key \(key.name, privacy: .public) of \
                 \(name, privacy: .public): unresolved build setting reference
@@ -146,11 +146,11 @@ extension Target {
 
 extension String {
     /// Xcode accepts both `$(SETTING)` and `${SETTING}`.
-    fileprivate static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)(?::[A-Za-z0-9_]+)?[)}]"#
+    static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)(?::[A-Za-z0-9_]+)?[)}]"#
 
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
-    fileprivate static let plistToolVariables: Set<String> = [
+    static let plistToolVariables: Set<String> = [
         "BUNDLE_NAME",
         "DEVELOPMENT_LANGUAGE",
         "EXECUTABLE_NAME",
@@ -163,7 +163,11 @@ extension String {
     /// settings. `plisttool` only knows a handful of variables, so anything else
     /// copied out of an Xcode `Info.plist` would either reach the bundle verbatim
     /// or collide with a resolved value in another fragment.
-    fileprivate func resolvingBuildSettingReferences(with settings: BuildSettings) -> String {
+    func resolvingBuildSettingReferences(
+        with settings: BuildSettings,
+        reserved: Set<String> = Self.plistToolVariables)
+        -> String
+    {
         guard let regex = try? NSRegularExpression(pattern: Self.buildSettingPattern) else { return self }
 
         let matches = regex.matches(in: self, range: NSRange(startIndex..., in: self))
@@ -178,7 +182,7 @@ extension String {
             }
 
             let key = String(self[keyRange])
-            guard !Self.plistToolVariables.contains(key), let value = settings[key] else { continue }
+            guard !reserved.contains(key), let value = settings[key] else { continue }
 
             result.replaceSubrange(wholeRange, with: value)
         }
@@ -200,12 +204,12 @@ extension String {
 
     /// `$(SETTING)` references left after resolution, excluding the ones
     /// `plisttool` substitutes itself.
-    fileprivate var hasUnresolvedBuildSettingReference: Bool {
+    func hasUnresolvedBuildSettingReference(reserved: Set<String> = Self.plistToolVariables) -> Bool {
         guard let regex = try? NSRegularExpression(pattern: Self.buildSettingPattern) else { return false }
 
         return regex.matches(in: self, range: NSRange(startIndex..., in: self)).contains { match in
             guard let keyRange = Range(match.range(at: 1), in: self) else { return false }
-            return !Self.plistToolVariables.contains(String(self[keyRange]))
+            return !reserved.contains(String(self[keyRange]))
         }
     }
 }

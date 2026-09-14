@@ -29,7 +29,7 @@ extension Target {
                     ":\(name)_library"
                     frameworks
                 },
-                entitlements: entitlementsLabel,
+                entitlements: entitlementsLabel(project: kit.project),
                 families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
                     plistFile(kit)
@@ -38,10 +38,5 @@ extension Target {
                 },
                 minimum_os_version: prefer(\.platform.iOS),
                 visibility: .public))
-    }
-
-    private var entitlementsLabel: Starlark.Label? {
-        guard let entitlements = metadata.entitlements else { return nil }
-        return .named("Sources/\(entitlements)")
     }
 }

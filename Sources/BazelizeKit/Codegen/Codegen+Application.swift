@@ -78,6 +78,7 @@ extension Target {
                     ":\(name)_library"
                     linkedFrameworks(project: project)
                 },
+                entitlements: entitlementsLabel(project: project),
                 extensions: embeddedExtensions(project: project),
                 families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
@@ -106,6 +107,7 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
+                entitlements: entitlementsLabel(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
