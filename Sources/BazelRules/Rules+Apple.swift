@@ -1161,6 +1161,7 @@ extension Rules.Apple.Resources {
         public static func apple_resource_group(
             name: String,
             resources: Starlark.Value? = nil,
+            strip_structured_resources_prefixes: [String]? = nil,
             structured_resources: Starlark.Value? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
@@ -1168,6 +1169,9 @@ extension Rules.Apple.Resources {
             Rules.Apple.Resources.apple_resource_group.call {
                 "name" => name
                 if let resources { "resources" => resources }
+                if let strip_structured_resources_prefixes, !strip_structured_resources_prefixes.isEmpty {
+                    "strip_structured_resources_prefixes" => strip_structured_resources_prefixes
+                }
                 if let structured_resources { "structured_resources" => structured_resources }
                 if let visibility { visibility }
             }

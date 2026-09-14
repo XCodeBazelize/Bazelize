@@ -34,6 +34,14 @@ extension Target {
                     linkedFrameworksLibrary(project: project)
                     testHostLibraries(project: project)
                 },
+                data: .build {
+                    if !assets.isEmpty {
+                        ":Assets"
+                    }
+                    xibs
+                    storyboards
+                    copiedResourceGroups(project: project)
+                },
                 copts: [
                     "-fblocks",
                     "-fobjc-arc",

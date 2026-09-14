@@ -5,6 +5,7 @@ extension Target {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
         generateAssetSymbols(builder, kit)
+        generateCopiedResourceGroup(builder, kit)
         generateLibrary(builder, kit)
 
         generateLoadPlistFragment(builder, kit)
@@ -18,10 +19,12 @@ extension Target {
         case "com.apple.product-type.application":
             generateStrings(builder, kit)
             generateCopiedProducts(builder, kit)
+            generateCopiedFiles(builder, kit)
             generateApplicationCode(builder, kit)
         case "com.apple.product-type.tool":
             generateCommandLineApplicationCode(builder, kit)
         case "com.apple.product-type.framework":
+            generateStrings(builder, kit)
             generateFrameworkCode(builder, kit)
         case "com.apple.product-type.library.static":
             generateStaticLibrary(builder, kit)
@@ -31,6 +34,7 @@ extension Target {
             generateUITest(builder, kit)
         case "com.apple.product-type.app-extension":
             generateCopiedProducts(builder, kit)
+            generateCopiedFiles(builder, kit)
             generateExtension(builder, kit)
         default:
             Log.codeGenerate.warning("""

@@ -64,6 +64,27 @@ extension Bazel {
             try prepareModuleHeaders(target: target, project: project, targetRoot: targetRoot)
             try prepareDefinesHeader(target: target, targetRoot: targetRoot)
             try prepareEntitlements(target: target, project: project, targetRoot: targetRoot)
+            try prepareCopiedFiles(target: target, project: project, targetRoot: targetRoot)
+        }
+
+        /// Files a copy phase places in the bundle, staged under the destination the
+        /// phase names: the rules address a resource by its path, and Xcode copies
+        /// the same file name to more than one destination.
+        private func prepareCopiedFiles(target: Target, project: Project, targetRoot: Path) throws {
+            let workspace = Path(project.workspacePath)
+
+            for group in target.copiedFileGroups(project: project) {
+                let destination = targetRoot + Target.copyFilesRoot + group.subdirectory
+
+                for file in group.files {
+                    let relativePath = file.delete(prefix: "Sources/") ?? file
+                    let source = workspace + relativePath
+                    guard source.exists else { continue }
+
+                    try destination.mkpath()
+                    try materialize(source: source, destination: destination + Path(relativePath).lastComponent)
+                }
+            }
         }
 
         /// The entitlements Xcode signs with, expanded: rules_apple substitutes no

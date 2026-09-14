@@ -44,6 +44,7 @@ extension Target {
                     }
                     xibs
                     storyboards
+                    copiedResourceGroups(project: project)
                 },
                 defines: defines(project: project),
                 linkopts: sdkLinkopts,

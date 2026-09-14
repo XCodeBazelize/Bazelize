@@ -12,8 +12,70 @@ extension Target {
     /// `Contents` they belong in, and knows how to place an app bundle, a bare
     /// executable or a plain file.
     func additionalContents(project: Project?) -> [String: String] {
-        copiedProducts(project: project).reduce(into: [:]) { result, copied in
+        var result = copiedProducts(project: project).reduce(into: [String: String]()) { result, copied in
             result[copied.label] = copied.subdirectory
+        }
+
+        for group in copiedFileGroups(project: project) where !group.isBundleResource {
+            result[":\(group.subdirectory.copyFilesRuleName)"] = group.subdirectory
+        }
+
+        return result
+    }
+
+    /// Files copied into `Resources` travel with the target's library as structured
+    /// resources, which keep the destination directory they are staged under and
+    /// reach whichever bundle links or embeds the library.
+    func generateCopiedResourceGroup(_ builder: CodeBuilder, _ kit: Kit) {
+        let prefix = "\(Self.copyFilesRoot)/Resources"
+        let sources = copiedFileGroups(project: kit.project)
+            .filter(\.isBundleResource)
+            .flatMap { group in
+                group.files.map { file in
+                    "\(Self.copyFilesRoot)/\(group.subdirectory)/\(Path(file).lastComponent)"
+                }
+            }
+
+        guard !sources.isEmpty else { return }
+
+        builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
+        builder.call(
+            Rules.Apple.Resources.Call.apple_resource_group(
+                name: Self.copyFilesRoot,
+                strip_structured_resources_prefixes: [prefix],
+                structured_resources: .build {
+                    sources.sorted()
+                },
+                visibility: .private))
+    }
+
+    func hasCopiedResources(project: Project?) -> Bool {
+        copiedFileGroups(project: project).contains(where: \.isBundleResource)
+    }
+
+    /// The resource group, for the library's deps.
+    func copiedResourceGroups(project: Project?) -> [Starlark.Label] {
+        hasCopiedResources(project: project) ? [.named(":\(Self.copyFilesRoot)")] : []
+    }
+
+    /// The copied files, flattened into the package so that rules_apple places them
+    /// directly in the destination: it appends the path a file has inside its own
+    /// package to the destination.
+    func generateCopiedFiles(_ builder: CodeBuilder, _ kit: Kit) {
+        for group in copiedFileGroups(project: kit.project) where !group.isBundleResource {
+            let sources = group.files.map { file in
+                "\(Self.copyFilesRoot)/\(group.subdirectory)/\(Path(file).lastComponent)"
+            }
+
+            builder.call(
+                Rules.Builtin.Call.genrule(
+                    name: group.subdirectory.copyFilesRuleName,
+                    srcs: .build {
+                        sources
+                    },
+                    outs: sources.map { Path($0).lastComponent },
+                    cmd: "for src in $(SRCS); do cp $$src $(RULEDIR)/$$(basename $$src); done",
+                    visibility: .private))
         }
     }
 
@@ -94,6 +156,66 @@ extension Target {
     }
 }
 
+extension Target {
+    static let copyFilesRoot = "CopyFiles"
+
+    struct CopiedFileGroup {
+        let subdirectory: String
+        let files: [String]
+
+        /// A destination inside the bundle's resource directory, which the target's
+        /// own library can carry.
+        var isBundleResource: Bool {
+            subdirectory == "Resources" || subdirectory.hasPrefix("Resources/")
+        }
+    }
+
+    /// Files — not products — a copy phase places in the bundle, grouped by the
+    /// subdirectory of `Contents` they belong in.
+    ///
+    /// The roadmap stages them under `CopyFiles/<subdirectory>/` so the path a rule
+    /// sees is the path the bundle wants; a build phase entry itself only names the
+    /// file, and the same name can be copied to two different places.
+    func copiedFileGroups(project: Project?) -> [CopiedFileGroup] {
+        guard let project else { return [] }
+
+        let workspace = Path(project.workspacePath)
+
+        let sources = files.copyFiles.filter { file in
+            file.sourceTree != "BUILT_PRODUCTS_DIR"
+        }
+        let byName = Dictionary(
+            sources.compactMap { file -> (String, String)? in
+                guard let path = file.path, let name = file.name ?? file.path else { return nil }
+                return (name, path)
+            },
+            uniquingKeysWith: { first, _ in first })
+
+        var groups: [String: [String]] = [:]
+
+        for phase in buildPhases where phase.type == "CopyFiles" {
+            guard let subdirectory = phase.contentsSubdirectory else { continue }
+
+            for file in phase.files {
+                guard
+                    let component = file.name ?? file.path,
+                    let path = byName[component],
+                    /// A project routinely references a file nobody ships; a rule
+                    /// naming one fails analysis.
+                    (workspace + Path(path.delete(prefix: "Sources/") ?? path)).exists
+                else {
+                    continue
+                }
+                groups[subdirectory, default: []].append(path)
+            }
+        }
+
+        return groups
+            .map { CopiedFileGroup(subdirectory: $0.key, files: $0.value.sorted()) }
+            .sorted { $0.subdirectory < $1.subdirectory }
+    }
+}
+
 extension Project {
     /// The target whose product is copied under this file name.
     ///
@@ -116,7 +238,7 @@ extension XCode2.XCode.BuildPhase {
     ///
     /// `nil` for a destination another rule attribute owns — a framework or an
     /// extension — and for one no bundle subdirectory can express.
-    fileprivate var contentsSubdirectory: String? {
+    var contentsSubdirectory: String? {
         guard let destination else { return nil }
 
         let path = (destination.path ?? "")
@@ -144,5 +266,12 @@ extension XCode2.XCode.BuildPhase {
 
     private func join(_ base: String, _ path: String) -> String {
         path.isEmpty ? base : "\(base)/\(path)"
+    }
+}
+
+extension String {
+    /// `Resources/Scripts` names the rule `CopyFiles_Resources_Scripts`.
+    fileprivate var copyFilesRuleName: String {
+        "\(Target.copyFilesRoot)_\(replacingOccurrences(of: "/", with: "_"))"
     }
 }

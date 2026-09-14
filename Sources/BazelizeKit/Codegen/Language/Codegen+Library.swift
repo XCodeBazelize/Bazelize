@@ -70,6 +70,7 @@ extension Target {
                     }
                     xibs
                     storyboards
+                    copiedResourceGroups(project: project)
                 },
                 enable_modules: prefer(\.enableModules),
                 hdrs: .build {
