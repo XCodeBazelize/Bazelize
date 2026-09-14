@@ -15,5 +15,13 @@ extension XCode.BuildSettings {
         public var accentColorName: String? {
             settings["ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME"]
         }
+
+        /// `ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS`
+        ///
+        /// Xcode 15+ generates `ImageResource`/`ColorResource` members from the
+        /// catalogs and compiles them into the target.
+        public var generatesSwiftSymbols: Bool {
+            settings["ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS"] == "YES"
+        }
     }
 }

@@ -86,6 +86,7 @@ extension Target {
                 swift_srcs: .build {
                     srcs_swift
                     intentSources
+                    assetSymbolSources
                 },
                 weak_sdk_frameworks: weakFrameworksSDK,
                 deps: .build {

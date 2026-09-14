@@ -29,6 +29,7 @@ extension Target {
                 srcs: .build {
                     srcs_swift
                     intentSources
+                    assetSymbolSources
                 },
                 deps: .build {
                     extraDeps

@@ -4,6 +4,7 @@ extension Target {
     func generateCode(_ kit: Kit) -> String {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
+        generateAssetSymbols(builder, kit)
         generateLibrary(builder, kit)
 
         generateLoadPlistFragment(builder, kit)
