@@ -23,8 +23,8 @@ let package = Package(
 
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
 
-        /// tag: swift-DEVELOPMENT-SNAPSHOT-2023-01-28-a
-        /// support async command
+        /// SwiftPMDataModel for the legacy `XCode` target.
+        /// 6.3+ requires macOS 14, which would raise this package's platform floor.
         .package(
             url: "https://github.com/apple/swift-package-manager",
             branch: "swift-6.2.4-RELEASE"),

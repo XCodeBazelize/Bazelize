@@ -1,5 +1,5 @@
 {
-  "originHash" : "34ef4a46e898ba832195fd68b8836d5ee7fbfb728d2a337fa848758e685e9d81",
+  "originHash" : "b56c62d8ee7081df49e35cad75d735d86b3c168c73793b3e87772068182a960c",
   "pins" : [
     {
       "identity" : "aexml",
@@ -132,17 +132,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "7c6ad0fc39d0763e0b699210e4124afd5041c5df",
-        "version" : "1.6.4"
+        "revision" : "869129b7bf4ecc57b97d0193ad29690ca2134750",
+        "version" : "1.8.1"
       }
     },
     {
       "identity" : "swift-toolchain-sqlite",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-toolchain-sqlite",
+      "location" : "https://github.com/swiftlang/swift-toolchain-sqlite.git",
       "state" : {
-        "revision" : "b45b80b943e88db3cb8ddea798fa3fa9912375ff",
-        "version" : "1.0.7"
+        "revision" : "d9b11cb79071d5ab992ff47dfd2e8d6e19418d97",
+        "version" : "1.0.13"
       }
     },
     {
