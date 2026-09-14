@@ -9,8 +9,8 @@ extension Starlark {
         .custom(value)
     }
 
-    public static func glob(_ files: [String]) -> Value {
-        .glob(files)
+    public static func glob(_ files: [String], exclude: [String] = []) -> Value {
+        .glob(files, exclude: exclude)
     }
 
     public indirect enum Value: Sendable, Text {
@@ -21,7 +21,7 @@ extension Starlark {
         case array([Value])
         case dictionary([String: Value])
         case select(Starlark.Select<Value>)
-        case glob([String])
+        case glob([String], exclude: [String])
         case custom(String)
         case none
 
@@ -99,11 +99,13 @@ extension Starlark {
                 return value ? "True" : "False"
             case .select(let value):
                 return value.text
-            case .glob(let files):
+            case .glob(let files, let exclude):
                 let asset = Value(files.sorted()) ?? .none
-                return """
-                glob(\(asset.text))
-                """
+                guard !exclude.isEmpty else {
+                    return "glob(\(asset.text))"
+                }
+                let excluded = Value(exclude.sorted()) ?? .none
+                return "glob(\(asset.text), exclude = \(excluded.text))"
             case .custom(let value):
                 return value
             case .none:
