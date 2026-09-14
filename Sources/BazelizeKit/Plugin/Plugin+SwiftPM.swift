@@ -53,6 +53,10 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     override func module(_ builder: CodeBuilder) {
+        /// A project without Swift packages has no `Package.swift` to point at, and
+        /// the extension fails module resolution when the manifest is missing.
+        guard hasPackages else { return }
+
         builder.bazel_dep(
             name: "rules_swift_package_manager",
             version: dep.rawValue)
@@ -174,15 +178,20 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     override var custom: [PluginBuiltin.Custom]? {
-        [package, packageResolved].compactMap { $0 }
+        guard hasPackages else { return nil }
+        return [package, packageResolved].compactMap { $0 }
     }
 
     override var tip: String? {
-        if remotes.isEmpty, locals.isEmpty { return nil }
+        guard hasPackages else { return nil }
         return """
         # rules_swift_package_manager
         After bazelize, run `swift package update` and `bazel mod tidy`.
         """
+    }
+
+    private var hasPackages: Bool {
+        !remotes.isEmpty || !locals.isEmpty
     }
 
     private var packageRepositories: [String] {
