@@ -117,6 +117,7 @@ extension Target {
                     ":\(name)_library"
                 },
                 entitlements: entitlementsLabel(project: kit.project),
+                extensions: embeddedExtensions(project: kit.project),
                 frameworks: embeddedFrameworks(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)

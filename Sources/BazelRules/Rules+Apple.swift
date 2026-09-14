@@ -447,6 +447,7 @@ extension Rules.Apple.MacOS {
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
             entitlements: Starlark.Label? = nil,
+            extensions: [Starlark.Label]? = nil,
             frameworks: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
@@ -462,6 +463,7 @@ extension Rules.Apple.MacOS {
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
                 if let entitlements { "entitlements" => entitlements }
+                if let extensions, !extensions.isEmpty { "extensions" => extensions }
                 if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -500,6 +502,8 @@ extension Rules.Apple.MacOS {
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            frameworks: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
@@ -512,6 +516,8 @@ extension Rules.Apple.MacOS {
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
                 if let resources { "resources" => resources }
