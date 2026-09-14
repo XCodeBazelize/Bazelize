@@ -111,7 +111,7 @@ struct TargetLoader {
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
             guard !wrapped.isSDKFramework, !wrapped.isSDKDylib else { return nil }
-            guard wrapped.fileType != "compiled.mach-o.dylib" else { return nil }
+            guard !wrapped.isDylibLike else { return nil }
 
             if let identity = wrapped.frameworkIdentity, targetDependencyIdentities.contains(identity) {
                 return nil
@@ -146,7 +146,7 @@ struct TargetLoader {
         let sdkDylibs = frameworkBuildFiles.compactMap { buildFile -> String? in
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
-            guard wrapped.fileType == KnownFileType.dynamicLibrary.rawValue else { return nil }
+            guard wrapped.isDylibLike else { return nil }
             return wrapped.sdkDylibName ?? wrapped.name.flatMap { Path($0).lastComponentWithoutExtension }
         }
 

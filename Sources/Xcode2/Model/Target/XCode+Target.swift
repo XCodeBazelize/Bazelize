@@ -86,28 +86,51 @@ extension XCode.Target {
     }
 
     public var srcs_c: [String] {
-        srcs.filter { $0.hasSuffix(".c") }
+        sources(ofType: "sourcecode.c.c", extensions: [".c"])
     }
 
     public var srcs_objc: [String] {
-        srcs.filter { $0.hasSuffix(".m") }
+        sources(ofType: "sourcecode.c.objc", extensions: [".m"])
     }
 
     public var srcs_cpp: [String] {
-        srcs.filter { [".cc", ".cp", ".cpp", ".cxx"].contains(where: $0.hasSuffix) }
+        sources(ofType: "sourcecode.cpp.cpp", extensions: [".cc", ".cp", ".cpp", ".cxx"])
     }
 
     public var srcs_objcpp: [String] {
-        srcs.filter { $0.hasSuffix(".mm") }
+        sources(ofType: "sourcecode.cpp.objcpp", extensions: [".mm"])
     }
 
     public var srcs_swift: [String] {
-        srcs.filter { $0.hasSuffix(".swift") }
+        sources(ofType: "sourcecode.swift", extensions: [".swift"])
     }
 
     public var srcs_metal: [String] {
-        srcs.filter { $0.hasSuffix(".metal") }
+        sources(ofType: "sourcecode.metal", extensions: [".metal"])
     }
+
+    /// Xcode compiles by declared file type, which can disagree with the extension
+    /// (`explicitFileType = sourcecode.cpp.objcpp` on a `.m` file is common for
+    /// Objective-C code that includes C++).
+    private func sources(ofType type: String, extensions: [String]) -> [String] {
+        filePaths(
+            files.sources.filter { file in
+                if let fileType = file.fileType, Self.compiledFileTypes.contains(fileType) {
+                    return fileType == type
+                }
+                guard let path = file.path else { return false }
+                return extensions.contains { path.hasSuffix($0) }
+            })
+    }
+
+    private static let compiledFileTypes: Set<String> = [
+        "sourcecode.c.c",
+        "sourcecode.c.objc",
+        "sourcecode.cpp.cpp",
+        "sourcecode.cpp.objcpp",
+        "sourcecode.swift",
+        "sourcecode.metal",
+    ]
 
     public var resources: [String] {
         filePaths(files.resources)

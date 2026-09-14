@@ -15,6 +15,8 @@ enum KnownFileType: String {
     case metal = "sourcecode.metal"
     case staticLibrary = "archive.ar"
     case dynamicLibrary = "compiled.mach-o.dylib"
+    /// Text-based dylib stub, e.g. `/usr/lib/libIOReport.tbd`.
+    case dylibStub = "sourcecode.text-based-dylib-definition"
     case xib = "file.xib"
     case storyboard = "file.storyboard"
     case xcassets = "folder.assetcatalog"
@@ -36,6 +38,7 @@ enum KnownFileType: String {
         case "metal": self = .metal
         case "a": self = .staticLibrary
         case "dylib": self = .dynamicLibrary
+        case "tbd": self = .dylibStub
         case "xib": self = .xib
         case "storyboard": self = .storyboard
         case "xcassets": self = .xcassets
@@ -75,7 +78,9 @@ struct FileLoader {
     }
 
     var fileType: String? {
-        ref?.lastKnownFileType ?? ref?.explicitFileType
+        /// `explicitFileType` is the override Xcode compiles with, e.g. a `.m` file
+        /// declared as Objective-C++.
+        ref?.explicitFileType ?? ref?.lastKnownFileType
     }
 
     var sourceTree: String {
@@ -116,19 +121,28 @@ struct FileLoader {
     }
 
     var isSDKFramework: Bool {
-        sourceTree == PBXSourceTree.sdkRoot.description ||
+        /// A framework reference is a bundle; the same source trees also hold
+        /// dylibs and `.tbd` stubs, which link completely differently.
+        guard typedFileType == .framework || typedFileType == .xcframework else { return false }
+
+        return sourceTree == PBXSourceTree.sdkRoot.description ||
             sourceTree == PBXSourceTree.developerDir.description ||
             fullPath?.hasPrefix("/System/Library/Frameworks/") == true ||
             fullPath?.hasPrefix("/System/Library/PrivateFrameworks/") == true
     }
 
     var isSDKDylib: Bool {
-        typedFileType == .dynamicLibrary && (
-            sourceTree == PBXSourceTree.sdkRoot.description ||
-                sourceTree == PBXSourceTree.developerDir.description ||
-                fullPath?.hasPrefix("/usr/lib/") == true ||
-                fullPath?.hasPrefix("/System/iOSSupport/usr/lib/") == true
-        )
+        guard typedFileType == .dynamicLibrary || typedFileType == .dylibStub else { return false }
+
+        return sourceTree == PBXSourceTree.sdkRoot.description ||
+            sourceTree == PBXSourceTree.developerDir.description ||
+            fullPath?.hasPrefix("/usr/lib/") == true ||
+            fullPath?.hasPrefix("/System/iOSSupport/usr/lib/") == true
+    }
+
+    /// A dylib or its text-based stub, both linked with `-l`.
+    var isDylibLike: Bool {
+        typedFileType == .dynamicLibrary || typedFileType == .dylibStub
     }
 
     private var ref: PBXFileReference? {
@@ -152,7 +166,7 @@ struct FileLoader {
         if
             buildPhase == BuildPhase.frameworks.rawValue,
             canUsePrebuiltLabel,
-            typedFileType != .dynamicLibrary,
+            !isDylibLike,
             !isSDKFramework,
             !isSDKDylib
         {
@@ -241,14 +255,14 @@ extension KnownFileType {
             return .header
         case .xib, .storyboard, .xcassets, .strings, .stringsdict, .plist:
             return .resource
-        case .staticLibrary, .dynamicLibrary, .xcframework, .framework:
+        case .staticLibrary, .dynamicLibrary, .dylibStub, .xcframework, .framework:
             return .binary
         }
     }
 
     fileprivate var isBinaryArtifact: Bool {
         switch self {
-        case .staticLibrary, .dynamicLibrary, .xcframework, .framework:
+        case .staticLibrary, .dynamicLibrary, .dylibStub, .xcframework, .framework:
             return true
         default:
             return false
