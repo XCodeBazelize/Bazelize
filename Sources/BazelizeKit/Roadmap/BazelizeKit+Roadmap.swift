@@ -61,6 +61,32 @@ extension Bazel {
             }
 
             try prepareSiblingHeaders(target: target, project: project, sourcesRoot: sourcesRoot)
+            try prepareModuleHeaders(target: target, project: project, targetRoot: targetRoot)
+        }
+
+        /// Xcode copies a target's published headers into one flat directory inside
+        /// the product, which is what makes `#import <Module/Any.h>` work regardless
+        /// of where the header lives. The generated tree mirrors that directory.
+        private func prepareModuleHeaders(
+            target: Target,
+            project: Project,
+            targetRoot: Path) throws
+        {
+            let workspace = Path(project.workspacePath)
+            let moduleRoot = targetRoot + Target.moduleHeaderRoot + target.codegenModuleName
+            let headers = target.moduleHeaderFiles(project: project)
+            guard !headers.isEmpty else { return }
+
+            try moduleRoot.mkpath()
+
+            for header in headers {
+                let relativePath = header.delete(prefix: "Sources/") ?? header
+                let source = workspace + relativePath
+                guard source.exists, !source.isSelfReferentialSymlink else { continue }
+
+                let destination = moduleRoot + source.lastComponent
+                try materialize(source: source, destination: destination)
+            }
         }
 
         /// Xcode's implicit header map makes every header in the target reachable by

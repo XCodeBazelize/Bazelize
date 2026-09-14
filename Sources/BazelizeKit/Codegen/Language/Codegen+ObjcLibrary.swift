@@ -27,7 +27,7 @@ extension Target {
                 },
                 hdrs: .build {
                     // FIXME: (@yume190) TODO: pch
-                    moduleHeaderFiles(project: project)
+                    flattenedModuleHeaderFiles(project: project)
                 },
                 deps: .build {
                     frameworksLibrary

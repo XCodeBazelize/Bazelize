@@ -71,7 +71,7 @@ extension Target {
                 },
                 enable_modules: prefer(\.enableModules),
                 hdrs: .build {
-                    moduleHeaderFiles(project: project)
+                    flattenedModuleHeaderFiles(project: project)
                     /// A mixed target gets the bridging header's declarations through
                     /// its own clang module: `swiftc` rejects `-import-objc-header`
                     /// while building a module.
