@@ -22,6 +22,7 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
+                copts: bridgingHeaderCopts,
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
@@ -41,6 +42,9 @@ extension Target {
                     storyboards
                 },
                 defines: defines(project: project),
+                swiftc_inputs: .build {
+                    bridgingHeader
+                },
                 testonly: isTest,
                 visibility: .private))
 
@@ -49,6 +53,20 @@ extension Target {
                 name: "\(name)_library",
                 actual: .named("\(name)_swift"),
                 visibility: .public))
+    }
+
+    /// `SWIFT_OBJC_BRIDGING_HEADER`, relative to the target's `Sources/` tree.
+    ///
+    /// rules_swift has no bridging-header attribute, so the header is passed
+    /// straight to the compiler and declared as a `swiftc_inputs` file.
+    var bridgingHeader: String? {
+        guard let header = prefer(\.bridgingHeader), !header.isEmpty, !header.hasPrefix("/") else { return nil }
+        return "Sources/\(header)"
+    }
+
+    var bridgingHeaderCopts: [String]? {
+        guard let bridgingHeader else { return nil }
+        return ["-import-objc-header", "$(location \(bridgingHeader))"]
     }
 
     // MARK: Private

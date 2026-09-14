@@ -63,6 +63,7 @@ extension XCode {
 extension XCode.BuildSettings {
     public var swiftVersion: String? { self["SWIFT_VERSION"] }
     public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
+    public var bridgingHeader: String? { self["SWIFT_OBJC_BRIDGING_HEADER"] }
     public var testTargetName: String? { self["TEST_TARGET_NAME"] }
     public var testHost: String? { self["TEST_HOST"] }
     public var bundleLoader: String? { self["BUNDLE_LOADER"] }

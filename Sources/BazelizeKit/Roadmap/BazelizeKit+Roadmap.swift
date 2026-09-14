@@ -110,7 +110,7 @@ extension Bazel {
 extension XCode2.XCode.Target {
     fileprivate var pathsForRoadmapTree: [String] {
         let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
-        let candidates = allFiles.compactMap(\.roadmapRelativePath).sorted {
+        let candidates = (allFiles.compactMap(\.roadmapRelativePath) + settingReferencedPaths).sorted {
             let lhsDepth = $0.split(separator: "/").count
             let rhsDepth = $1.split(separator: "/").count
             if lhsDepth == rhsDepth {
@@ -131,6 +131,18 @@ extension XCode2.XCode.Target {
         }
 
         return result
+    }
+
+    /// Files Xcode reaches through build settings instead of a build phase; the
+    /// bridging header and entitlements are rule inputs, so they need to exist in
+    /// the target's `Sources/` tree.
+    fileprivate var settingReferencedPaths: [String] {
+        [
+            prefer(\.bridgingHeader),
+            metadata.entitlements,
+        ]
+        .compactMap { $0 }
+        .filter { !$0.isEmpty && !$0.hasPrefix("/") }
     }
 }
 
