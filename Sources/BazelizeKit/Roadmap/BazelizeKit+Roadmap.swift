@@ -166,6 +166,7 @@ extension XCode2.XCode.Target {
         ]
         .compactMap { $0 }
         .filter { !$0.isEmpty && !$0.hasPrefix("/") }
+        .map { Path($0).normalize().string }
     }
 }
 

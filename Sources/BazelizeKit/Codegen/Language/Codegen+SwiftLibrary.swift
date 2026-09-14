@@ -1,3 +1,5 @@
+import PathKit
+
 extension Target {
     // MARK: Internal
 
@@ -64,7 +66,9 @@ extension Target {
     /// straight to the compiler and declared as a `swiftc_inputs` file.
     var bridgingHeader: String? {
         guard let header = prefer(\.bridgingHeader), !header.isEmpty, !header.hasPrefix("/") else { return nil }
-        return "Sources/\(header)"
+        /// Build settings carry paths like `./Target/Bridge.h`, which Bazel rejects
+        /// as a label.
+        return "Sources/\(Path(header).normalize().string)"
     }
 
     var bridgingHeaderCopts: [String]? {
