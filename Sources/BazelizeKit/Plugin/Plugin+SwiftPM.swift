@@ -150,7 +150,7 @@ final class PluginSwiftPM: PluginBuiltin {
         return .init(
             path: "Package.swift",
             content: """
-            // swift-tools-version: 5.7
+            // swift-tools-version: 6.0
             import PackageDescription
 
             let package = Package(
