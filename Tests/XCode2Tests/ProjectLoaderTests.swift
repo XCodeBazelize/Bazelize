@@ -23,6 +23,20 @@ struct ProjectLoaderTests {
         #expect(merged.last?.name == "Local3")
     }
 
+    @Test
+    func synchronizedExtensionTargetIncludesExpectedSourceFiles() throws {
+        let current = Path(#filePath)
+            .parent()
+            .parent()
+            .parent()
+        let projectPath = current + "app/IceCubesApp/IceCubesApp.xcodeproj"
+
+        let project = try XCode.Project.load(path: projectPath, preferConfig: nil)
+        let target = try #require(project.targets.first { $0.name == "IceCubesShareExtension" })
+
+        #expect(target.files.sources.contains { $0.path == "IceCubesShareExtension/ShareViewController.swift" })
+        #expect(!target.files.sources.isEmpty)
+    }
 
     @Test
     func resolvesXCConfigSettingsForIINACommandLineTarget() throws {

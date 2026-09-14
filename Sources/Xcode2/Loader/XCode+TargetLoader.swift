@@ -186,17 +186,26 @@ struct TargetLoader {
     }
 
     private var synchronizedGroupFiles: [SynchronizedFile] {
-        (native.fileSystemSynchronizedGroups ?? []).flatMap { group in
-            synchronizedFiles(in: group)
+        let explicit = project.explicitSynchronizedGroups(for: native).flatMap { group in
+            synchronizedFiles(in: group, membershipMode: .excludeListed)
         }
+        let inferred = project.inferredSynchronizedGroups(for: native).flatMap { group in
+            synchronizedFiles(in: group, membershipMode: .includeListed)
+        }
+
+        return unique(explicit + inferred) { "\($0.path)|\($0.fullPath)|\($0.compilerFlags ?? "")" }
     }
 
-    private func synchronizedFiles(in group: PBXFileSystemSynchronizedRootGroup) -> [SynchronizedFile] {
+    private func synchronizedFiles(
+        in group: PBXFileSystemSynchronizedRootGroup,
+        membershipMode: SynchronizedMembershipMode)
+        -> [SynchronizedFile]
+    {
         guard let relativeRoot = group.path else { return [] }
         let root = project.workspacePath + relativeRoot
         guard root.exists else { return [] }
 
-        let excluded = synchronizedExcludedPaths(group)
+        let membershipPaths = synchronizedMembershipPaths(group)
         let compilerFlags = synchronizedCompilerFlags(group)
 
         return (try? root.recursiveChildren())?
@@ -206,8 +215,15 @@ struct TargetLoader {
                 guard let relative else { return nil }
 
                 let pathInGroup = relative.delete(prefix: relativeRoot + "/") ?? ""
-                guard !excluded.contains(pathInGroup), !excluded.contains(relative) else {
-                    return nil
+                switch membershipMode {
+                case .excludeListed:
+                    guard !membershipPaths.contains(pathInGroup), !membershipPaths.contains(relative) else {
+                        return nil
+                    }
+                case .includeListed:
+                    guard membershipPaths.contains(pathInGroup) || membershipPaths.contains(relative) else {
+                        return nil
+                    }
                 }
 
                 return SynchronizedFile(
@@ -217,7 +233,7 @@ struct TargetLoader {
             } ?? []
     }
 
-    private func synchronizedExcludedPaths(_ group: PBXFileSystemSynchronizedRootGroup) -> Set<String> {
+    private func synchronizedMembershipPaths(_ group: PBXFileSystemSynchronizedRootGroup) -> Set<String> {
         let buildExceptions = (group.exceptions ?? []).compactMap {
             $0 as? PBXFileSystemSynchronizedBuildFileExceptionSet
         }.filter { exception in
@@ -243,6 +259,11 @@ struct TargetLoader {
             .reduce(into: [:]) { result, next in
                 result.merge(next) { first, _ in first }
             }
+    }
+
+    private enum SynchronizedMembershipMode {
+        case excludeListed
+        case includeListed
     }
 
     private func fileModels(from buildFiles: [PBXBuildFile], buildPhase: BuildPhase) -> [XCode.File] {

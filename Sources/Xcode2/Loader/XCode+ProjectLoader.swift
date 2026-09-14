@@ -180,6 +180,21 @@ extension ProjectLoader {
 }
 
 extension ProjectLoader {
+    func explicitSynchronizedGroups(for target: PBXNativeTarget) -> [PBXFileSystemSynchronizedRootGroup] {
+        target.fileSystemSynchronizedGroups ?? []
+    }
+
+    func inferredSynchronizedGroups(for target: PBXNativeTarget) -> [PBXFileSystemSynchronizedRootGroup] {
+        let explicitGroups = explicitSynchronizedGroups(for: target)
+
+        return native.fileSystemSynchronizedRootGroups.filter { group in
+            guard !explicitGroups.contains(where: { $0 === group }) else { return false }
+            return (group.exceptions ?? [])
+                .compactMap { $0 as? PBXFileSystemSynchronizedBuildFileExceptionSet }
+                .contains { $0.target?.name == target.name }
+        }
+    }
+
     private func targetOwnsFile(target: PBXNativeTarget, file: PBXFileElement) -> Bool {
         if
             target.buildPhases.contains(where: { phase in
@@ -193,7 +208,9 @@ extension ProjectLoader {
             return false
         }
 
-        return (target.fileSystemSynchronizedGroups ?? []).contains(where: { group in
+        let synchronizedGroups = explicitSynchronizedGroups(for: target) + inferredSynchronizedGroups(for: target)
+
+        return synchronizedGroups.contains(where: { group in
             guard let root = try? group.fullPath(sourceRoot: workspacePath.string) else {
                 return false
             }
