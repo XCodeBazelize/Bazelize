@@ -61,7 +61,12 @@ extension Target {
                 },
                 minimum_os_version: prefer(\.platform.watchOS),
                 resources: .build {
-                    resources
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
                 },
                 visibility: .public))
     }
@@ -88,6 +93,9 @@ extension Target {
                 },
                 // "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
                 minimum_os_version: prefer(\.platform.iOS),
+                resources: .build {
+                    bundleResources(project: project)
+                },
                 sdk_frameworks: frameworksSDK,
                 strings: .build {
                     if !allStrings.isEmpty {
@@ -114,6 +122,14 @@ extension Target {
                     plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.macOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
                 visibility: .public))
     }
 
@@ -134,7 +150,12 @@ extension Target {
                 },
                 minimum_os_version: prefer(\.platform.tvOS),
                 resources: .build {
-                    resources
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
                 },
                 visibility: .public))
     }
@@ -154,4 +175,5 @@ extension Target {
 
         return iconGlobs.isEmpty ? nil : Starlark.glob(iconGlobs)
     }
+
 }

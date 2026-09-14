@@ -19,6 +19,7 @@ extension Target {
         let cFamily = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
 
         generateAssets(builder, kit)
+        generateResources(builder, kit)
 
         switch (cFamily.isEmpty, srcs_swift.isEmpty) {
         case (true, false):
