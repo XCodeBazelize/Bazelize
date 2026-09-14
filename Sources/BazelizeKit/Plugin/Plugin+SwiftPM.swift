@@ -59,9 +59,7 @@ final class PluginSwiftPM: PluginBuiltin {
         )
         """)
 
-        let names = packages.map {
-            "\(Self.repositoryName(module: $0))".quoted
-        }.joined(separator: ",")
+        let names = packages.map(\.quoted).joined(separator: ",")
         builder.custom("""
         use_repo(
             swift_deps,
@@ -72,18 +70,12 @@ final class PluginSwiftPM: PluginBuiltin {
 
     private func transformRemote(_ product: PackageProductDependency) -> String? {
         guard let url = product.package else { return nil }
-        /// https://github.com/apple/swift-nio.git
-        let path = Path(url)
-
-        /// swift-nio
-        let repo = path.lastComponentWithoutExtension.lowercased()
-
         /// NIO
         let product = product.productName
 
         /// @swiftpkg_swift_nio//:NIO
         return """
-        @\(Self.repositoryName(module: repo))//:\(product)
+        @\(Self.repositoryName(url: url))//:\(product)
         """.replacingOccurrences(of: "-", with: "_")
     }
 
@@ -182,7 +174,7 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     private static func repositoryName(url: String) -> String {
-        repositoryName(module: Path(url).lastComponentWithoutExtension)
+        repositoryName(module: repositoryModuleName(url: url))
     }
 
     private static func repositoryName(path: String) -> String {
@@ -195,6 +187,14 @@ final class PluginSwiftPM: PluginBuiltin {
 
     private static func sanitize(_ value: String) -> String {
         value.replacingOccurrences(of: "-", with: "_")
+    }
+
+    private static func repositoryModuleName(url: String) -> String {
+        let component = Path(url).lastComponent
+        if component.hasSuffix(".git") {
+            return String(component.dropLast(4))
+        }
+        return component
     }
 
     private static func relativePath(from base: String, to target: String) -> String {
