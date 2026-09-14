@@ -1,3 +1,4 @@
+import PathKit
 import Testing
 @testable import XCode2
 
@@ -21,4 +22,21 @@ struct ProjectLoaderTests {
         #expect(merged.first?.name == "Local1")
         #expect(merged.last?.name == "Local3")
     }
+
+
+    @Test
+    func resolvesXCConfigSettingsForIINACommandLineTarget() throws {
+        let current = Path(#filePath)
+            .parent()
+            .parent()
+            .parent()
+        let projectPath = current + "app/iina/IINA.xcodeproj"
+
+        let project = try XCode.Project.load(path: projectPath, preferConfig: "Release")
+        let target = try #require(project.targets.first { $0.name == "iina-cli" })
+
+        #expect(target.prefer(\.platform.sdk) == .macOS)
+        #expect(target.prefer(\.platform.macOS) == "11")
+    }
+
 }

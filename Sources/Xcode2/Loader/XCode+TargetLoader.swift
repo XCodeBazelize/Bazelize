@@ -15,8 +15,12 @@ struct TargetLoader {
         self.native = native
         self.project = project
         preferConfig = project.preferConfig
-        configList = ConfigListLoader(native: native.buildConfigurationList)
-        mergedConfig = configList.merge(defaultConfigList)
+        configList = ConfigListLoader(native: native.buildConfigurationList, sourceRoot: project.workspacePath)
+        mergedConfig = configList.merge(defaultConfigList).mapValues { settings in
+            settings.with(overrides: [
+                "TARGET_NAME": native.name,
+            ])
+        }
     }
 
     var name: String { native.name }

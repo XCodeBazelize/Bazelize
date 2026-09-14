@@ -42,8 +42,16 @@ extension XCode {
                 })
         }
 
+        func with(overrides: [String: String]) -> BuildSettings {
+            .init(
+                name: name,
+                setting: setting.merging(overrides) { _, new in
+                    new
+                })
+        }
+
         public subscript(key: String) -> String? {
-            setting[key]
+            resolved(setting[key], visited: [key])
         }
 
         var keys: [String] {
@@ -59,4 +67,38 @@ extension XCode.BuildSettings {
     public var testHost: String? { self["TEST_HOST"] }
     public var bundleLoader: String? { self["BUNDLE_LOADER"] }
     public var enableModules: Bool { self["CLANG_ENABLE_MODULES"] == "YES" }
+}
+
+extension XCode.BuildSettings {
+    private func resolved(_ value: String?, visited: Set<String>) -> String? {
+        guard let value else { return nil }
+
+        let pattern = #"\$\(([A-Za-z0-9_]+)\)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return value }
+
+        let matches = regex.matches(
+            in: value,
+            range: NSRange(value.startIndex..., in: value))
+        guard !matches.isEmpty else { return value }
+
+        var result = value
+        for match in matches.reversed() {
+            guard
+                match.numberOfRanges == 2,
+                let wholeRange = Range(match.range(at: 0), in: value),
+                let keyRange = Range(match.range(at: 1), in: value)
+            else {
+                continue
+            }
+
+            let key = String(value[keyRange])
+            guard !visited.contains(key), let replacement = resolved(setting[key], visited: visited.union([key])) else {
+                continue
+            }
+
+            result.replaceSubrange(wholeRange, with: replacement)
+        }
+
+        return result
+    }
 }

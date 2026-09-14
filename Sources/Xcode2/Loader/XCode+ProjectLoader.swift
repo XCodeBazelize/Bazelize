@@ -55,9 +55,9 @@ final class ProjectLoader {
     }
 
     private lazy var defaultConfigList: ConfigListLoader? = {
-        let all = Set(native.configurationLists.map { ConfigListLoader(native: $0) })
+        let all = Set(native.configurationLists.map { ConfigListLoader(native: $0, sourceRoot: workspacePath) })
         let targetLists = native.nativeTargets.map {
-            ConfigListLoader(native: $0.buildConfigurationList)
+            ConfigListLoader(native: $0.buildConfigurationList, sourceRoot: workspacePath)
         }
 
         return all.subtracting(targetLists).first

@@ -89,6 +89,18 @@ struct BuildSettingsTests {
     }
 
     @Test
+    func buildSettingsResolveNestedVariables() {
+        let settings = XCode.BuildSettings(
+            name: "Release",
+            setting: [
+                "TARGET_NAME": "iina",
+                "PRODUCT_BUNDLE_IDENTIFIER": "com.colliderli.$(TARGET_NAME)",
+            ])
+
+        #expect(settings.metadata.bundleID == "com.colliderli.iina")
+    }
+
+    @Test
     func buildSettingsPlistEntriesRenderCommonInfoPlistKeys() {
         let settings = XCode.BuildSettings(
             name: "Release",
