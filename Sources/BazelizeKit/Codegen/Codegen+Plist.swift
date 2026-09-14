@@ -9,6 +9,7 @@ import BazelRules
 import Foundation
 import PathKit
 import Starlark
+import Util
 
 extension Target {
     func generateLoadPlistFragment(_ builder: CodeBuilder, _ kit: Kit) {
@@ -78,10 +79,8 @@ extension Target {
     private func plistContent(project: Project?) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
-        return Self.entries(nodes, dropping: appIcons(project: project) == nil ? [] : Self.iconKeys)
-            .withNewLine
-            .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
-            .resolvingBuildSettingReferences(with: selectedSettings)
+        let dropped = appIcons(project: project) == nil ? [] : Self.iconKeys
+        return entries(nodes, dropping: dropped).withNewLine
     }
 
     /// `macos_application`/`ios_application` derive these from `app_icons`, and
@@ -92,31 +91,49 @@ extension Target {
         "CFBundleIconName",
     ]
 
-    /// The plist `dict` is a flat `<key>`/value sequence, so dropping a key means
-    /// dropping the element that follows it too.
-    private static func entries(_ nodes: [XMLNode], dropping keys: Set<String>) -> [String] {
+    /// The plist `dict` is a flat `<key>`/value sequence, so a dropped key takes the
+    /// element that follows it with it.
+    ///
+    /// Entries whose value still references an unresolvable build setting are
+    /// dropped as well: `plisttool` fails the build on a variable it cannot
+    /// substitute, e.g. Xcode built-ins like `$(SDK_VERSION)`.
+    private func entries(_ nodes: [XMLNode], dropping keys: Set<String>) -> [String] {
+        let settings = selectedSettings
         var result: [String] = []
-        var skipValue = false
+        var pendingKey: (name: String, xml: String)?
 
         for node in nodes {
             guard let element = node as? XMLElement else { continue }
-
-            if skipValue {
-                skipValue = false
-                continue
-            }
-
-            if
-                element.name == "key",
-                let key = element.stringValue,
-                keys.contains(key)
-            {
-                skipValue = true
-                continue
-            }
-
             element.detach()
-            result.append(element.xmlString(options: [.nodePrettyPrint, .nodePreserveAll]))
+
+            let xml = element
+                .xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
+                .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
+                .resolvingBuildSettingReferences(with: settings)
+
+            if element.name == "key" {
+                pendingKey = (element.stringValue ?? "", xml)
+                continue
+            }
+
+            guard let key = pendingKey else {
+                result.append(xml)
+                continue
+            }
+            pendingKey = nil
+
+            guard !keys.contains(key.name) else { continue }
+
+            if xml.hasUnresolvedBuildSettingReference {
+                Log.codeGenerate.warning("""
+                Drop Info.plist key \(key.name, privacy: .public) of \
+                \(name, privacy: .public): unresolved build setting reference
+                """)
+                continue
+            }
+
+            result.append(key.xml)
+            result.append(xml)
         }
 
         return result
@@ -160,6 +177,17 @@ extension String {
         }
 
         return result
+    }
+
+    /// `$(SETTING)` references left after resolution, excluding the ones
+    /// `plisttool` substitutes itself.
+    fileprivate var hasUnresolvedBuildSettingReference: Bool {
+        guard let regex = try? NSRegularExpression(pattern: #"\$\(([A-Za-z0-9_]+)\)"#) else { return false }
+
+        return regex.matches(in: self, range: NSRange(startIndex..., in: self)).contains { match in
+            guard let keyRange = Range(match.range(at: 1), in: self) else { return false }
+            return !Self.plistToolVariables.contains(String(self[keyRange]))
+        }
     }
 }
 
