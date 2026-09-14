@@ -84,7 +84,7 @@ extension ProjectLoader {
         }
         return Self.mergeLocalPackages(
             explicit: explicit,
-            discovered: discoveredLocalPackages)
+            discovered: discoveredLocalPackages + synchronizedLocalPackages)
     }
 
     private var discoveredLocalPackages: [XCode.LocalPackage] {
@@ -102,6 +102,29 @@ extension ProjectLoader {
                     name: file.name ?? packageRoot.lastComponent,
                     relativePath: relativePath)
             }
+    }
+
+    /// Local packages Xcode picks up from a synchronized group instead of an
+    /// explicit package reference, e.g. a `Packages/` directory holding one
+    /// package per subdirectory.
+    private var synchronizedLocalPackages: [XCode.LocalPackage] {
+        native.fileSystemSynchronizedRootGroups.flatMap { group -> [XCode.LocalPackage] in
+            guard let relativeRoot = group.path else { return [] }
+
+            let root = workspacePath + relativeRoot
+            guard root.isDirectory else { return [] }
+
+            if (root + "Package.swift").exists {
+                return [.init(name: root.lastComponent, relativePath: relativeRoot)]
+            }
+
+            return (try? root.children())?.compactMap { child in
+                guard child.isDirectory, (child + "Package.swift").exists else { return nil }
+                return XCode.LocalPackage(
+                    name: child.lastComponent,
+                    relativePath: "\(relativeRoot)/\(child.lastComponent)")
+            } ?? []
+        }
     }
 
     func packageFiles(targetName: String) -> [FileLoader] {
