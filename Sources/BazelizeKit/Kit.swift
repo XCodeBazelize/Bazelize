@@ -21,6 +21,7 @@ public final class Kit {
     lazy var module = Bazel.Module(outputRoot)
     lazy var build = Bazel.RootBuild(outputRoot)
     lazy var config = Bazel.BazelRC(outputRoot)
+    lazy var rootRC = Bazel.RootRC(outputRoot)
     lazy var prebuilt = Bazel.PrebuiltBuild(outputRoot)
     lazy var targetsBuild = project.targets.map { target in
         Bazel.TargetBuild(outputRoot, target)
@@ -134,10 +135,11 @@ extension Kit {
         Log.codeGenerate.info("Create `BUILD` at \(path, privacy: .public)")
     }
 
-    /// {WORKSPACE}/config.bazelrc
+    /// {WORKSPACE}/config.bazelrc and {WORKSPACE}/.bazelrc
     private final func generateConfig() throws {
-        config.setup(config: project.config)
+        config.setup(config: project.config, targets: project.targets)
         try config.write()
+        try rootRC.ensureImport()
 
         let path = config.path
         Log.codeGenerate.info("Create `config.bazelrc` at \(path, privacy: .public)")
