@@ -85,7 +85,12 @@ extension Target {
         let workspace = Path(project.workspacePath).absolute().string
 
         return (prefer(\.headerSearchPaths) ?? []).compactMap { path -> String? in
-            let normalized = Path(path).normalize().string
+            /// Xcode quotes segments and allows `$(SETTING:modifier)`; a path that
+            /// still carries either cannot be resolved to a directory here.
+            let unquoted = path.replacingOccurrences(of: "\"", with: "")
+            guard !unquoted.contains("$") else { return nil }
+
+            let normalized = Path(unquoted).normalize().string
             guard normalized != "." else { return nil }
 
             if !normalized.hasPrefix("/") {

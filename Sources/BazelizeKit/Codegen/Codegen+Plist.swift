@@ -80,7 +80,7 @@ extension Target {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
         let dropped = appIcons(project: project) == nil ? [] : Self.iconKeys
-        return entries(nodes, dropping: dropped).withNewLine
+        return entries(nodes, dropping: dropped).withNewLine.escapedForPlistFragment
     }
 
     /// `macos_application`/`ios_application` derive these from `app_icons`, and
@@ -141,6 +141,9 @@ extension Target {
 }
 
 extension String {
+    /// Xcode accepts both `$(SETTING)` and `${SETTING}`.
+    fileprivate static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)[)}]"#
+
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
     fileprivate static let plistToolVariables: Set<String> = [
@@ -157,7 +160,7 @@ extension String {
     /// copied out of an Xcode `Info.plist` would either reach the bundle verbatim
     /// or collide with a resolved value in another fragment.
     fileprivate func resolvingBuildSettingReferences(with settings: BuildSettings) -> String {
-        guard let regex = try? NSRegularExpression(pattern: #"\$\(([A-Za-z0-9_]+)\)"#) else { return self }
+        guard let regex = try? NSRegularExpression(pattern: Self.buildSettingPattern) else { return self }
 
         let matches = regex.matches(in: self, range: NSRange(startIndex..., in: self))
         var result = self
@@ -179,10 +182,22 @@ extension String {
         return result
     }
 
+    /// `plist_fragment` treats `{...}` as a `--define` placeholder, so a brace that
+    /// reaches the template fails analysis. Unresolved `${SETTING}` references are
+    /// rewritten to the equivalent `$(SETTING)`, which `plisttool` also substitutes.
+    fileprivate var escapedForPlistFragment: String {
+        guard let regex = try? NSRegularExpression(pattern: #"\$\{([A-Za-z0-9_]+)\}"#) else { return self }
+
+        return regex.stringByReplacingMatches(
+            in: self,
+            range: NSRange(startIndex..., in: self),
+            withTemplate: "\\$($1)")
+    }
+
     /// `$(SETTING)` references left after resolution, excluding the ones
     /// `plisttool` substitutes itself.
     fileprivate var hasUnresolvedBuildSettingReference: Bool {
-        guard let regex = try? NSRegularExpression(pattern: #"\$\(([A-Za-z0-9_]+)\)"#) else { return false }
+        guard let regex = try? NSRegularExpression(pattern: Self.buildSettingPattern) else { return false }
 
         return regex.matches(in: self, range: NSRange(startIndex..., in: self)).contains { match in
             guard let keyRange = Range(match.range(at: 1), in: self) else { return false }
