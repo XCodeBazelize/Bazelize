@@ -97,16 +97,28 @@ extension Target {
         (prefer(\.preprocessorDefinitions) ?? []).isEmpty ? nil : Self.definesHeaderPath
     }
 
-    var clangDefineFlags: [String] {
-        guard let definesHeader else { return [] }
-        return ["-include", "Targets/\(name)/\(definesHeader)"]
+    /// `GCC_PREFIX_HEADER`, relative to the target's `Sources/` tree.
+    var prefixHeader: String? {
+        guard let header = prefer(\.prefixHeader), !header.hasPrefix("/") else { return nil }
+        return "Sources/\(Path(header).normalize().string)"
+    }
+
+    private var prefixHeaderFlags: [String] {
+        guard let prefixHeader else { return [] }
+        return ["-include", "Targets/\(name)/\(prefixHeader)"]
+    }
+
+    var forceIncludeFlags: [String] {
+        guard let definesHeader else { return prefixHeaderFlags }
+        return ["-include", "Targets/\(name)/\(definesHeader)"] + prefixHeaderFlags
     }
 
     /// The same header, force-included into `swiftc`'s clang importer so a bridging
     /// or umbrella header can rely on the definitions.
-    func clangDefineCopts() -> [String] {
-        guard let definesHeader else { return [] }
-        return ["-Xcc", "-include", "-Xcc", "Targets/\(name)/\(definesHeader)"]
+    func forceIncludeCopts() -> [String] {
+        forceIncludeFlags.flatMap { flag in
+            ["-Xcc", flag]
+        }
     }
 
     /// The same include paths, spelled for `swiftc`'s clang importer.

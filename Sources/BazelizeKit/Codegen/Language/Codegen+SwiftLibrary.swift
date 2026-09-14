@@ -50,6 +50,7 @@ extension Target {
                 swiftc_inputs: .build {
                     bridgingHeader
                     definesHeader
+                    prefixHeader
                 },
                 testonly: isTest,
                 visibility: .private))
@@ -100,7 +101,7 @@ extension Target {
     func swiftCopts(project: Project) -> [String]? {
         var copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts
         if bridgingHeader != nil {
-            copts += swiftIncludeCopts(project: project) + clangDefineCopts()
+            copts += swiftIncludeCopts(project: project) + forceIncludeCopts()
         }
         return copts.isEmpty ? nil : copts
     }
@@ -109,7 +110,7 @@ extension Target {
     /// declarations through its own clang module instead. The module's headers can
     /// still reach for the target's include paths, so `swiftc` needs them too.
     func moduleSwiftCopts(project: Project) -> [String]? {
-        let copts = parseAsLibraryCopts + swiftIncludeCopts(project: project) + clangDefineCopts()
+        let copts = parseAsLibraryCopts + swiftIncludeCopts(project: project) + forceIncludeCopts()
         return copts.isEmpty ? nil : copts
     }
 

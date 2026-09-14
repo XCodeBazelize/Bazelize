@@ -231,6 +231,7 @@ extension XCode2.XCode.Target {
     fileprivate var settingReferencedPaths: [String] {
         [
             prefer(\.bridgingHeader),
+            prefer(\.prefixHeader),
             metadata.entitlements,
         ]
         .compactMap { $0 }

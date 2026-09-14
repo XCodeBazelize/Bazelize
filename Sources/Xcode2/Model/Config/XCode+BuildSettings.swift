@@ -65,6 +65,14 @@ extension XCode.BuildSettings {
     public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
     public var bridgingHeader: String? { self["SWIFT_OBJC_BRIDGING_HEADER"] }
 
+    /// `GCC_PREFIX_HEADER`: a header Xcode force-includes into every C-family
+    /// compile of the target, which is how a source file gets away without
+    /// importing the framework it uses.
+    public var prefixHeader: String? {
+        guard let header = self["GCC_PREFIX_HEADER"]?.unquoted, !header.isEmpty else { return nil }
+        return header
+    }
+
     /// `HEADER_SEARCH_PATHS` plus `USER_HEADER_SEARCH_PATHS`, without Xcode's
     /// `$(inherited)` marker.
     public var headerSearchPaths: [String] {

@@ -55,7 +55,7 @@ extension Target {
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + clangDialectCopts + clangDefineFlags,
+                ] + clangDialectCopts + forceIncludeFlags,
                 clang_srcs: .build {
                     srcs_c
                     srcs_cpp
@@ -74,6 +74,7 @@ extension Target {
                 enable_modules: prefer(\.enableModules),
                 hdrs: .build {
                     flattenedModuleHeaderFiles(project: project)
+                    prefixHeader
                     /// A mixed target gets the bridging header's declarations through
                     /// its own clang module: `swiftc` rejects `-import-objc-header`
                     /// while building a module.

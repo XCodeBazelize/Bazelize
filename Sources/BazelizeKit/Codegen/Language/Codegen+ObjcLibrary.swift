@@ -27,18 +27,19 @@ extension Target {
                     definesHeader
                 },
                 hdrs: .build {
-                    // FIXME: (@yume190) TODO: pch
                     flattenedModuleHeaderFiles(project: project)
+                    prefixHeader
                 },
                 deps: .build {
                     frameworksLibrary
+                    applicationHost(project: project)
                 },
                 copts: [
                     "-fblocks",
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + clangDefineFlags,
+                ] + forceIncludeFlags,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
                 linkopts: sdkLinkopts,
