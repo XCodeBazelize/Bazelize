@@ -1,8 +1,9 @@
+import Util
 extension Target {
     // MARK: Internal
 
     func generateApplicationCode(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.platform.sdk) {
+        switch platformSDK {
         case .iOS: buildIOS(builder, kit)
         case .macOS: buildMac(builder, kit)
         case .tvOS: buildTV(builder, kit)
@@ -15,7 +16,11 @@ extension Target {
             if family.contains(.iphone) {
                 buildIOS(builder, kit)
             }
-        default: break
+        default:
+            Log.codeGenerate.warning("""
+            Name: \(name, privacy: .public)
+            SDK: \(platformSDK?.rawValue ?? "nil", privacy: .public) has no application rule
+            """)
         }
     }
 

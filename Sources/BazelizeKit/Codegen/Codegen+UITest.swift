@@ -13,7 +13,7 @@ extension Target {
     // MARK: Internal
 
     func generateUITest(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.platform.sdk) {
+        switch platformSDK {
         case .iOS: generateIOSUITest(builder, kit)
         case .macOS: generateMacUITest(builder, kit)
         case .tvOS: generateTVUITest(builder, kit)

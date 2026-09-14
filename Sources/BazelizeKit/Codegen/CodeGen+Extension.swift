@@ -11,7 +11,7 @@ extension Target {
     // MARK: Internal
     
     func generateExtension(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.platform.sdk) {
+        switch platformSDK {
         case .iOS: buildIOS(builder, kit)
         default: break
         }

@@ -2,7 +2,7 @@
 
 extension Target {
     func generateFrameworkCode(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.platform.sdk) {
+        switch platformSDK {
         case .macOS: buildMacFramework(builder, kit)
         default: buildIOSFramework(builder, kit)
         }
