@@ -22,7 +22,7 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
-                copts: bridgingHeaderCopts,
+                copts: swiftCopts,
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
@@ -70,6 +70,36 @@ extension Target {
     var bridgingHeaderCopts: [String]? {
         guard let bridgingHeader else { return nil }
         return ["-import-objc-header", "$(location \(bridgingHeader))"]
+    }
+
+    /// Swift compiles a file named `main.swift` as top-level code and emits a `main`
+    /// symbol. Xcode only does that for executables, so anything else — a framework
+    /// with a `main.swift` is common — has to be parsed as a library.
+    var parseAsLibraryCopts: [String] {
+        switch productType {
+        case "com.apple.product-type.application",
+             "com.apple.product-type.tool":
+            return []
+        default:
+            break
+        }
+
+        guard srcs_swift.contains(where: { $0.hasSuffix("/main.swift") || $0 == "main.swift" }) else {
+            return []
+        }
+
+        return ["-parse-as-library"]
+    }
+
+    var swiftCopts: [String]? {
+        let copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts
+        return copts.isEmpty ? nil : copts
+    }
+
+    /// Same flags minus the bridging header: a mixed-language target exposes those
+    /// declarations through its own clang module instead.
+    var moduleSwiftCopts: [String]? {
+        parseAsLibraryCopts.isEmpty ? nil : parseAsLibraryCopts
     }
 
     /// `swift_library` has no `sdk_frameworks`, so system frameworks and dylibs from
