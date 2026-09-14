@@ -41,6 +41,7 @@ extension Target {
                 ] + clangDefineFlags,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
+                linkopts: sdkLinkopts,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: frameworksSDK,

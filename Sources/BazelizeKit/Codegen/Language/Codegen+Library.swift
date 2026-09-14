@@ -79,6 +79,7 @@ extension Target {
                     bridgingHeader
                 },
                 includes: headerIncludes(project: project),
+                linkopts: sdkLinkopts,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: frameworksSDK,

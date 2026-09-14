@@ -123,7 +123,12 @@ extension Target {
             "-l\(name.delete(prefix: "lib") ?? name)"
         }
 
-        let flags = searchPaths + frameworks + weakFrameworks + dylibs
+        // Bazel expands `$` in `linkopts` as a Make variable; a weak-symbol flag like
+        // `-Wl,-U,_OBJC_CLASS_$_X` has to escape it.
+        let extra = (prefer(\.otherLinkerFlags) ?? []).map { flag in
+            flag.replacingOccurrences(of: "$", with: "$$")
+        }
+        let flags = searchPaths + frameworks + weakFrameworks + dylibs + extra
         return flags.isEmpty ? nil : flags
     }
 

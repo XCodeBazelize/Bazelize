@@ -81,6 +81,16 @@ extension XCode.BuildSettings {
             }
     }
 
+    /// `OTHER_LDFLAGS`, without Xcode's `$(inherited)` marker.
+    public var otherLinkerFlags: [String] {
+        (self["OTHER_LDFLAGS"] ?? "")
+            .split(separator: " ")
+            .map { flag in
+                String(flag).unquoted
+            }
+            .filter { !$0.isEmpty && $0 != "$(inherited)" }
+    }
+
     /// `GCC_PREPROCESSOR_DEFINITIONS`, without Xcode's `$(inherited)` marker.
     ///
     /// Xcode passes each entry through a shell, so a value is often quoted
