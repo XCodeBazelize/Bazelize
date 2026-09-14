@@ -12,7 +12,12 @@ import PathKit
 
 /// http://github.com/cgrindel/rules_swift_package_manager
 final class PluginSwiftPM: PluginBuiltin {
-    private let dep: BazelDep.SwiftPM = .latest
+    /// Not `.latest`: 1.16.0+ transitions every SwiftPM target to its own declared
+    /// platform floor and then fails analysis when a package imports a dependency
+    /// with a higher floor. Xcode never enforces that, so real projects (e.g.
+    /// SimplyCoreAudio declaring macOS 10.12 while depending on swift-atomics
+    /// declaring 10.13) stop analyzing on versions past 1.15.0.
+    private let dep: BazelDep.SwiftPM = .v1_15_0
     let remotes: [RemotePackage]
     let locals: [LocalPackage]
     private var packages: [String] = []
