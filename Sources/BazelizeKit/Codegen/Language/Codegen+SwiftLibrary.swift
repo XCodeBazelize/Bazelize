@@ -26,6 +26,7 @@ extension Target {
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
+                    intentSources
                 },
                 deps: .build {
                     extraDeps

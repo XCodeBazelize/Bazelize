@@ -78,6 +78,7 @@ extension Target {
                 swift_defines: defines(project: project),
                 swift_srcs: .build {
                     srcs_swift
+                    intentSources
                 },
                 weak_sdk_frameworks: weakFrameworksSDK,
                 deps: .build {

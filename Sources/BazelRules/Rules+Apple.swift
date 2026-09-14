@@ -112,6 +112,7 @@ extension Rules {
             }
 
             case apple_bundle_import
+            case apple_intent_library
             case apple_core_data_model
             case apple_core_ml_library
             case apple_resource_bundle
@@ -1133,6 +1134,98 @@ extension Rules.Apple.Resources {
             Rules.Apple.Resources.swift_apple_core_ml_library.call {
                 "name" => name
                 "srcs" => srcs
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `swift_intent_library` target.
+        ///
+        /// Parameters:
+        /// - `name: String`
+        ///   The Bazel target name.
+        /// - `src: Starlark.Label`
+        ///   The `.intentdefinition` file to generate classes from.
+        /// - `class_prefix: String?`
+        ///   Class prefix for the generated classes.
+        /// - `class_visibility: String?`
+        ///   Swift visibility of the generated classes: `public`, `private` or `project`.
+        /// - `swift_version: String?`
+        ///   Swift language version used for the generated classes.
+        /// - `testonly: Bool?`
+        ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
+        ///   Repo-local convenience for emitting a `visibility` attribute.
+        public static func swift_intent_library(
+            name: String,
+            src: Starlark.Label,
+            class_prefix: String? = nil,
+            class_visibility: String? = nil,
+            swift_version: String? = nil,
+            testonly: Bool? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.Resources.swift_intent_library.call {
+                "name" => name
+                "src" => src
+                if let class_prefix { "class_prefix" => class_prefix }
+                if let class_visibility { "class_visibility" => class_visibility }
+                if let swift_version { "swift_version" => swift_version }
+                if let testonly { "testonly" => testonly }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_intent_library` target.
+        ///
+        /// Unlike `swift_intent_library` this exposes the generated sources directly,
+        /// so they can be compiled into the module that uses them — which is how
+        /// Xcode treats an `.intentdefinition` belonging to a target.
+        ///
+        /// Parameters:
+        /// - `name: String`
+        ///   The Bazel target name.
+        /// - `src: Starlark.Label`
+        ///   The `.intentdefinition` file to generate classes from.
+        /// - `language: String`
+        ///   `Swift` or `Objective-C`.
+        /// - `class_prefix: String?`
+        ///   Class prefix for the generated classes.
+        /// - `class_visibility: String?`
+        ///   Swift visibility of the generated classes: `public`, `private` or `project`.
+        /// - `header_name: String?`
+        ///   Generated header name, required for Objective-C.
+        /// - `swift_version: String?`
+        ///   Swift language version used for the generated classes.
+        /// - `tags: [String]?`
+        ///   Bazel tags; the rule is meant to be built only through its consumer.
+        /// - `testonly: Bool?`
+        ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
+        ///   Repo-local convenience for emitting a `visibility` attribute.
+        public static func apple_intent_library(
+            name: String,
+            src: Starlark.Label,
+            language: String,
+            class_prefix: String? = nil,
+            class_visibility: String? = nil,
+            header_name: String? = nil,
+            swift_version: String? = nil,
+            tags: [String]? = nil,
+            testonly: Bool? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.Resources.apple_intent_library.call {
+                "name" => name
+                "src" => src
+                "language" => language
+                if let class_prefix { "class_prefix" => class_prefix }
+                if let class_visibility { "class_visibility" => class_visibility }
+                if let header_name { "header_name" => header_name }
+                if let swift_version { "swift_version" => swift_version }
+                if let tags { "tags" => tags }
+                if let testonly { "testonly" => testonly }
                 if let visibility { visibility }
             }
         }
