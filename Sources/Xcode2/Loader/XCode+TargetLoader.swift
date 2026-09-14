@@ -16,9 +16,15 @@ struct TargetLoader {
         self.project = project
         preferConfig = project.preferConfig
         configList = ConfigListLoader(native: native.buildConfigurationList, sourceRoot: project.workspacePath)
+        /// Xcode's built-in settings never appear in the project file, but build
+        /// settings reference them freely (`INFOPLIST_FILE = $(SRCROOT)/...`).
+        let workspace = project.workspacePath.string
         mergedConfig = configList.merge(defaultConfigList).mapValues { settings in
             settings.with(overrides: [
                 "TARGET_NAME": native.name,
+                "SRCROOT": workspace,
+                "SOURCE_ROOT": workspace,
+                "PROJECT_DIR": workspace,
             ])
         }
     }
