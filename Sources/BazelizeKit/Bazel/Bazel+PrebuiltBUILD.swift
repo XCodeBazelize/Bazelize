@@ -30,8 +30,42 @@ extension Bazel {
                 file.fileType == "wrapper.xcframework"
             }
 
+            let staticLibraries = imported.filter { file in
+                file.fileType == "archive.ar"
+            }
+
+            let dynamicLibraries = imported.filter { file in
+                file.fileType == "compiled.mach-o.dylib"
+            }
+
             buildFrameworks(frameworks)
             buildXCFrameworks(xcframeworks)
+            buildLibraries(staticLibraries, dynamicLibraries)
+        }
+
+        /// Checked-in `.a`/`.dylib` binaries; `cc_import` is the only rule that takes
+        /// a bare library and still exposes it to Swift and Objective-C targets.
+        private func buildLibraries(_ staticLibraries: [XCode.File], _ dynamicLibraries: [XCode.File]) {
+            guard !staticLibraries.isEmpty || !dynamicLibraries.isEmpty else { return }
+            builder.load(.cc_import)
+
+            for file in unique(staticLibraries) {
+                guard let path = file.path, !path.isEmpty else { continue }
+                builder.call(
+                    Rules.Cc.Call.cc_import(
+                        name: Path(path).lastComponentWithoutExtension,
+                        static_library: .named(Path(path).lastComponent),
+                        visibility: .public))
+            }
+
+            for file in unique(dynamicLibraries) {
+                guard let path = file.path, !path.isEmpty else { continue }
+                builder.call(
+                    Rules.Cc.Call.cc_import(
+                        name: Path(path).lastComponentWithoutExtension,
+                        shared_library: .named(Path(path).lastComponent),
+                        visibility: .public))
+            }
         }
 
         private func buildXCFrameworks(_ files: [XCode.File]) {

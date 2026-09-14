@@ -36,6 +36,10 @@ extension CodeBuilder {
         load(loadableRule: rule)
     }
 
+    func load(_ rule: Rules.Cc) {
+        load(loadableRule: rule)
+    }
+
     func load(_ rule: Rules.Apple.IOS) {
         load(loadableRule: rule)
     }
