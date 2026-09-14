@@ -42,6 +42,7 @@ extension Target {
                     storyboards
                 },
                 defines: defines(project: project),
+                linkopts: sdkLinkopts,
                 swiftc_inputs: .build {
                     bridgingHeader
                 },
@@ -55,6 +56,7 @@ extension Target {
                 visibility: .public))
     }
 
+
     /// `SWIFT_OBJC_BRIDGING_HEADER`, relative to the target's `Sources/` tree.
     ///
     /// rules_swift has no bridging-header attribute, so the header is passed
@@ -67,6 +69,20 @@ extension Target {
     var bridgingHeaderCopts: [String]? {
         guard let bridgingHeader else { return nil }
         return ["-import-objc-header", "$(location \(bridgingHeader))"]
+    }
+
+    /// `swift_library` has no `sdk_frameworks`, so system frameworks and dylibs from
+    /// the target's Frameworks phase are linked through raw linker flags.
+    var sdkLinkopts: [String]? {
+        let searchPaths = frameworkSearchPathsSDK.map { "-F\($0)" }
+        let frameworks = frameworksSDK.flatMap { ["-framework", $0] }
+        let weakFrameworks = weakFrameworksSDK.flatMap { ["-weak_framework", $0] }
+        let dylibs = dylibsSDK.map { name in
+            "-l\(name.delete(prefix: "lib") ?? name)"
+        }
+
+        let flags = searchPaths + frameworks + weakFrameworks + dylibs
+        return flags.isEmpty ? nil : flags
     }
 
     // MARK: Private

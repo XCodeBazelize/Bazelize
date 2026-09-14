@@ -135,6 +135,10 @@ extension XCode.Target {
         dependencies.weakSDKFrameworks
     }
 
+    public var frameworkSearchPathsSDK: [String] {
+        dependencies.sdkFrameworkSearchPaths
+    }
+
     public var selectedSettings: XCode.BuildSettings {
         if let preferConfig, let settings = configs[preferConfig] {
             return settings

@@ -144,6 +144,20 @@ struct TargetLoader {
             return wrapped.sdkDylibName ?? wrapped.name.flatMap { Path($0).lastComponentWithoutExtension }
         }
 
+        /// Xcode references system frameworks by absolute path; only their directory
+        /// matters for linking, and anything outside the default
+        /// `/System/Library/Frameworks` has to be handed to the linker explicitly.
+        let sdkFrameworkSearchPaths = frameworkBuildFiles.compactMap { buildFile -> String? in
+            guard let file = buildFile.file else { return nil }
+            let wrapped = FileLoader(native: file, project: project)
+            guard wrapped.isSDKFramework, let fullPath = wrapped.fullPath, fullPath.hasPrefix("/") else {
+                return nil
+            }
+            let directory = Path(fullPath).parent().string
+            guard directory != "/System/Library/Frameworks" else { return nil }
+            return directory
+        }
+
         let packageProducts = (native.packageProductDependencies ?? []).map { dependency in
             XCode.PackageProductDependency(
                 productName: dependency.productName,
@@ -157,6 +171,7 @@ struct TargetLoader {
             frameworks: Set(frameworks.compactMap { $0 }).sorted(),
             sdkDylibs: Set(sdkDylibs.compactMap { $0 }).sorted(),
             sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted(),
+            sdkFrameworkSearchPaths: Set(sdkFrameworkSearchPaths).sorted(),
             weakSDKFrameworks: Set(weakSDKFrameworks.compactMap { $0 }).sorted())
     }
 
