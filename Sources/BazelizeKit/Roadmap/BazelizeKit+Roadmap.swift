@@ -7,13 +7,21 @@ extension Bazel {
         let output: Path
         let project: Project
 
+        /// Only the directories bazelize owns are wiped.
+        ///
+        /// Deleting the whole output root would take the project itself with it when
+        /// no `--output` is given, and otherwise throw away the resolved SwiftPM and
+        /// Bazel state that lives next to the generated files.
         func prepare() throws {
-            try? output.delete()
+            let targetsRoot = output + "Targets"
+            let prebuiltRoot = output + "Prebuilt"
+
+            try? targetsRoot.delete()
+            try? prebuiltRoot.delete()
+
             try output.mkpath()
             try linkPackageResolvedIfPresent(project: project)
             try preparePrebuiltFiles(project: project)
-
-            let targetsRoot = output + "Targets"
             try targetsRoot.mkpath()
 
             for target in project.targets {
