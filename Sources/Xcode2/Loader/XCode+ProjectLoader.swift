@@ -54,13 +54,14 @@ final class ProjectLoader {
             defaultConfigList: defaultConfigList)
     }
 
+    /// The project-level build configuration list every target inherits.
+    ///
+    /// Picking it by elimination (all lists minus the native targets') is both wrong
+    /// for projects with aggregate or legacy targets and non-deterministic, because
+    /// the leftovers come out of a `Set`.
     private lazy var defaultConfigList: ConfigListLoader? = {
-        let all = Set(native.configurationLists.map { ConfigListLoader(native: $0, sourceRoot: workspacePath) })
-        let targetLists = native.nativeTargets.map {
-            ConfigListLoader(native: $0.buildConfigurationList, sourceRoot: workspacePath)
-        }
-
-        return all.subtracting(targetLists).first
+        guard let list = rootProject?.buildConfigurationList else { return nil }
+        return ConfigListLoader(native: list, sourceRoot: workspacePath)
     }()
 }
 
