@@ -1,7 +1,7 @@
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
 
 extension Target {
-    func generateFrameworkCode(_ builder: CodeBuilder, _: Kit) {
+    func generateFrameworkCode(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.ios_framework)
         builder.call(
             Rules.Apple.IOS.Call.ios_framework(
@@ -15,7 +15,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    plist_default
+                    plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.iOS),
                 visibility: .public))

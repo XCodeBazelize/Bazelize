@@ -17,7 +17,7 @@ extension Target {
         }
     }
     
-    private func buildIOS(_ builder: CodeBuilder, _: Kit) {
+    private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.ios_extension)
         //        families = ["iphone", "ipad"],
         //        provisioning_profile = ":ShareExtension.mobileprovision",  # 若需要簽名
@@ -34,7 +34,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    plist_default
+                    plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.iOS),
                 visibility: .public))

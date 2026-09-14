@@ -49,30 +49,118 @@ extension Target {
                 visibility: .private))
     }
 
+    /// Keys the target's checked-in `Info.plist` already defines.
+    func infoPlistKeys(project: Project?) -> Set<String> {
+        guard let nodes = infoPlistNodes(project: project) else { return [] }
+
+        return Set(
+            nodes
+                .compactMap { $0 as? XMLElement }
+                .filter { $0.name == "key" }
+                .compactMap(\.stringValue))
+    }
+
     // MARK: Private
 
-    private func plistContent(project: Project?) -> String? {
+    private func infoPlistNodes(project: Project?) -> [XMLNode]? {
         guard let project else { return nil }
-        guard let plistPath = prefer(\.plist.infoPlist) else {
-            return nil
-        }
+        guard let plistPath = prefer(\.plist.infoPlist) else { return nil }
+
         let path = Path(project.workspacePath) + plistPath
-
         guard let content: String = try? path.read() else { return nil }
-        guard
-            let xml = try? XMLDocument(xmlString: content, options: .documentXInclude)
-                .rootElement()?
-                .elements(forName: "dict")
-                .first?
-                .children else { return nil }
 
+        return try? XMLDocument(xmlString: content, options: .documentXInclude)
+            .rootElement()?
+            .elements(forName: "dict")
+            .first?
+            .children
+    }
 
-        return xml.compactMap { node -> String in
-            node.detach()
-            return node.xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
+    private func plistContent(project: Project?) -> String? {
+        guard let nodes = infoPlistNodes(project: project) else { return nil }
+
+        return Self.entries(nodes, dropping: appIcons == nil ? [] : Self.iconKeys)
+            .withNewLine
+            .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
+            .resolvingBuildSettingReferences(with: selectedSettings)
+    }
+
+    /// `macos_application`/`ios_application` derive these from `app_icons`, and
+    /// `plisttool` fails the build when a fragment disagrees with what it wrote.
+    private static let iconKeys: Set<String> = [
+        "CFBundleIconFile",
+        "CFBundleIconFiles",
+        "CFBundleIconName",
+    ]
+
+    /// The plist `dict` is a flat `<key>`/value sequence, so dropping a key means
+    /// dropping the element that follows it too.
+    private static func entries(_ nodes: [XMLNode], dropping keys: Set<String>) -> [String] {
+        var result: [String] = []
+        var skipValue = false
+
+        for node in nodes {
+            guard let element = node as? XMLElement else { continue }
+
+            if skipValue {
+                skipValue = false
+                continue
+            }
+
+            if
+                element.name == "key",
+                let key = element.stringValue,
+                keys.contains(key)
+            {
+                skipValue = true
+                continue
+            }
+
+            element.detach()
+            result.append(element.xmlString(options: [.nodePrettyPrint, .nodePreserveAll]))
         }
-        .withNewLine
-        .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
+
+        return result
+    }
+}
+
+extension String {
+    /// Variables `plisttool` substitutes itself; leaving them intact keeps
+    /// rules_apple in charge of the bundle identity it also validates.
+    fileprivate static let plistToolVariables: Set<String> = [
+        "BUNDLE_NAME",
+        "DEVELOPMENT_LANGUAGE",
+        "EXECUTABLE_NAME",
+        "PRODUCT_BUNDLE_IDENTIFIER",
+        "PRODUCT_NAME",
+        "TARGET_NAME",
+    ]
+
+    /// Expands the remaining `$(SETTING)` references from the target's build
+    /// settings. `plisttool` only knows a handful of variables, so anything else
+    /// copied out of an Xcode `Info.plist` would either reach the bundle verbatim
+    /// or collide with a resolved value in another fragment.
+    fileprivate func resolvingBuildSettingReferences(with settings: BuildSettings) -> String {
+        guard let regex = try? NSRegularExpression(pattern: #"\$\(([A-Za-z0-9_]+)\)"#) else { return self }
+
+        let matches = regex.matches(in: self, range: NSRange(startIndex..., in: self))
+        var result = self
+
+        for match in matches.reversed() {
+            guard
+                let wholeRange = Range(match.range(at: 0), in: self),
+                let keyRange = Range(match.range(at: 1), in: self)
+            else {
+                continue
+            }
+
+            let key = String(self[keyRange])
+            guard !Self.plistToolVariables.contains(key), let value = settings[key] else { continue }
+
+            result.replaceSubrange(wholeRange, with: value)
+        }
+
+        return result
     }
 }
 
@@ -119,12 +207,16 @@ extension Target {
 extension Target {
     // MARK: Internal
 
-    var plist_default: Starlark.Label? {
-        configs.values.contains(where: { !defaultPlistFragments(for: $0).isEmpty }) ? ":plist_default" : nil
+    func plistDefault(_ kit: Kit) -> Starlark.Label? {
+        defaultPlistFragments(
+            for: selectedSettings,
+            skipping: infoPlistKeys(project: kit.project)).isEmpty ? nil : ":plist_default"
     }
 
-    func generatePlistDefault(_ builder: CodeBuilder, _: Kit) {
-        let plist = defaultPlistFragments(for: selectedSettings)
+    func generatePlistDefault(_ builder: CodeBuilder, _ kit: Kit) {
+        let plist = defaultPlistFragments(
+            for: selectedSettings,
+            skipping: infoPlistKeys(project: kit.project))
         if !plist.isEmpty {
             builder.call(
                 Rules.Plist.Call.plist_fragment(
@@ -146,7 +238,14 @@ extension Target {
         return !defaultPlistFragments(for: selectedSettings).isEmpty
     }
 
-    private func defaultPlistFragments(for settings: BuildSettings) -> [String] {
+    /// The target's own `Info.plist` is the source of truth Xcode uses, so a
+    /// default derived from build settings must not restate those keys: `plisttool`
+    /// rejects two fragments that disagree on one key.
+    private func defaultPlistFragments(
+        for settings: BuildSettings,
+        skipping existing: Set<String> = [])
+        -> [String]
+    {
         let defaults = [
             ("CFBundleName", "$(PRODUCT_NAME)"),
             ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
@@ -157,11 +256,13 @@ extension Target {
             ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "$(MARKETING_VERSION)"),
         ]
 
-        return defaults.map { key, value in
-            """
-            <key>\(key)</key>
-            <string>\(value)</string>
-            """
-        }
+        return defaults
+            .filter { key, _ in !existing.contains(key) }
+            .map { key, value in
+                """
+                <key>\(key)</key>
+                <string>\(value)</string>
+                """
+            }
     }
 }

@@ -19,7 +19,7 @@ extension Target {
         }
     }
 
-    func generateCommandLineApplicationCode(_ builder: CodeBuilder, _: Kit) {
+    func generateCommandLineApplicationCode(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.macos_command_line_application)
         builder.call(
             Rules.Apple.MacOS.Call.macos_command_line_application(
@@ -31,7 +31,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    // plist_default
+                    plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.macOS),
                 visibility: .public))
@@ -39,7 +39,7 @@ extension Target {
 
     // MARK: Private
 
-    private func buildWatch(_ builder: CodeBuilder, _: Kit) {
+    private func buildWatch(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.watchos_application)
         builder.call(
             Rules.Apple.WatchOS.Call.watchos_application(
@@ -52,7 +52,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    plist_default
+                    plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.watchOS),
                 resources: .build {
@@ -78,7 +78,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    plist_default
+                    plistDefault(kit)
                 },
                 // "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
                 minimum_os_version: prefer(\.platform.iOS),
@@ -91,7 +91,7 @@ extension Target {
                 visibility: .public))
     }
 
-    private func buildMac(_ builder: CodeBuilder, _: Kit) {
+    private func buildMac(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.macos_application)
         builder.call(
             Rules.Apple.MacOS.Call.macos_application(
@@ -104,13 +104,13 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    plist_default
+                    plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.macOS),
                 visibility: .public))
     }
 
-    private func buildTV(_ builder: CodeBuilder, _: Kit) {
+    private func buildTV(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.tvos_application)
         builder.call(
             Rules.Apple.TVOS.Call.tvos_application(
@@ -123,7 +123,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    plist_default
+                    plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.tvOS),
                 resources: .build {
@@ -132,7 +132,7 @@ extension Target {
                 visibility: .public))
     }
 
-    private var appIcons: Starlark.Value? {
+    var appIcons: Starlark.Value? {
         guard let iconName = prefer(\.assetCatalog.appIconName) else { return nil }
         let iconGlobs = assets.map { asset in
             "\(asset)/\(iconName).appiconset/**"
