@@ -110,7 +110,11 @@ public struct RepoEnumFile: Equatable {
         let cases = tags.map { #"        case \#($0.caseName) = "\#($0.normalizedVersion)""# }
             .joined(separator: "\n")
 
-        let body = cases.isEmpty ? "" : "\(cases)\n"
+        let latest = tags.first.map { tag in
+            "        static let latest: \(source.name) = .\(tag.caseName)\n\n"
+        } ?? ""
+
+        let body = cases.isEmpty ? "" : "\(latest)\(cases)\n"
         return """
         extension Repo {
             /// \(source.url)
