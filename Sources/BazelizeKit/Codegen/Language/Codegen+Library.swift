@@ -69,6 +69,7 @@ extension Target {
                     xibs
                     storyboards
                 },
+                enable_modules: prefer(\.enableModules),
                 hdrs: .build {
                     moduleHeaderFiles(project: project)
                     /// A mixed target gets the bridging header's declarations through
@@ -80,7 +81,7 @@ extension Target {
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: frameworksSDK,
-                swift_copts: moduleSwiftCopts,
+                swift_copts: moduleSwiftCopts(project: project),
                 swift_defines: defines(project: project),
                 swift_srcs: .build {
                     srcs_swift

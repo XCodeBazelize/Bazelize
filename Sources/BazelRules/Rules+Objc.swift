@@ -50,6 +50,7 @@ extension Rules.Objc {
             alwayslink: Bool? = nil,
             copts: [String]? = nil,
             defines: [String]? = nil,
+            enable_modules: Bool? = nil,
             includes: [String]? = nil,
             linkopts: [String]? = nil,
             module_map: Starlark.Label? = nil,
@@ -74,6 +75,7 @@ extension Rules.Objc {
                 if let alwayslink { "alwayslink" => alwayslink }
                 if let copts { "copts" => copts }
                 if let defines { "defines" => defines }
+                if let enable_modules { "enable_modules" => enable_modules }
                 if let includes { "includes" => includes }
                 if let linkopts { "linkopts" => linkopts }
                 if let module_map { "module_map" => module_map }

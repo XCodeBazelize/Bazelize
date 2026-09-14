@@ -15,7 +15,6 @@ extension Target {
     func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, aliasPublic: Bool = true) {
         let project = kit.project
         builder.load(.objc_library)
-        /// "enable_modules" => select(\.enableModules).starlark
         builder.call(
             Rules.Objc.Call.objc_library(
                 name: "\(name)_objc",
@@ -39,6 +38,7 @@ extension Target {
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
                 ],
+                enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
