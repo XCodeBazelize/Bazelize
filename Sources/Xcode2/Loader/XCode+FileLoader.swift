@@ -14,6 +14,7 @@ enum KnownFileType: String {
     case cppHeader = "sourcecode.cpp.h"
     case metal = "sourcecode.metal"
     case staticLibrary = "archive.ar"
+    case dynamicLibrary = "compiled.mach-o.dylib"
     case xib = "file.xib"
     case storyboard = "file.storyboard"
     case xcassets = "folder.assetcatalog"
@@ -34,6 +35,7 @@ enum KnownFileType: String {
         case "hh", "hpp", "hxx": self = .cppHeader
         case "metal": self = .metal
         case "a": self = .staticLibrary
+        case "dylib": self = .dynamicLibrary
         case "xib": self = .xib
         case "storyboard": self = .storyboard
         case "xcassets": self = .xcassets
@@ -85,6 +87,16 @@ struct FileLoader {
             .replacingOccurrences(of: ".xcframework", with: "")
     }
 
+    var sdkFrameworkName: String? {
+        guard isSDKFramework else { return nil }
+        return frameworkName
+    }
+
+    var sdkDylibName: String? {
+        guard isSDKDylib, let name else { return nil }
+        return Path(name).lastComponentWithoutExtension
+    }
+
     var frameworkIdentity: String? {
         guard let name else { return nil }
 
@@ -105,7 +117,18 @@ struct FileLoader {
 
     var isSDKFramework: Bool {
         sourceTree == PBXSourceTree.sdkRoot.description ||
-            sourceTree == PBXSourceTree.developerDir.description
+            sourceTree == PBXSourceTree.developerDir.description ||
+            fullPath?.hasPrefix("/System/Library/Frameworks/") == true ||
+            fullPath?.hasPrefix("/System/Library/PrivateFrameworks/") == true
+    }
+
+    var isSDKDylib: Bool {
+        typedFileType == .dynamicLibrary && (
+            sourceTree == PBXSourceTree.sdkRoot.description ||
+                sourceTree == PBXSourceTree.developerDir.description ||
+                fullPath?.hasPrefix("/usr/lib/") == true ||
+                fullPath?.hasPrefix("/System/iOSSupport/usr/lib/") == true
+        )
     }
 
     private var ref: PBXFileReference? {
@@ -126,7 +149,13 @@ struct FileLoader {
     }
 
     func label(buildPhase: String?) -> String? {
-        if buildPhase == BuildPhase.frameworks.rawValue, canUsePrebuiltLabel {
+        if
+            buildPhase == BuildPhase.frameworks.rawValue,
+            canUsePrebuiltLabel,
+            typedFileType != .dynamicLibrary,
+            !isSDKFramework,
+            !isSDKDylib
+        {
             return project.transformToLabel(relativePath, .prebuilt)
         }
         return project.transformToLabel(
@@ -140,7 +169,7 @@ struct FileLoader {
         }
 
         guard let name else { return false }
-        return name.hasSuffix(".a")
+        return name.hasSuffix(".a") || name.hasSuffix(".dylib")
     }
 
     private var typedFileType: KnownFileType? {
@@ -212,14 +241,14 @@ extension KnownFileType {
             return .header
         case .xib, .storyboard, .xcassets, .strings, .stringsdict, .plist:
             return .resource
-        case .staticLibrary, .xcframework, .framework:
+        case .staticLibrary, .dynamicLibrary, .xcframework, .framework:
             return .binary
         }
     }
 
     fileprivate var isBinaryArtifact: Bool {
         switch self {
-        case .staticLibrary, .xcframework, .framework:
+        case .staticLibrary, .dynamicLibrary, .xcframework, .framework:
             return true
         default:
             return false

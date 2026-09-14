@@ -16,7 +16,11 @@ extension Bazel {
         }
 
         mutating func setup(_ kit: Kit) {
-            let imported = kit.project.targets.flatMap(\.files.frameworks)
+            let imported = kit.project.targets
+                .flatMap(\.files.frameworks)
+                .filter { file in
+                    file.label?.hasPrefix("//Prebuilt:") == true
+                }
 
             let frameworks = imported.filter { file in
                 file.fileType == "wrapper.framework"

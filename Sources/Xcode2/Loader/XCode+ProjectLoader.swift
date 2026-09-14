@@ -158,7 +158,15 @@ extension ProjectLoader {
     {
         guard let path = relativePath else { return nil }
 
-        return "//\(kind.packageName):\(path)"
+        let targetName: String
+        switch kind {
+        case .source:
+            targetName = path
+        case .prebuilt:
+            targetName = Path(path).lastComponentWithoutExtension
+        }
+
+        return "//\(kind.packageName):\(targetName)"
     }
 
     static func mergeLocalPackages(

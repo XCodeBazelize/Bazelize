@@ -53,4 +53,24 @@ struct ProjectLoaderTests {
         #expect(target.prefer(\.platform.macOS) == "11")
     }
 
+    @Test
+    func classifiesIINAFrameworkDependencies() throws {
+        let current = Path(#filePath)
+            .parent()
+            .parent()
+            .parent()
+        let projectPath = current + "app/iina/IINA.xcodeproj"
+
+        let project = try XCode.Project.load(path: projectPath, preferConfig: "Release")
+        let target = try #require(project.targets.first { $0.name == "iina" })
+
+        #expect(target.dependencies.sdkFrameworks.contains("CoreDisplay"))
+        #expect(target.dependencies.sdkFrameworks.contains("PIP"))
+        #expect(!target.dependencies.frameworks.contains("CoreDisplay.framework"))
+        #expect(!target.dependencies.frameworks.contains("PIP.framework"))
+        #expect(!target.dependencies.frameworks.contains("//Prebuilt:libX11.6"))
+        #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libX11.6.dylib" })
+        #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libXau.6.dylib" })
+        #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libXdmcp.6.dylib" })
+    }
 }

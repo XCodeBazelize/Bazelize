@@ -44,8 +44,11 @@ extension Target {
                     ".",
                 ],
                 module_name: name,
+                sdk_dylibs: dylibsSDK,
+                sdk_frameworks: frameworksSDK,
                 testonly: isTest,
-                visibility: .private))
+                visibility: .private,
+                weak_sdk_frameworks: weakFrameworksSDK))
 
         builder.call(
             Rules.Builtin.Call.alias(

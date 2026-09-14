@@ -84,7 +84,9 @@ struct TargetSummaryFormatterTests {
                         packagePath: "../Local1"),
                 ],
                 frameworks: ["//Prebuilt:SVProgressHUD"],
-                sdkFrameworks: ["SwiftUI", "UIKit"]))
+                sdkDylibs: [],
+                sdkFrameworks: ["SwiftUI", "UIKit"],
+                weakSDKFrameworks: []))
 
         let project = XCode.Project(
             name: "Example",

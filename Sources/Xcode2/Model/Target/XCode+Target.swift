@@ -127,6 +127,14 @@ extension XCode.Target {
         dependencies.sdkFrameworks
     }
 
+    public var dylibsSDK: [String] {
+        dependencies.sdkDylibs
+    }
+
+    public var weakFrameworksSDK: [String] {
+        dependencies.weakSDKFrameworks
+    }
+
     public var selectedSettings: XCode.BuildSettings {
         if let preferConfig, let settings = configs[preferConfig] {
             return settings

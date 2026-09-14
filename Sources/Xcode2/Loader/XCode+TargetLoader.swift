@@ -103,7 +103,8 @@ struct TargetLoader {
         let frameworks = frameworkBuildFiles.compactMap { buildFile -> String? in
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
-            guard !wrapped.isSDKFramework else { return nil }
+            guard !wrapped.isSDKFramework, !wrapped.isSDKDylib else { return nil }
+            guard wrapped.fileType != "compiled.mach-o.dylib" else { return nil }
 
             if let identity = wrapped.frameworkIdentity, targetDependencyIdentities.contains(identity) {
                 return nil
@@ -123,7 +124,23 @@ struct TargetLoader {
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
             guard wrapped.isSDKFramework else { return nil }
-            return wrapped.frameworkName
+            guard !(buildFile.attributes ?? []).contains("Weak") else { return nil }
+            return wrapped.sdkFrameworkName
+        }
+
+        let weakSDKFrameworks = frameworkBuildFiles.compactMap { buildFile -> String? in
+            guard let file = buildFile.file else { return nil }
+            let wrapped = FileLoader(native: file, project: project)
+            guard wrapped.isSDKFramework else { return nil }
+            guard (buildFile.attributes ?? []).contains("Weak") else { return nil }
+            return wrapped.sdkFrameworkName
+        }
+
+        let sdkDylibs = frameworkBuildFiles.compactMap { buildFile -> String? in
+            guard let file = buildFile.file else { return nil }
+            let wrapped = FileLoader(native: file, project: project)
+            guard wrapped.fileType == KnownFileType.dynamicLibrary.rawValue else { return nil }
+            return wrapped.sdkDylibName ?? wrapped.name.flatMap { Path($0).lastComponentWithoutExtension }
         }
 
         let packageProducts = (native.packageProductDependencies ?? []).map { dependency in
@@ -137,7 +154,9 @@ struct TargetLoader {
             targets: Set(targetDependencies).sorted(),
             packageProducts: unique(packageProducts) { "\($0.productName)|\($0.package ?? "")" },
             frameworks: Set(frameworks.compactMap { $0 }).sorted(),
-            sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted())
+            sdkDylibs: Set(sdkDylibs.compactMap { $0 }).sorted(),
+            sdkFrameworks: Set(sdkFrameworks.compactMap { $0 }).sorted(),
+            weakSDKFrameworks: Set(weakSDKFrameworks.compactMap { $0 }).sorted())
     }
 
     private var selectedConfig: XCode.BuildSettings? {
