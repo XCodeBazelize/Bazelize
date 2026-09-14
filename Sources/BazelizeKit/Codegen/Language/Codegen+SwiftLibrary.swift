@@ -1,7 +1,11 @@
 extension Target {
     // MARK: Internal
 
-    func generateSwiftLibrary(_ builder: CodeBuilder, _ kit: Kit) {
+    func generateSwiftLibrary(
+        _ builder: CodeBuilder,
+        _ kit: Kit,
+        extraDeps: [Starlark.Label] = [])
+    {
         let project = kit.project
         let plugin = kit.plugins.compactMap {
             $0[name]
@@ -18,11 +22,12 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
-                module_name: name,
+                module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
                 },
                 deps: .build {
+                    extraDeps
                     linkedFrameworksLibrary(project: project)
                     applicationHost(project: project)
                     plugin
@@ -48,7 +53,7 @@ extension Target {
 
     // MARK: Private
 
-    private func defines(project: Project) -> Starlark.Value {
+    func defines(project: Project) -> Starlark.Value {
         select(\.swiftDefine, project: project).map { text -> [String] in
             let flags: [String] = (text ?? "").split(separator: " ").map(String.init)
 
@@ -78,7 +83,7 @@ extension Target {
     /// TEST_HOST
     ///     $(BUILT_PRODUCTS_DIR)/Example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example
     ///     build/Debug-iphoneos/Example.app//Example
-    private func applicationHost(project _: Project) -> String? {
+    func applicationHost(project _: Project) -> String? {
         guard let host = prefer(\.testHost) else { return nil }
         guard let _ = prefer(\.bundleLoader) else { return nil }
         guard let targetName = host.components(separatedBy: "/").last else { return nil }

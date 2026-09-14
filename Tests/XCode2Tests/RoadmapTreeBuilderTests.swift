@@ -109,3 +109,66 @@ struct RoadmapTreeBuilderTests {
         #expect(!appBuild.contains("//Targets/IceCubesShareExtension:IceCubesShareExtension_library"))
     }
 
+    @Test
+    func iinaTargetsGenerateSanitizedModuleNamesAndMacAppRules() async throws {
+        let current = Path(#filePath)
+            .parent()
+            .parent()
+            .parent()
+        let projectPath = current + "app/iina/IINA.xcodeproj"
+
+        let output = Path(NSTemporaryDirectory()) + UUID().uuidString
+        defer { try? output.delete() }
+
+        let kit = try await Kit(projectPath, "Release", outputPath: output)
+        try await kit.run(projectPath)
+
+        let cliBuild = try String(contentsOfFile: (output + "Targets/iina-cli/BUILD").string)
+        #expect(cliBuild.contains("module_name = \"iina_cli\""))
+        #expect(cliBuild.contains("minimum_os_version = \"11\""))
+
+        let pluginBuild = try String(contentsOfFile: (output + "Targets/iina-plugin/BUILD").string)
+        #expect(pluginBuild.contains("module_name = \"iina_plugin\""))
+
+        let appBuild = try String(contentsOfFile: (output + "Targets/iina/BUILD").string)
+        #expect(appBuild.contains("mixed_language_library("))
+        #expect(appBuild.contains("name = \"iina_mixed\""))
+        #expect(appBuild.contains("module_name = \"iina\""))
+        #expect(appBuild.contains("app_icons = glob(["))
+        #expect(appBuild.contains("Sources/iina/Assets.xcassets/AppIcon.appiconset/**"))
+        #expect(appBuild.contains("sdk_frameworks = ["))
+        #expect(appBuild.contains("\"CoreDisplay\""))
+        #expect(appBuild.contains("\"PIP\""))
+        #expect(!appBuild.contains("\"CoreDisplay.framework\""))
+        #expect(!appBuild.contains("\"PIP.framework\""))
+        #expect(appBuild.contains("sdk_dylibs = ["))
+        #expect(appBuild.contains("\"libX11.6\""))
+        #expect(appBuild.contains("\"libXau.6\""))
+        #expect(appBuild.contains("\"libXdmcp.6\""))
+        #expect(!appBuild.contains("cc_import("))
+        #expect(!appBuild.contains("additional_contents = {"))
+        #expect(appBuild.contains("@swiftpkg_grmustache.swift//:Mustache"))
+        #expect(appBuild.contains("macos_application("))
+        #expect(appBuild.contains("minimum_os_version = \"11\""))
+
+        let nightlyOutput = Path(NSTemporaryDirectory()) + UUID().uuidString
+        defer { try? nightlyOutput.delete() }
+
+        let nightlyKit = try await Kit(projectPath, "Nightly", outputPath: nightlyOutput)
+        try await nightlyKit.run(projectPath)
+
+        let nightlyBuild = try String(contentsOfFile: (nightlyOutput + "Targets/iina/BUILD").string)
+        #expect(nightlyBuild.contains("Sources/iina/Assets.xcassets/AppIconNightly.appiconset/**"))
+
+        let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string)
+        #expect(!prebuiltBuild.contains("libX11.6"))
+        #expect(!prebuiltBuild.contains("libXau.6"))
+        #expect(!prebuiltBuild.contains("libXdmcp.6"))
+        #expect(!prebuiltBuild.contains("name = \"PIP\""))
+        #expect(!prebuiltBuild.contains("name = \"CoreDisplay\""))
+
+        let module = try String(contentsOfFile: (output + "MODULE.bazel").string)
+        #expect(module.contains("swiftpkg_grmustache.swift"))
+        #expect(!module.contains("swiftpkg_swiftpkg_"))
+    }
+}

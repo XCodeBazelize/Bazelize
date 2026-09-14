@@ -12,7 +12,7 @@ import Starlark
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/7
 
 extension Target {
-    func generateObjcLibrary(_ builder: CodeBuilder, _: Kit) {
+    func generateObjcLibrary(_ builder: CodeBuilder, _: Kit, aliasPublic: Bool = true) {
         builder.load(.objc_library)
         /// "enable_modules" => select(\.enableModules).starlark
         builder.call(
@@ -36,24 +36,26 @@ extension Target {
                     "-fblocks",
                     "-fobjc-arc",
                     "-fPIC",
-                    "-fmodule-name=\(name)",
+                    "-fmodule-name=\(codegenModuleName)",
                 ],
                 includes: [
                     /// public header "."
                     /// https://github.com/bazelbuild/bazel/issues/92
                     ".",
                 ],
-                module_name: name,
+                module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: frameworksSDK,
                 testonly: isTest,
                 visibility: .private,
                 weak_sdk_frameworks: weakFrameworksSDK))
 
-        builder.call(
-            Rules.Builtin.Call.alias(
-                name: "\(name)_library",
-                actual: .named("\(name)_objc"),
-                visibility: .public))
+        if aliasPublic {
+            builder.call(
+                Rules.Builtin.Call.alias(
+                    name: "\(name)_library",
+                    actual: .named("\(name)_objc"),
+                    visibility: .public))
+        }
     }
 }
