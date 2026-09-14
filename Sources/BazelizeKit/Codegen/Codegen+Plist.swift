@@ -79,7 +79,7 @@ extension Target {
     private func plistContent(project: Project?) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
-        return Self.entries(nodes, dropping: appIcons == nil ? [] : Self.iconKeys)
+        return Self.entries(nodes, dropping: appIcons(project: project) == nil ? [] : Self.iconKeys)
             .withNewLine
             .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
             .resolvingBuildSettingReferences(with: selectedSettings)
