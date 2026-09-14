@@ -76,7 +76,14 @@ extension Target {
 
         /// "." keeps a public header reachable by its own relative path.
         /// https://github.com/bazelbuild/bazel/issues/92
-        return Array(Set(directories + ["."])).sorted()
+        /// "." keeps a public header reachable by its own relative path.
+        /// https://github.com/bazelbuild/bazel/issues/92
+        ///
+        /// ".." is the `Targets/` root: a package is named after its target, so it
+        /// makes `#import <Module/Module-Swift.h>` — the generated Swift header Xcode
+        /// publishes inside the framework — and cross-target framework-style imports
+        /// resolve, in both the source and the generated file tree.
+        return Array(Set(directories + [".", ".."])).sorted()
     }
 
 
