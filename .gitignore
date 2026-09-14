@@ -185,3 +185,12 @@ cache/
 .vendor/
 app/
 Generated/
+
+# bazelize output inside the iOS fixture
+fixture/iOS/BUILD
+fixture/iOS/*/BUILD
+fixture/iOS/MODULE.bazel
+fixture/iOS/MODULE.bazel.lock
+fixture/iOS/Package.swift
+fixture/iOS/Package.resolved
+fixture/iOS/config.bazelrc
