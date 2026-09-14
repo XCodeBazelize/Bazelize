@@ -11,9 +11,11 @@ extension Target {
             return sdk
         }
 
-        /// `SDKROOT = auto` means the target is multiplatform; Xcode picks by device
-        /// family, and an iPhone family is the only one Bazel needs a separate rule
-        /// for here.
+        /// `SDKROOT = auto` means the target is multiplatform: `SUPPORTED_PLATFORMS`
+        /// narrows it down, and failing that an iPhone device family does.
+        if let platform = prefer(\.platform.supportedPlatforms)?.first, platform != .auto {
+            return platform
+        }
         if prefer(\.platform.deviceFamily)?.contains(.iphone) == true {
             return .iOS
         }

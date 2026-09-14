@@ -23,6 +23,13 @@ extension XCode.BuildSettings {
             SDK(rawValue: settings["SDKROOT"] ?? "")
         }
 
+        /// `SUPPORTED_PLATFORMS`, which decides the platform when `SDKROOT = auto`.
+        public var supportedPlatforms: [SDK] {
+            (settings["SUPPORTED_PLATFORMS"] ?? "")
+                .split(separator: " ")
+                .compactMap { SDK(rawValue: String($0)) }
+        }
+
         public var iOS: String? {
             settings["IPHONEOS_DEPLOYMENT_TARGET"]
         }
