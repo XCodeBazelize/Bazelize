@@ -44,8 +44,25 @@ extension Target {
         return productType.contains("app-extension")
     }
 
+    /// A product that carries its own entry point or is a standalone bundle cannot be
+    /// linked into another target: Xcode embeds it instead, and linking it would
+    /// duplicate `main`.
+    fileprivate func isLinkableTarget(_ name: String, in project: Project) -> Bool {
+        guard let productType = project.target(named: name)?.productType else { return true }
+
+        switch productType {
+        case "com.apple.product-type.application",
+             "com.apple.product-type.tool",
+             "com.apple.product-type.bundle.unit-test",
+             "com.apple.product-type.bundle.ui-testing":
+            return false
+        default:
+            return !productType.contains("app-extension")
+        }
+    }
+
     fileprivate func linkedTargetDependencyNames(project: Project) -> [String] {
-        dependencies.targets.filter { !isExtensionTarget($0, in: project) }
+        dependencies.targets.filter { isLinkableTarget($0, in: project) }
     }
 
     fileprivate func embeddedExtensionTargetNames(project: Project) -> [String] {
