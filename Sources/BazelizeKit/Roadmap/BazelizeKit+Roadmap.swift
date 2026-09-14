@@ -51,6 +51,29 @@ extension Bazel {
                     materializedDirectories.insert(normalizedPath)
                 }
             }
+
+            try prepareSiblingHeaders(target: target, project: project, sourcesRoot: sourcesRoot)
+        }
+
+        /// Xcode's implicit header map makes every header in the target reachable by
+        /// file name, even when it belongs to no build phase. Bazel needs the file
+        /// declared, so headers next to the target's compiled sources come along.
+        private func prepareSiblingHeaders(
+            target: Target,
+            project: Project,
+            sourcesRoot: Path) throws
+        {
+            let workspace = Path(project.workspacePath)
+
+            for relativePath in target.siblingHeaderPaths(project: project) {
+                let source = workspace + relativePath
+                guard source.exists, !source.isSelfReferentialSymlink else { continue }
+
+                let destination = sourcesRoot + relativePath
+                guard !destination.exists, !destination.isSymlink else { continue }
+
+                try materialize(source: source, destination: destination)
+            }
         }
 
         private func preparePrebuiltFiles(project: XCode2.XCode.Project) throws {

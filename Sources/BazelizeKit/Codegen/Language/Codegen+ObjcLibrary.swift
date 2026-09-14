@@ -12,7 +12,8 @@ import Starlark
 // TODO: https://github.com/XCodeBazelize/Bazelize/issues/7
 
 extension Target {
-    func generateObjcLibrary(_ builder: CodeBuilder, _: Kit, aliasPublic: Bool = true) {
+    func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, aliasPublic: Bool = true) {
+        let project = kit.project
         builder.load(.objc_library)
         /// "enable_modules" => select(\.enableModules).starlark
         builder.call(
@@ -23,11 +24,11 @@ extension Target {
                     srcs_cpp
                     srcs_objc
                     srcs_objcpp
+                    internalHeaderFiles(project: project)
                 },
                 hdrs: .build {
                     // FIXME: (@yume190) TODO: pch
-                    headers
-                    hpps
+                    moduleHeaderFiles(project: project)
                 },
                 deps: .build {
                     frameworksLibrary
@@ -38,11 +39,7 @@ extension Target {
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
                 ],
-                includes: [
-                    /// public header "."
-                    /// https://github.com/bazelbuild/bazel/issues/92
-                    ".",
-                ],
+                includes: headerIncludes(project: project),
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: frameworksSDK,

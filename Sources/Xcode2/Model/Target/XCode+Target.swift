@@ -59,6 +59,24 @@ extension XCode.Target {
         filePaths(files.headers)
     }
 
+    /// Headers Xcode copies into the product, i.e. the ones that end up in the
+    /// module Swift and dependents import.
+    public var exportedHeaders: [String] {
+        filePaths(
+            files.headers.filter { header in
+                header.attributes.contains("Public") || header.attributes.contains("Private")
+            })
+    }
+
+    /// Headers that stay internal to the target: reachable while compiling its own
+    /// sources, never part of the module.
+    public var projectHeaders: [String] {
+        filePaths(
+            files.headers.filter { header in
+                !header.attributes.contains("Public") && !header.attributes.contains("Private")
+            })
+    }
+
     public var hpps: [String] {
         headers.filter { $0.hasSuffix(".hpp") || $0.hasSuffix(".hh") || $0.hasSuffix(".hxx") }
     }

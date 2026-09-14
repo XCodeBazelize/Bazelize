@@ -54,12 +54,13 @@ extension Target {
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ],
+                ] + clangDialectCopts,
                 clang_srcs: .build {
                     srcs_c
                     srcs_cpp
                     srcs_objc
                     srcs_objcpp
+                    internalHeaderFiles(project: project)
                 },
                 data: .build {
                     if !assets.isEmpty {
@@ -69,12 +70,17 @@ extension Target {
                     storyboards
                 },
                 hdrs: .build {
-                    headers
-                    hpps
+                    moduleHeaderFiles(project: project)
+                    /// A mixed target gets the bridging header's declarations through
+                    /// its own clang module: `swiftc` rejects `-import-objc-header`
+                    /// while building a module.
+                    bridgingHeader
                 },
+                includes: headerIncludes(project: project),
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: frameworksSDK,
+                swift_copts: moduleSwiftCopts,
                 swift_defines: defines(project: project),
                 swift_srcs: .build {
                     srcs_swift
@@ -95,4 +101,5 @@ extension Target {
                 actual: .named("\(name)_mixed"),
                 visibility: .public))
     }
+
 }
