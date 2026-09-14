@@ -112,7 +112,7 @@ extension XCode {
 
 extension XCode.Target {
     fileprivate var pathsForRoadmapTree: [String] {
-        let allFiles = files.sources + files.headers + files.resources + files.others
+        let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
         let candidates = allFiles.compactMap(\.roadmapRelativePath).sorted {
             let lhsDepth = $0.split(separator: "/").count
             let rhsDepth = $1.split(separator: "/").count
