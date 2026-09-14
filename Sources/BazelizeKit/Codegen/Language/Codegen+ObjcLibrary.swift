@@ -31,7 +31,7 @@ extension Target {
                     prefixHeader
                 },
                 deps: .build {
-                    frameworksLibrary
+                    linkedFrameworksLibrary(project: project)
                     testHostLibraries(project: project)
                 },
                 copts: [
