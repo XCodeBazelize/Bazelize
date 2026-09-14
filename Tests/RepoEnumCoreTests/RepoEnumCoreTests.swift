@@ -37,7 +37,7 @@ func githubErrorIsReadable() async {
     config.protocolClasses = [MockURLProtocol.self]
     let session = URLSession(configuration: config)
 
-    await MockURLProtocolStorage.shared.setHandler { request in
+    MockURLProtocolStorage.shared.setHandler { request in
         let body = #"{"message":"API rate limit exceeded"}"#.data(using: .utf8)!
         let response = HTTPURLResponse(
             url: try #require(request.url),
@@ -54,6 +54,52 @@ func githubErrorIsReadable() async {
     }
 }
 
+@Test
+func registryVersionsSkipYankedReleases() async throws {
+    let config = URLSessionConfiguration.ephemeral
+    config.protocolClasses = [RegistryMockURLProtocol.self]
+    let session = URLSession(configuration: config)
+
+    let client = BazelRegistryClient(session: session)
+    let versions = try await client.versions(forModule: "rules_cc")
+
+    #expect(versions == ["0.2.20", "0.2.22"])
+}
+
+// MARK: - RegistryMockURLProtocol
+
+/// Serves one fixed BCR metadata payload; kept separate from `MockURLProtocol`
+/// so the two network tests can run in parallel without sharing a handler.
+private final class RegistryMockURLProtocol: URLProtocol, @unchecked Sendable {
+    private static let payload = #"""
+    {
+        "versions": ["0.2.20", "0.2.21", "0.2.22"],
+        "yanked_versions": {"0.2.21": "broken release"}
+    }
+    """#
+
+    override class func canInit(with _: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        let response = HTTPURLResponse(
+            url: request.url!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: ["Content-Type": "application/json"])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(Self.payload.utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() { }
+}
+
 // MARK: - MockURLProtocol
 
 private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
@@ -66,15 +112,13 @@ private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
     }
 
     override func startLoading() {
-        Task {
-            do {
-                let (response, data) = try await MockURLProtocolStorage.shared.handler(request)
-                client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-                client?.urlProtocol(self, didLoad: data)
-                client?.urlProtocolDidFinishLoading(self)
-            } catch {
-                client?.urlProtocol(self, didFailWithError: error)
-            }
+        do {
+            let (response, data) = try MockURLProtocolStorage.shared.handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
         }
     }
 
@@ -83,18 +127,20 @@ private final class MockURLProtocol: URLProtocol, @unchecked Sendable {
 
 // MARK: - MockURLProtocolStorage
 
-private actor MockURLProtocolStorage {
+private final class MockURLProtocolStorage: @unchecked Sendable {
     static let shared = MockURLProtocolStorage()
 
+    private let lock = NSLock()
     private var currentHandler: @Sendable (URLRequest) throws -> (HTTPURLResponse, Data) = { _ in
         fatalError("Handler not set")
     }
 
     func setHandler(_ handler: @escaping @Sendable (URLRequest) throws -> (HTTPURLResponse, Data)) {
-        currentHandler = handler
+        lock.withLock { currentHandler = handler }
     }
 
     func handler(_ request: URLRequest) throws -> (HTTPURLResponse, Data) {
-        try currentHandler(request)
+        let handler = lock.withLock { currentHandler }
+        return try handler(request)
     }
 }

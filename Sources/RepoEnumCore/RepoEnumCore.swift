@@ -9,10 +9,16 @@ import Yams
 public struct RepoSource: Codable, Sendable, Equatable {
     public let name: String
     public let url: String
+    /// Bazel Central Registry module name.
+    ///
+    /// Present means versions come from the registry instead of the repository's
+    /// git tags, because `bazel_dep` can only resolve what the registry serves.
+    public let module: String?
 
-    public init(name: String, url: String) {
+    public init(name: String, url: String, module: String? = nil) {
         self.name = name
         self.url = url
+        self.module = module
     }
 }
 
@@ -67,12 +73,19 @@ public protocol GitHubTagFetching: Sendable {
     func tags(for repositoryURL: String) async throws -> [String]
 }
 
+// MARK: - ModuleVersionFetching
+
+public protocol ModuleVersionFetching: Sendable {
+    func versions(forModule module: String) async throws -> [String]
+}
+
 // MARK: - RepoEnumGeneratorError
 
 public enum RepoEnumGeneratorError: LocalizedError {
     case invalidArguments(String)
     case invalidGitHubURL(String)
     case githubRequestFailed(statusCode: Int, message: String)
+    case registryRequestFailed(module: String, statusCode: Int)
 
     public var errorDescription: String? {
         switch self {
@@ -82,6 +95,8 @@ public enum RepoEnumGeneratorError: LocalizedError {
             return "Invalid GitHub repository URL: \(url)"
         case .githubRequestFailed(let statusCode, let message):
             return "GitHub API request failed (\(statusCode)): \(message)"
+        case .registryRequestFailed(let module, let statusCode):
+            return "Bazel Central Registry request for \(module) failed (\(statusCode))."
         }
     }
 }
@@ -199,15 +214,60 @@ public struct GitHubTagClient: GitHubTagFetching {
     }
 }
 
+// MARK: - BazelRegistryClient
+
+/// Reads published module versions from the Bazel Central Registry.
+public struct BazelRegistryClient: ModuleVersionFetching {
+    private struct Metadata: Decodable {
+        let versions: [String]
+        let yanked_versions: [String: String]?
+    }
+
+    private let session: URLSession
+    private let registry: URL
+
+    public init(
+        session: URLSession = .shared,
+        registry: URL = URL(string: "https://bcr.bazel.build")!)
+    {
+        self.session = session
+        self.registry = registry
+    }
+
+    public func versions(forModule module: String) async throws -> [String] {
+        let url = registry
+            .appendingPathComponent("modules")
+            .appendingPathComponent(module)
+            .appendingPathComponent("metadata.json")
+
+        let (data, response) = try await session.data(from: url)
+
+        if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
+            throw RepoEnumGeneratorError.registryRequestFailed(
+                module: module,
+                statusCode: httpResponse.statusCode)
+        }
+
+        let metadata = try JSONDecoder().decode(Metadata.self, from: data)
+        let yanked = Set((metadata.yanked_versions ?? [:]).keys)
+        return metadata.versions.filter { !yanked.contains($0) }
+    }
+}
+
 // MARK: - RepoEnumGeneratorService
 
 public struct RepoEnumGeneratorService {
     private let client: GitHubTagFetching
+    private let registry: ModuleVersionFetching
     private let decoder = YAMLDecoder()
     private let fileManager = FileManager.default
 
-    public init(client: GitHubTagFetching = GitHubTagClient()) {
+    public init(
+        client: GitHubTagFetching = GitHubTagClient(),
+        registry: ModuleVersionFetching = BazelRegistryClient())
+    {
         self.client = client
+        self.registry = registry
     }
 
     public func generate(configFile: URL, outputDirectory: URL) async throws {
@@ -217,8 +277,12 @@ public struct RepoEnumGeneratorService {
         try fileManager.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
 
         for source in sources {
-            let rawTags = try await client.tags(for: source.url)
-            let tags = rawTags.compactMap(RepoVersionTag.init(rawTag:))
+            let rawVersions = if let module = source.module {
+                try await registry.versions(forModule: module)
+            } else {
+                try await client.tags(for: source.url)
+            }
+            let tags = rawVersions.compactMap(RepoVersionTag.init(rawTag:))
             let file = RepoEnumFile(source: source, tags: tags)
             let fileURL = outputDirectory.appendingPathComponent(file.filename)
             try file.content.write(to: fileURL, atomically: true, encoding: .utf8)
