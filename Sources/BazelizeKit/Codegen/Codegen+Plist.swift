@@ -290,36 +290,16 @@ extension Target {
     }
 
     /// `plisttool` substitutes only a handful of variables, so a default whose value
-    /// it cannot resolve has to be dropped: `macos_command_line_application` has no
-    /// bundled executable, and `PRODUCT_BUNDLE_PACKAGE_TYPE` is never substituted.
+    /// it cannot resolve has to be dropped: `macos_command_line_application` bundles
+    /// no executable.
     private var unsupportedDefaultPlistKeys: Set<String> {
         var keys: Set<String> = []
         if productType == "com.apple.product-type.tool" {
             keys.insert("CFBundleExecutable")
         }
-        if bundlePackageType == nil {
-            keys.insert("CFBundlePackageType")
-        }
         return keys
     }
 
-    /// The value Xcode derives for `PRODUCT_BUNDLE_PACKAGE_TYPE`.
-    private var bundlePackageType: String? {
-        switch productType {
-        case "com.apple.product-type.application":
-            return "APPL"
-        case "com.apple.product-type.framework",
-             "com.apple.product-type.framework.static":
-            return "FMWK"
-        case "com.apple.product-type.bundle",
-             "com.apple.product-type.bundle.unit-test",
-             "com.apple.product-type.bundle.ui-testing",
-             "com.apple.product-type.app-extension":
-            return "BNDL"
-        default:
-            return nil
-        }
-    }
 
     /// The target's own `Info.plist` is the source of truth Xcode uses, so a
     /// default derived from build settings must not restate those keys: `plisttool`
@@ -337,7 +317,6 @@ extension Target {
             /// values instead of a literal `$(SETTING)`.
             ("CFBundleVersion", settings.generatedPlist.currentProjectVersion ?? "1"),
             ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
-            ("CFBundlePackageType", bundlePackageType ?? ""),
             ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
             ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "1.0"),
         ]
