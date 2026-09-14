@@ -14,14 +14,14 @@ let package = Package(
     dependencies: [
         // Dependencies declare other packages that this package depends on.
 
-        .package(url: "https://github.com/tuist/XcodeProj", from: "9.10.1"),
+        .package(url: "https://github.com/tuist/XcodeProj", from: "9.16.0"),
         .package(url: "https://github.com/Flight-School/AnyCodable", from: "0.6.7"),
-        .package(url: "https://github.com/jpsim/Yams", from: "6.2.1"),
+        .package(url: "https://github.com/jpsim/Yams", from: "6.2.2"),
         .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
 
         .package(url: "https://github.com/yume190/SwiftCommand", from: "1.1.3"),
 
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
 
         /// tag: swift-DEVELOPMENT-SNAPSHOT-2023-01-28-a
         /// support async command
