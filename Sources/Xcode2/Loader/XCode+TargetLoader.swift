@@ -87,6 +87,7 @@ struct TargetLoader {
             bundleID: settings.metadata.bundleID,
             moduleName: settings.metadata.moduleName ?? settings.metadata.productName,
             infoPlist: settings.plist.infoPlist,
+            entitlements: settings.metadata.codeSignEntitlements,
             deploymentTargets: settings.platform.deploymentTargets,
             codeSign: .init(
                 developmentTeam: settings.metadata.developmentTeam,

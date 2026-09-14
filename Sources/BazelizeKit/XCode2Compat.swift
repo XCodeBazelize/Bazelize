@@ -28,9 +28,28 @@ extension Dictionary where Key == String, Value == BuildSettings {
     }
 }
 
+extension Project {
+    fileprivate func target(named name: String) -> Target? {
+        targets.first { $0.name == name }
+    }
+}
+
 extension Target {
     func select<T: Hashable>(_ keyPath: KeyPath<BuildSettings, T>, project _: Project) -> Starlark.Select<T> {
         configs.select(keyPath)
+    }
+
+    fileprivate func isExtensionTarget(_ name: String, in project: Project) -> Bool {
+        guard let productType = project.target(named: name)?.productType else { return false }
+        return productType.contains("app-extension")
+    }
+
+    fileprivate func linkedTargetDependencyNames(project: Project) -> [String] {
+        dependencies.targets.filter { !isExtensionTarget($0, in: project) }
+    }
+
+    fileprivate func embeddedExtensionTargetNames(project: Project) -> [String] {
+        dependencies.targets.filter { isExtensionTarget($0, in: project) }
     }
 
     var frameworksLibrary: [Starlark.Label] {
@@ -55,5 +74,37 @@ extension Target {
             .sorted()
             .map(Starlark.Label.named)
         return Array(Set(targetLabels + frameworkLabels)).sorted { $0.text < $1.text }
+    }
+
+    func linkedFrameworksLibrary(project: Project) -> [Starlark.Label] {
+        let targetLabels = linkedTargetDependencyNames(project: project)
+            .sorted()
+            .map { target in
+                Starlark.Label.named("//Targets/\(target):\(target)_library")
+            }
+        let frameworkLabels = dependencies.frameworks
+            .sorted()
+            .map(Starlark.Label.named)
+        return Array(Set(targetLabels + frameworkLabels)).sorted { $0.text < $1.text }
+    }
+
+    func linkedFrameworks(project: Project) -> [Starlark.Label] {
+        let targetLabels = linkedTargetDependencyNames(project: project)
+            .sorted()
+            .map { target in
+                Starlark.Label.named("//Targets/\(target):\(target)")
+            }
+        let frameworkLabels = dependencies.frameworks
+            .sorted()
+            .map(Starlark.Label.named)
+        return Array(Set(targetLabels + frameworkLabels)).sorted { $0.text < $1.text }
+    }
+
+    func embeddedExtensions(project: Project) -> [Starlark.Label] {
+        embeddedExtensionTargetNames(project: project)
+            .sorted()
+            .map { target in
+                Starlark.Label.named("//Targets/\(target):\(target)")
+            }
     }
 }

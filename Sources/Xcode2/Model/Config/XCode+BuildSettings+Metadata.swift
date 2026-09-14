@@ -31,5 +31,9 @@ extension XCode.BuildSettings {
         public var codeSignIdentity: String? {
             settings["CODE_SIGN_IDENTITY"]
         }
+
+        public var codeSignEntitlements: String? {
+            settings["CODE_SIGN_ENTITLEMENTS"]
+        }
     }
 }

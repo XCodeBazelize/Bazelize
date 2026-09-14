@@ -26,6 +26,8 @@ extension Target {
             generateUnitTest(builder, kit)
         case "com.apple.product-type.bundle.ui-testing":
             generateUITest(builder, kit)
+        case "com.apple.product-type.app-extension":
+            generateExtension(builder, kit)
         default:
             Log.codeGenerate.warning("""
             Name: \(name, privacy: .public)

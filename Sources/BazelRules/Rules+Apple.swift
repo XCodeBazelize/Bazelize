@@ -153,6 +153,7 @@ extension Rules.Apple.IOS {
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            extensions: [Starlark.Label]? = nil,
             families: [String]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
@@ -170,6 +171,7 @@ extension Rules.Apple.IOS {
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let extensions { "extensions" => extensions }
                 if let families { "families" => families }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -275,6 +277,7 @@ extension Rules.Apple.IOS {
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
             families: [String]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
@@ -288,6 +291,7 @@ extension Rules.Apple.IOS {
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
                 if let families { "families" => families }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }

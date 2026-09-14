@@ -23,7 +23,7 @@ extension Target {
                     srcs_swift
                 },
                 deps: .build {
-                    frameworksLibrary
+                    linkedFrameworksLibrary(project: project)
                     applicationHost(project: project)
                     plugin
                     builtins

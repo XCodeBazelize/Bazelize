@@ -81,4 +81,31 @@ struct RoadmapTreeBuilderTests {
         #expect(module.contains("swift_deps = use_extension"))
         #expect(module.contains("swiftpkg_local1"))
     }
-}
+
+    @Test
+    func applicationEmbedsExtensionsInsteadOfLinkingThemAsRegularDeps() async throws {
+        let current = Path(#filePath)
+            .parent()
+            .parent()
+            .parent()
+        let projectPath = current + "app/IceCubesApp/IceCubesApp.xcodeproj"
+
+        let output = Path(NSTemporaryDirectory()) + UUID().uuidString
+        defer { try? output.delete() }
+
+        let kit = try await Kit(projectPath, nil, outputPath: output)
+        try await kit.run(projectPath)
+
+        let appBuild = try String(contentsOfFile: (output + "Targets/IceCubesApp/BUILD").string)
+        #expect(appBuild.contains("ios_application("))
+        #expect(appBuild.contains("extensions = ["))
+        #expect(appBuild.contains("//Targets/IceCubesActionExtension:IceCubesActionExtension"))
+        #expect(appBuild.contains("//Targets/IceCubesAppWidgetsExtensionExtension:IceCubesAppWidgetsExtensionExtension"))
+        #expect(appBuild.contains("//Targets/IceCubesNotifications:IceCubesNotifications"))
+        #expect(appBuild.contains("//Targets/IceCubesShareExtension:IceCubesShareExtension"))
+        #expect(!appBuild.contains("//Targets/IceCubesActionExtension:IceCubesActionExtension_library"))
+        #expect(!appBuild.contains("//Targets/IceCubesAppWidgetsExtensionExtension:IceCubesAppWidgetsExtensionExtension_library"))
+        #expect(!appBuild.contains("//Targets/IceCubesNotifications:IceCubesNotifications_library"))
+        #expect(!appBuild.contains("//Targets/IceCubesShareExtension:IceCubesShareExtension_library"))
+    }
+

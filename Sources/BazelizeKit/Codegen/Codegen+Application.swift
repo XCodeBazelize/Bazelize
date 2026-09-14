@@ -61,7 +61,8 @@ extension Target {
                 visibility: .public))
     }
 
-    private func buildIOS(_ builder: CodeBuilder, _: Kit) {
+    private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
+        let project = kit.project
         builder.load(.ios_application)
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
@@ -70,8 +71,9 @@ extension Target {
                 bundle_id: prefer(\.metadata.bundleID),
                 deps: .build {
                     ":\(name)_library"
-                    frameworks
+                    linkedFrameworks(project: project)
                 },
+                extensions: embeddedExtensions(project: project),
                 families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
                     plist_file

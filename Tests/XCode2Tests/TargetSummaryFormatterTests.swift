@@ -29,6 +29,7 @@ struct TargetSummaryFormatterTests {
                 bundleID: "com.example.Example",
                 moduleName: "Example",
                 infoPlist: "Example/Info.plist",
+                entitlements: "Example/Example.entitlements",
                 deploymentTargets: ["iOS": "16.0"],
                 codeSign: .init(
                     developmentTeam: nil,
