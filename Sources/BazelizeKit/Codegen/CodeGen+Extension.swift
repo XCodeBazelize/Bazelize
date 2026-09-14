@@ -37,6 +37,14 @@ extension Target {
                     plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.iOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
                 visibility: .public))
     }
 }
