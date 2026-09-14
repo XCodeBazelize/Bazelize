@@ -145,6 +145,11 @@ struct FileLoader {
         typedFileType == .dynamicLibrary || typedFileType == .dylibStub
     }
 
+    var existsOnDisk: Bool {
+        guard let fullPath else { return false }
+        return Path(fullPath).exists
+    }
+
     private var ref: PBXFileReference? {
         native as? PBXFileReference
     }

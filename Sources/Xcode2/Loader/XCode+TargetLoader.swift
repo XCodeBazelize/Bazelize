@@ -121,6 +121,10 @@ struct TargetLoader {
                 let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
                 label.hasPrefix("//Prebuilt:")
             {
+                /// A framework that only exists after a Carthage/CocoaPods/script
+                /// bootstrap cannot be imported, and referencing it anyway leaves the
+                /// generated workspace unloadable.
+                guard wrapped.existsOnDisk else { return nil }
                 return label
             }
 
