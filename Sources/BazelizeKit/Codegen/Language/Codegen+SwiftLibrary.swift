@@ -118,10 +118,16 @@ extension Target {
     /// TEST_HOST
     ///     $(BUILT_PRODUCTS_DIR)/Example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example
     ///     build/Debug-iphoneos/Example.app//Example
-    func applicationHost(project _: Project) -> String? {
+    func applicationHost(project: Project) -> String? {
         guard let host = prefer(\.testHost) else { return nil }
         guard let _ = prefer(\.bundleLoader) else { return nil }
         guard let targetName = host.components(separatedBy: "/").last else { return nil }
-        return "//Targets/\(targetName):\(targetName)_library"
+
+        let label = "//Targets/\(targetName):\(targetName)_library"
+        /// A test target usually also declares the host as a target dependency, and
+        /// Bazel rejects a duplicated label in `deps`.
+        guard !linkedFrameworksLibrary(project: project).contains(where: { $0.value == label }) else { return nil }
+
+        return label
     }
 }
