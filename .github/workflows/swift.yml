@@ -113,32 +113,43 @@ jobs:
       - name: Bazel Generation
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --project Example.xcodeproj
+          ../../bazelize --project Example.xcodeproj --output App
+
+      - name: Resolve SPM Deps
+        working-directory: fixture/iOS/App
+        run: |
+          swift package resolve
 
       - name: Update SPM Deps
-        working-directory: fixture/iOS
+        working-directory: fixture/iOS/App
         run: |
           bazel mod tidy
 
       - name: Build Application
-        working-directory: fixture/iOS
+        working-directory: fixture/iOS/App
         run: |
-          bazel build Example
-      
+          bazel build //Targets/Example
+
       - name: Copy IPA
-        working-directory: fixture/iOS
+        working-directory: fixture/iOS/App
         run: |
-          cp bazel-bin/Example/Example.ipa .
+          cp "$(bazel cquery //Targets/Example --output=files | grep '\.ipa$')" ../Example.ipa
 
       - name: Unit Test
-        working-directory: fixture/iOS
+        working-directory: fixture/iOS/App
         run: |
-          bazel test ExampleTests Framework1Tests Framework2Tests Framework3Tests
+          bazel test \
+            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="iPhone 17" \
+            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version=27.0 \
+            //Targets/ExampleTests \
+            //Targets/Framework1Tests \
+            //Targets/Framework2Tests \
+            //Targets/Framework3Tests
 
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v7
         with:
           name: iOS_Example.ipa
           path: fixture/iOS/Example.ipa
-          if-no-files-found: ignore # 'warn' or 'ignore' 
+          if-no-files-found: ignore # 'warn' or 'ignore'
  

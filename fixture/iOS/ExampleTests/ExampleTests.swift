@@ -10,6 +10,6 @@ import XCTest
 
 final class ExampleTests: XCTestCase {
     func testExample() throws {
-        XCTAssertEqual(test(), 0)
+        XCTAssertEqual(test(), 0b1111)
     }
 }
