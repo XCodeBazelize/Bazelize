@@ -50,6 +50,13 @@ extension Target {
     fileprivate func isLinkableTarget(_ name: String, in project: Project) -> Bool {
         guard let productType = project.target(named: name)?.productType else { return true }
 
+        /// A test bundle is the exception: Xcode loads it into the host process, so
+        /// the host's code has to be reachable. Bazel has no `-bundle_loader`
+        /// equivalent for a logic test, so the host is linked in.
+        if isTest, productType == "com.apple.product-type.application" {
+            return true
+        }
+
         switch productType {
         case "com.apple.product-type.application",
              "com.apple.product-type.tool",

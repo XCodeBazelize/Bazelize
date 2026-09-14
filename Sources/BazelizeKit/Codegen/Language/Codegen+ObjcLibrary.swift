@@ -32,7 +32,7 @@ extension Target {
                 },
                 deps: .build {
                     frameworksLibrary
-                    applicationHost(project: project)
+                    testHostLibraries(project: project)
                 },
                 copts: [
                     "-fblocks",

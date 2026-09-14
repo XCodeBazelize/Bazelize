@@ -95,7 +95,7 @@ extension Target {
                 weak_sdk_frameworks: weakFrameworksSDK,
                 deps: .build {
                     linkedFrameworksLibrary(project: project)
-                    applicationHost(project: project)
+                    testHostLibraries(project: project)
                     plugin
                     builtins
                 },
