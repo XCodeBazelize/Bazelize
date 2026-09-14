@@ -1,7 +1,18 @@
+
+BAZELIZE = ../../.build/debug/bazelize
+
 .PHONY: bazelize
 bazelize:
 	@bazelize --project Example.xcodeproj
+
 	@bazel mod tidy
+
+.PHONY: bazelize2
+bazelize2:
+	@$(BAZELIZE) --project Example.xcodeproj --output App
+	cd App && bazel mod tidy
+	cd App && bazel run //Targets/Example
+
 
 .PHONY: clear
 clear:
