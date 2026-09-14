@@ -58,6 +58,10 @@ struct FileLoader {
     let native: PBXFileElement
     unowned let project: ProjectLoader
 
+    /// A variant group's child resolves against the group, which carries no
+    /// directory of its own, so its path has to be supplied.
+    var pathOverride: String?
+
     var name: String? {
         native.name ?? native.path
     }
@@ -74,7 +78,8 @@ struct FileLoader {
     }
 
     var fullPath: String? {
-        try? native.fullPath(sourceRoot: project.workspacePath.string)
+        if let pathOverride { return pathOverride }
+        return try? native.fullPath(sourceRoot: project.workspacePath.string)
     }
 
     var fileType: String? {

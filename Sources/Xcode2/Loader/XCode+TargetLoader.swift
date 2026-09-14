@@ -330,12 +330,35 @@ struct TargetLoader {
     }
 
     private func fileModels(from buildFiles: [PBXBuildFile], buildPhase: BuildPhase) -> [XCode.File] {
-        buildFiles.compactMap { buildFile in
-            guard let file = buildFile.file else { return nil }
-            return FileLoader(native: file, project: project).file(
-                buildPhase: buildPhase.rawValue,
-                compilerFlags: buildFile.compilerFlags,
-                attributes: buildFile.attributes ?? [])
+        buildFiles.flatMap { buildFile -> [XCode.File] in
+            guard let file = buildFile.file else { return [] }
+
+            /// A localized resource is one build file referencing a variant group;
+            /// what Xcode copies into the bundle are its children, one `.lproj`
+            /// directory per language.
+            guard let variant = file as? PBXVariantGroup else {
+                return [
+                    FileLoader(native: file, project: project).file(
+                        buildPhase: buildPhase.rawValue,
+                        compilerFlags: buildFile.compilerFlags,
+                        attributes: buildFile.attributes ?? []),
+                ]
+            }
+
+            let root = project.workspacePath.string
+            let base = try? variant.parent?.fullPath(sourceRoot: root)
+
+            return variant.children.compactMap { child in
+                guard let path = child.path else { return nil }
+                return FileLoader(
+                    native: child,
+                    project: project,
+                    pathOverride: base.map { "\($0)/\(path)" })
+                    .file(
+                        buildPhase: buildPhase.rawValue,
+                        compilerFlags: buildFile.compilerFlags,
+                        attributes: buildFile.attributes ?? [])
+            }
         }
     }
 }
