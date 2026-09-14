@@ -14,3 +14,5 @@
   url: https://github.com/bazelbuild/bazel-skylib
 - name: RulesCC
   url: https://github.com/bazelbuild/rules_cc
+- name: AppleSupport
+  url: https://github.com/bazelbuild/apple_support
