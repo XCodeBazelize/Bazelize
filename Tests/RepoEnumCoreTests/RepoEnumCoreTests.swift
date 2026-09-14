@@ -22,7 +22,7 @@ func rendersDescendingAndDeduplicatedEnumCases() throws {
             try #require(RepoVersionTag(rawTag: "3.6.0")),
         ])
 
-    #expect(file.filename == "Repo+XCodeProj.swift")
+    #expect(file.filename == "BazelDep+XCodeProj.swift")
     #expect(file.content.contains(#"case v4_0_1 = "4.0.1""#))
     #expect(file.content.contains(#"case v4_0_0 = "4.0.0""#))
     #expect(file.content.contains(#"case v3_6_0 = "3.6.0""#))

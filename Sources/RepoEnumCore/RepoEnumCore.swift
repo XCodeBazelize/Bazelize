@@ -103,7 +103,7 @@ public struct RepoEnumFile: Equatable {
     }
 
     public var filename: String {
-        "Repo+\(source.name).swift"
+        "BazelDep+\(source.name).swift"
     }
 
     public var content: String {
@@ -116,7 +116,7 @@ public struct RepoEnumFile: Equatable {
 
         let body = cases.isEmpty ? "" : "\(latest)\(cases)\n"
         return """
-        extension Repo {
+        extension BazelDep {
             /// \(source.url)
             enum \(source.name): String {
         \(body)    }
