@@ -32,7 +32,7 @@ extension Target {
                 entitlements: entitlementsLabel,
                 families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
-                    plist_file
+                    plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },

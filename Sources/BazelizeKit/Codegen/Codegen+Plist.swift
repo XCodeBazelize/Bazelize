@@ -28,11 +28,10 @@ extension Target {
 extension Target {
     // MARK: Internal
 
-    var plist_file: Starlark.Label? {
-        if configs.values.contains(where: { $0.plist.infoPlist != nil }) {
-            return ":plist_file"
-        }
-        return nil
+    /// Mirrors `generatePlistFile`: the label has to disappear when the file is
+    /// missing or unreadable, otherwise the rule references a target nobody emits.
+    func plistFile(_ kit: Kit) -> Starlark.Label? {
+        plistContent(project: kit.project) == nil ? nil : ":plist_file"
     }
 
     func generatePlistFile(_ builder: CodeBuilder, _ kit: Kit) {
@@ -170,33 +169,38 @@ extension String {
 extension Target {
     // MARK: Internal
 
+    /// `INFOPLIST_KEY_*` settings only reach the bundle when Xcode generates the
+    /// `Info.plist`; with a checked-in file they are ignored, and emitting them
+    /// anyway makes `plisttool` fail on keys the file already defines.
     var plist_auto: Starlark.Label? {
-        configs.values.contains(where: { !$0.generatedPlist.entries.isEmpty }) ? ":plist_auto" : nil
+        hasGeneratedPlistEntries ? ":plist_auto" : nil
     }
 
     func generatePlistAuto(_ builder: CodeBuilder, _: Kit) {
-        let settings = selectedSettings
-        let plist = settings.generatedPlist.entries
-        if !plist.isEmpty {
-            builder.call(
-                Rules.Plist.Call.plist_fragment(
-                    name: "plist_auto",
-                    ext: "plist",
-                    template: Starlark.custom("""
-                    '''
-                    \(plist.withNewLine)
-                    '''
-                    """),
-                    visibility: .private))
-        }
+        guard hasGeneratedPlistEntries else { return }
+
+        builder.call(
+            Rules.Plist.Call.plist_fragment(
+                name: "plist_auto",
+                ext: "plist",
+                template: Starlark.custom("""
+                '''
+                \(selectedSettings.generatedPlist.entries.withNewLine)
+                '''
+                """),
+                visibility: .private))
     }
 
     // MARK: Private
 
-    private func isGeneratePlistAuto(project: Project?) -> Bool {
-        guard project != nil else { return false }
+    private var hasGeneratedPlistEntries: Bool {
         let settings = selectedSettings
         return settings.generatedPlist.enabled && !settings.generatedPlist.entries.isEmpty
+    }
+
+    private func isGeneratePlistAuto(project: Project?) -> Bool {
+        guard project != nil else { return false }
+        return hasGeneratedPlistEntries
     }
 }
 
@@ -238,6 +242,38 @@ extension Target {
         return !defaultPlistFragments(for: selectedSettings).isEmpty
     }
 
+    /// `plisttool` substitutes only a handful of variables, so a default whose value
+    /// it cannot resolve has to be dropped: `macos_command_line_application` has no
+    /// bundled executable, and `PRODUCT_BUNDLE_PACKAGE_TYPE` is never substituted.
+    private var unsupportedDefaultPlistKeys: Set<String> {
+        var keys: Set<String> = []
+        if productType == "com.apple.product-type.tool" {
+            keys.insert("CFBundleExecutable")
+        }
+        if bundlePackageType == nil {
+            keys.insert("CFBundlePackageType")
+        }
+        return keys
+    }
+
+    /// The value Xcode derives for `PRODUCT_BUNDLE_PACKAGE_TYPE`.
+    private var bundlePackageType: String? {
+        switch productType {
+        case "com.apple.product-type.application":
+            return "APPL"
+        case "com.apple.product-type.framework",
+             "com.apple.product-type.framework.static":
+            return "FMWK"
+        case "com.apple.product-type.bundle",
+             "com.apple.product-type.bundle.unit-test",
+             "com.apple.product-type.bundle.ui-testing",
+             "com.apple.product-type.app-extension":
+            return "BNDL"
+        default:
+            return nil
+        }
+    }
+
     /// The target's own `Info.plist` is the source of truth Xcode uses, so a
     /// default derived from build settings must not restate those keys: `plisttool`
     /// rejects two fragments that disagree on one key.
@@ -251,13 +287,13 @@ extension Target {
             ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
             ("CFBundleVersion", settings.generatedPlist.currentProjectVersion ?? "$(CURRENT_PROJECT_VERSION)"),
             ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
-            ("CFBundlePackageType", "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"),
+            ("CFBundlePackageType", bundlePackageType ?? ""),
             ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
             ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "$(MARKETING_VERSION)"),
         ]
 
         return defaults
-            .filter { key, _ in !existing.contains(key) }
+            .filter { key, _ in !existing.contains(key) && !unsupportedDefaultPlistKeys.contains(key) }
             .map { key, value in
                 """
                 <key>\(key)</key>

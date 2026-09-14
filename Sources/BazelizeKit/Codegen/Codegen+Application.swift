@@ -29,7 +29,7 @@ extension Target {
                     ":\(name)_library"
                 },
                 infoplists: .build {
-                    plist_file
+                    plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },
@@ -50,7 +50,7 @@ extension Target {
                     frameworks
                 },
                 infoplists: .build {
-                    plist_file
+                    plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },
@@ -76,7 +76,7 @@ extension Target {
                 extensions: embeddedExtensions(project: project),
                 families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
-                    plist_file
+                    plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },
@@ -102,7 +102,7 @@ extension Target {
                     ":\(name)_library"
                 },
                 infoplists: .build {
-                    plist_file
+                    plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },
@@ -121,7 +121,7 @@ extension Target {
                     frameworks
                 },
                 infoplists: .build {
-                    plist_file
+                    plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },
