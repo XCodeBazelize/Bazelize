@@ -65,6 +65,10 @@ struct RoadmapTreeBuilderTests {
         let frameworkBuild = try String(contentsOfFile: (output + "Targets/Framework1/BUILD").string)
         #expect(frameworkBuild.contains("ios_framework("))
         #expect(frameworkBuild.contains("name = \"Framework1\""))
+        #expect(frameworkBuild.contains("plist_fragment("))
+        #expect(frameworkBuild.contains("name = \"plist_default\""))
+        #expect(frameworkBuild.contains("infoplists = ["))
+        #expect(frameworkBuild.contains("\":plist_default\""))
 
         let static2Build = try String(contentsOfFile: (output + "Targets/Static2/BUILD").string)
         #expect(static2Build.contains("objc_library("))

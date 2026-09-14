@@ -15,7 +15,7 @@ extension Target {
                 infoplists: .build {
                     plist_file
                     plist_auto
-                    // plist_default
+                    plist_default
                 },
                 minimum_os_version: prefer(\.platform.iOS),
                 visibility: .public))
