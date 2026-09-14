@@ -73,8 +73,13 @@ extension Starlark {
             case .label(let value):
                 return value.text
             case .string(let value):
+                /// Values come from Xcode build settings and can carry quotes, e.g.
+                /// a preprocessor definition like `ID=@"com.example"`.
+                let escaped = value
+                    .replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "\"", with: "\\\"")
                 return """
-                "\(value)"
+                "\(escaped)"
                 """
             case .int(let value):
                 return "\(value)"
