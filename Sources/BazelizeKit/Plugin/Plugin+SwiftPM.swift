@@ -12,7 +12,7 @@ import PathKit
 
 /// http://github.com/cgrindel/rules_swift_package_manager
 final class PluginSwiftPM: PluginBuiltin {
-    private let repo: Repo.SwiftPM = .latest
+    private let dep: BazelDep.SwiftPM = .latest
     let remotes: [RemotePackage]
     let locals: [LocalPackage]
     private var packages: [String] = []
@@ -46,7 +46,7 @@ final class PluginSwiftPM: PluginBuiltin {
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(
             name: "rules_swift_package_manager",
-            version: repo.rawValue)
+            version: dep.rawValue)
         builder.custom("""
         swift_deps = use_extension(
             "@rules_swift_package_manager//:extensions.bzl",

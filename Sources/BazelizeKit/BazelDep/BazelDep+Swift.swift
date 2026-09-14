@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/bazelbuild/rules_swift
     enum Swift: String {
         static let latest: Swift = .v4_0_1

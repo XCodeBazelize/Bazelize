@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/keith/rules_apple_linker
     enum AppleLinker: String {
         static let latest: AppleLinker = .v0_7_0

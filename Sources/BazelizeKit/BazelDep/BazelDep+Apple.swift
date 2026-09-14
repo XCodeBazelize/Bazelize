@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/bazelbuild/rules_apple
     enum Apple: String {
         static let latest: Apple = .v5_0_0

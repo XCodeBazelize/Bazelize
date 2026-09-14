@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/bazelbuild/rules_cc
     enum RulesCC: String {
         static let latest: RulesCC = .v0_2_24

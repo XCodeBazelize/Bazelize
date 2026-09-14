@@ -43,4 +43,4 @@ update-repo-enums:
 	
 .PHONY: replace
 replace: update-repo-enums
-	cp Generated/*.swift Sources/BazelizeKit/Repo/
+	cp Generated/*.swift Sources/BazelizeKit/BazelDep/

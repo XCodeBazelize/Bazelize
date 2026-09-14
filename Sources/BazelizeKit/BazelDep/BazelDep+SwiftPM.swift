@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/cgrindel/rules_swift_package_manager
     enum SwiftPM: String {
         static let latest: SwiftPM = .v1_24_0

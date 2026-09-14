@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/bazelbuild/bazel
     enum Bazel: String {
         static let latest: Bazel = .v9_2_0

@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/MobileNativeFoundation/rules_xcodeproj
     enum XCodeProj: String {
         static let latest: XCodeProj = .v4_1_0

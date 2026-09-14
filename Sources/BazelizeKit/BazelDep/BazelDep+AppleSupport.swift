@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/bazelbuild/apple_support
     enum AppleSupport: String {
         static let latest: AppleSupport = .v2_8_2

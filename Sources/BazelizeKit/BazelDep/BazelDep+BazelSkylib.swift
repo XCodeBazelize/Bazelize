@@ -1,4 +1,4 @@
-extension Repo {
+extension BazelDep {
     /// https://github.com/bazelbuild/bazel-skylib
     enum BazelSkylib: String {
         static let latest: BazelSkylib = .v1_9_2
