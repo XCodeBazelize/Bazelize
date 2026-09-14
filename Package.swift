@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/jpsim/Yams", from: "6.2.2"),
         .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
 
-        .package(url: "https://github.com/yume190/SwiftCommand", from: "1.1.3"),
+        .package(url: "https://github.com/swiftlang/swift-subprocess", from: "1.0.0"),
 
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
 
@@ -145,6 +145,6 @@ let package = Package(
                 "PathKit",
                 "Util",
                 "XCode",
-                "SwiftCommand",
+                .product(name: "Subprocess", package: "swift-subprocess"),
             ]),
     ])
