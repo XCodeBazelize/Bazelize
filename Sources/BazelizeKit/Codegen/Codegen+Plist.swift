@@ -49,15 +49,19 @@ extension Target {
                 visibility: .private))
     }
 
-    /// Keys the target's checked-in `Info.plist` already defines.
+    /// Keys the emitted `plist_file` fragment actually defines.
+    ///
+    /// Read from the fragment rather than the source `Info.plist`, so a key dropped
+    /// for being unresolvable still gets its build-setting default.
     func infoPlistKeys(project: Project?) -> Set<String> {
-        guard let nodes = infoPlistNodes(project: project) else { return [] }
+        guard let content = plistContent(project: project) else { return [] }
+        guard let regex = try? NSRegularExpression(pattern: #"<key>([^<]+)</key>"#) else { return [] }
 
+        let matches = regex.matches(in: content, range: NSRange(content.startIndex..., in: content))
         return Set(
-            nodes
-                .compactMap { $0 as? XMLElement }
-                .filter { $0.name == "key" }
-                .compactMap(\.stringValue))
+            matches.compactMap { match in
+                Range(match.range(at: 1), in: content).map { String(content[$0]) }
+            })
     }
 
     // MARK: Private
@@ -142,7 +146,7 @@ extension Target {
 
 extension String {
     /// Xcode accepts both `$(SETTING)` and `${SETTING}`.
-    fileprivate static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)[)}]"#
+    fileprivate static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)(?::[A-Za-z0-9_]+)?[)}]"#
 
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
@@ -328,11 +332,14 @@ extension Target {
         let defaults = [
             ("CFBundleName", "$(PRODUCT_NAME)"),
             ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
-            ("CFBundleVersion", settings.generatedPlist.currentProjectVersion ?? "$(CURRENT_PROJECT_VERSION)"),
+            /// `plisttool` cannot resolve these, and rules_apple rejects a bundle
+            /// without them, so an unset setting falls back to Xcode's own template
+            /// values instead of a literal `$(SETTING)`.
+            ("CFBundleVersion", settings.generatedPlist.currentProjectVersion ?? "1"),
             ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
             ("CFBundlePackageType", bundlePackageType ?? ""),
             ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
-            ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "$(MARKETING_VERSION)"),
+            ("CFBundleShortVersionString", settings.generatedPlist.marketingVersion ?? "1.0"),
         ]
 
         return defaults
