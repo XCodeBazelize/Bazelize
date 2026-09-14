@@ -58,11 +58,29 @@ extension Target {
             Path(header).parent().string
         } + headerSearchPaths(project: project).map { path in
             "Sources/\(path)"
-        }
+        } + frameworkStyleIncludes(project: project)
 
         /// "." keeps a public header reachable by its own relative path.
         /// https://github.com/bazelbuild/bazel/issues/92
         return Array(Set(directories + ["."])).sorted()
+    }
+
+    /// Include paths that make `#import <Module/Header.h>` resolve.
+    ///
+    /// Xcode publishes a framework's headers under a directory named after the
+    /// framework, so dependents import them that way. In the generated tree the
+    /// headers keep their project-relative layout, which already has such a
+    /// directory whenever the sources live in a folder named after the module — the
+    /// path above it is what the compiler needs.
+    private func frameworkStyleIncludes(project: Project) -> [String] {
+        moduleHeaderFiles(project: project).compactMap { header in
+            let directory = Path(header).parent()
+            guard directory.lastComponent == codegenModuleName || directory.lastComponent == name else {
+                return nil
+            }
+            let parent = directory.parent().string
+            return parent == "." ? nil : parent
+        }
     }
 
     /// The same include paths, spelled for `swiftc`'s clang importer.
