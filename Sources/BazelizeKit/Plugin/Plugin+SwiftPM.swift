@@ -82,14 +82,26 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     private func transformRemote(_ product: PackageProductDependency) -> String? {
-        guard let url = product.package else { return nil }
         /// NIO
-        let product = product.productName
+        let name = product.productName
+        guard let url = product.package ?? remoteURL(forProduct: name) else { return nil }
 
         /// @swiftpkg_swift_nio//:NIO
+        ///
+        /// Only the repository name is sanitized: rules_swift_package_manager keeps
+        /// the product name verbatim, dashes included (`SwiftUIIntrospect-Static`).
         return """
-        @\(Self.repositoryName(url: url))//:\(product)
-        """.replacingOccurrences(of: "-", with: "_")
+        @\(Self.repositoryName(url: url))//:\(name)
+        """
+    }
+
+    /// Xcode can reference a package product without linking it back to the package.
+    /// The repository named after the product is the only sound guess, and it covers
+    /// the common one-product-per-package layout.
+    private func remoteURL(forProduct product: String) -> String? {
+        remotes.compactMap(\.repositoryURL).first { url in
+            Self.repositoryModuleName(url: url).caseInsensitiveCompare(product) == .orderedSame
+        }
     }
 
     private func transformLocal(_ product: PackageProductDependency) -> String? {

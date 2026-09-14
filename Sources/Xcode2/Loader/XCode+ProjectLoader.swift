@@ -54,6 +54,9 @@ final class ProjectLoader {
             defaultConfigList: defaultConfigList)
     }
 
+    /// Names of every native target in the project.
+    lazy var targetNames: Set<String> = Set(native.nativeTargets.map(\.name))
+
     /// The project-level build configuration list every target inherits.
     ///
     /// Picking it by elimination (all lists minus the native targets') is both wrong

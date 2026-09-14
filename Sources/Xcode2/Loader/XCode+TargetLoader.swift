@@ -102,9 +102,21 @@ struct TargetLoader {
     }
 
     private var dependencies: XCode.Dependencies {
-        let targetDependencies = native.dependencies.compactMap { dependency in
+        let declaredDependencies = native.dependencies.compactMap { dependency in
             dependency.target?.name ?? dependency.name
         }
+
+        /// A target can link a sibling target's framework through the Frameworks
+        /// phase without declaring a target dependency; Xcode resolves it implicitly.
+        let implicitDependencies = frameworkBuildFiles.compactMap { buildFile -> String? in
+            guard let file = buildFile.file else { return nil }
+            let wrapped = FileLoader(native: file, project: project)
+            guard let identity = wrapped.frameworkIdentity else { return nil }
+            guard identity != name, project.targetNames.contains(identity) else { return nil }
+            return identity
+        }
+
+        let targetDependencies = declaredDependencies + implicitDependencies
         let targetDependencyIdentities = Set(targetDependencies)
 
         let frameworks = frameworkBuildFiles.compactMap { buildFile -> String? in
@@ -168,7 +180,13 @@ struct TargetLoader {
             return directory
         }
 
-        let packageProducts = (native.packageProductDependencies ?? []).map { dependency in
+        /// Xcode records a linked package product either on the target or on the
+        /// build file in the Frameworks phase, depending on how it was added.
+        let productDependencies = (native.packageProductDependencies ?? []) + frameworkBuildFiles.compactMap { buildFile in
+            buildFile.product
+        }
+
+        let packageProducts = unique(productDependencies) { $0.productName }.map { dependency in
             XCode.PackageProductDependency(
                 productName: dependency.productName,
                 package: dependency.package?.repositoryURL,
