@@ -150,7 +150,9 @@ struct RoadmapTreeBuilderTests {
         #expect(appBuild.contains("\"libXau.6\""))
         #expect(appBuild.contains("\"libXdmcp.6\""))
         #expect(!appBuild.contains("cc_import("))
-        #expect(!appBuild.contains("additional_contents = {"))
+        /// The two command line tools Xcode copies into `Contents/MacOS`.
+        #expect(appBuild.contains("\"//Targets/iina-cli:iina-cli\": \"MacOS\""))
+        #expect(appBuild.contains("\"//Targets/iina-plugin:iina-plugin\": \"MacOS\""))
         #expect(appBuild.contains("@swiftpkg_grmustache.swift//:Mustache"))
         #expect(appBuild.contains("macos_application("))
         #expect(appBuild.contains("minimum_os_version = \"10.15\""))

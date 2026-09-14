@@ -111,6 +111,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_application(
                 name: name,
+                additional_contents: additionalContents(project: kit.project),
                 app_icons: appIcons(project: kit.project),
                 bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {

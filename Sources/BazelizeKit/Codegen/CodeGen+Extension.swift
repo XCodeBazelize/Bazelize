@@ -24,6 +24,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_extension(
                 name: name,
+                additional_contents: additionalContents(project: project),
                 bundle_id: bundleIdentifier(project: project),
                 deps: .build {
                     ":\(name)_library"

@@ -17,6 +17,7 @@ extension Target {
         switch productType {
         case "com.apple.product-type.application":
             generateStrings(builder, kit)
+            generateCopiedProducts(builder, kit)
             generateApplicationCode(builder, kit)
         case "com.apple.product-type.tool":
             generateCommandLineApplicationCode(builder, kit)
@@ -29,6 +30,7 @@ extension Target {
         case "com.apple.product-type.bundle.ui-testing":
             generateUITest(builder, kit)
         case "com.apple.product-type.app-extension":
+            generateCopiedProducts(builder, kit)
             generateExtension(builder, kit)
         default:
             Log.codeGenerate.warning("""
