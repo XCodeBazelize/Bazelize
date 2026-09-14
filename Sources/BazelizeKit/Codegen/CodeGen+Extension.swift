@@ -24,7 +24,7 @@ extension Target {
         builder.call(
             Rules.Apple.IOS.Call.ios_extension(
                 name: name,
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                     frameworks

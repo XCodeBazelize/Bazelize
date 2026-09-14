@@ -13,7 +13,7 @@ extension Target {
         builder.call(
             Rules.Apple.IOS.Call.ios_framework(
                 name: name,
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 /// Only the target's own code: a sibling framework is linked through
                 /// its library, never nested inside this bundle.
                 deps: .build {
@@ -42,7 +42,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_framework(
                 name: name,
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                 },

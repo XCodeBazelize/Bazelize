@@ -66,6 +66,30 @@ extension Target {
 
     // MARK: Private
 
+    /// One resolved value out of the target's own `Info.plist`, which outranks the
+    /// build setting a default would fall back to.
+    func infoPlistString(_ key: String, project: Project?) -> String? {
+        guard let nodes = infoPlistNodes(project: project) else { return nil }
+
+        let settings = selectedSettings
+        var pendingKey: String?
+
+        for node in nodes {
+            guard let element = node as? XMLElement else { continue }
+
+            if element.name == "key" {
+                pendingKey = element.stringValue
+                continue
+            }
+
+            defer { pendingKey = nil }
+            guard pendingKey == key, element.name == "string" else { continue }
+            return element.stringValue?.resolvingBuildSettingReferences(with: settings)
+        }
+
+        return nil
+    }
+
     private func infoPlistNodes(project: Project?) -> [XMLNode]? {
         guard let project else { return nil }
         guard let plistPath = prefer(\.plist.infoPlist) else { return nil }
@@ -83,7 +107,11 @@ extension Target {
     private func plistContent(project: Project?) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
-        let dropped = appIcons(project: project) == nil ? [] : Self.iconKeys
+        var dropped = appIcons(project: project) == nil ? [] : Self.iconKeys
+        /// The version an embedded bundle declares has to give way to its parent's.
+        if embeddingBundle(project: project) != nil {
+            dropped.formUnion(Self.versionPatterns.keys)
+        }
         return entries(nodes, dropping: dropped).withNewLine.escapedForPlistFragment
     }
 
@@ -298,12 +326,14 @@ extension Target {
     func plistDefault(_ kit: Kit) -> Starlark.Label? {
         defaultPlistFragments(
             for: selectedSettings,
+            project: kit.project,
             skipping: infoPlistKeys(project: kit.project)).isEmpty ? nil : ":plist_default"
     }
 
     func generatePlistDefault(_ builder: CodeBuilder, _ kit: Kit) {
         let plist = defaultPlistFragments(
             for: selectedSettings,
+            project: kit.project,
             skipping: infoPlistKeys(project: kit.project))
         if !plist.isEmpty {
             builder.call(
@@ -323,7 +353,7 @@ extension Target {
 
     private func isGeneratePlistDefault(project: Project?) -> Bool {
         guard project != nil else { return false }
-        return !defaultPlistFragments(for: selectedSettings).isEmpty
+        return !defaultPlistFragments(for: selectedSettings, project: project).isEmpty
     }
 
     /// `plisttool` substitutes only a handful of variables, so a default whose value
@@ -343,21 +373,34 @@ extension Target {
     /// rejects two fragments that disagree on one key.
     private func defaultPlistFragments(
         for settings: BuildSettings,
+        project: Project?,
         skipping existing: Set<String> = [])
         -> [String]
     {
+        /// rules_apple requires an embedded bundle to carry the version of the bundle
+        /// that embeds it — Apple's own rule, which Xcode never enforces.
+        let parent = embeddingBundle(project: project)
+        let currentVersion = parent.map { bundle in
+            bundle.infoPlistString("CFBundleVersion", project: project)
+                ?? bundle.prefer(\.generatedPlist.currentProjectVersion)
+        } ?? settings.generatedPlist.currentProjectVersion
+        let shortVersion = parent.map { bundle in
+            bundle.infoPlistString("CFBundleShortVersionString", project: project)
+                ?? bundle.prefer(\.generatedPlist.marketingVersion)
+        } ?? settings.generatedPlist.marketingVersion
+
         let defaults = [
             ("CFBundleName", "$(PRODUCT_NAME)"),
             ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
             /// `plisttool` cannot resolve these, and rules_apple rejects a bundle
             /// without them, so an unset setting falls back to Xcode's own template
             /// values instead of a literal `$(SETTING)`.
-            ("CFBundleVersion", version(settings.generatedPlist.currentProjectVersion, key: "CFBundleVersion") ?? "1"),
+            ("CFBundleVersion", version(currentVersion, key: "CFBundleVersion") ?? "1"),
             ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
             ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
             (
                 "CFBundleShortVersionString",
-                version(settings.generatedPlist.marketingVersion, key: "CFBundleShortVersionString") ?? "1.0"),
+                version(shortVersion, key: "CFBundleShortVersionString") ?? "1.0"),
         ]
 
         return defaults

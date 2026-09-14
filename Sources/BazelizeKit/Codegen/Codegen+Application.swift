@@ -29,7 +29,7 @@ extension Target {
         builder.call(
             Rules.Apple.MacOS.Call.macos_command_line_application(
                 name: name,
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                 },
@@ -49,7 +49,7 @@ extension Target {
         builder.call(
             Rules.Apple.WatchOS.Call.watchos_application(
                 name: name,
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                     frameworks
@@ -78,13 +78,14 @@ extension Target {
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
                 app_icons: appIcons(project: kit.project),
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                     linkedFrameworks(project: project)
                 },
                 entitlements: entitlementsLabel(project: project),
                 extensions: embeddedExtensions(project: project),
+                frameworks: embeddedFrameworks(project: project),
                 families: prefer(\.platform.deviceFamily)?.map(\.code),
                 infoplists: .build {
                     plistFile(kit)
@@ -111,11 +112,12 @@ extension Target {
             Rules.Apple.MacOS.Call.macos_application(
                 name: name,
                 app_icons: appIcons(project: kit.project),
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                 },
                 entitlements: entitlementsLabel(project: kit.project),
+                frameworks: embeddedFrameworks(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
@@ -138,7 +140,7 @@ extension Target {
         builder.call(
             Rules.Apple.TVOS.Call.tvos_application(
                 name: name,
-                bundle_id: prefer(\.metadata.bundleID),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                     frameworks
