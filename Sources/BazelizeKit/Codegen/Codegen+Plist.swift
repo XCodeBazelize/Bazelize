@@ -206,8 +206,9 @@ extension Target {
 }
 
 extension String {
-    /// Xcode accepts both `$(SETTING)` and `${SETTING}`.
-    static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)(?::[A-Za-z0-9_]+)?[)}]"#
+    /// Xcode accepts both `$(SETTING)` and `${SETTING}`, each with a modifier —
+    /// `$(SETTING:default=value)` is the one that carries information.
+    static let buildSettingPattern = #"\$[({]([A-Za-z0-9_]+)(?::([^)}]*))?[)}]"#
 
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
@@ -243,7 +244,10 @@ extension String {
             }
 
             let key = String(self[keyRange])
-            guard !reserved.contains(key), let value = settings[key] else { continue }
+            guard !reserved.contains(key) else { continue }
+
+            let modifier = Range(match.range(at: 2), in: self).map { String(self[$0]) }
+            guard let value = settings[key] ?? modifier?.delete(prefix: "default=") else { continue }
 
             result.replaceSubrange(wholeRange, with: value)
         }

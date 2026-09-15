@@ -46,7 +46,13 @@ extension Target {
     /// Starlark rejects unknown escape sequences inside the string, so the command
     /// avoids backslashes entirely.
     private var assetSymbolsCommand: String {
-        let bundleID = prefer(\.metadata.bundleID) ?? "com.bazelize.\(codegenModuleName)"
+        /// `actool` only needs an identifier to key the generated symbols with; one
+        /// that still references a build setting Xcode would have expanded is no use
+        /// to it, and `$(…)` in a genrule command is a Make variable to Bazel.
+        let resolved = (prefer(\.metadata.bundleID) ?? "")
+            .resolvingBuildSettingReferences(with: selectedSettings, reserved: [])
+        let fallback = "com.bazelize.\(codegenModuleName)"
+        let bundleID = resolved.isEmpty || resolved.contains("$") ? fallback : resolved
         let arguments = [
             "--platform \(assetSymbolsPlatform)",
             "--minimum-deployment-target \(assetSymbolsMinimumOS)",

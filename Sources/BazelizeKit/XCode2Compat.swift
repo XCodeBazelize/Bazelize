@@ -173,7 +173,16 @@ extension Target {
     /// Apple requires the prefix and rules_apple enforces it; Xcode does not, so a
     /// framework in the same project routinely carries an unrelated identifier.
     func bundleIdentifier(project: Project?) -> String? {
+        /// rules_apple substitutes nothing here, so a reference Xcode would have
+        /// expanded — UTM spells every identifier
+        /// `$(PRODUCT_BUNDLE_PREFIX:default=com.utmapp).X` — is expanded first.
         let own = prefer(\.metadata.bundleID)
+            .map { identifier in
+                identifier.resolvingBuildSettingReferences(with: selectedSettings, reserved: [])
+            }
+            .flatMap { identifier in
+                identifier.contains("$") ? nil : identifier
+            }
 
         guard
             let parent = embeddingBundle(project: project),
