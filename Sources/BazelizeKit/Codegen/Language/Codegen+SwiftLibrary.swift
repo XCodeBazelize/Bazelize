@@ -42,8 +42,6 @@ extension Target {
                     if !assets.isEmpty {
                         ":Assets"
                     }
-                    xibs
-                    storyboards
                     copiedResourceGroups(project: project)
                 },
                 defines: defines(project: project),

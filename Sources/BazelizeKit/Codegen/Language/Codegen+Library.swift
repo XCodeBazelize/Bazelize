@@ -68,8 +68,6 @@ extension Target {
                     if !assets.isEmpty {
                         ":Assets"
                     }
-                    xibs
-                    storyboards
                     copiedResourceGroups(project: project)
                 },
                 enable_modules: prefer(\.enableModules),

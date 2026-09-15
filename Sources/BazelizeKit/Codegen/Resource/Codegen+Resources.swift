@@ -12,7 +12,9 @@ extension Target {
     /// and an app icon set.
     ///
     /// Without this a generated app links and bundles, but ships no nib and no
-    /// localization, so it dies the moment it is launched.
+    /// localization, so it dies the moment it is launched. It is the only place a
+    /// nib or a storyboard is declared: passing one through the library's `data` as
+    /// well makes two rules compile it to the same path.
     func generateResources(_ builder: CodeBuilder, _ kit: Kit) {
         let patterns = resourcePatterns(project: kit.project)
         guard !patterns.isEmpty else { return }

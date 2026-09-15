@@ -38,8 +38,6 @@ extension Target {
                     if !assets.isEmpty {
                         ":Assets"
                     }
-                    xibs
-                    storyboards
                     copiedResourceGroups(project: project)
                 },
                 copts: [
