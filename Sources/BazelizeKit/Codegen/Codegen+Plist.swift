@@ -364,6 +364,12 @@ extension Target {
         if productType == "com.apple.product-type.tool" {
             keys.insert("CFBundleExecutable")
         }
+        /// `plisttool` substitutes `$(PRODUCT_BUNDLE_IDENTIFIER)` from the rule's
+        /// `bundle_id`, which a target without one — iina's command line tools —
+        /// never sets.
+        if prefer(\.metadata.bundleID) == nil {
+            keys.insert("CFBundleIdentifier")
+        }
         return keys
     }
 
