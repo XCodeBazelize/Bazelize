@@ -145,10 +145,12 @@ struct RoadmapTreeBuilderTests {
         #expect(appBuild.contains("\"PIP\""))
         #expect(!appBuild.contains("\"CoreDisplay.framework\""))
         #expect(!appBuild.contains("\"PIP.framework\""))
-        #expect(appBuild.contains("sdk_dylibs = ["))
-        #expect(appBuild.contains("\"libX11.6\""))
-        #expect(appBuild.contains("\"libXau.6\""))
-        #expect(appBuild.contains("\"libXdmcp.6\""))
+        /// iina links its own dylibs out of `deps/lib`, which the SDK knows nothing
+        /// about: they are imported by path when the checkout has them, never linked
+        /// by name.
+        #expect(!appBuild.contains("\"libX11.6\""))
+        #expect(!appBuild.contains("\"libXau.6\""))
+        #expect(!appBuild.contains("\"libXdmcp.6\""))
         #expect(!appBuild.contains("cc_import("))
         /// The two command line tools Xcode copies into `Contents/MacOS`.
         #expect(appBuild.contains("\"//Targets/iina-cli:iina-cli\": \"MacOS\""))

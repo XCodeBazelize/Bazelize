@@ -176,7 +176,6 @@ struct FileLoader {
         if
             buildPhase == BuildPhase.frameworks.rawValue,
             canUsePrebuiltLabel,
-            !isDylibLike,
             !isSDKFramework,
             !isSDKDylib
         {

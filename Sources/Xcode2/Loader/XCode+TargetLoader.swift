@@ -123,7 +123,6 @@ struct TargetLoader {
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
             guard !wrapped.isSDKFramework, !wrapped.isSDKDylib else { return nil }
-            guard !wrapped.isDylibLike else { return nil }
 
             if let identity = wrapped.frameworkIdentity, targetDependencyIdentities.contains(identity) {
                 return nil
@@ -162,7 +161,9 @@ struct TargetLoader {
         let sdkDylibs = frameworkBuildFiles.compactMap { buildFile -> String? in
             guard let file = buildFile.file else { return nil }
             let wrapped = FileLoader(native: file, project: project)
-            guard wrapped.isDylibLike else { return nil }
+            /// Only a dylib the SDK ships is linked by name; one the project carries
+            /// is imported by path, like any other prebuilt binary.
+            guard wrapped.isSDKDylib else { return nil }
             return wrapped.sdkDylibName ?? wrapped.name.flatMap { Path($0).lastComponentWithoutExtension }
         }
 
