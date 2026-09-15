@@ -34,8 +34,16 @@ extension Bazel {
                 "build:\(config) --//:mode=\(config)"
             }.sorted()
 
-            code = (Self.minimumOSFlags(targets: targets) + modes).withNewLine
+            code = (Self.defaults + Self.minimumOSFlags(targets: targets) + modes).withNewLine
         }
+
+        /// Clang finds an imported framework's module map inside the framework, which
+        /// is how `@import Sparkle;` compiles in Xcode. Bazel stopped passing those
+        /// module maps to a compile action, so an `objc_library` that imports a
+        /// framework module no longer builds; this restores it.
+        private static let defaults = [
+            "build --define=apple.incompatible.objc_framework_propagate_modulemap=true",
+        ]
 
         /// Xcode resolves deployment targets per target; Bazel needs a default for
         /// everything outside a bundle rule's transition, otherwise SwiftPM
