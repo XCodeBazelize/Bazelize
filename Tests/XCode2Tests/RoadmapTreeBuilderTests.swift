@@ -169,9 +169,12 @@ struct RoadmapTreeBuilderTests {
         #expect(nightlyBuild.contains("Sources/iina/Assets.xcassets/AppIconNightly.appiconset/**"))
 
         let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string)
-        #expect(!prebuiltBuild.contains("libX11.6"))
-        #expect(!prebuiltBuild.contains("libXau.6"))
-        #expect(!prebuiltBuild.contains("libXdmcp.6"))
+        /// The dylibs iina downloads into `deps/lib` are imported from there when the
+        /// checkout has them, and left out entirely when it does not.
+        let hasDylibs = (current + "app/iina/deps/lib/libX11.6.dylib").exists
+        #expect(prebuiltBuild.contains("libX11.6") == hasDylibs)
+        #expect(prebuiltBuild.contains("libXau.6") == hasDylibs)
+        #expect(prebuiltBuild.contains("libXdmcp.6") == hasDylibs)
         #expect(!prebuiltBuild.contains("name = \"PIP\""))
         #expect(!prebuiltBuild.contains("name = \"CoreDisplay\""))
 

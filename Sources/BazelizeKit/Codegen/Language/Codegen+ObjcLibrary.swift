@@ -53,7 +53,7 @@ extension Target {
                 linkopts: sdkLinkopts,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
-                sdk_frameworks: frameworksSDK,
+                sdk_frameworks: sdkFrameworks(project: project),
                 testonly: isTest,
                 visibility: .private,
                 weak_sdk_frameworks: weakFrameworksSDK))

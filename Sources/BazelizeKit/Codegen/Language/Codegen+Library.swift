@@ -85,7 +85,7 @@ extension Target {
                 linkopts: sdkLinkopts,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
-                sdk_frameworks: frameworksSDK,
+                sdk_frameworks: sdkFrameworks(project: project),
                 swift_copts: moduleSwiftCopts(project: project),
                 swift_defines: defines(project: project),
                 swift_srcs: .build {

@@ -68,7 +68,11 @@ struct ProjectLoaderTests {
         #expect(target.dependencies.sdkFrameworks.contains("PIP"))
         #expect(!target.dependencies.frameworks.contains("CoreDisplay.framework"))
         #expect(!target.dependencies.frameworks.contains("PIP.framework"))
-        #expect(!target.dependencies.frameworks.contains("//Prebuilt:libX11.6"))
+        /// A dylib the project carries is imported by path, never linked by name
+        /// out of the SDK.
+        #expect(!target.dependencies.sdkDylibs.contains("libX11.6"))
+        #expect((current + "app/iina/deps/lib/libX11.6.dylib").exists
+            == target.dependencies.frameworks.contains("//Prebuilt:libX11.6"))
         #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libX11.6.dylib" })
         #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libXau.6.dylib" })
         #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libXdmcp.6.dylib" })
