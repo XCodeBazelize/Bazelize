@@ -32,6 +32,11 @@ extension Target {
             generateUnitTest(builder, kit)
         case "com.apple.product-type.bundle.ui-testing":
             generateUITest(builder, kit)
+        case "com.apple.product-type.xpc-service":
+            generateStrings(builder, kit)
+            generateCopiedProducts(builder, kit)
+            generateCopiedFiles(builder, kit)
+            generateXPCService(builder, kit)
         case "com.apple.product-type.app-extension":
             generateCopiedProducts(builder, kit)
             generateCopiedFiles(builder, kit)

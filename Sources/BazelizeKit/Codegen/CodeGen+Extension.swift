@@ -18,6 +18,37 @@ extension Target {
         }
     }
 
+    /// An XPC service is its own bundle inside `Contents/XPCServices`, which the
+    /// application's copy phase puts it in.
+    func generateXPCService(_ builder: CodeBuilder, _ kit: Kit) {
+        let project = kit.project
+        builder.load(.macos_xpc_service)
+        builder.call(
+            Rules.Apple.MacOS.Call.macos_xpc_service(
+                name: name,
+                additional_contents: additionalContents(project: project),
+                bundle_id: bundleIdentifier(project: project),
+                deps: .build {
+                    ":\(name)_library"
+                },
+                entitlements: entitlementsLabel(project: project),
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.macOS),
+                resources: .build {
+                    bundleResources(project: project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
+    }
+
     private func buildMac(_ builder: CodeBuilder, _ kit: Kit) {
         let project = kit.project
         builder.load(.macos_extension)
