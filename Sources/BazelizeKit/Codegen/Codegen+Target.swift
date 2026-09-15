@@ -1,6 +1,13 @@
 import Util
 
 extension Target {
+    /// A target with no sources of its own has no library to link, so no rule can
+    /// produce its product: UTM wraps an externally built binary in a bundle that
+    /// way. Nothing references a rule that is not emitted either.
+    var hasSources: Bool {
+        !(srcs_c + srcs_cpp + srcs_objc + srcs_objcpp + srcs_swift).isEmpty
+    }
+
     func generateCode(_ kit: Kit) -> String {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
@@ -14,6 +21,14 @@ extension Target {
         generatePlistDefault(builder, kit)
 
         let name = name
+
+        guard hasSources else {
+            Log.codeGenerate.warning("""
+            Name: \(name, privacy: .public)
+            Type: \(productType ?? "") has no sources
+            """)
+            return builder.build()
+        }
 
         switch productType {
         case "com.apple.product-type.application":

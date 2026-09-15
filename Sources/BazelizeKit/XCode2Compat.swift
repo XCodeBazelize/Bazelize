@@ -69,7 +69,9 @@ extension Target {
     }
 
     fileprivate func linkedTargetDependencyNames(project: Project) -> [String] {
-        dependencies.targets.filter { isLinkableTarget($0, in: project) }
+        dependencies.targets.filter { target in
+            isLinkableTarget(target, in: project) && project.target(named: target)?.hasSources != false
+        }
     }
 
     func embeddedExtensionTargetNames(project: Project) -> [String] {
@@ -139,7 +141,9 @@ extension Target {
             return Path(component).lastComponentWithoutExtension
         }
 
-        return Array(Set(names).intersection(siblings)).sorted()
+        return Array(Set(names).intersection(siblings)).sorted().filter { name in
+            project.target(named: name)?.hasSources == true
+        }
     }
 
     /// The bundle that embeds this target, if any: an embedded bundle inherits the
@@ -208,6 +212,7 @@ extension Target {
 
     func embeddedExtensions(project: Project) -> [Starlark.Label] {
         embeddedExtensionTargetNames(project: project)
+            .filter { project.target(named: $0)?.hasSources == true }
             .sorted()
             .map { target in
                 Starlark.Label.named("//Targets/\(target):\(target)")

@@ -129,6 +129,7 @@ extension Target {
                     let component = file.name ?? file.path,
                     products.contains(component),
                     let sibling = project.product(named: component),
+                    sibling.hasSources,
                     seen.insert(component).inserted
                 else {
                     continue
