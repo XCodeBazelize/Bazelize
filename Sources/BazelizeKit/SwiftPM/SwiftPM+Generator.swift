@@ -22,20 +22,45 @@ extension SwiftPM {
         let output: Path
         let workspace: Workspace
 
+        let deployment: Deployment
+
         private var kinds: [String: [String: TargetKind]] = [:]
 
-        init(output: Path, workspace: Workspace) {
+        /// What a caller tells the user about: the packages whose platform version
+        /// the project does not reach.
+        private(set) var unmetDeployment: [String] = []
+
+        init(output: Path, workspace: Workspace, deployment: Deployment) {
             self.output = output
             self.workspace = workspace
+            self.deployment = deployment
         }
 
         func generate() throws {
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
+                report(deploymentOf: package)
             }
 
             for package in workspace.packages {
                 try generate(package)
+            }
+        }
+
+        /// A package that declares a platform version the project does not reach is
+        /// compiled at the project's version anyway, and fails in whichever newer
+        /// API it uses. The reason is in the manifest, not in that error, so it is
+        /// said out loud.
+        private func report(deploymentOf package: Package) {
+            for unmet in deployment.unmet(package) {
+                let message = """
+                \(package.directory) declares \(unmet.platform) \(unmet.required), \
+                and the project builds \(unmet.platform) \(unmet.project): \
+                the package is compiled at \(unmet.project) and may not support it.
+                """
+
+                Log.codeGenerate.warning("\(message, privacy: .public)")
+                unmetDeployment.append(message)
             }
         }
 

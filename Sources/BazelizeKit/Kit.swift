@@ -55,6 +55,10 @@ public final class Kit {
 
     // MARK: Public
 
+    /// Notes the run has for the user, collected while the package rules were
+    /// generated.
+    private var packageTips: [String] = []
+
     public final func run(_: Path) async throws {
         defer { tips() }
 
@@ -84,6 +88,10 @@ extension Kit {
             print(tip)
         }
 
+        packageTips.forEach { tip in
+            print("# Swift package\n\(tip)")
+        }
+
         plugins.forEach { plugin in
             plugin.tip()
         }
@@ -96,10 +104,61 @@ extension Kit {
     /// manifests instead of by `rules_swift_package_manager`.
     private final func generateSwiftPackages() async throws {
         let workspace = try await SwiftPM.loadWorkspace(output: outputRoot)
-        try SwiftPM.Generator(output: outputRoot, workspace: workspace).generate()
+        let deployment = await deployment()
+
+        let generator = SwiftPM.Generator(
+            output: outputRoot,
+            workspace: workspace,
+            deployment: deployment)
+        try generator.generate()
+        packageTips = generator.unmetDeployment
 
         let count = workspace.packages.count
         Log.codeGenerate.info("Generate \(count, privacy: .public) Swift packages")
+    }
+
+    /// The versions a package's targets end up compiled at: the lowest deployment
+    /// target of the project's own targets, per platform, because that is the one
+    /// a package has to be buildable against.
+    ///
+    /// A platform no target of the project builds for cannot fail, so it is left
+    /// out. Where the project says nothing, the oldest version the installed SDK
+    /// can build for stands in — the same answer SwiftPM reads out of the SDK.
+    private final func deployment() async -> SwiftPM.Deployment {
+        var floors: [String: String] = [:]
+        var platforms: Set<String> = []
+
+        for target in project.targets {
+            if let platform = target.platformSDK.flatMap(SwiftPM.Deployment.platform(of:)) {
+                platforms.insert(platform)
+            }
+
+            let declared: [(String, String?)] = [
+                ("macos", target.prefer(\.platform.macOS)),
+                ("ios", target.prefer(\.platform.iOS)),
+                ("tvos", target.prefer(\.platform.tvOS)),
+                ("watchos", target.prefer(\.platform.watchOS)),
+            ]
+
+            for (platform, version) in declared {
+                guard let version, !version.isEmpty else { continue }
+                guard let floor = floors[platform] else {
+                    floors[platform] = version
+                    continue
+                }
+                if SwiftPM.Deployment.isNewer(floor, than: version) {
+                    floors[platform] = version
+                }
+            }
+        }
+
+        /// A platform the project builds for without saying which version: the
+        /// oldest the installed SDK can build is what Xcode would use.
+        for platform in platforms where floors[platform] == nil {
+            floors[platform] = await SwiftPM.Deployment.sdkFloor(platform: platform)
+        }
+
+        return .init(project: floors)
     }
 }
 
