@@ -4,29 +4,54 @@
 //
 //  Patches for rules_swift_package_manager, applied to the generated workspace.
 //
+import Util
 
 extension PluginSwiftPM {
     /// Files rules_swift_package_manager generates for a package are incomplete in
-    /// two ways that keep real projects from building. Both are patched in the
-    /// generated workspace so it stands on its own; both belong upstream.
+    /// ways that keep real projects from building, and no amount of code generation
+    /// on this side can make up for them. They are patched in the generated
+    /// workspace so it stands on its own; all of it belongs upstream.
     static let patchDirectory = "Patches"
 
-    static let patches: [(name: String, content: String)] = [
+    /// The release the patches were written against.
+    ///
+    /// A patch is a diff, so it only applies to the file it was taken from: for any
+    /// other release the workspace is generated without it, and whatever the newer
+    /// release does — fixed upstream or still broken — is what the build sees.
+    static let patchedVersion: BazelDep.SwiftPM = .v1_15_0
+
+    private static let allPatches: [(name: String, content: String)] = [
         (name: "rspm-clang-target-headers.patch", content: clangTargetHeadersPatch),
         (name: "rspm-metal-headers.patch", content: metalHeadersPatch),
         (name: "rspm-default-isolation-settings.patch", content: defaultIsolationSettingsPatch),
         (name: "rspm-default-isolation-copts.patch", content: defaultIsolationCoptsPatch)
     ]
 
+    var patches: [(name: String, content: String)] {
+        guard dep == Self.patchedVersion else {
+            let pinned = dep.rawValue
+            let patched = Self.patchedVersion.rawValue
+            Log.codeGenerate.warning("""
+            rules_swift_package_manager \(pinned, privacy: .public) is not \
+            \(patched, privacy: .public): generating without the patches written for it
+            """)
+            return []
+        }
+        return Self.allPatches
+    }
+
     /// The `patches` attribute of the module override.
-    static var patchLabels: String {
+    var patchLabels: String {
         patches.map { patch in
-            "        \"//\(patchDirectory):\(patch.name)\","
+            "        \"//\(Self.patchDirectory):\(patch.name)\","
         }.joined(separator: "\n")
     }
 
     /// The patch files themselves, plus the package that exports them.
-    static var patchFiles: [PluginBuiltin.Custom] {
+    var patchFiles: [PluginBuiltin.Custom] {
+        guard !patches.isEmpty else { return [] }
+
+        let patchDirectory = Self.patchDirectory
         let exports = patches.map { patch in
             "    \"\(patch.name)\","
         }.joined(separator: "\n")

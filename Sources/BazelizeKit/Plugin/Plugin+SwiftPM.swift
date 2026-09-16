@@ -17,7 +17,7 @@ final class PluginSwiftPM: PluginBuiltin {
     /// with a higher floor. Xcode never enforces that, so real projects (e.g.
     /// SimplyCoreAudio declaring macOS 10.12 while depending on swift-atomics
     /// declaring 10.13) stop analyzing on versions past 1.15.0.
-    private let dep: BazelDep.SwiftPM = .v1_15_0
+    let dep: BazelDep.SwiftPM = .v1_15_0
     let remotes: [RemotePackage]
     let locals: [LocalPackage]
     private var packages: [String] = []
@@ -60,15 +60,17 @@ final class PluginSwiftPM: PluginBuiltin {
         builder.bazel_dep(
             name: "rules_swift_package_manager",
             version: dep.rawValue)
-        builder.custom("""
-        single_version_override(
-            module_name = "rules_swift_package_manager",
-            patch_strip = 1,
-            patches = [
-        \(Self.patchLabels)
-            ],
-        )
-        """)
+        if !patches.isEmpty {
+            builder.custom("""
+            single_version_override(
+                module_name = "rules_swift_package_manager",
+                patch_strip = 1,
+                patches = [
+            \(patchLabels)
+                ],
+            )
+            """)
+        }
         builder.custom("""
         swift_deps = use_extension(
             "@rules_swift_package_manager//:extensions.bzl",
@@ -235,7 +237,7 @@ final class PluginSwiftPM: PluginBuiltin {
 
     override var custom: [PluginBuiltin.Custom]? {
         guard hasPackages else { return nil }
-        return [package, packageResolved].compactMap { $0 } + Self.patchFiles
+        return [package, packageResolved].compactMap { $0 } + patchFiles
     }
 
     override var tip: String? {
