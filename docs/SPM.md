@@ -71,8 +71,9 @@ App/
 └── Packages/                 # ★ new
     └── <PackageName>/
         ├── BUILD             # the rules for every target of that package
-        ├── Generated/        # resource bundle accessors, modulemaps, defines
-        └── Package           # symlink to the package's sources
+        ├── Generated/        # resource bundle accessors, module maps, plists
+        ├── Sources/<Target>  # symlink to that target's sources
+        └── Artifacts/<Target>/<Name>.xcframework   # binary targets
 ```
 
 `Patches/` disappears entirely.
@@ -80,16 +81,18 @@ App/
 ### How a package's sources get in
 
 Every package — remote or local — is a directory in this workspace holding a
-generated `BUILD` and one symlink to the sources SwiftPM already has:
+generated `BUILD` and one symlink per target into the sources SwiftPM already
+has:
 
 ```text
 Packages/SFSafeSymbols/
 ├── BUILD
-└── Package -> <workspace>/.build/checkouts/SFSafeSymbols
+└── Sources/
+    └── SFSafeSymbols -> <workspace>/.build/checkouts/SFSafeSymbols/Sources/SFSafeSymbols
 ```
 
-so a target's sources are globbed as `Package/Sources/<Target>/**/*.swift`.
-A local package points at wherever its manifest is, read in place.
+so a target's sources are globbed as `Sources/<Target>/**/*.swift`. A local
+package points at wherever its manifest is, read in place.
 
 Properties of this choice:
 
@@ -99,6 +102,8 @@ Properties of this choice:
 - Resolution stays SwiftPM's job: bazelize runs `swift package resolve` and
   reads each checkout's manifest with `swift package dump-package`, which is
   offline and spans every tools version in the graph.
+- A link per target, rather than one for the whole checkout, keeps the rest of
+  the checkout out of the build — a package may carry `BUILD` files of its own.
 
 The alternative — one `git_repository` per remote package, pinned to the
 revision in `Package.resolved` — is hermetic but reintroduces external repos
@@ -139,17 +144,16 @@ rspm's repository naming.
 | SwiftPM | Generated |
 |---|---|
 | Swift target | `swift_library` |
-| clang target (C/ObjC/C++) | `objc_library`, reusing bazelize's header/include logic |
-| mixed target | `mixed_language_library` |
-| system-library target | `cc_library` + a generated modulemap |
+| clang target (C/ObjC/C++) | `objc_library` + `swift_interop_hint`, and a module map when the package ships none |
+| system-library target | `cc_library` + `swift_interop_hint` over the module map the package ships |
 | binary target (xcframework) | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
 | binary target (local archive) | unarchived first, then as above |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
 | auto-discovered resources (xib/xcassets/metal/xcstrings) | as above; `.metal` enters the resource group with that target's headers |
-| `defines` | `defines` (an unsafe value goes through `Generated/<Target>Defines.h`, same policy as an Xcode target) |
-| `headerSearchPath` | `includes` |
+| `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent |
+| `headerSearchPath` | `includes`, and the headers there stay inputs even when `exclude` drops the directory |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
 | `swiftLanguageMode` | `-swift-version` |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
@@ -164,12 +168,26 @@ rspm's repository naming.
 Two SwiftPM behaviours are matched on every generated `swift_library`:
 `alwayslink`, because SwiftPM always links a package library, and
 `always_include_developer_search_paths`, which is how a test-support library
-such as `RxTest` finds XCTest. Each library is also tagged `manual`: a package
-target is built through the bundle rule that transitions it to a platform, so a
-wildcard pattern must not compile an iOS-only package for the host.
+such as `RxTest` finds XCTest. Every generated rule is also tagged `manual`: a
+package target is built through the bundle rule that transitions it to a
+platform, so a wildcard pattern must not compile an iOS-only package for the
+host.
+
+A module map is what names a C-family module. Without one the module is named
+after the label and the target cannot be imported by the name its own sources
+use; a module map the package ships is preferred, because it is the interface
+the package intends. The map of every dependency is passed to the compiler as
+well: a Swift consumer is handed a module by the rules, a C-family one
+`@import`ing a sibling target is not.
+
+A package's sources are linked one target at a time, so the rest of a checkout
+stays out of the build, and `.bazelignore` keeps SwiftPM's working directory
+out of it too. Both exist for the same reason: a package can carry `BUILD`
+files of its own, and Bazel would load them as packages of this workspace.
 
 A package's platform floor is deliberately ignored — honouring it per package
-is exactly the rspm behaviour that pins us to 1.15.0.
+is exactly the rspm behaviour that pins us to 1.15.0. What that costs is in
+stage 2's results below.
 
 ## Stage 0 results (measured)
 
@@ -273,6 +291,41 @@ Native mode across the 7 green macOS apps, `bazel build //...`:
 Every failure is a missing target kind, not a wrong rule: the products that
 reference a skipped target are the only unresolved labels.
 
+## Stage 2 results (measured)
+
+Every kind of target a package in the corpus is made of is generated: C-family,
+resource-carrying, binary and system-library targets, next to the Swift ones.
+
+Native mode, `bazel build //...` followed by launching the app:
+
+| app | result |
+|---|---|
+| MonitorControl, SwiftBar, stats, Rectangle, MacPass, iina, VirtualBuddy | build and run |
+| CodeEdit | every package builds; the app's own sources are rejected by Swift 6.4 |
+| CotEditor | every package builds; the app's own sources are rejected by Swift 6.4 |
+| IceCubesApp | every package builds; the app's own sources collide with the iOS 27 SDK (`SwiftUI.Document`) |
+| UTM | see the platform floor below |
+| PlayCover | `swift package resolve` fails on the package's own manifest |
+
+The four that do not build fail in code that is not generated here: three in
+their own sources against a newer compiler and SDK, one in a package manifest
+upstream.
+
+### Known limitation: platform floors
+
+A package declares the platform versions it supports, and SwiftPM compiles each
+of its targets at the higher of that floor and the consumer's. Bazelize compiles
+every package target at the project's deployment target, which is what pins the
+rspm dependency at 1.15.0 — later versions transition each target to its own
+floor and then fail analysis when a dependency declares a higher one.
+
+A package that requires more than the project does therefore fails to compile,
+with availability errors naming the newer API. UTM is that case: an iOS 14
+project consuming packages that declare iOS 16 and iOS 18.
+
+Honouring the floor per target needs a transition that raises the deployment
+target without splitting the graph, which is stage 3 work.
+
 ## Stages and exit criteria
 
 The exit criterion is the same at every stage: **the 12 apps at least hold
@@ -284,8 +337,8 @@ reason), plus the 114 unit tests and the iOS fixture.
 | 0 ✅ | measure the corpus | see above |
 | 0.5 ✅ | the `//Packages` facade (aliases into rspm) | all apps; label shape settled |
 | 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind `--spm native`, default still rspm | 58 packages build on their own |
-| 2 | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude`), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | all 12 apps at least hold their ground |
-| 3 | macros / source-generating build tool plugins | when something outside the corpus needs it |
+| 2 ✅ | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude` / module maps), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | the 7 green apps build and run; every package of the other five builds |
+| 3 | macros, source-generating build tool plugins, per-target platform floors | when something outside the corpus needs it |
 | 4 | flip the default, drop the rspm dependency, `Patches/` and the version gate | everything |
 
 Through stages 1–3 rspm and the native generator are **never mixed**: a

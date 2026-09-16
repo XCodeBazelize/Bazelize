@@ -66,8 +66,9 @@ App/
 └── Packages/                 # ★ 新增
     └── <PackageName>/
         ├── BUILD             # 該 package 全部 target 的規則（我們產生）
-        ├── Generated/        # resource bundle accessor、modulemap、defines
-        └── Package           # 指向該 package 原始碼的 symlink
+        ├── Generated/        # resource bundle accessor、module map、plist
+        ├── Sources/<Target>  # 指向該 target 原始碼的 symlink
+        └── Artifacts/<Target>/<Name>.xcframework   # binary target
 ```
 
 `Patches/` 整組消失。
@@ -75,16 +76,17 @@ App/
 ### package 的原始碼怎麼進來
 
 每個 package——遠端或本地——都是這個 workspace 裡的一個目錄，裡面放我們產生的
-`BUILD`，和一條指向 SwiftPM 既有原始碼的 symlink：
+`BUILD`，以及每個 target 一條指向 SwiftPM 既有原始碼的 symlink：
 
 ```text
 Packages/SFSafeSymbols/
 ├── BUILD
-└── Package -> <workspace>/.build/checkouts/SFSafeSymbols
+└── Sources/
+    └── SFSafeSymbols -> <workspace>/.build/checkouts/SFSafeSymbols/Sources/SFSafeSymbols
 ```
 
-所以 target 的原始碼就是 `Package/Sources/<Target>/**/*.swift`。本地 package
-指向它 manifest 所在的位置，就地讀取。
+所以 target 的原始碼就是 `Sources/<Target>/**/*.swift`。本地 package 指向它
+manifest 所在的位置，就地讀取。
 
 這個選擇的性質：
 
@@ -93,6 +95,8 @@ Packages/SFSafeSymbols/
 - 解析仍然是 SwiftPM 的事：bazelize 跑 `swift package resolve`，再用
   `swift package dump-package` 讀每個 checkout 的 manifest——離線、而且橫跨
   依賴圖裡所有 tools version。
+- 一個 target 一條 symlink（而不是整包 checkout 一條），checkout 其餘部分就不會
+  進到 build 裡——package 可能自己帶 `BUILD` 檔。
 
 另一個選項是每個遠端 package 產生一個 `git_repository`，用 `Package.resolved`
 的 revision 釘住：那是 hermetic 的，但又把 external repo 帶回來，還會重抓一份
@@ -129,17 +133,16 @@ alias(
 | SwiftPM | 產出 |
 |---|---|
 | Swift target | `swift_library` |
-| clang target（C/ObjC/C++） | `objc_library`，header／include 沿用 bazelize 現有邏輯 |
-| 混合 target | `mixed_language_library` |
-| system-library target | `cc_library` + 我們產生的 modulemap |
+| clang target（C/ObjC/C++） | `objc_library` + `swift_interop_hint`，package 沒帶 module map 時我們產生一份 |
+| system-library target | `cc_library` + `swift_interop_hint`，用 package 自己帶的 module map |
 | binary target（xcframework） | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
 | binary target（本地 archive） | 先解壓，再同上 |
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
 | auto-discovered resources（xib／xcassets／metal／xcstrings） | 同上，`.metal` 連同該 target 的 header 一起進 resource group |
-| `defines` | `defines`（值不安全時走 `Generated/<Target>Defines.h`，與 Xcode target 同策略） |
-| `headerSearchPath` | `includes` |
+| `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳 |
+| `headerSearchPath` | `includes`，而且該目錄被 `exclude` 丟掉時 header 仍然留作輸入 |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
 | `swiftLanguageMode` | `-swift-version` |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
@@ -153,12 +156,21 @@ alias(
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
 一律整份連結 package library；還有 `always_include_developer_search_paths`，
-`RxTest` 這種測試輔助 library 就是靠它找到 XCTest。每個 library 另外標
+`RxTest` 這種測試輔助 library 就是靠它找到 XCTest。每個產生的規則另外都標
 `manual`：package target 是透過會轉場到某個平台的 bundle 規則建起來的，wildcard
 pattern 不該把 iOS-only 的 package 拿去編 host。
 
+module map 決定 C 系模組叫什麼。沒有它，模組名會由 label 推導出來，原始碼就沒辦法
+用自己寫的名字 import；package 自己帶的 map 優先，因為那是它想提供的介面。每個依賴
+的 map 也會一起交給 compiler：Swift 端的模組是規則給的，C 系端 `@import` 兄弟
+target 則沒人給。
+
+package 的原始碼是一個 target 一條 symlink，checkout 其餘部分不會進 build；
+`.bazelignore` 也把 SwiftPM 的工作目錄排除在外。兩件事同一個理由：package 可能
+自己帶 `BUILD` 檔，Bazel 會把它當成這個 workspace 的 package 去載。
+
 package 自己宣告的 platform floor 是**故意忽略**的——逐 package 遵守它，正是把
-我們釘在 rspm 1.15.0 的那個行為。
+我們釘在 rspm 1.15.0 的那個行為。代價寫在下面階段 2 的結果裡。
 
 ## 階段 0 的結果（已量測）
 
@@ -257,6 +269,38 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 每個失敗都是「少了一種 target 種類」，不是規則產錯：唯一解不到的 label 就是
 那些指向被略過 target 的 product。
 
+## 階段 2 的結果（已量測）
+
+語料裡 package 會用到的每一種 target 都會產生了：C 系、帶 resource、binary、
+system library，加上原本的 Swift。
+
+native 模式下跑 `bazel build //...`，再啟動 app：
+
+| app | 結果 |
+|---|---|
+| MonitorControl、SwiftBar、stats、Rectangle、MacPass、iina、VirtualBuddy | 建得起來也跑得起來 |
+| CodeEdit | package 全部建得起來；app 自己的原始碼被 Swift 6.4 擋下 |
+| CotEditor | package 全部建得起來；app 自己的原始碼被 Swift 6.4 擋下 |
+| IceCubesApp | package 全部建得起來；app 自己的原始碼和 iOS 27 SDK 撞名（`SwiftUI.Document`） |
+| UTM | 見下面的 platform floor |
+| PlayCover | `swift package resolve` 在 package 自己的 manifest 上就失敗 |
+
+沒建起來的四個，失敗點都不在我們產生的東西裡：三個是自己的原始碼碰上更新的
+compiler 與 SDK，一個是上游 manifest。
+
+### 已知限制：platform floor
+
+package 會宣告自己支援的平台版本，SwiftPM 編它的 target 時取「自己的 floor 和
+使用端的 floor 之中較高的那個」。bazelize 一律用專案的 deployment target 編所有
+package target，而這正是 rspm 依賴被釘在 1.15.0 的原因——之後的版本會把每個
+target 轉場到它自己的 floor，然後在依賴宣告更高版本時 analysis 失敗。
+
+所以 package 要求比專案高時就會編不過，錯誤是那些新 API 的 availability。UTM 就是
+這個情形：iOS 14 的專案，用到宣告 iOS 16 與 iOS 18 的 package。
+
+要逐 target 遵守 floor，需要一個「拉高 deployment target 又不把依賴圖切開」的
+轉場，那是階段 3 的事。
+
 ## 分階段與通過條件
 
 每一階段的通過條件都一樣：**12 個 app 至少維持現狀**（7 個綠的仍綠、blocked 的
@@ -267,8 +311,8 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 | 0 ✅ | 量測語料 | 見上 |
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由 `--spm native` 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
-| 2 | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 全部 12 個 app 至少維持現狀 |
-| 3 | macro／會產生原始碼的 build tool plugin | 語料外的需求出現時再做 |
+| 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
+| 3 | macro、會產生原始碼的 build tool plugin、逐 target 的 platform floor | 語料外的需求出現時再做 |
 | 4 | 預設切換，移除 rspm 依賴、`Patches/` 與版本守門 | 全部 |
 
 階段 1–3 期間 rspm 與自製產生器**不混用**：同一個 workspace 只走其中一條，由
