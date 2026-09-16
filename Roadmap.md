@@ -112,16 +112,31 @@ Packages/Account/
 
 label 形如 `//Packages/Account:Account`。
 
-### Label 命名
+### Label 命名：facade（已實作）
 
-| 對象 | 現在（rspm） | 新的 |
+所有 package product——遠端或本地——在 `Targets/*/BUILD` 裡都是同一個形狀：
+
+| 對象 | 之前 | 現在 |
 |---|---|---|
-| 遠端 package 的 product | `@swiftpkg_sfsafesymbols//:SFSafeSymbols` | `@swiftpkg_sfsafesymbols//:SFSafeSymbols` |
+| 遠端 package 的 product | `@swiftpkg_sfsafesymbols//:SFSafeSymbols` | `//Packages/SFSafeSymbols:SFSafeSymbols` |
 | 本地 package 的 product | `@swiftpkg_account//:Account` | `//Packages/Account:Account` |
-| package 內部 target | `…//:Target.rspm` | `…//:Target`（不再有 `.rspm` 後綴） |
 
-遠端 repo 名沿用 `swiftpkg_<sanitized>`，避免一次改動太多；`Targets/*/BUILD`
-裡對遠端 product 的引用因此**不必改**。
+`Packages/<Name>/BUILD` 是一層 alias，指向目前實作它的東西：
+
+```python
+alias(
+    name = "SFSafeSymbols",
+    actual = "@swiftpkg_sfsafesymbols//:SFSafeSymbols",
+    visibility = ["//visibility:public"],
+)
+```
+
+目錄名取人看得懂的 package 名（remote 用 URL 最後一段去掉 `.git`，local 用
+目錄名），所以 `//Packages/GRMustache.swift:Mustache` 這種帶點的名字也成立。
+
+意義：**換掉 SPM 實作只動 `Packages/` 底下的檔案**。階段 4 把 alias 換成規則
+本體時，沒有任何 target 的 `deps` 需要改；中途要回退，把 alias 指回 rspm 即可。
+測試也不再釘 rspm 的 repo 命名規則。
 
 ---
 
