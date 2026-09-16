@@ -2,31 +2,29 @@
 
 ## 目標
 
-由 bazelize 自己產生專案裡 Swift package 的 Bazel 規則，不再交給
-`rules_swift_package_manager`（以下 rspm）。
-
-目前 bazelize 只在 `MODULE.bazel` 裡宣告 rspm、寫一份合成的 `Package.swift`，
+由 bazelize 自己產生專案裡 Swift package 的 Bazel 規則。以前是在 `MODULE.bazel`
+裡宣告 `rules_swift_package_manager`（以下 rspm）、寫一份合成的 `Package.swift`，
 package 的 BUILD 由 rspm 在 fetch 階段產生在 external repo 裡。
 
-這份文件描述改成自己產生之後的**輸出結構**、SwiftPM 概念到規則的對應，以及
-分階段的做法。它只談產物形狀與責任邊界，不談實作細節。
+這份文件描述**輸出結構**、SwiftPM 概念到規則的對應，以及這次替換的分階段做法。
+它只談產物形狀與責任邊界，不談實作細節。
 
 ## 為什麼要換
 
-1. rspm 產出的 BUILD 有幾處對真實專案不夠用，現在用 4 個 vendored patch 補
+1. rspm 產出的 BUILD 有幾處對真實專案不夠用，當時用 4 個 vendored patch 補
    （`Patches/rspm-*.patch` + `single_version_override`），還得帶版本守門。
 2. 我們被釘在 rspm 1.15.0：≥1.16 會把每個 SwiftPM target 轉場到它自己宣告的
    platform floor，然後在依賴宣告更高版本時 analysis 失敗——Xcode 從不這樣做。
    平台語義本來就是 bazelize 的主場，自己產生就不會打架。
 3. Xcode target 的 header／resource／plist 處理已經在 bazelize 裡了，package
    target 走同一套才會行為一致。
-4. 產物變成簽入的檔案，出問題直接讀檔，不必追 repo rule。
+4. 產物是簽入的檔案，出問題直接讀檔，不必追 repo rule。
 5. 少一段 `bazel mod tidy` 補 `use_repo` 清單的流程。
 
 代價：SwiftPM 的語義（traits、registry、binary target、plugin、macro）從此是
-我們的責任。
+我們的責任；還沒做到的那一項——package 自己的 platform floor——寫在文件最後。
 
-## 現在的輸出（rspm 版，作為對照）
+## 以前的輸出（rspm 版，作為對照）
 
 ```text
 App/
@@ -49,10 +47,10 @@ App/
     └── CopyFiles/<dest>/     # copy phase 目的地
 ```
 
-package 的 BUILD 不在這裡，而在
+package 的 BUILD 不在那裡，而在
 `external/rules_swift_package_manager++swift_deps+swiftpkg_<name>/`。
 
-## 新的輸出（自己產生）
+## 輸出
 
 ```text
 App/
@@ -102,7 +100,7 @@ manifest 所在的位置，就地讀取。
 的 revision 釘住：那是 hermetic 的，但又把 external repo 帶回來，還會重抓一份
 Bazel 手上已經有的原始碼。
 
-### Label 命名：facade
+### Label 命名
 
 所有 package product——遠端或本地——在 `Targets/*/BUILD` 裡都是同一個形狀：
 
@@ -111,22 +109,12 @@ Bazel 手上已經有的原始碼。
 | 遠端 package 的 product | `@swiftpkg_sfsafesymbols//:SFSafeSymbols` | `//Packages/SFSafeSymbols:SFSafeSymbols` |
 | 本地 package 的 product | `@swiftpkg_account//:Account` | `//Packages/Account:Account` |
 
-rspm 模式下 `Packages/<Name>/BUILD` 是一層 alias，指向目前實作它的東西：
-
-```python
-alias(
-    name = "SFSafeSymbols",
-    actual = "@swiftpkg_sfsafesymbols//:SFSafeSymbols",
-    visibility = ["//visibility:public"],
-)
-```
-
 目錄名取人看得懂的 package 名（remote 用 URL 最後一段去掉 `.git`，local 用
 目錄名），所以 `//Packages/GRMustache.swift:Mustache` 這種帶點的名字也成立。
 
-意義：**換掉 SwiftPM 實作只動 `Packages/` 底下的檔案**。把 alias 換成規則本體時，
-沒有任何 target 的 `deps` 需要改；要回退，把 alias 指回 rspm 即可。測試也不再
-釘 rspm 的 repo 命名規則。
+不論規則是誰產生的，product 就是這個 label——這也是這次替換只動 `Packages/` 的
+原因：label 形狀先落地（當時是指向 rspm 的 alias），之後換成規則本體，沒有任何
+target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生的。
 
 ## SwiftPM 概念 → 產出的規則
 
@@ -250,11 +238,12 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 
 ## 階段 1 的結果（已量測）
 
-`--spm native` 會為純 Swift 的 package target 產生規則。還不支援的種類會略過
+這個階段只產生純 Swift 的 package target，由一個 flag 切換，預設仍是 rspm。還不
+支援的種類會略過
 並印警告，依賴它的 target 也一起略過：一個少了它要連結的 target 的 library，
 比根本不存在更糟。
 
-7 個原本綠燈的 macOS app 在 native 模式下跑 `bazel build //...`：
+7 個原本綠燈的 macOS app 跑 `bazel build //...`：
 
 | app | 結果 | 卡住的 target 種類 |
 |---|---|---|
@@ -274,7 +263,7 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 語料裡 package 會用到的每一種 target 都會產生了：C 系、帶 resource、binary、
 system library，加上原本的 Swift。
 
-native 模式下跑 `bazel build //...`，再啟動 app：
+跑 `bazel build //...`，再啟動 app：
 
 | app | 結果 |
 |---|---|
@@ -292,7 +281,7 @@ compiler 與 SDK，一個是上游 manifest。
 
 package 會宣告自己支援的平台版本，SwiftPM 編它的 target 時取「自己的 floor 和
 使用端的 floor 之中較高的那個」。bazelize 一律用專案的 deployment target 編所有
-package target，而這正是 rspm 依賴被釘在 1.15.0 的原因——之後的版本會把每個
+package target，而這正是 rspm 依賴當時被釘在 1.15.0 的原因——之後的版本會把每個
 target 轉場到它自己的 floor，然後在依賴宣告更高版本時 analysis 失敗。
 
 所以 package 要求比專案高時就會編不過，錯誤是那些新 API 的 availability。UTM 就是
@@ -310,17 +299,17 @@ target 轉場到它自己的 floor，然後在依賴宣告更高版本時 analys
 |---|---|---|
 | 0 ✅ | 量測語料 | 見上 |
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
-| 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由 `--spm native` 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
+| 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
 | 3 | macro、會產生原始碼的 build tool plugin、逐 target 的 platform floor | 語料外的需求出現時再做 |
-| 4 | 預設切換，移除 rspm 依賴、`Patches/` 與版本守門 | 全部 |
+| 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
-階段 1–3 期間 rspm 與自製產生器**不混用**：同一個 workspace 只走其中一條，由
-flag 決定；混用會產生兩張依賴圖。
+階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡
+每個 app 用自製產生器的結果都不比 rspm 差。
 
 ## 待決事項
 
 1. `Package.swift` 是否還需要出現在產物裡？只有 `swift package resolve` 需要它，
    可以改成只在更新 pin 時才產生。
 2. registry package（`.package(id:)`）階段幾支援？目前語料沒有。
-3. 階段 1–4 期間，上游 rspm PR 還要不要送？patch 很小、對別人也有用，我建議要。
+3. 上游 rspm PR 還要不要送？那 4 個 patch 很小，對還在用 rspm 的人也有用。

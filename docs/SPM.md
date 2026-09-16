@@ -2,36 +2,35 @@
 
 ## Goal
 
-Generate the Bazel rules for a project's Swift packages in bazelize, instead of
-delegating them to `rules_swift_package_manager` (rspm).
+Bazelize generates the Bazel rules for a project's Swift packages itself. It
+used to declare `rules_swift_package_manager` (rspm) in `MODULE.bazel` and
+write a synthesized `Package.swift`, leaving rspm to generate the package
+BUILD files inside an external repository at fetch time.
 
-Today bazelize only declares rspm in `MODULE.bazel` and writes a synthesized
-`Package.swift`; rspm generates the package BUILD files inside an external
-repository at fetch time.
-
-This document describes the **output shape** after the switch, the mapping from
-SwiftPM concepts to rules, and the staged plan. It is about artifacts and
+This document describes the **output shape**, the mapping from SwiftPM
+concepts to rules, and how the switch was staged. It is about artifacts and
 responsibility boundaries, not implementation details.
 
 ## Why
 
-1. rspm's output needs 4 vendored patches for real projects
+1. rspm's output needed 4 vendored patches for real projects
    (`Patches/rspm-*.patch` + `single_version_override`), plus a version gate.
-2. We are pinned to rspm 1.15.0: from 1.16 every SwiftPM target is transitioned
-   to the platform floor it declares itself, and analysis fails when a
-   dependency declares a higher floor. Xcode never does this. Platform
+2. We were pinned to rspm 1.15.0: from 1.16 every SwiftPM target is
+   transitioned to the platform floor it declares itself, and analysis fails
+   when a dependency declares a higher floor. Xcode never does this. Platform
    semantics are bazelize's own domain, so generating the rules here removes
    the conflict.
 3. Header, resource and plist handling for Xcode targets already lives in
    bazelize; package targets behave consistently only if they share it.
-4. The output becomes checked-in files: a problem is read in the file, not
-   traced through a repo rule.
+4. The output is checked-in files: a problem is read in the file, not traced
+   through a repo rule.
 5. One fewer step — no `bazel mod tidy` to maintain the `use_repo` list.
 
 The cost: SwiftPM semantics (traits, registry, binary targets, plugins, macros)
-become our responsibility.
+are now our responsibility, and so is the one behaviour still missing — a
+package's own platform floor, at the end of this document.
 
-## Current output (rspm, for contrast)
+## Previous output (rspm, for contrast)
 
 ```text
 App/
@@ -54,10 +53,10 @@ App/
     └── CopyFiles/<dest>/     # copy phase destinations
 ```
 
-The package BUILD files are not here; they are in
+The package BUILD files were not there; they were in
 `external/rules_swift_package_manager++swift_deps+swiftpkg_<name>/`.
 
-## New output (generated here)
+## Output
 
 ```text
 App/
@@ -109,7 +108,7 @@ The alternative — one `git_repository` per remote package, pinned to the
 revision in `Package.resolved` — is hermetic but reintroduces external repos
 and fetches sources Bazel already has on disk.
 
-### Label naming: the facade
+### Label naming
 
 Every package product — remote or local — has one shape in `Targets/*/BUILD`:
 
@@ -118,26 +117,15 @@ Every package product — remote or local — has one shape in `Targets/*/BUILD`
 | a remote package | `@swiftpkg_sfsafesymbols//:SFSafeSymbols` | `//Packages/SFSafeSymbols:SFSafeSymbols` |
 | a local package | `@swiftpkg_account//:Account` | `//Packages/Account:Account` |
 
-In rspm mode `Packages/<Name>/BUILD` is a layer of aliases pointing at whatever
-implements the product today:
-
-```python
-alias(
-    name = "SFSafeSymbols",
-    actual = "@swiftpkg_sfsafesymbols//:SFSafeSymbols",
-    visibility = ["//visibility:public"],
-)
-```
-
 The directory is named after the package as a human reads it (last path
 component of the URL without `.git`, or the directory name for a local
 package), so a name with a dot — `//Packages/GRMustache.swift:Mustache` —
 works too.
 
-What this buys: **replacing the SwiftPM implementation only touches files under
-`Packages/`**. No target's `deps` changes when the aliases become the rules
-themselves, reverting means pointing the aliases back at rspm, and no test pins
-rspm's repository naming.
+A product is that label whatever generates it, which is what made the switch a
+change to `Packages/` alone: the label shape landed first, as aliases into
+rspm, and became the rules themselves without a single target's `deps` moving.
+No test pins how a package's rules are produced either.
 
 ## SwiftPM concept → generated rule
 
@@ -271,12 +259,13 @@ entire corpus.
 
 ## Stage 1 results (measured)
 
-`--spm native` generates rules for pure-Swift package targets. A target whose
+At this stage only pure-Swift package targets were generated, behind a flag
+with rspm still the default. A target whose
 kind is not generated yet is skipped with a warning, and so is every target
 that depends on it: a library missing a target it links is worse than a library
 that is not there at all.
 
-Native mode across the 7 green macOS apps, `bazel build //...`:
+Across the 7 green macOS apps, `bazel build //...`:
 
 | app | result | blocking target kind |
 |---|---|---|
@@ -296,7 +285,7 @@ reference a skipped target are the only unresolved labels.
 Every kind of target a package in the corpus is made of is generated: C-family,
 resource-carrying, binary and system-library targets, next to the Swift ones.
 
-Native mode, `bazel build //...` followed by launching the app:
+`bazel build //...`, followed by launching the app:
 
 | app | result |
 |---|---|
@@ -315,9 +304,9 @@ upstream.
 
 A package declares the platform versions it supports, and SwiftPM compiles each
 of its targets at the higher of that floor and the consumer's. Bazelize compiles
-every package target at the project's deployment target, which is what pins the
-rspm dependency at 1.15.0 — later versions transition each target to its own
-floor and then fail analysis when a dependency declares a higher one.
+every package target at the project's deployment target, which is what pinned
+the rspm dependency at 1.15.0 — later versions transition each target to its
+own floor and then fail analysis when a dependency declares a higher one.
 
 A package that requires more than the project does therefore fails to compile,
 with availability errors naming the newer API. UTM is that case: an iOS 14
@@ -336,14 +325,14 @@ reason), plus the 114 unit tests and the iOS fixture.
 |---|---|---|
 | 0 ✅ | measure the corpus | see above |
 | 0.5 ✅ | the `//Packages` facade (aliases into rspm) | all apps; label shape settled |
-| 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind `--spm native`, default still rspm | 58 packages build on their own |
+| 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind a flag, rspm still the default | 58 packages build on their own |
 | 2 ✅ | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude` / module maps), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | the 7 green apps build and run; every package of the other five builds |
 | 3 | macros, source-generating build tool plugins, per-target platform floors | when something outside the corpus needs it |
-| 4 | flip the default, drop the rspm dependency, `Patches/` and the version gate | everything |
+| 4 ✅ | the rspm dependency, `Patches/`, the version gate and the mode flag are gone | the 7 green apps build and run |
 
-Through stages 1–3 rspm and the native generator are **never mixed**: a
-workspace takes one path or the other, chosen by the flag. Mixing them would
-produce two dependency graphs.
+Stage 4 removed the alternative rather than keeping a flag: two paths would
+mean two dependency graphs, and the generated one is at least as good on every
+app in the corpus.
 
 ## Open questions
 
@@ -352,5 +341,5 @@ produce two dependency graphs.
    are updated.
 2. Which stage supports registry packages (`.package(id:)`)? Nothing in the
    corpus uses one.
-3. Should the rspm patches still go upstream during stages 1–4? They are small
-   and useful to others, so probably yes.
+3. Should the four rspm patches still go upstream? They are small and useful to
+   whoever still uses rspm.
