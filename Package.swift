@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "Bazelize",
     platforms: [
-        .macOS(.v13),
+        .macOS(.v14),
     ],
     products: [
         .executable(name: "bazelize", targets: ["Bazelize"]),
@@ -23,11 +23,11 @@ let package = Package(
 
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
 
-        /// SwiftPMDataModel for the legacy `XCode` target.
-        /// 6.3+ requires macOS 14, which would raise this package's platform floor.
+        /// SwiftPMDataModel for the legacy `XCode` target, pinned to the release
+        /// that matches the toolchain; it is what sets this package's macOS floor.
         .package(
-            url: "https://github.com/apple/swift-package-manager",
-            branch: "swift-6.2.4-RELEASE"),
+            url: "https://github.com/swiftlang/swift-package-manager",
+            branch: "swift-6.3.3-RELEASE"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.

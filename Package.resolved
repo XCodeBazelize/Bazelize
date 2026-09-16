@@ -1,5 +1,5 @@
 {
-  "originHash" : "b56c62d8ee7081df49e35cad75d735d86b3c168c73793b3e87772068182a960c",
+  "originHash" : "71e46f151f66c00f8708834f10a3b7777749f4ed6d5c3ce01606075637311f02",
   "pins" : [
     {
       "identity" : "aexml",
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
       "state" : {
-        "revision" : "9f542610331815e29cc3821d3b6f488db8715517",
-        "version" : "1.6.0"
+        "revision" : "d9a5b37470adc940d22c3bcd5ca6953a516b727f",
+        "version" : "1.7.2"
       }
     },
     {
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-certificates.git",
       "state" : {
-        "revision" : "2f797305c1b5b982acaa6005d8a9f970cc4e97ff",
-        "version" : "1.5.0"
+        "branch" : "1.10.1",
+        "revision" : "386001a92200c70fd06217b3ccad58d7226edb84"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "c11818f3cae0780656baa430b49e7f163f08dffd",
-        "version" : "1.1.6"
+        "branch" : "1.1.6",
+        "revision" : "c11818f3cae0780656baa430b49e7f163f08dffd"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "629f0b679d0fd0a6ae823d7f750b9ab032c00b80",
-        "version" : "3.0.0"
+        "branch" : "3.12.5",
+        "revision" : "d79c573e1b400d670ed12c0cb29d33f2c0f5ab70"
       }
     },
     {
@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-driver.git",
       "state" : {
-        "branch" : "release/6.2",
-        "revision" : "aedacc6c1583db4f2989a367e3c41968558a5b8e"
+        "branch" : "release/6.3",
+        "revision" : "7d6b844f0c2497a997770a11536598b187066be9"
       }
     },
     {
@@ -96,17 +96,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-llbuild.git",
       "state" : {
-        "branch" : "release/6.2",
-        "revision" : "073dff55529d7c4ecbd615ab5f5ac52ae5b380da"
+        "branch" : "release/6.3",
+        "revision" : "e38525ae3519021f014ad91e7bf86e7ae86044f5"
       }
     },
     {
       "identity" : "swift-package-manager",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-package-manager",
+      "location" : "https://github.com/swiftlang/swift-package-manager",
       "state" : {
-        "branch" : "swift-6.2.4-RELEASE",
-        "revision" : "215e9f91823d7e44c379fa17bf1eef189438fc24"
+        "branch" : "swift-6.3.3-RELEASE",
+        "revision" : "5f6969f5b083b4415632114d4897c6f820761a7f"
       }
     },
     {
@@ -119,21 +119,12 @@
       }
     },
     {
-      "identity" : "swift-syntax",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax.git",
-      "state" : {
-        "branch" : "release/6.2",
-        "revision" : "5a87516fc3dddbd23cb76358eb489915ee86b444"
-      }
-    },
-    {
       "identity" : "swift-system",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "869129b7bf4ecc57b97d0193ad29690ca2134750",
-        "version" : "1.8.1"
+        "branch" : "1.5.0",
+        "revision" : "61e4ca4b81b9e09e2ec863b00c340eb13497dac6"
       }
     },
     {
@@ -141,8 +132,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-toolchain-sqlite.git",
       "state" : {
-        "revision" : "d9b11cb79071d5ab992ff47dfd2e8d6e19418d97",
-        "version" : "1.0.13"
+        "branch" : "1.0.7",
+        "revision" : "b45b80b943e88db3cb8ddea798fa3fa9912375ff"
       }
     },
     {
@@ -150,8 +141,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-tools-support-core.git",
       "state" : {
-        "branch" : "release/6.2",
-        "revision" : "5a993c8848487c934d53ffceef8e1cad0a241dc1"
+        "branch" : "release/6.3",
+        "revision" : "44be92e627f754f593ca99f1b0c982e389e9bb20"
       }
     },
     {
