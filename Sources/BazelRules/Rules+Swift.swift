@@ -29,6 +29,8 @@ extension Rules {
         case swift_c_module
         /// `swift_overlay(name, deps, module_name, overlay_deps, srcs)`.
         case swift_overlay
+        /// `swift_interop_hint(name, exclude_hdrs, module_map, module_name, suppressed)`.
+        case swift_interop_hint
         /// `swift_library_group(name, deps, exports)`.
         case swift_library_group
 
@@ -61,6 +63,8 @@ extension Rules {
                 "@build_bazel_rules_swift//swift:swift_c_module.bzl"
             case .swift_overlay:
                 "@build_bazel_rules_swift//swift:swift_overlay.bzl"
+            case .swift_interop_hint:
+                "@build_bazel_rules_swift//swift:swift_interop_hint.bzl"
             case .swift_library_group:
                 "@build_bazel_rules_swift//swift:swift_library_group.bzl"
             case .swift_compiler_plugin, .universal_swift_compiler_plugin:
@@ -131,6 +135,7 @@ extension Rules.Swift {
             always_include_developer_search_paths: Bool? = nil,
             copts: [String]? = nil,
             module_name: String? = nil,
+            package_name: String? = nil,
             srcs: Starlark.Value,
             deps: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
@@ -157,6 +162,9 @@ extension Rules.Swift {
                 }
                 if let module_name {
                     "module_name" => module_name
+                }
+                if let package_name {
+                    "package_name" => package_name
                 }
                 "srcs" => srcs
 
@@ -482,6 +490,43 @@ extension Rules.Swift {
         ///   Dependencies re-exported by the group.
         /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
+        /// Builds a `swift_interop_hint` target.
+        ///
+        /// Reference: [rules_swift `swift_interop_hint`](https://github.com/bazelbuild/rules_swift/blob/main/doc/rules.md#swift_interop_hint)
+        ///
+        /// Signature:
+        /// `swift_interop_hint(name, exclude_hdrs, module_map, module_name, suppressed)`.
+        ///
+        /// Parameters:
+        /// - `name: String`
+        ///   The Bazel target name.
+        /// - `module_map: Starlark.Label?`
+        ///   A module map written by hand, used instead of a generated one.
+        /// - `module_name: String?`
+        ///   The module name a Swift target imports.
+        /// - `exclude_hdrs: Starlark.Value?`
+        ///   Headers kept out of the generated module map.
+        /// - `suppressed: Bool?`
+        ///   Hides the C target from Swift entirely.
+        public static func swift_interop_hint(
+            name: String,
+            module_map: Starlark.Label? = nil,
+            module_name: String? = nil,
+            exclude_hdrs: Starlark.Value? = nil,
+            suppressed: Bool? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Swift.swift_interop_hint.call {
+                "name" => name
+                if let module_map { "module_map" => module_map }
+                if let module_name { "module_name" => module_name }
+                if let exclude_hdrs { "exclude_hdrs" => exclude_hdrs }
+                if let suppressed { "suppressed" => suppressed }
+                if let visibility { visibility }
+            }
+        }
+
         public static func swift_library_group(
             name: String,
             deps: Starlark.Value? = nil,

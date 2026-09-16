@@ -43,6 +43,7 @@ extension Rules.Objc {
         /// Reference: [Bazel `objc_library`](https://bazel.build/reference/be/objective-c#objc_library)
         public static func objc_library(
             name: String,
+            aspect_hints: Starlark.Value? = nil,
             srcs: Starlark.Value? = nil,
             hdrs: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
@@ -60,6 +61,7 @@ extension Rules.Objc {
             sdk_dylibs: [String]? = nil,
             sdk_frameworks: [String]? = nil,
             sdk_includes: [String]? = nil,
+            tags: [String]? = nil,
             textual_hdrs: Starlark.Value? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil,
@@ -68,6 +70,7 @@ extension Rules.Objc {
         {
             Rules.Objc.objc_library.call {
                 "name" => name
+                if let aspect_hints { "aspect_hints" => aspect_hints }
                 if let srcs { "srcs" => srcs }
                 if let hdrs { "hdrs" => hdrs }
                 if let deps { "deps" => deps }
@@ -85,6 +88,7 @@ extension Rules.Objc {
                 if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
                 if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
                 if let sdk_includes { "sdk_includes" => sdk_includes }
+                if let tags { "tags" => tags }
                 if let textual_hdrs { "textual_hdrs" => textual_hdrs }
                 if let testonly { "testonly" => testonly }
                 if let visibility { visibility }

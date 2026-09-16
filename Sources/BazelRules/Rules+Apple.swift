@@ -1176,6 +1176,8 @@ extension Rules.Apple.Resources {
         /// Builds an `apple_resource_bundle` target.
         public static func apple_resource_bundle(
             name: String,
+            bundle_name: String? = nil,
+            infoplists: Starlark.Value? = nil,
             resources: Starlark.Value? = nil,
             structured_resources: Starlark.Value? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
@@ -1183,6 +1185,8 @@ extension Rules.Apple.Resources {
         {
             Rules.Apple.Resources.apple_resource_bundle.call {
                 "name" => name
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let infoplists { "infoplists" => infoplists }
                 if let resources { "resources" => resources }
                 if let structured_resources { "structured_resources" => structured_resources }
                 if let visibility { visibility }

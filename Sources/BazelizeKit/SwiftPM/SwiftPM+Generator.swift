@@ -40,14 +40,51 @@ extension SwiftPM {
             try materializeSources(package, at: root)
 
             let builder = CodeBuilder()
-            let emitted = try supportedTargets(of: package)
+            var emitted = try supportedTargets(of: package)
 
-            for target in package.manifest.targets where emitted.contains(target.name) {
-                build(target, in: package, builder: builder)
+            for target in package.manifest.targets {
+                guard let kind = emitted[target.name] else { continue }
+
+                if case .binary = kind {
+                    if try !buildBinary(target, in: package, root: root, builder: builder) {
+                        emitted[target.name] = nil
+                    }
+                    continue
+                }
+
+                guard let prefix = sourcePrefix(of: target, in: package) else { continue }
+
+                let resources = try buildResources(
+                    target,
+                    in: package,
+                    prefix: prefix,
+                    root: root,
+                    kind: kind,
+                    builder: builder)
+
+                switch kind {
+                case .swift:
+                    build(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        resources: resources,
+                        builder: builder)
+                case .clang:
+                    buildClang(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        root: root,
+                        resources: resources,
+                        builder: builder)
+                case .binary, .unsupported:
+                    continue
+                }
             }
 
             for product in package.manifest.products {
-                build(product, emitted: emitted, package: package, builder: builder)
+                build(product, emitted: Set(emitted.keys), package: package, builder: builder)
             }
 
             try (root + "BUILD").write(builder.build())
@@ -56,15 +93,15 @@ extension SwiftPM {
         /// The targets that can be generated, after dropping everything that depends
         /// on one that cannot: a library missing a target it links is worse than a
         /// library that is not there at all.
-        private func supportedTargets(of package: Package) throws -> Set<String> {
+        private func supportedTargets(of package: Package) throws -> [String: TargetKind] {
             let targets = package.manifest.targets.filter { $0.type != "test" }
-            var supported = Set<String>()
+            var supported: [String: TargetKind] = [:]
 
             for target in targets {
                 guard let kind = try kind(of: target, in: package) else { continue }
                 switch kind {
-                case .swift:
-                    supported.insert(target.name)
+                case .swift, .clang, .binary:
+                    supported[target.name] = kind
                 case .unsupported(let reason):
                     Log.codeGenerate.warning("""
                     Skip \(package.directory, privacy: .public)/\(target.name, privacy: .public): \
@@ -77,11 +114,11 @@ extension SwiftPM {
             var changed = true
             while changed {
                 changed = false
-                for target in targets where supported.contains(target.name) {
+                for target in targets where supported[target.name] != nil {
                     let missing = target.dependencies.compactMap { dependency -> String? in
                         switch dependency.kind {
                         case .target(let name), .byName(let name):
-                            guard names.contains(name), !supported.contains(name) else { return nil }
+                            guard names.contains(name), supported[name] == nil else { return nil }
                             return name
                         case .product:
                             return nil
@@ -89,7 +126,7 @@ extension SwiftPM {
                     }
                     guard let first = missing.first else { continue }
 
-                    supported.remove(target.name)
+                    supported[target.name] = nil
                     changed = true
                     Log.codeGenerate.warning("""
                     Skip \(package.directory, privacy: .public)/\(target.name, privacy: .public): \
@@ -113,8 +150,10 @@ extension SwiftPM {
 
         static let sourcesRoot = "Package"
 
-        private enum TargetKind {
+        enum TargetKind {
             case swift
+            case clang
+            case binary
             case unsupported(String)
         }
 
@@ -129,7 +168,7 @@ extension SwiftPM {
                 /// source, so a build without it is the same build.
                 return .unsupported("plugin targets are not generated")
             case "binary":
-                return .unsupported("binary targets are not generated yet")
+                return .binary
             case "system":
                 return .unsupported("system library targets are not generated yet")
             case "macro":
@@ -142,20 +181,67 @@ extension SwiftPM {
                 return .unsupported("no source directory")
             }
 
-            let files = (try? directory.recursiveChildren()) ?? []
-            let extensions = Set(files.compactMap(\.extension))
-
-            if extensions.isDisjoint(with: Self.clangExtensions) {
-                return .swift
+            let extensions = extensions(of: target, in: package)
+            guard !extensions.isEmpty else {
+                return .unsupported("no sources")
             }
-            return .unsupported("C-family sources are not generated yet")
+
+            /// A target with any Swift in it is a Swift target: SwiftPM does not
+            /// allow one target to mix languages, so the C-family files that are
+            /// still on disk belong to another target or are excluded.
+            return extensions.contains("swift") ? .swift : .clang
         }
 
-        private static let clangExtensions: Set<String> = ["c", "cc", "cpp", "cxx", "m", "mm", "S"]
+        /// The extensions of the files that actually belong to the target, which is
+        /// what decides whether a `regular` target is Swift or C-family.
+        func extensions(of target: PackageTarget, in package: Package) -> Set<String> {
+            Set(sourceFiles(of: target, in: package).compactMap(\.extension))
+        }
+
+        /// The files SwiftPM compiles for the target: what an explicit `sources`
+        /// list names, or the whole target directory, minus `exclude`.
+        func sourceFiles(of target: PackageTarget, in package: Package) -> [Path] {
+            guard let directory = sourceDirectory(of: target, in: package) else { return [] }
+            let roots = (target.sources?.nonEmpty?.map { directory + $0 }) ?? [directory]
+            return files(under: roots, excluding: target.exclude, in: directory)
+        }
+
+        /// Everything in the target directory, `exclude` aside.
+        ///
+        /// An explicit `sources` list only stops SwiftPM from compiling the rest;
+        /// a header next to those sources is still the target's header, which is
+        /// why it is collected from the whole directory.
+        func allFiles(of target: PackageTarget, in package: Package) -> [Path] {
+            guard let directory = sourceDirectory(of: target, in: package) else { return [] }
+            return files(under: [directory], excluding: target.exclude, in: directory)
+        }
+
+        private func files(under roots: [Path], excluding exclude: [String], in directory: Path) -> [Path] {
+            let excluded = exclude.map { (directory + $0).normalize().string }
+
+            var files: [Path] = []
+            for root in roots {
+                if root.isDirectory {
+                    files.append(contentsOf: ((try? root.recursiveChildren()) ?? []))
+                } else if root.exists {
+                    files.append(root)
+                }
+            }
+
+            return files.filter { file in
+                let path = file.normalize().string
+                return !excluded.contains { path == $0 || path.hasPrefix("\($0)/") }
+            }
+        }
+
+        /// Extensions a C-family compiler is handed.
+        static let compileExtensions = ["c", "cc", "cpp", "cxx", "m", "mm", "S", "s"]
+        /// Extensions that are only ever included by another file.
+        static let headerExtensions = ["h", "hh", "hpp", "hxx", "inc"]
 
         /// SwiftPM's own layout rules: an explicit `path`, else one of the
         /// conventional directories, else the package root for a single target.
-        private func sourceDirectory(of target: PackageTarget, in package: Package) -> Path? {
+        func sourceDirectory(of target: PackageTarget, in package: Package) -> Path? {
             if let path = target.path {
                 let directory = (package.root + path).normalize()
                 return directory.exists ? directory : nil
@@ -171,7 +257,7 @@ extension SwiftPM {
         }
 
         /// The target's directory, relative to the package's source link.
-        private func sourcePrefix(of target: PackageTarget, in package: Package) -> String? {
+        func sourcePrefix(of target: PackageTarget, in package: Package) -> String? {
             guard let directory = sourceDirectory(of: target, in: package) else { return nil }
 
             let root = package.root.normalize().string
@@ -182,9 +268,13 @@ extension SwiftPM {
             return relative.isEmpty ? Self.sourcesRoot : "\(Self.sourcesRoot)/\(relative)"
         }
 
-        private func build(_ target: PackageTarget, in package: Package, builder: CodeBuilder) {
-            guard let prefix = sourcePrefix(of: target, in: package) else { return }
-
+        private func build(
+            _ target: PackageTarget,
+            in package: Package,
+            prefix: String,
+            resources: ResourceBundle?,
+            builder: CodeBuilder)
+        {
             builder.load(loadableRule: Rules.Swift.swift_library)
             builder.call(
                 Rules.Swift.Call.swift_library(
@@ -195,16 +285,18 @@ extension SwiftPM {
                     always_include_developer_search_paths: true,
                     copts: copts(of: target).nonEmpty,
                     module_name: Self.moduleName(target.name),
+                    /// Which targets `package` visibility reaches: every target of
+                    /// the same package, which is what the name identifies.
+                    package_name: package.manifest.name,
                     srcs: Starlark.glob(
-                        sources(of: target, prefix: prefix),
-                        exclude: target.exclude.map { excluded in
-                            "\(prefix)/\(excluded)/**"
-                        }),
+                        sources(of: target, prefix: prefix, extensions: ["swift"])
+                            + (resources?.accessors ?? []),
+                        exclude: excluded(target, prefix: prefix)),
                     deps: deps(of: target, in: package).nonEmpty.map { labels in
                         .build { labels }
                     },
-                    defines: .build {
-                        defines(of: target)
+                    data: resources.map { bundle in
+                        .build { [Starlark.Label.named(bundle.label)] }
                     },
                     linkopts: linkopts(of: target).nonEmpty,
                     /// A package target is built through the bundle rule that
@@ -216,19 +308,30 @@ extension SwiftPM {
 
         /// An explicit `sources` list names files or directories; without one the
         /// whole target directory is the target.
-        private func sources(of target: PackageTarget, prefix: String) -> [String] {
+        func sources(of target: PackageTarget, prefix: String, extensions: [String]) -> [String] {
             guard let sources = target.sources, !sources.isEmpty else {
-                return ["\(prefix)/**/*.swift"]
+                return extensions.map { "\(prefix)/**/*.\($0)" }
             }
 
-            return sources.map { source in
-                Path(source).extension == nil
-                    ? "\(prefix)/\(source)/**/*.swift"
-                    : "\(prefix)/\(source)"
+            return sources.flatMap { source -> [String] in
+                guard let fileExtension = Path(source).extension else {
+                    return extensions.map { "\(prefix)/\(source)/**/*.\($0)" }
+                }
+                return extensions.contains(fileExtension) ? ["\(prefix)/\(source)"] : []
             }
         }
 
-        private func deps(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
+        /// `exclude` names a file or a directory; a directory excludes everything
+        /// under it.
+        func excluded(_ target: PackageTarget, prefix: String) -> [String] {
+            target.exclude.flatMap { excluded -> [String] in
+                Path(excluded).extension == nil
+                    ? ["\(prefix)/\(excluded)/**"]
+                    : ["\(prefix)/\(excluded)"]
+            }
+        }
+
+        func deps(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
             let localTargets = Set(package.manifest.targets.map(\.name))
             let localProducts = Dictionary(
                 package.manifest.products.map { ($0.name, $0) },

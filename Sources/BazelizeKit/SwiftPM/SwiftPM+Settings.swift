@@ -14,7 +14,7 @@ extension SwiftPM.Generator {
     /// anything the rules model: a `defines` attribute would re-tokenize a value
     /// and a feature is not a flag the rules know.
     func copts(of target: SwiftPM.PackageTarget) -> [String] {
-        target.settings.flatMap { setting -> [String] in
+        swiftDefines(of: target) + target.settings.flatMap { setting -> [String] in
             guard setting.tool == "swift", let name = setting.name else { return [] }
 
             switch name {
@@ -47,13 +47,20 @@ extension SwiftPM.Generator {
 
     /// `SWIFT_PACKAGE` is what a package's own sources test for; SwiftPM defines it
     /// for every target it builds.
-    func defines(of target: SwiftPM.PackageTarget) -> [String] {
+    ///
+    /// These are flags, not the `defines` attribute: that attribute propagates to
+    /// everything that depends on the library, and a project's own target must not
+    /// compile as if it were a package — Xcode's generated asset symbols, for one,
+    /// switch on `SWIFT_PACKAGE`.
+    func swiftDefines(of target: SwiftPM.PackageTarget) -> [String] {
         let declared = target.settings.compactMap { setting -> [String]? in
             guard setting.tool == "swift", setting.name == "define" else { return nil }
             return setting.values
         }.flatMap { $0 }
 
-        return ["SWIFT_PACKAGE"] + declared
+        return (["SWIFT_PACKAGE"] + declared).flatMap { define in
+            ["-D\(define)", "-Xcc", "-D\(define)"]
+        }
     }
 
     /// A package can name a system library or framework it needs; nothing else in

@@ -23,11 +23,19 @@ extension SwiftPM {
         let manifest: Manifest
         /// `true` for a package in the project's own repository.
         let isLocal: Bool
+
+        /// The name SwiftPM files the package's artifacts under.
+        var identity: String {
+            directory.lowercased()
+        }
     }
 
     /// Everything the generator needs about one project's package graph.
     struct Workspace {
         let packages: [Package]
+
+        /// Where SwiftPM unpacked the binary targets it fetched.
+        let artifacts: Path
 
         /// Which directory a package identity or manifest name resolves to, so a
         /// product dependency can be turned into a label.
@@ -64,7 +72,10 @@ extension SwiftPM {
             }
         }
 
-        return .init(packages: packages, directoryByIdentity: directoryByIdentity)
+        return .init(
+            packages: packages,
+            artifacts: output + ".build/artifacts",
+            directoryByIdentity: directoryByIdentity)
     }
 
     // MARK: Private

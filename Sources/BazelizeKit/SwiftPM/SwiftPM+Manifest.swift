@@ -24,6 +24,8 @@ extension SwiftPM {
         let products: [PackageProduct]
         let targets: [PackageTarget]
         let dependencies: [Dependency]
+        let cLanguageStandard: String?
+        let cxxLanguageStandard: String?
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -32,6 +34,8 @@ extension SwiftPM {
             products = container.list(PackageProduct.self, "products")
             targets = container.list(PackageTarget.self, "targets")
             dependencies = container.list(Dependency.self, "dependencies")
+            cLanguageStandard = container.value(String.self, "cLanguageStandard")
+            cxxLanguageStandard = container.value(String.self, "cxxLanguageStandard")
         }
     }
 
