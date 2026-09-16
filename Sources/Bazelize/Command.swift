@@ -46,9 +46,6 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: [.long], help: "plugin list")
     var manifest = ".bazelize.yml"
 
-    @Option(name: [.long], help: "Who generates the Swift package rules: rspm or native")
-    var spm: SwiftPM.Mode = .rspm
-
     @Flag
     var dump = false
 
@@ -61,8 +58,7 @@ struct GenerateCommand: AsyncParsableCommand {
         let kit = try await Kit(
             path,
             config,
-            outputPath: outputPath,
-            spm: spm)
+            outputPath: outputPath)
 
         guard !clear else {
             kit.clear()
@@ -76,8 +72,6 @@ struct GenerateCommand: AsyncParsableCommand {
         }
     }
 }
-
-extension SwiftPM.Mode: ExpressibleByArgument {}
 
 // MARK: - XCode2Command
 

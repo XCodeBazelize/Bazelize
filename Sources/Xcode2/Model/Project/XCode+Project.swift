@@ -28,7 +28,9 @@ extension XCode.Project {
         Path(workspacePath)
     }
 
-    public var localPackageRepoByProduct: [String: String] {
+    /// The directory of the local package that declares a product, for the
+    /// products Xcode references without naming their package.
+    public var localPackageDirectoryByProduct: [String: String] {
         var result: [String: String] = [:]
 
         for package in packages.local {
@@ -36,11 +38,9 @@ extension XCode.Project {
             let manifest = packagePath + "Package.swift"
             guard let content = try? String(contentsOfFile: manifest.string) else { continue }
 
-            let repo = "swiftpkg_" + Path(package.relativePath).lastComponent.lowercased().replacingOccurrences(
-                of: "-",
-                with: "_")
+            let directory = Path(package.relativePath).lastComponent
             for product in content.swiftPackageProductNames {
-                result[product] = repo
+                result[product] = directory
             }
         }
 

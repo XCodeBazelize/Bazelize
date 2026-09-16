@@ -15,7 +15,6 @@ import Yams
 public final class Kit {
     let project: Project
     let outputRoot: Path
-    let spm: SwiftPM.Mode
 
     private lazy var roadmap = Bazel.Roadmap(output: outputRoot, project: project)
     lazy var version = Bazel.Version(outputRoot)
@@ -46,15 +45,9 @@ public final class Kit {
 
     // MARK: Lifecycle
 
-    public init(
-        _ projPath: Path,
-        _ preferConfig: String?,
-        outputPath: Path? = nil,
-        spm: SwiftPM.Mode = .rspm) async throws
-    {
+    public init(_ projPath: Path, _ preferConfig: String?, outputPath: Path? = nil) async throws {
         project = try Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
-        self.spm = spm
         plugins = []
 
         try await pluginSPM.loadPackageNames(projPath: projPath)
@@ -102,8 +95,6 @@ extension Kit {
     /// Rules for the packages the project depends on, generated from their
     /// manifests instead of by `rules_swift_package_manager`.
     private final func generateSwiftPackages() async throws {
-        guard spm == .native else { return }
-
         let workspace = try await SwiftPM.loadWorkspace(output: outputRoot)
         try SwiftPM.Generator(output: outputRoot, workspace: workspace).generate()
 

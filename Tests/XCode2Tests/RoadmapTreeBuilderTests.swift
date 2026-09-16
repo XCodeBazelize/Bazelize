@@ -84,16 +84,34 @@ struct RoadmapTreeBuilderTests {
         let module = try String(contentsOfFile: (output + "MODULE.bazel").string)
         #expect(module.contains("rules_apple"))
         #expect(module.contains("rules_swift"))
-        #expect(module.contains("rules_swift_package_manager"))
-        #expect(module.contains("swift_deps = use_extension"))
-        #expect(module.contains("swiftpkg_local1"))
+        /// The packages are targets of this workspace, so nothing declares a
+        /// generator for them.
+        #expect(!module.contains("rules_swift_package_manager"))
+        #expect(!module.contains("use_repo("))
 
-        /// The facade is where the repository that implements a product is named.
-        let localFacade = try String(contentsOfFile: (output + "Packages/Local1/BUILD").string)
-        #expect(localFacade.contains("name = \"LocalLib1\""))
-        #expect(localFacade.contains("actual = \"@swiftpkg_local1//:LocalLib1\""))
-        let remoteFacade = try String(contentsOfFile: (output + "Packages/AnyCodable/BUILD").string)
-        #expect(remoteFacade.contains("actual = \"@swiftpkg_anycodable//:AnyCodable\""))
+        /// A product of a local package is the rules of its targets.
+        let localBuild = try String(contentsOfFile: (output + "Packages/Local1/BUILD").string)
+        #expect(localBuild.contains("swift_library("))
+        #expect(localBuild.contains("name = \"LocalTarget1\""))
+        #expect(localBuild.contains("module_name = \"LocalTarget1\""))
+        /// A product of several targets is a group over them.
+        #expect(localBuild.contains("swift_library_group("))
+        #expect(localBuild.contains("name = \"LocalLib1\""))
+        #expect(localBuild.contains("\":LocalTarget1\""))
+        #expect(localBuild.contains("tags = ["))
+        #expect(localBuild.contains("\"manual\""))
+        #expect(!localBuild.contains("@swiftpkg_"))
+
+        /// A remote package's sources are linked per target, next to its rules.
+        let remoteBuild = try String(contentsOfFile: (output + "Packages/AnyCodable/BUILD").string)
+        #expect(remoteBuild.contains("name = \"AnyCodable\""))
+        #expect(remoteBuild.contains("Sources/AnyCodable/**/*.swift"))
+        #expect(!remoteBuild.contains("@swiftpkg_"))
+        #expect((output + "Packages/AnyCodable/Sources/AnyCodable").isSymlink)
+
+        /// SwiftPM's working directory is not part of the Bazel workspace.
+        let ignore = try String(contentsOfFile: (output + ".bazelignore").string)
+        #expect(ignore.contains(".build"))
     }
 
     @Test
@@ -189,8 +207,11 @@ struct RoadmapTreeBuilderTests {
         #expect(!prebuiltBuild.contains("name = \"PIP\""))
         #expect(!prebuiltBuild.contains("name = \"CoreDisplay\""))
 
-        let module = try String(contentsOfFile: (output + "MODULE.bazel").string)
-        #expect(module.contains("swiftpkg_grmustache.swift"))
-        #expect(!module.contains("swiftpkg_swiftpkg_"))
+        /// A package whose name carries a dot keeps it: the directory is the name a
+        /// human refers to the package by.
+        let mustacheBuild = try String(contentsOfFile: (output + "Packages/GRMustache.swift/BUILD").string)
+        #expect(mustacheBuild.contains("name = \"Mustache\""))
+        #expect(mustacheBuild.contains("name = \"GRMustacheKeyAccess\""))
+        #expect(mustacheBuild.contains("objc_library("))
     }
 }
