@@ -61,6 +61,15 @@ final class PluginSwiftPM: PluginBuiltin {
             name: "rules_swift_package_manager",
             version: dep.rawValue)
         builder.custom("""
+        single_version_override(
+            module_name = "rules_swift_package_manager",
+            patch_strip = 1,
+            patches = [
+        \(Self.patchLabels)
+            ],
+        )
+        """)
+        builder.custom("""
         swift_deps = use_extension(
             "@rules_swift_package_manager//:extensions.bzl",
             "swift_deps",
@@ -226,7 +235,7 @@ final class PluginSwiftPM: PluginBuiltin {
 
     override var custom: [PluginBuiltin.Custom]? {
         guard hasPackages else { return nil }
-        return [package, packageResolved].compactMap { $0 }
+        return [package, packageResolved].compactMap { $0 } + Self.patchFiles
     }
 
     override var tip: String? {
