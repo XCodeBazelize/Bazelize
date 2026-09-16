@@ -57,6 +57,16 @@ extension SwiftPM.Generator {
             + matching(Self.discoveredResources(prefix: prefix), files)
         structured = matching(structured, files)
 
+        /// A shader compiles like any other source: it includes the target's
+        /// headers, so they belong to the same resource group. The bundler treats a
+        /// bundled header as a Metal header and compiles it into the library
+        /// instead of copying it.
+        if resources.contains(where: { $0.hasSuffix(".metal") }) {
+            resources += matching(
+                SwiftPM.Generator.headerExtensions.map { "\(prefix)/**/*.\($0)" },
+                relativeFiles(of: target, in: package, prefix: prefix, excluding: false))
+        }
+
         /// A declared resource that is not on disk leaves nothing to bundle, and a
         /// bundle rule without resources is an empty bundle.
         guard !resources.isEmpty || !structured.isEmpty else { return nil }
