@@ -135,26 +135,7 @@ extension Target {
     // MARK: Private
 
     func defines(project: Project) -> Starlark.Value {
-        select(\.swiftDefine, project: project).map { text -> [String] in
-            let flags: [String] = (text ?? "").split(separator: " ").map(String.init)
-
-            var isPreviousDefine = false
-            var result: [String] = []
-            for flag in flags {
-                if flag == "-D" {
-                    isPreviousDefine = true
-                } else if isPreviousDefine {
-                    /// -D ABC
-                    result.append(flag)
-                    isPreviousDefine = false
-                } else if flag.hasPrefix("-D") {
-                    /// -DABC
-                    result.append(flag.delete(prefix: "-D"))
-                }
-            }
-
-            return result
-        }.starlark
+        select(\.swiftDefines, project: project).starlark
     }
 
 }

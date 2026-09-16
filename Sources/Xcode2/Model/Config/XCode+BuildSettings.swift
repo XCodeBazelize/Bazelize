@@ -63,6 +63,45 @@ extension XCode {
 extension XCode.BuildSettings {
     public var swiftVersion: String? { self["SWIFT_VERSION"] }
     public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
+
+    /// Everything Swift compiles with `-D`: the conditions Xcode dedicates a
+    /// setting to, plus any `-D` smuggled through `OTHER_SWIFT_FLAGS`.
+    ///
+    /// `SWIFT_ACTIVE_COMPILATION_CONDITIONS` is how a project spells `#if FEATURE`
+    /// for Swift — UTM decides which SPICE module to import with it.
+    public var swiftDefines: [String] {
+        let conditions = (self["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] ?? "")
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !$0.isEmpty && $0 != "$(inherited)" }
+
+        var flagged: [String] = []
+        var isPreviousDefine = false
+        for flag in (swiftDefine ?? "").split(separator: " ").map(String.init) {
+            if flag == "-D" {
+                isPreviousDefine = true
+            } else if isPreviousDefine {
+                /// `-D ABC`
+                flagged.append(flag)
+                isPreviousDefine = false
+            } else if flag.hasPrefix("-D") {
+                /// `-DABC`
+                flagged.append(String(flag.dropFirst(2)))
+            }
+        }
+
+        var result: [String] = []
+        for define in conditions + flagged where !result.contains(define) {
+            /// `swiftc` rejects anything that is not an identifier, and a project
+            /// routinely leaves a build setting reference in here — iina spells one
+            /// condition `$AVAILABLE_$(SDK_VERSION_MAJOR)`.
+            guard define.range(of: #"^[A-Za-z_][A-Za-z0-9_]*$"#, options: .regularExpression) != nil else {
+                continue
+            }
+            result.append(define)
+        }
+        return result
+    }
     public var bridgingHeader: String? { self["SWIFT_OBJC_BRIDGING_HEADER"] }
 
     /// `GCC_PREFIX_HEADER`: a header Xcode force-includes into every C-family
