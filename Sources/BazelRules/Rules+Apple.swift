@@ -1031,12 +1031,14 @@ extension Rules.Apple.General {
         public static func apple_dynamic_xcframework_import(
             name: String,
             xcframework_imports: Starlark.Value,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_dynamic_xcframework_import.call {
                 "name" => name
                 "xcframework_imports" => xcframework_imports
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -1045,12 +1047,14 @@ extension Rules.Apple.General {
         public static func apple_static_xcframework_import(
             name: String,
             xcframework_imports: Starlark.Value,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_static_xcframework_import.call {
                 "name" => name
                 "xcframework_imports" => xcframework_imports
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -1180,6 +1184,7 @@ extension Rules.Apple.Resources {
             infoplists: Starlark.Value? = nil,
             resources: Starlark.Value? = nil,
             structured_resources: Starlark.Value? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -1189,6 +1194,7 @@ extension Rules.Apple.Resources {
                 if let infoplists { "infoplists" => infoplists }
                 if let resources { "resources" => resources }
                 if let structured_resources { "structured_resources" => structured_resources }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }

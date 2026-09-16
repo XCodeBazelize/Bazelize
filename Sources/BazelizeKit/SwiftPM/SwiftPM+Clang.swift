@@ -26,23 +26,26 @@ extension SwiftPM.Generator {
         guard let directory = sourceDirectory(of: target, in: package) else { return }
 
         let module = Self.moduleName(target.name)
+        let imported = moduleMaps(of: target, in: package)
         let extensions = extensions(of: target, in: package)
         let headers = publicHeaders(of: target, in: directory)
         let compiled = Self.compileExtensions.filter { extensions.contains($0) }
-        let present = Set(allFiles(of: target, in: package).compactMap(\.extension))
-        let headerExtensions = Self.headerExtensions.filter { present.contains($0) }
+        /// Headers are matched against everything on disk: `exclude` can drop a
+        /// directory that a header search path still points into.
+        let files = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
 
         /// The hint is what names the module: without it the module is named after
         /// the label, and a Swift `import` of the target's own name fails. A module
         /// map the package wrote itself replaces the generated one, because it is
         /// the interface the package intends.
-        let hint = "\(target.name)_interop"
+        let name = ruleName(of: target.name, in: package)
+        let hint = "\(name)_interop"
         let headerPrefix = headers.map { Self.path(prefix, $0) }
-        let moduleMap = headerPrefix
-            .map { "\($0)/module.modulemap" }
-            .flatMap { path -> String? in
-                (root + path).exists ? path : nil
-            }
+        let moduleMap = try? write(
+            moduleMapOf: target,
+            in: package,
+            headers: headerPrefix,
+            root: root)
 
         builder.load(loadableRule: Rules.Swift.swift_interop_hint)
         builder.call(
@@ -54,22 +57,27 @@ extension SwiftPM.Generator {
         builder.load(loadableRule: Rules.Objc.objc_library)
         builder.call(
             Rules.Objc.Call.objc_library(
-                name: target.name,
+                name: name,
                 aspect_hints: .build { [Starlark.Label.named(":\(hint)")] },
                 srcs: Starlark.glob(
-                    sources(of: target, prefix: prefix, extensions: compiled)
-                        /// Private headers are compilation inputs wherever they
-                        /// sit, so they are collected from the whole directory even
-                        /// when the sources are listed one by one.
-                        + (headerPrefix == prefix
-                            ? []
-                            : headerExtensions.map { "\(prefix)/**/*.\($0)" })
+                    matching(
+                        sources(of: target, prefix: prefix, extensions: compiled)
+                            /// Private headers are compilation inputs wherever they
+                            /// sit, so they are collected from the whole directory
+                            /// even when the sources are listed one by one.
+                            + (headerPrefix == prefix
+                                ? []
+                                : Self.headerExtensions.map { "\(prefix)/**/*.\($0)" }),
+                        files)
                         + (resources?.accessors ?? []),
-                    exclude: excluded(target, prefix: prefix)
+                    exclude: excludedClang(target, prefix: prefix)
                         + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
-                hdrs: headerExtensions.isEmpty ? nil : headerPrefix.map { path in
-                    Starlark.glob(headerExtensions.map { "\(path)/**/*.\($0)" })
-                },
+                hdrs: headerPrefix
+                    .map { path in
+                        matching(Self.headerExtensions.map { "\(path)/**/*.\($0)" }, files)
+                    }?
+                    .nonEmpty
+                    .map { Starlark.glob($0) },
                 deps: deps(of: target, in: package).nonEmpty.map { labels in
                     .build { labels }
                 },
@@ -85,13 +93,77 @@ extension SwiftPM.Generator {
                 enable_modules: true,
                 includes: includes(of: target, prefix: prefix, headers: headers).nonEmpty,
                 linkopts: linkopts(of: target).nonEmpty,
-                tags: ["manual"],
+                /// The module a dependent's `@import` names: the package target's
+                /// own name, not the one Bazel derives from the label.
+                module_name: module,
+                tags: Self.manual,
+                /// A dependency's module map is what makes its `@import` resolve;
+                /// a C-family consumer, unlike a Swift one, gets none from the
+                /// rules.
+                textual_hdrs: imported.nonEmpty.map { maps in
+                    .build { maps.map { Starlark.Label.named($0.label) } }
+                },
                 visibility: .public))
+    }
+
+    /// The target's own module map: the one the package ships, or one written
+    /// here over its public headers.
+    ///
+    /// SwiftPM writes one for a clang target that ships none, and the map is
+    /// what both a Swift `import` and a C-family `@import` of this target
+    /// resolve through.
+    private func write(
+        moduleMapOf target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        headers: String?,
+        root: Path) throws -> String?
+    {
+        guard let map = module(of: target.name, in: package) else { return nil }
+
+        let relative = map.label.split(separator: ":").last.map(String.init) ?? ""
+        guard relative.hasPrefix("Generated/") else { return relative }
+        guard let headers else { return nil }
+
+        try (root + "Generated").mkpath()
+        try (root + relative).write("""
+        module \(Self.moduleName(target.name)) {
+            umbrella "../\(headers)"
+            export *
+        }
+
+        """)
+
+        return relative
+    }
+
+    /// What `exclude` removes from a C-family target.
+    ///
+    /// A directory that is also a header search path keeps its headers: they are
+    /// compilation inputs reached by `-I`, and excluding them leaves the compiler
+    /// looking for a file the sandbox does not have. Only what would be compiled
+    /// from there is dropped.
+    private func excludedClang(_ target: SwiftPM.PackageTarget, prefix: String) -> [String] {
+        let searched = Set(target.settings.flatMap { setting -> [String] in
+            guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
+            guard setting.name == "headerSearchPath" else { return [] }
+            return setting.values.map { Path($0).normalize().string }
+        })
+
+        return target.exclude.flatMap { excluded -> [String] in
+            let path = Path(excluded).normalize().string
+
+            if searched.contains(path) {
+                return Self.compileExtensions.map { "\(prefix)/\(path)/**/*.\($0)" }
+            }
+            return Path(excluded).extension == nil
+                ? ["\(prefix)/\(excluded)/**"]
+                : ["\(prefix)/\(excluded)"]
+        } + Self.ignoredExtensions.map { "\(prefix)/**/*.\($0)/**" }
     }
 
     /// `publicHeadersPath`, defaulting to the `include` directory SwiftPM looks
     /// for. It can also be `.`, meaning the target's own directory.
-    private func publicHeaders(of target: SwiftPM.PackageTarget, in directory: Path) -> String? {
+    func publicHeaders(of target: SwiftPM.PackageTarget, in directory: Path) -> String? {
         let path = target.publicHeadersPath ?? "include"
         return (directory + path).isDirectory ? path : nil
     }
@@ -132,6 +204,11 @@ extension SwiftPM.Generator {
         resources: ResourceBundle?) -> [String]
     {
         var copts = ["-fmodule-name=\(module)"] + clangDefines(of: target)
+
+        /// The module map of each dependency, so its `@import` resolves.
+        for map in moduleMaps(of: target, in: package) {
+            copts.append("-fmodule-map-file=\(map.path)")
+        }
 
         /// SwiftPM force-includes the accessor, so a source reaches its bundle
         /// without importing anything.

@@ -531,6 +531,7 @@ extension Rules.Swift {
             name: String,
             deps: Starlark.Value? = nil,
             exports: Starlark.Value? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -538,6 +539,7 @@ extension Rules.Swift {
                 "name" => name
                 if let deps { "deps" => deps }
                 if let exports { "exports" => exports }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }

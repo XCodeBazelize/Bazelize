@@ -39,24 +39,13 @@ extension SwiftPM.Generator {
     {
         guard let directory = sourceDirectory(of: target, in: package) else { return nil }
 
-        let files = sourceFiles(of: target, in: package)
-        let declared = target.resources
-        let discovered = Self.discoveredResources(files: files, prefix: prefix)
-        guard !declared.isEmpty || !discovered.isEmpty else { return nil }
-
-        let bundle = "\(package.manifest.name)_\(target.name)"
-        let name = "\(target.name)Resources"
-        let generated = root + "Generated"
-        try generated.mkpath()
-
-        let plist = "Generated/\(target.name)ResourceBundle-Info.plist"
-        try (root + plist).write(Self.infoPlist(bundle: bundle))
+        let files = relativeFiles(of: target, in: package, prefix: prefix)
 
         /// `.copy` keeps the item's own name and inner structure, which is what a
         /// structured resource is; `.process` lets the bundler place each file.
         var resources: [String] = []
         var structured: [String] = []
-        for resource in declared {
+        for resource in target.resources {
             let pattern = Self.pattern(of: resource.path, in: directory, prefix: prefix)
             if resource.isCopy {
                 structured.append(pattern)
@@ -64,7 +53,20 @@ extension SwiftPM.Generator {
                 resources.append(pattern)
             }
         }
-        resources.append(contentsOf: discovered)
+        resources = matching(resources, files)
+            + matching(Self.discoveredResources(prefix: prefix), files)
+        structured = matching(structured, files)
+
+        /// A declared resource that is not on disk leaves nothing to bundle, and a
+        /// bundle rule without resources is an empty bundle.
+        guard !resources.isEmpty || !structured.isEmpty else { return nil }
+
+        let bundle = "\(package.manifest.name)_\(target.name)"
+        let name = "\(ruleName(of: target.name, in: package))Resources"
+        try (root + "Generated").mkpath()
+
+        let plist = "Generated/\(target.name)ResourceBundle-Info.plist"
+        try (root + plist).write(Self.infoPlist(bundle: bundle))
 
         builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
         builder.call(
@@ -73,7 +75,8 @@ extension SwiftPM.Generator {
                 bundle_name: bundle,
                 infoplists: .build { [Starlark.Label.named(plist)] },
                 resources: resources.nonEmpty.map { Starlark.glob($0) },
-                structured_resources: structured.nonEmpty.map { Starlark.glob($0) }))
+                structured_resources: structured.nonEmpty.map { Starlark.glob($0) },
+                tags: Self.manual))
 
         switch kind {
         case .swift:
@@ -91,27 +94,19 @@ extension SwiftPM.Generator {
                 label: ":\(name)",
                 accessors: [header, implementation],
                 header: header)
-        case .binary, .unsupported:
+        case .binary, .system, .unsupported:
             return nil
         }
     }
 
     /// The resource types SwiftPM treats as resources without being told, so a
     /// package that ships a xib and declares nothing still gets a bundle.
-    private static func discoveredResources(files: [Path], prefix: String) -> [String] {
-        let extensions = Set(files.compactMap(\.extension))
-        var patterns = discoveredExtensions
-            .filter { extensions.contains($0) }
-            .map { "\(prefix)/**/*.\($0)" }
-
-        /// A file inside a `.lproj` directory is a localized resource whatever its
-        /// own type is — that is how a package ships `.strings` without declaring
-        /// anything.
-        if files.contains(where: { $0.parent().extension == "lproj" }) {
-            patterns.append("\(prefix)/**/*.lproj/**")
-        }
-
-        return patterns
+    private static func discoveredResources(prefix: String) -> [String] {
+        discoveredExtensions.map { "\(prefix)/**/*.\($0)" }
+            /// A catalog or a model is a directory, so what a glob can name is the
+            /// files inside it — as is a `.lproj` directory, which makes every file
+            /// in it a localized resource whatever its own type is.
+            + (discoveredDirectoryExtensions + ["lproj"]).map { "\(prefix)/**/*.\($0)/**" }
     }
 
     /// The file types SwiftPM turns into resources on its own, from its own file
@@ -120,12 +115,15 @@ extension SwiftPM.Generator {
         "nib",
         "xib",
         "storyboard",
-        "xcassets",
         "xcstrings",
+        "metal",
+    ]
+
+    private static let discoveredDirectoryExtensions = [
+        "xcassets",
         "xcdatamodel",
         "xcdatamodeld",
         "xcmappingmodel",
-        "metal",
     ]
 
     /// A resource path is a file or a directory; a directory contributes

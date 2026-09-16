@@ -18,13 +18,150 @@ extension SwiftPM {
     /// The layout matches what `Targets/` already does: a symlink tree of the
     /// sources and a generated `BUILD` beside it. Nothing outside `Packages/`
     /// changes — a target reaches a product through the facade either way.
-    struct Generator {
+    final class Generator {
         let output: Path
         let workspace: Workspace
 
+        /// The clang modules of the whole graph, so a C-family target can be handed
+        /// the module maps of what it imports.
+        private var modules: [String: Module] = [:]
+        private var kinds: [String: [String: TargetKind]] = [:]
+
+        init(output: Path, workspace: Workspace) {
+            self.output = output
+            self.workspace = workspace
+        }
+
+        /// A clang module a dependent can `@import`.
+        struct Module {
+            /// The module map as a compile action sees it.
+            let path: String
+            /// The label that makes the map an input of that action.
+            let label: String
+        }
+
         func generate() throws {
+            /// The modules come first: a C-family target needs the module maps of
+            /// its dependencies, which may be in a package generated later.
+            for package in workspace.packages {
+                let supported = try supportedTargets(of: package)
+                kinds[package.directory] = supported
+                register(modulesOf: package, supported: supported)
+            }
+
             for package in workspace.packages {
                 try generate(package)
+            }
+        }
+
+        /// Where each C-family target's module map is, or will be written.
+        private func register(modulesOf package: Package, supported: [String: TargetKind]) {
+            for target in package.manifest.targets {
+                guard let kind = supported[target.name] else { continue }
+                guard let directory = sourceDirectory(of: target, in: package) else { continue }
+
+                let prefix = "\(Self.sourcesRoot)/\(target.name)"
+                let relative: String?
+
+                switch kind {
+                case .clang:
+                    let headers = publicHeaders(of: target, in: directory)
+                    let shipped = headers.map { "\(prefix)/\($0)/module.modulemap" }
+
+                    if let shipped, (directory + (headers ?? "") + "module.modulemap").exists {
+                        relative = shipped
+                    } else {
+                        /// Written by the generator, the way SwiftPM writes one for
+                        /// a clang target that ships none.
+                        relative = headers == nil ? nil : "Generated/\(target.name).modulemap"
+                    }
+                case .system:
+                    relative = "\(prefix)/module.modulemap"
+                case .swift, .binary, .unsupported:
+                    relative = nil
+                }
+
+                guard let relative else { continue }
+                let directoryLabel = "//\(PluginSwiftPM.packagesDirectory)/\(package.directory)"
+                modules["\(package.directory)/\(target.name)"] = Module(
+                    path: "\(PluginSwiftPM.packagesDirectory)/\(package.directory)/\(relative)",
+                    label: "\(directoryLabel):\(relative)")
+            }
+        }
+
+        /// The module map of a target, if it has one.
+        func module(of target: String, in package: Package) -> Module? {
+            modules["\(package.directory)/\(target)"]
+        }
+
+        /// The module maps a C-family target compiles against: its dependencies',
+        /// and theirs, because a module map can import another module.
+        func moduleMaps(of target: PackageTarget, in package: Package) -> [Module] {
+            var found: [String: Module] = [:]
+            var seen: Set<String> = ["\(package.directory)/\(target.name)"]
+            var queue: [(Package, PackageTarget)] = [(package, target)]
+
+            while let (owner, current) = queue.popLast() {
+                for (nextPackage, next) in dependencies(of: current, in: owner) {
+                    let key = "\(nextPackage.directory)/\(next.name)"
+                    guard seen.insert(key).inserted else { continue }
+
+                    if let module = modules[key] { found[key] = module }
+                    queue.append((nextPackage, next))
+                }
+            }
+
+            return found.keys.sorted().compactMap { found[$0] }
+        }
+
+        /// The targets a target depends on, in the packages that own them.
+        private func dependencies(
+            of target: PackageTarget,
+            in package: Package) -> [(Package, PackageTarget)]
+        {
+            let targetsByName = Dictionary(
+                package.manifest.targets.map { ($0.name, $0) },
+                uniquingKeysWith: { first, _ in first })
+
+            return target.dependencies.flatMap { dependency -> [(Package, PackageTarget)] in
+                switch dependency.kind {
+                case .target(let name):
+                    return targetsByName[name].map { [(package, $0)] } ?? []
+                case .byName(let name):
+                    if let local = targetsByName[name] { return [(package, local)] }
+                    if let product = package.manifest.products.first(where: { $0.name == name }) {
+                        return targets(of: product, in: package)
+                    }
+                    return targets(ofProduct: name, package: nil, from: package)
+                case .product(let name, let packageName):
+                    return targets(ofProduct: name, package: packageName, from: package)
+                }
+            }
+        }
+
+        private func targets(
+            ofProduct product: String,
+            package name: String?,
+            from package: Package) -> [(Package, PackageTarget)]
+        {
+            guard let owner = self.package(ofProduct: product, package: name, from: package) else {
+                return []
+            }
+            guard let declared = owner.manifest.products.first(where: { $0.name == product }) else {
+                return []
+            }
+
+            return targets(of: declared, in: owner)
+        }
+
+        private func targets(
+            of product: PackageProduct,
+            in package: Package) -> [(Package, PackageTarget)]
+        {
+            product.targets.compactMap { name in
+                package.manifest.targets
+                    .first { $0.name == name }
+                    .map { (package, $0) }
             }
         }
 
@@ -37,10 +174,9 @@ extension SwiftPM {
         private func generate(_ package: Package) throws {
             let root = packagesRoot + package.directory
             try root.mkpath()
-            try materializeSources(package, at: root)
 
             let builder = CodeBuilder()
-            var emitted = try supportedTargets(of: package)
+            var emitted = kinds[package.directory] ?? [:]
 
             for target in package.manifest.targets {
                 guard let kind = emitted[target.name] else { continue }
@@ -52,7 +188,20 @@ extension SwiftPM {
                     continue
                 }
 
-                guard let prefix = sourcePrefix(of: target, in: package) else { continue }
+                guard let prefix = try materialize(target, in: package, at: root) else { continue }
+
+                if case .system = kind {
+                    if !buildSystemLibrary(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        root: root,
+                        builder: builder)
+                    {
+                        emitted[target.name] = nil
+                    }
+                    continue
+                }
 
                 let resources = try buildResources(
                     target,
@@ -78,13 +227,23 @@ extension SwiftPM {
                         root: root,
                         resources: resources,
                         builder: builder)
-                case .binary, .unsupported:
+                case .binary, .system, .unsupported:
                     continue
                 }
             }
 
             for product in package.manifest.products {
                 build(product, emitted: Set(emitted.keys), package: package, builder: builder)
+            }
+
+            /// A C-family target in another package compiles against these maps,
+            /// so they have to be readable from there.
+            let maps = emitted.keys
+                .compactMap { module(of: $0, in: package) }
+                .map(\.label)
+                .compactMap { $0.split(separator: ":").last.map(String.init) }
+            if let maps = maps.nonEmpty {
+                builder.call(Rules.Builtin.Call.exports_files(maps.sorted()))
             }
 
             try (root + "BUILD").write(builder.build())
@@ -100,7 +259,7 @@ extension SwiftPM {
             for target in targets {
                 guard let kind = try kind(of: target, in: package) else { continue }
                 switch kind {
-                case .swift, .clang, .binary:
+                case .swift, .clang, .binary, .system:
                     supported[target.name] = kind
                 case .unsupported(let reason):
                     Log.codeGenerate.warning("""
@@ -138,22 +297,39 @@ extension SwiftPM {
             return supported
         }
 
-        /// The sources stay where SwiftPM put them; the package directory only
-        /// carries a link to them, the way a target's `Sources/` does.
-        private func materializeSources(_ package: Package, at root: Path) throws {
-            let destination = root + Self.sourcesRoot
-            if destination.isSymlink || destination.exists {
-                try? destination.delete()
+        /// The sources stay where SwiftPM put them; the package directory carries
+        /// one link per target, the way a target's `Sources/` does.
+        ///
+        /// A link per target rather than one for the whole checkout is what keeps
+        /// the rest of the checkout out of the build: a package can ship `BUILD`
+        /// files of its own — swift-syntax and Yams both do — and Bazel would load
+        /// them as packages of this workspace.
+        private func materialize(_ target: PackageTarget, in package: Package, at root: Path) throws -> String? {
+            guard let directory = sourceDirectory(of: target, in: package) else { return nil }
+
+            let prefix = "\(Self.sourcesRoot)/\(target.name)"
+            let link = root + prefix
+            try link.parent().mkpath()
+            if link.isSymlink || link.exists {
+                try? link.delete()
             }
-            try destination.symlink(package.root)
+            try link.symlink(directory)
+
+            return prefix
         }
 
-        static let sourcesRoot = "Package"
+        static let sourcesRoot = "Sources"
+
+        /// A package rule is built through the bundle rule that transitions it to a
+        /// platform; on its own an iOS-only package would be compiled for the host,
+        /// so no wildcard pattern may pick one up.
+        static let manual = ["manual"]
 
         enum TargetKind {
             case swift
             case clang
             case binary
+            case system
             case unsupported(String)
         }
 
@@ -170,7 +346,7 @@ extension SwiftPM {
             case "binary":
                 return .binary
             case "system":
-                return .unsupported("system library targets are not generated yet")
+                return .system
             case "macro":
                 return .unsupported("macro targets are not generated yet")
             default:
@@ -206,6 +382,119 @@ extension SwiftPM {
             return files(under: roots, excluding: target.exclude, in: directory)
         }
 
+        /// The rule that stands for a target.
+        ///
+        /// A product may carry the name of a target while grouping several of them.
+        /// SwiftPM allows that; two rules cannot share one name, so the product
+        /// keeps the name a consumer writes and the target's own rule is suffixed.
+        func ruleName(of target: String, in package: Package) -> String {
+            let grouped = package.manifest.products
+                .filter { $0.kind == .library && $0.targets.count > 1 }
+                .map(\.name)
+
+            return grouped.contains(target) ? "\(target)_target" : target
+        }
+
+        /// Every file under a directory.
+        ///
+        /// `FileManager.subpathsOfDirectory` returns nothing when the directory
+        /// itself is a symlink, and a package can point one target at another's
+        /// sources that way to build a variant of it. Paths stay under the
+        /// directory as named, because that is what a glob pattern is built from.
+        static func walk(_ directory: Path) -> [Path] {
+            var visited: Set<String> = []
+            return walk(directory, visited: &visited)
+        }
+
+        private static func walk(_ directory: Path, visited: inout Set<String>) -> [Path] {
+            /// A package's test fixtures can link a directory back to an ancestor,
+            /// which would otherwise be walked forever.
+            let resolved = directory.url.resolvingSymlinksInPath().path
+            guard visited.insert(resolved).inserted else { return [] }
+
+            let children = (try? directory.children()) ?? []
+            return children.flatMap { child -> [Path] in
+                child.isDirectory ? walk(child, visited: &visited) : [child]
+            }
+        }
+
+        /// The target's files as paths under its source link, which is what a glob
+        /// pattern is matched against.
+        func relativeFiles(
+            of target: PackageTarget,
+            in package: Package,
+            prefix: String,
+            excluding exclude: Bool = true) -> [String]
+        {
+            guard let directory = sourceDirectory(of: target, in: package) else { return [] }
+            let root = directory.normalize().string
+            let files = exclude
+                ? allFiles(of: target, in: package)
+                : Self.walk(directory)
+
+            return files.compactMap { file in
+                let path = file.normalize().string
+                guard path.hasPrefix(root) else { return nil }
+                return prefix + String(path.dropFirst(root.count))
+            }
+        }
+
+        /// The patterns that match at least one of the target's files.
+        ///
+        /// Bazel fails a glob that matches nothing, so a pattern for a file type
+        /// the target does not have would break the package rather than produce an
+        /// empty list.
+        func matching(_ patterns: [String], _ files: [String]) -> [String] {
+            patterns.filter { pattern in
+                files.contains { Self.matches(pattern, $0) }
+            }
+        }
+
+        /// Bazel's own glob semantics, on path segments: `**` stands for any run
+        /// of segments, `*` for any part of one.
+        static func matches(_ pattern: String, _ file: String) -> Bool {
+            matches(
+                pattern: pattern.split(separator: "/").map(String.init),
+                file: file.split(separator: "/").map(String.init))
+        }
+
+        private static func matches(pattern: [String], file: [String]) -> Bool {
+            guard let segment = pattern.first else { return file.isEmpty }
+
+            if segment == "**" {
+                let rest = Array(pattern.dropFirst())
+                if matches(pattern: rest, file: file) { return true }
+                guard !file.isEmpty else { return false }
+                return matches(pattern: pattern, file: Array(file.dropFirst()))
+            }
+
+            guard let name = file.first, matches(segment: segment, name: name) else {
+                return false
+            }
+            return matches(pattern: Array(pattern.dropFirst()), file: Array(file.dropFirst()))
+        }
+
+        private static func matches(segment: String, name: String) -> Bool {
+            let parts = segment.split(separator: "*", omittingEmptySubsequences: false).map(String.init)
+            guard parts.count > 1 else { return segment == name }
+
+            var rest = Substring(name)
+            for (index, part) in parts.enumerated() where !part.isEmpty {
+                if index == 0 {
+                    guard rest.hasPrefix(part) else { return false }
+                    rest = rest.dropFirst(part.count)
+                } else if index == parts.count - 1 {
+                    guard rest.hasSuffix(part) else { return false }
+                    rest = rest.dropLast(part.count)
+                } else {
+                    guard let range = rest.range(of: part) else { return false }
+                    rest = rest[range.upperBound...]
+                }
+            }
+
+            return true
+        }
+
         /// Everything in the target directory, `exclude` aside.
         ///
         /// An explicit `sources` list only stops SwiftPM from compiling the rest;
@@ -222,7 +511,7 @@ extension SwiftPM {
             var files: [Path] = []
             for root in roots {
                 if root.isDirectory {
-                    files.append(contentsOf: ((try? root.recursiveChildren()) ?? []))
+                    files.append(contentsOf: Self.walk(root))
                 } else if root.exists {
                     files.append(root)
                 }
@@ -256,18 +545,6 @@ extension SwiftPM {
             return flat.exists ? flat : nil
         }
 
-        /// The target's directory, relative to the package's source link.
-        func sourcePrefix(of target: PackageTarget, in package: Package) -> String? {
-            guard let directory = sourceDirectory(of: target, in: package) else { return nil }
-
-            let root = package.root.normalize().string
-            let path = directory.normalize().string
-            guard path.hasPrefix(root) else { return nil }
-
-            let relative = String(path.dropFirst(root.count)).trimmingCharacters(in: ["/"])
-            return relative.isEmpty ? Self.sourcesRoot : "\(Self.sourcesRoot)/\(relative)"
-        }
-
         private func build(
             _ target: PackageTarget,
             in package: Package,
@@ -278,7 +555,7 @@ extension SwiftPM {
             builder.load(loadableRule: Rules.Swift.swift_library)
             builder.call(
                 Rules.Swift.Call.swift_library(
-                    name: target.name,
+                    name: ruleName(of: target.name, in: package),
                     /// SwiftPM compiles every package target with the developer
                     /// search paths, which is how a test-support library finds
                     /// XCTest.
@@ -289,7 +566,9 @@ extension SwiftPM {
                     /// the same package, which is what the name identifies.
                     package_name: package.manifest.name,
                     srcs: Starlark.glob(
-                        sources(of: target, prefix: prefix, extensions: ["swift"])
+                        matching(
+                            sources(of: target, prefix: prefix, extensions: ["swift"]),
+                            relativeFiles(of: target, in: package, prefix: prefix))
                             + (resources?.accessors ?? []),
                         exclude: excluded(target, prefix: prefix)),
                     deps: deps(of: target, in: package).nonEmpty.map { labels in
@@ -299,10 +578,7 @@ extension SwiftPM {
                         .build { [Starlark.Label.named(bundle.label)] }
                     },
                     linkopts: linkopts(of: target).nonEmpty,
-                    /// A package target is built through the bundle rule that
-                    /// transitions it to a platform; building it on its own would
-                    /// compile an iOS-only package for the host.
-                    tags: ["manual"],
+                    tags: Self.manual,
                     visibility: .public))
         }
 
@@ -323,13 +599,20 @@ extension SwiftPM {
 
         /// `exclude` names a file or a directory; a directory excludes everything
         /// under it.
+        ///
+        /// Documentation catalogues are excluded on top of that: SwiftPM ignores a
+        /// `.docc` directory, and the sample code inside one does not compile —
+        /// it is written against `PackageDescription`.
         func excluded(_ target: PackageTarget, prefix: String) -> [String] {
             target.exclude.flatMap { excluded -> [String] in
                 Path(excluded).extension == nil
                     ? ["\(prefix)/\(excluded)/**"]
                     : ["\(prefix)/\(excluded)"]
-            }
+            } + Self.ignoredExtensions.map { "\(prefix)/**/*.\($0)/**" }
         }
+
+        /// Directory types SwiftPM's file rules ignore.
+        static let ignoredExtensions = ["docc", "xcprivacy"]
 
         func deps(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
             let localTargets = Set(package.manifest.targets.map(\.name))
@@ -340,9 +623,13 @@ extension SwiftPM {
             let labels: [String] = target.dependencies.compactMap { dependency in
                 switch dependency.kind {
                 case .target(let name):
-                    return localTargets.contains(name) ? ":\(name)" : nil
+                    return localTargets.contains(name)
+                        ? ":\(ruleName(of: name, in: package))"
+                        : nil
                 case .byName(let name):
-                    if localTargets.contains(name) { return ":\(name)" }
+                    if localTargets.contains(name) {
+                        return ":\(ruleName(of: name, in: package))"
+                    }
                     if localProducts[name] != nil { return ":\(name)" }
                     return label(product: name, package: nil, from: package)
                 case .product(let name, let packageName):
@@ -356,18 +643,32 @@ extension SwiftPM {
         /// A product of another package is reached through the facade, so the label
         /// does not depend on how that package's rules are generated.
         private func label(product: String, package name: String?, from package: Package) -> String? {
+            guard let owner = self.package(ofProduct: product, package: name, from: package) else {
+                Log.codeGenerate.warning("""
+                No package for product \(product, privacy: .public) \
+                required by \(package.directory, privacy: .public)
+                """)
+                return nil
+            }
+
+            return "//\(PluginSwiftPM.packagesDirectory)/\(owner.directory):\(product)"
+        }
+
+        /// Which package declares a product: the one the dependency names, or the
+        /// one whose identity matches.
+        private func package(
+            ofProduct product: String,
+            package name: String?,
+            from package: Package) -> Package?
+        {
             let identities = [name, product].compactMap { $0 }
                 + package.manifest.dependencies.map(\.identity)
 
             for identity in identities {
                 guard let directory = workspace.directoryByIdentity[identity.lowercased()] else { continue }
-                return "//\(PluginSwiftPM.packagesDirectory)/\(directory):\(product)"
+                return workspace.packages.first { $0.directory == directory }
             }
 
-            Log.codeGenerate.warning("""
-            No package for product \(product, privacy: .public) \
-            required by \(package.directory, privacy: .public)
-            """)
             return nil
         }
 
@@ -390,7 +691,8 @@ extension SwiftPM {
                 builder.call(
                     Rules.Builtin.Call.alias(
                         name: product.name,
-                        actual: .named(":\(target)"),
+                        actual: .named(":\(ruleName(of: target, in: package))"),
+                        tags: Self.manual,
                         visibility: .public))
                 return
             }
@@ -401,9 +703,10 @@ extension SwiftPM {
                     name: product.name,
                     deps: .build {
                         targets.sorted().map { target in
-                            Starlark.Label.named(":\(target)")
+                            Starlark.Label.named(":\(ruleName(of: target, in: package))")
                         }
                     },
+                    tags: Self.manual,
                     visibility: .public))
         }
 
