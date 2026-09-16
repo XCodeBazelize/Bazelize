@@ -26,7 +26,6 @@ extension SwiftPM.Generator {
         guard let directory = sourceDirectory(of: target, in: package) else { return }
 
         let module = Self.moduleName(target.name)
-        let imported = moduleMaps(of: target, in: package)
         let extensions = extensions(of: target, in: package)
         let headers = publicHeaders(of: target, in: directory)
         let compiled = Self.compileExtensions.filter { extensions.contains($0) }
@@ -34,24 +33,24 @@ extension SwiftPM.Generator {
         /// directory that a header search path still points into.
         let files = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
 
-        /// The hint is what names the module: without it the module is named after
-        /// the label, and a Swift `import` of the target's own name fails. A module
-        /// map the package wrote itself replaces the generated one, because it is
-        /// the interface the package intends.
+        /// The module map is what names the module: without one the name comes
+        /// from the label, and neither a Swift `import` nor a C-family `@import` of
+        /// the target's own name resolves. A map the package wrote itself is kept,
+        /// because it is the interface the package intends.
         let name = ruleName(of: target.name, in: package)
         let hint = "\(name)_interop"
         let headerPrefix = headers.map { Self.path(prefix, $0) }
-        let moduleMap = try? write(
-            moduleMapOf: target,
-            in: package,
-            headers: headerPrefix,
+        let interface = try? mirror(
+            headersOf: target,
+            at: headers.map { directory + $0 },
+            module: module,
             root: root)
 
         builder.load(loadableRule: Rules.Swift.swift_interop_hint)
         builder.call(
             Rules.Swift.Call.swift_interop_hint(
                 name: hint,
-                module_map: moduleMap.map { .named($0) },
+                module_map: interface.map { .named("\($0)/module.modulemap") },
                 module_name: module))
 
         builder.load(loadableRule: Rules.Objc.objc_library)
@@ -72,9 +71,11 @@ extension SwiftPM.Generator {
                         + (resources?.accessors ?? []),
                     exclude: excludedClang(target, prefix: prefix)
                         + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
-                hdrs: headerPrefix
+                hdrs: interface
                     .map { path in
-                        matching(Self.headerExtensions.map { "\(path)/**/*.\($0)" }, files)
+                        matching(
+                            Self.headerExtensions.map { "\(path)/**/*.\($0)" },
+                            Self.relativeFiles(under: path, in: root))
                     }?
                     .nonEmpty
                     .map { Starlark.glob($0) },
@@ -91,47 +92,93 @@ extension SwiftPM.Generator {
                     module: module,
                     resources: resources).nonEmpty,
                 enable_modules: true,
-                includes: includes(of: target, prefix: prefix, headers: headers).nonEmpty,
+                includes: includes(
+                    of: target,
+                    prefix: prefix,
+                    interface: interface).nonEmpty,
                 linkopts: linkopts(of: target).nonEmpty,
                 /// The module a dependent's `@import` names: the package target's
                 /// own name, not the one Bazel derives from the label.
                 module_name: module,
                 tags: Self.manual,
-                /// A dependency's module map is what makes its `@import` resolve;
-                /// a C-family consumer, unlike a Swift one, gets none from the
-                /// rules.
-                textual_hdrs: imported.nonEmpty.map { maps in
-                    .build { maps.map { Starlark.Label.named($0.label) } }
+                /// The map travels with the headers: it is on the include path of
+                /// everything that depends on the target, and clang has to find the
+                /// file there.
+                textual_hdrs: interface.map { path in
+                    .build { [Starlark.Label.named("\(path)/module.modulemap")] }
                 },
                 visibility: .public))
     }
 
-    /// The target's own module map: the one the package ships, or one written
-    /// here over its public headers.
+    /// The files of a generated directory, named the way a glob pattern is.
+    private static func relativeFiles(under directory: String, in root: Path) -> [String] {
+        let base = root.normalize().string
+
+        return SwiftPM.Generator.walk(root + directory).compactMap { file in
+            let path = file.normalize().string
+            guard path.hasPrefix(base) else { return nil }
+            return String(path.dropFirst(base.count)).trimmingCharacters(in: ["/"])
+        }
+    }
+
+    /// The target's public interface: its headers and the module map, in one
+    /// directory of our own.
     ///
-    /// SwiftPM writes one for a clang target that ships none, and the map is
-    /// what both a Swift `import` and a C-family `@import` of this target
-    /// resolve through.
-    private func write(
-        moduleMapOf target: SwiftPM.PackageTarget,
-        in package: SwiftPM.Package,
-        headers: String?,
+    /// clang looks for `module.modulemap` in the directory a header was found in,
+    /// so the map has to sit next to the headers — and the checkout is not ours to
+    /// write into. The headers are therefore linked into a generated directory
+    /// beside the map, the way an Xcode target's flattened header tree works. Every
+    /// consumer then resolves the module through a header search path alone: a
+    /// Swift `import`, a C-family `@import`, from this package or any other.
+    private func mirror(
+        headersOf target: SwiftPM.PackageTarget,
+        at headers: Path?,
+        module: String,
         root: Path) throws -> String?
     {
-        guard let map = module(of: target.name, in: package) else { return nil }
+        guard let headers, headers.isDirectory else { return nil }
 
-        let relative = map.label.split(separator: ":").last.map(String.init) ?? ""
-        guard relative.hasPrefix("Generated/") else { return relative }
-        guard let headers else { return nil }
+        let relative = "Generated/\(target.name)Interface"
+        let interface = root + relative
+        if interface.exists || interface.isSymlink {
+            try? interface.delete()
+        }
+        try interface.mkpath()
 
-        try (root + "Generated").mkpath()
-        try (root + relative).write("""
-        module \(Self.moduleName(target.name)) {
-            umbrella "../\(headers)"
-            export *
+        let files = SwiftPM.Generator.walk(headers)
+        let base = headers.normalize().string
+        var shipped: Path?
+
+        for file in files {
+            let path = file.normalize().string
+            guard path.hasPrefix(base) else { continue }
+
+            let name = String(path.dropFirst(base.count)).trimmingCharacters(in: ["/"])
+            if name == "module.modulemap" {
+                shipped = file
+                continue
+            }
+
+            let link = interface + name
+            try link.parent().mkpath()
+            try link.symlink(file)
         }
 
-        """)
+        /// A map the package ships is its intended interface; without one the
+        /// module is every header in the directory, which is what SwiftPM
+        /// generates for a clang target too.
+        let map = interface + "module.modulemap"
+        if let shipped {
+            try map.symlink(shipped)
+        } else {
+            try map.write("""
+            module \(module) {
+                umbrella "."
+                export *
+            }
+
+            """)
+        }
 
         return relative
     }
@@ -173,17 +220,20 @@ extension SwiftPM.Generator {
         Path("\(prefix)/\(path)").normalize().string
     }
 
-    /// What a header lookup can reach: the public headers, the target directory
-    /// itself — a target's own sources include each other by relative path — and
-    /// whatever `headerSearchPath` adds.
+    /// What a header lookup can reach: the target's interface directory and
+    /// whatever `headerSearchPath` adds, which is the shape SwiftPM passes.
+    ///
+    /// Not the target directory itself: a module map sitting there would be found
+    /// by clang on its own, and a package that ships one outside its public
+    /// headers would end up with two maps for the same module.
     private func includes(
         of target: SwiftPM.PackageTarget,
         prefix: String,
-        headers: String?) -> [String]
+        interface: String?) -> [String]
     {
-        var paths = [prefix]
-        if let headers {
-            paths.append(Self.path(prefix, headers))
+        var paths: [String] = []
+        if let interface {
+            paths.append(interface)
         }
 
         for setting in target.settings
@@ -204,11 +254,6 @@ extension SwiftPM.Generator {
         resources: ResourceBundle?) -> [String]
     {
         var copts = ["-fmodule-name=\(module)"] + clangDefines(of: target)
-
-        /// The module map of each dependency, so its `@import` resolves.
-        for map in moduleMaps(of: target, in: package) {
-            copts.append("-fmodule-map-file=\(map.path)")
-        }
 
         /// SwiftPM force-includes the accessor, so a source reaches its bundle
         /// without importing anything.

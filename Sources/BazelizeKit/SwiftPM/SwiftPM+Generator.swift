@@ -22,9 +22,6 @@ extension SwiftPM {
         let output: Path
         let workspace: Workspace
 
-        /// The clang modules of the whole graph, so a C-family target can be handed
-        /// the module maps of what it imports.
-        private var modules: [String: Module] = [:]
         private var kinds: [String: [String: TargetKind]] = [:]
 
         init(output: Path, workspace: Workspace) {
@@ -32,136 +29,13 @@ extension SwiftPM {
             self.workspace = workspace
         }
 
-        /// A clang module a dependent can `@import`.
-        struct Module {
-            /// The module map as a compile action sees it.
-            let path: String
-            /// The label that makes the map an input of that action.
-            let label: String
-        }
-
         func generate() throws {
-            /// The modules come first: a C-family target needs the module maps of
-            /// its dependencies, which may be in a package generated later.
             for package in workspace.packages {
-                let supported = try supportedTargets(of: package)
-                kinds[package.directory] = supported
-                register(modulesOf: package, supported: supported)
+                kinds[package.directory] = try supportedTargets(of: package)
             }
 
             for package in workspace.packages {
                 try generate(package)
-            }
-        }
-
-        /// Where each C-family target's module map is, or will be written.
-        private func register(modulesOf package: Package, supported: [String: TargetKind]) {
-            for target in package.manifest.targets {
-                guard let kind = supported[target.name] else { continue }
-                guard let directory = sourceDirectory(of: target, in: package) else { continue }
-
-                let prefix = "\(Self.sourcesRoot)/\(target.name)"
-                let relative: String?
-
-                switch kind {
-                case .clang:
-                    let headers = publicHeaders(of: target, in: directory)
-                    let shipped = headers.map { "\(prefix)/\($0)/module.modulemap" }
-
-                    if let shipped, (directory + (headers ?? "") + "module.modulemap").exists {
-                        relative = shipped
-                    } else {
-                        /// Written by the generator, the way SwiftPM writes one for
-                        /// a clang target that ships none.
-                        relative = headers == nil ? nil : "Generated/\(target.name).modulemap"
-                    }
-                case .system:
-                    relative = "\(prefix)/module.modulemap"
-                case .swift, .binary, .unsupported:
-                    relative = nil
-                }
-
-                guard let relative else { continue }
-                let directoryLabel = "//\(PluginSwiftPM.packagesDirectory)/\(package.directory)"
-                modules["\(package.directory)/\(target.name)"] = Module(
-                    path: "\(PluginSwiftPM.packagesDirectory)/\(package.directory)/\(relative)",
-                    label: "\(directoryLabel):\(relative)")
-            }
-        }
-
-        /// The module map of a target, if it has one.
-        func module(of target: String, in package: Package) -> Module? {
-            modules["\(package.directory)/\(target)"]
-        }
-
-        /// The module maps a C-family target compiles against: its dependencies',
-        /// and theirs, because a module map can import another module.
-        func moduleMaps(of target: PackageTarget, in package: Package) -> [Module] {
-            var found: [String: Module] = [:]
-            var seen: Set<String> = ["\(package.directory)/\(target.name)"]
-            var queue: [(Package, PackageTarget)] = [(package, target)]
-
-            while let (owner, current) = queue.popLast() {
-                for (nextPackage, next) in dependencies(of: current, in: owner) {
-                    let key = "\(nextPackage.directory)/\(next.name)"
-                    guard seen.insert(key).inserted else { continue }
-
-                    if let module = modules[key] { found[key] = module }
-                    queue.append((nextPackage, next))
-                }
-            }
-
-            return found.keys.sorted().compactMap { found[$0] }
-        }
-
-        /// The targets a target depends on, in the packages that own them.
-        private func dependencies(
-            of target: PackageTarget,
-            in package: Package) -> [(Package, PackageTarget)]
-        {
-            let targetsByName = Dictionary(
-                package.manifest.targets.map { ($0.name, $0) },
-                uniquingKeysWith: { first, _ in first })
-
-            return target.dependencies.flatMap { dependency -> [(Package, PackageTarget)] in
-                switch dependency.kind {
-                case .target(let name):
-                    return targetsByName[name].map { [(package, $0)] } ?? []
-                case .byName(let name):
-                    if let local = targetsByName[name] { return [(package, local)] }
-                    if let product = package.manifest.products.first(where: { $0.name == name }) {
-                        return targets(of: product, in: package)
-                    }
-                    return targets(ofProduct: name, package: nil, from: package)
-                case .product(let name, let packageName):
-                    return targets(ofProduct: name, package: packageName, from: package)
-                }
-            }
-        }
-
-        private func targets(
-            ofProduct product: String,
-            package name: String?,
-            from package: Package) -> [(Package, PackageTarget)]
-        {
-            guard let owner = self.package(ofProduct: product, package: name, from: package) else {
-                return []
-            }
-            guard let declared = owner.manifest.products.first(where: { $0.name == product }) else {
-                return []
-            }
-
-            return targets(of: declared, in: owner)
-        }
-
-        private func targets(
-            of product: PackageProduct,
-            in package: Package) -> [(Package, PackageTarget)]
-        {
-            product.targets.compactMap { name in
-                package.manifest.targets
-                    .first { $0.name == name }
-                    .map { (package, $0) }
             }
         }
 
@@ -234,16 +108,6 @@ extension SwiftPM {
 
             for product in package.manifest.products {
                 build(product, emitted: Set(emitted.keys), package: package, builder: builder)
-            }
-
-            /// A C-family target in another package compiles against these maps,
-            /// so they have to be readable from there.
-            let maps = emitted.keys
-                .compactMap { module(of: $0, in: package) }
-                .map(\.label)
-                .compactMap { $0.split(separator: ":").last.map(String.init) }
-            if let maps = maps.nonEmpty {
-                builder.call(Rules.Builtin.Call.exports_files(maps.sorted()))
             }
 
             try (root + "BUILD").write(builder.build())
@@ -353,7 +217,7 @@ extension SwiftPM {
                 break
             }
 
-            guard let directory = sourceDirectory(of: target, in: package) else {
+            guard sourceDirectory(of: target, in: package) != nil else {
                 return .unsupported("no source directory")
             }
 

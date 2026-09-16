@@ -76,15 +76,6 @@ extension Rules.Builtin.Call {
         }
     }
 
-    /// Makes files of a package usable by another one.
-    ///
-    /// Reference: [Bazel `exports_files`](https://bazel.build/reference/be/functions#exports_files)
-    public static func exports_files(_ paths: [String]) -> Starlark.Statement.Call {
-        .init("exports_files") {
-            .positional(.array(paths.map { .string($0) }))
-        }
-    }
-
     public static func alias(
         name: String,
         actual: Starlark.Label,
