@@ -10,8 +10,24 @@ import Util
 import Starlark
 
 extension Target {
+    /// The Swift module name, which is also what the generated Objective-C
+    /// interop header is named after.
+    ///
+    /// `PRODUCT_MODULE_NAME` is the name a target's own sources import — UTM's
+    /// `iOS` target builds a module called `UTM`, and its Objective-C sources
+    /// include `UTM-Swift.h`. Without the setting Xcode falls back to the product
+    /// name, and then to the target name.
     var codegenModuleName: String {
-        name.replacingOccurrences(of: "-", with: "_")
+        let declared = prefer(\.metadata.moduleName)
+            ?? prefer(\.metadata.productName)
+            ?? name
+
+        /// An unresolved reference is no name at all; a module name is an
+        /// identifier, so anything else becomes an underscore.
+        let resolved = declared.contains("$") || declared.isEmpty ? name : declared
+        return String(resolved.map { character in
+            character.isLetter || character.isNumber || character == "_" ? character : "_"
+        })
     }
 
     func generateLibrary(_ builder: CodeBuilder, _ kit: Kit) {

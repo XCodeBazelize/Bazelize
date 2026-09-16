@@ -165,7 +165,9 @@ struct RoadmapTreeBuilderTests {
         let appBuild = try String(contentsOfFile: (output + "Targets/iina/BUILD").string)
         #expect(appBuild.contains("mixed_language_library("))
         #expect(appBuild.contains("name = \"iina_mixed\""))
-        #expect(appBuild.contains("module_name = \"iina\""))
+        /// `PRODUCT_NAME` comes from the target's xcconfig, and it is the module a
+        /// target's own sources import: iina's Objective-C includes `IINA-Swift.h`.
+        #expect(appBuild.contains("module_name = \"IINA\""))
         #expect(appBuild.contains("app_icons = glob(["))
         #expect(appBuild.contains("Sources/iina/Assets.xcassets/AppIcon.appiconset/**"))
         #expect(appBuild.contains("sdk_frameworks = ["))
