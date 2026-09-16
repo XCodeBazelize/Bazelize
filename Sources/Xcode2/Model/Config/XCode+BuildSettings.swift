@@ -62,6 +62,14 @@ extension XCode {
 
 extension XCode.BuildSettings {
     public var swiftVersion: String? { self["SWIFT_VERSION"] }
+
+    /// `SWIFT_DEFAULT_ACTOR_ISOLATION`: the module-wide default Xcode compiles with
+    /// (SE-0466). Code written against `MainActor` by default does not compile
+    /// without it.
+    public var swiftDefaultActorIsolation: String? {
+        guard let value = self["SWIFT_DEFAULT_ACTOR_ISOLATION"], !value.isEmpty else { return nil }
+        return value
+    }
     public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
 
     /// Everything Swift compiles with `-D`: the conditions Xcode dedicates a

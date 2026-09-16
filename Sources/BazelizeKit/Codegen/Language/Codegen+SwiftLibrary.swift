@@ -97,8 +97,14 @@ extension Target {
         return ["-parse-as-library"]
     }
 
+    /// `-default-isolation`, which `swiftc` takes for the whole module.
+    var defaultIsolationCopts: [String] {
+        guard let isolation = prefer(\.swiftDefaultActorIsolation) else { return [] }
+        return ["-default-isolation", isolation]
+    }
+
     func swiftCopts(project: Project) -> [String]? {
-        var copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts
+        var copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts + defaultIsolationCopts
         if bridgingHeader != nil {
             copts += swiftIncludeCopts(project: project) + forceIncludeCopts()
         }
@@ -109,7 +115,8 @@ extension Target {
     /// declarations through its own clang module instead. The module's headers can
     /// still reach for the target's include paths, so `swiftc` needs them too.
     func moduleSwiftCopts(project: Project) -> [String]? {
-        let copts = parseAsLibraryCopts + swiftIncludeCopts(project: project) + forceIncludeCopts()
+        let copts = parseAsLibraryCopts + defaultIsolationCopts
+            + swiftIncludeCopts(project: project) + forceIncludeCopts()
         return copts.isEmpty ? nil : copts
     }
 
