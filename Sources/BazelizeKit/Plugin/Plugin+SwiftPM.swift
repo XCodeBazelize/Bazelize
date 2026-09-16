@@ -249,12 +249,18 @@ final class PluginSwiftPM: PluginBuiltin {
     override var custom: [PluginBuiltin.Custom]? {
         guard hasPackages else { return nil }
 
-        let manifests = [package, packageResolved].compactMap { $0 }
+        let manifests = [package, packageResolved].compactMap { $0 } + [ignore]
         /// In native mode the package directories hold the rules themselves, so
         /// there is nothing to alias and no generator to patch.
         guard kit.spm == .rspm else { return manifests }
 
         return manifests + patchFiles + facadeFiles
+    }
+
+    /// SwiftPM's working directory is not part of the Bazel workspace: a checkout
+    /// can carry `BUILD` files of its own, and Bazel would try to load them.
+    private var ignore: PluginBuiltin.Custom {
+        .init(path: ".bazelignore", content: ".build\n")
     }
 
     override var tip: String? {
