@@ -76,6 +76,7 @@ let package = Package(
                 "Starlark",
                 "PluginLoader",
 
+                .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         .target(

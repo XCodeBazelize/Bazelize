@@ -56,6 +56,9 @@ final class PluginSwiftPM: PluginBuiltin {
         /// A project without Swift packages has no `Package.swift` to point at, and
         /// the extension fails module resolution when the manifest is missing.
         guard hasPackages else { return }
+        /// Nothing to declare when the packages' rules are generated here: they are
+        /// plain targets in this workspace.
+        guard kit.spm == .rspm else { return }
 
         builder.bazel_dep(
             name: "rules_swift_package_manager",
@@ -245,11 +248,19 @@ final class PluginSwiftPM: PluginBuiltin {
 
     override var custom: [PluginBuiltin.Custom]? {
         guard hasPackages else { return nil }
-        return [package, packageResolved].compactMap { $0 } + patchFiles + facadeFiles
+
+        let manifests = [package, packageResolved].compactMap { $0 }
+        /// In native mode the package directories hold the rules themselves, so
+        /// there is nothing to alias and no generator to patch.
+        guard kit.spm == .rspm else { return manifests }
+
+        return manifests + patchFiles + facadeFiles
     }
 
     override var tip: String? {
         guard hasPackages else { return nil }
+        guard kit.spm == .rspm else { return nil }
+
         return """
         # rules_swift_package_manager
         After bazelize, run `swift package update` and `bazel mod tidy`.
