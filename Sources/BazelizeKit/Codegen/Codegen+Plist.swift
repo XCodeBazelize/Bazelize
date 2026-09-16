@@ -107,7 +107,11 @@ extension Target {
     private func plistContent(project: Project?) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
-        var dropped = appIcons(project: project) == nil ? [] : Self.iconKeys
+        /// Keys `plisttool` cannot resolve for this product are as unusable in the
+        /// target's own `Info.plist` as they are in a default: a command line tool
+        /// has no `CFBundleExecutable` to substitute.
+        var dropped = unsupportedDefaultPlistKeys
+        dropped.formUnion(appIcons(project: project) == nil ? [] : Self.iconKeys)
         /// The version an embedded bundle declares has to give way to its parent's.
         if embeddingBundle(project: project) != nil {
             dropped.formUnion(Self.versionPatterns.keys)
@@ -363,7 +367,7 @@ extension Target {
     /// `plisttool` substitutes only a handful of variables, so a default whose value
     /// it cannot resolve has to be dropped: `macos_command_line_application` bundles
     /// no executable.
-    private var unsupportedDefaultPlistKeys: Set<String> {
+    var unsupportedDefaultPlistKeys: Set<String> {
         var keys: Set<String> = []
         if productType == "com.apple.product-type.tool" {
             keys.insert("CFBundleExecutable")
