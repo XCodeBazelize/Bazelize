@@ -32,9 +32,14 @@ final class ProjectLoader {
         path.parent()
     }
 
+    /// `PROJECT_NAME`, which build settings reference as freely as any other.
+    var name: String {
+        rootProject?.name ?? path.lastComponentWithoutExtension
+    }
+
     func model() throws -> XCode.Project {
         XCode.Project(
-            name: rootProject?.name ?? path.lastComponentWithoutExtension,
+            name: name,
             workspacePath: workspacePath.string,
             projectPath: path.string,
             preferConfig: preferConfig,

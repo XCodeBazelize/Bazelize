@@ -60,6 +60,37 @@ extension XCode.BuildSettings {
             ].compactMapValues { $0 }
         }
 
+        /// The platform the settings build for.
+        ///
+        /// `SDKROOT` is optional in a project file, and `auto` means the target is
+        /// multiplatform: `SUPPORTED_PLATFORMS` narrows it down, then the device
+        /// family, then whichever deployment target is set.
+        public var resolvedSDK: SDK? {
+            if let sdk, sdk != .auto {
+                return sdk
+            }
+            if let platform = supportedPlatforms.first(where: { $0 != .auto }) {
+                return platform
+            }
+            if deviceFamily.contains(.iphone) {
+                return .iOS
+            }
+            if iOS != nil {
+                return .iOS
+            }
+            if macOS != nil {
+                return .macOS
+            }
+            if tvOS != nil {
+                return .tvOS
+            }
+            if watchOS != nil {
+                return .watchOS
+            }
+
+            return sdk
+        }
+
         public var deviceFamily: [XCode.DeviceFamily] {
             XCode.DeviceFamily.parse(settings["TARGETED_DEVICE_FAMILY"])
         }

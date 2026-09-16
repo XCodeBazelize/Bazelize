@@ -22,6 +22,7 @@ struct TargetLoader {
         mergedConfig = configList.merge(defaultConfigList).mapValues { settings in
             settings.with(overrides: [
                 "TARGET_NAME": native.name,
+                "PROJECT_NAME": project.name,
                 "SRCROOT": workspace,
                 "SOURCE_ROOT": workspace,
                 "PROJECT_DIR": workspace,
@@ -183,8 +184,11 @@ struct TargetLoader {
 
         /// Xcode records a linked package product either on the target or on the
         /// build file in the Frameworks phase, depending on how it was added.
-        let productDependencies = (native.packageProductDependencies ?? []) + frameworkBuildFiles.compactMap { buildFile in
+        let excluded = filteredProductNames
+        let productDependencies = ((native.packageProductDependencies ?? []) + frameworkBuildFiles.compactMap { buildFile in
             buildFile.product
+        }).filter { product in
+            !excluded.contains(product.productName)
         }
 
         let packageProducts = unique(productDependencies) { $0.productName }.map { dependency in
@@ -224,7 +228,7 @@ struct TargetLoader {
     }
 
     private var sourceBuildFiles: [PBXBuildFile] {
-        (try? native.sourcesBuildPhase()?.files) ?? []
+        ((try? native.sourcesBuildPhase()?.files) ?? []).filter(links)
     }
 
     private var headerBuildFiles: [PBXBuildFile] {
@@ -232,14 +236,65 @@ struct TargetLoader {
             .compactMap { $0 as? PBXHeadersBuildPhase }
             .compactMap(\.files)
             .flatMap { $0 }
+            .filter(links)
     }
 
     private var resourceBuildFiles: [PBXBuildFile] {
-        (try? native.resourcesBuildPhase()?.files) ?? []
+        ((try? native.resourcesBuildPhase()?.files) ?? []).filter(links)
     }
 
     private var frameworkBuildFiles: [PBXBuildFile] {
+        allFrameworkBuildFiles.filter(links)
+    }
+
+    private var allFrameworkBuildFiles: [PBXBuildFile] {
         (try? native.frameworksBuildPhase()?.files) ?? []
+    }
+
+    /// Package products the target links only on another platform.
+    ///
+    /// The filter is on the build file, while the product is also listed on the
+    /// target itself, so the target's own list has to be read through the filter.
+    private var filteredProductNames: Set<String> {
+        let linked = Set(frameworkBuildFiles.compactMap { $0.product?.productName })
+        let filtered = allFrameworkBuildFiles
+            .filter { !links($0) }
+            .compactMap { $0.product?.productName }
+
+        return Set(filtered).subtracting(linked)
+    }
+
+    /// Whether the target links a build file at all.
+    ///
+    /// Xcode can restrict a linked framework or package product to some platforms
+    /// — UTM links a visionOS keyboard only when building for visionOS — and the
+    /// entry is invisible to every other platform, sources and all.
+    private func links(_ buildFile: PBXBuildFile) -> Bool {
+        let filters = (buildFile.platformFilters ?? []) + [buildFile.platformFilter].compactMap { $0 }
+        guard !filters.isEmpty else { return true }
+        guard let platform = platformFilterName else { return true }
+
+        return filters.contains { filter in
+            filter == platform || filter.hasPrefix("\(platform)-")
+        }
+    }
+
+    /// The platform as a build file's filter names it.
+    private var platformFilterName: String? {
+        switch selectedConfig?.platform.resolvedSDK {
+        case .iOS:
+            return "ios"
+        case .macOS:
+            return "macos"
+        case .tvOS:
+            return "tvos"
+        case .watchOS:
+            return "watchos"
+        case .driverKit:
+            return "driverkit"
+        case .auto, .none:
+            return nil
+        }
     }
 
     private var copyBuildFiles: [PBXBuildFile] {
@@ -247,6 +302,7 @@ struct TargetLoader {
             .compactMap { $0 as? PBXCopyFilesBuildPhase }
             .compactMap(\.files)
             .flatMap { $0 }
+            .filter(links)
     }
 
     private var synchronizedGroupFiles: [SynchronizedFile] {
