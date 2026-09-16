@@ -128,6 +128,7 @@ extension Rules.Swift {
         public static func swift_library(
             name: String,
             alwayslink: Bool = true,
+            always_include_developer_search_paths: Bool? = nil,
             copts: [String]? = nil,
             module_name: String? = nil,
             srcs: Starlark.Value,
@@ -140,6 +141,7 @@ extension Rules.Swift {
             linkstatic: Bool? = nil,
             private_deps: Starlark.Value? = nil,
             swiftc_inputs: Starlark.Value? = nil,
+            tags: [String]? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
@@ -147,6 +149,9 @@ extension Rules.Swift {
             Rules.Swift.swift_library.call {
                 "name" => name
                 "alwayslink" => alwayslink
+                if let always_include_developer_search_paths {
+                    "always_include_developer_search_paths" => always_include_developer_search_paths
+                }
                 if let copts {
                     "copts" => copts
                 }
@@ -181,6 +186,9 @@ extension Rules.Swift {
                 }
                 if let swiftc_inputs {
                     "swiftc_inputs" => swiftc_inputs
+                }
+                if let tags {
+                    "tags" => tags
                 }
                 if let testonly {
                     "testonly" => testonly
