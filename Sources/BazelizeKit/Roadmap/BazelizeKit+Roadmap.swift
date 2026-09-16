@@ -106,7 +106,7 @@ extension Bazel {
         private func prepareDefinesHeader(target: Target, targetRoot: Path) throws {
             guard let relativePath = target.definesHeader else { return }
 
-            let definitions = (target.prefer(\.preprocessorDefinitions) ?? []).map { definition in
+            let definitions = target.headerDefinitions.map { definition in
                 guard let separator = definition.firstIndex(of: "=") else {
                     return "#define \(definition) 1"
                 }

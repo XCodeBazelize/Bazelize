@@ -84,17 +84,35 @@ extension Target {
         return Array(Set(directories + [".", ".."])).sorted()
     }
 
-    /// `GCC_PREPROCESSOR_DEFINITIONS`, materialized as a force-included header.
+    /// `GCC_PREPROCESSOR_DEFINITIONS`, split by what survives a command line.
     ///
-    /// Neither the rules' `defines` attribute nor a `-D` copt survives a value like
-    /// `ID=@"com.x"`: Bazel re-tokenizes the former and the rules_swift worker's
-    /// param files mangle the quoting of the latter. A header force-included with
-    /// `-include` needs no quoting at all, and Xcode does not propagate these
-    /// definitions to dependents either.
+    /// A plain `NAME=1` goes in as a `-D` copt, because that is the only form a
+    /// clang module build sees: a module is compiled in its own clang instance,
+    /// which ignores a force-included header but hashes the `-D` flags. UTM's
+    /// `#if !defined(WITH_USB)` in a header the mixed target modularizes needs
+    /// exactly that.
+    ///
+    /// Anything else — `ID=@"com.x"` — cannot survive: Bazel re-tokenizes the
+    /// rules' `defines` attribute and the rules_swift worker's param files mangle
+    /// the quoting of a copt, so those are force-included as a header instead.
     static let definesHeaderPath = "Generated/BazelizeDefines.h"
 
+    /// `NAME`, or `NAME=` followed by characters no shell or param file rewrites.
+    private static let plainDefinePattern = #"^[A-Za-z_][A-Za-z0-9_]*(=[A-Za-z0-9_./+-]*)?$"#
+
+    private var definitions: (plain: [String], quoted: [String]) {
+        let all = prefer(\.preprocessorDefinitions) ?? []
+        return (
+            plain: all.filter { $0.range(of: Self.plainDefinePattern, options: .regularExpression) != nil },
+            quoted: all.filter { $0.range(of: Self.plainDefinePattern, options: .regularExpression) == nil })
+    }
+
     var definesHeader: String? {
-        (prefer(\.preprocessorDefinitions) ?? []).isEmpty ? nil : Self.definesHeaderPath
+        definitions.quoted.isEmpty ? nil : Self.definesHeaderPath
+    }
+
+    var headerDefinitions: [String] {
+        definitions.quoted
     }
 
     /// `GCC_PREFIX_HEADER`, relative to the target's `Sources/` tree.
@@ -109,8 +127,13 @@ extension Target {
     }
 
     var forceIncludeFlags: [String] {
-        guard let definesHeader else { return prefixHeaderFlags }
-        return ["-include", "Targets/\(name)/\(definesHeader)"] + prefixHeaderFlags
+        let defines = definitions.plain.map { definition in
+            "-D\(definition)"
+        }
+        let header = definesHeader.map { path in
+            ["-include", "Targets/\(name)/\(path)"]
+        } ?? []
+        return defines + header + prefixHeaderFlags
     }
 
     /// The same header, force-included into `swiftc`'s clang importer so a bridging
