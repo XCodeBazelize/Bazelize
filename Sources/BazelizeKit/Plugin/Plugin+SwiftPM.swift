@@ -92,18 +92,24 @@ final class PluginSwiftPM: PluginBuiltin {
         """)
     }
 
-    private func transformRemote(_ product: PackageProductDependency) -> String? {
-        /// NIO
+    /// The package a product belongs to, the product, and the rule that implements
+    /// it today. `nil` when the product cannot be traced back to a package.
+    func facadeProduct(_ product: PackageProductDependency) -> FacadeProduct? {
+        remoteProduct(product) ?? localProduct(product)
+    }
+
+    /// NIO, from a remote package.
+    ///
+    /// Only the repository name is sanitized: rules_swift_package_manager keeps the
+    /// product name verbatim, dashes included (`SwiftUIIntrospect-Static`).
+    private func remoteProduct(_ product: PackageProductDependency) -> FacadeProduct? {
         let name = product.productName
         guard let url = product.package ?? remoteURL(forProduct: name) else { return nil }
 
-        /// @swiftpkg_swift_nio//:NIO
-        ///
-        /// Only the repository name is sanitized: rules_swift_package_manager keeps
-        /// the product name verbatim, dashes included (`SwiftUIIntrospect-Static`).
-        return """
-        @\(Self.repositoryName(url: url))//:\(name)
-        """
+        return .init(
+            package: Self.packageDirectoryName(url: url),
+            product: name,
+            actual: "@\(Self.repositoryName(url: url))//:\(name)")
     }
 
     /// Xcode can reference a package product without linking it back to the package.
@@ -115,33 +121,35 @@ final class PluginSwiftPM: PluginBuiltin {
         }
     }
 
-    private func transformLocal(_ product: PackageProductDependency) -> String? {
+    private func localProduct(_ product: PackageProductDependency) -> FacadeProduct? {
         let product = product.productName
 
-        let path: String
+        let directory: String
+        let repository: String
         if let packagePath = kit.project.localPackagePathByProduct[product] {
-            path = Path(packagePath).lastComponent.lowercased()
-        } else if let packagePath = kit.project.localPackageRepoByProduct[product] {
-            path = packagePath.replacingOccurrences(of: "swiftpkg_", with: "")
+            directory = Path(packagePath).lastComponent
+            repository = directory.lowercased()
+        } else if let packageRepo = kit.project.localPackageRepoByProduct[product] {
+            repository = packageRepo.replacingOccurrences(of: "swiftpkg_", with: "")
+            directory = repository
         } else {
             return nil
         }
 
-        return """
-        @swiftpkg_\(path)//:\(product)
-        """
+        return .init(
+            package: directory,
+            product: product,
+            actual: "@swiftpkg_\(repository)//:\(product)")
     }
 
     override var target: [String : [String]]? {
-        let targets = kit.project.targets
-
-        return targets.map { target -> (String, [String]) in
-            let deps = target.dependencies.packageProducts
-
-            let remote = deps.compactMap(transformRemote)
-            let local = deps.compactMap(transformLocal)
-            let all: [String] = Set(remote + local).sorted()
-            return (target.name, all)
+        kit.project.targets.map { target -> (String, [String]) in
+            let labels = target.dependencies.packageProducts
+                .compactMap(facadeProduct)
+                .map { product in
+                    facadeLabel(package: product.package, product: product.product)
+                }
+            return (target.name, Set(labels).sorted())
         }.toDictionary()
     }
 
@@ -237,7 +245,7 @@ final class PluginSwiftPM: PluginBuiltin {
 
     override var custom: [PluginBuiltin.Custom]? {
         guard hasPackages else { return nil }
-        return [package, packageResolved].compactMap { $0 } + patchFiles
+        return [package, packageResolved].compactMap { $0 } + patchFiles + facadeFiles
     }
 
     override var tip: String? {
@@ -278,6 +286,12 @@ final class PluginSwiftPM: PluginBuiltin {
 
     private static func sanitize(_ value: String) -> String {
         value.replacingOccurrences(of: "-", with: "_")
+    }
+
+    /// The directory a package's products are exposed under, named the way a human
+    /// refers to the package.
+    static func packageDirectoryName(url: String) -> String {
+        repositoryModuleName(url: url)
     }
 
     private static func repositoryModuleName(url: String) -> String {

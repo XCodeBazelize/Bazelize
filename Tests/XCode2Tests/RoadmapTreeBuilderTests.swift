@@ -57,9 +57,12 @@ struct RoadmapTreeBuilderTests {
         #expect(exampleBuild.contains("name = \"Example_library\""))
         #expect(exampleBuild.contains("//Targets/Framework1:Framework1_library"))
         #expect(exampleBuild.contains("//Prebuilt:SVProgressHUD"))
-        #expect(exampleBuild.contains("@swiftpkg_anycodable//:AnyCodable"))
-        #expect(exampleBuild.contains("@swiftpkg_local1//:LocalLib1"))
-        #expect(exampleBuild.contains("@swiftpkg_local1//:LocalLib2"))
+        /// A target depends on the package product, never on the repository that
+        /// happens to implement it.
+        #expect(exampleBuild.contains("//Packages/AnyCodable:AnyCodable"))
+        #expect(exampleBuild.contains("//Packages/Local1:LocalLib1"))
+        #expect(exampleBuild.contains("//Packages/Local1:LocalLib2"))
+        #expect(!exampleBuild.contains("@swiftpkg_"))
         #expect(exampleBuild.contains("plist_fragment("))
 
         let frameworkBuild = try String(contentsOfFile: (output + "Targets/Framework1/BUILD").string)
@@ -84,6 +87,13 @@ struct RoadmapTreeBuilderTests {
         #expect(module.contains("rules_swift_package_manager"))
         #expect(module.contains("swift_deps = use_extension"))
         #expect(module.contains("swiftpkg_local1"))
+
+        /// The facade is where the repository that implements a product is named.
+        let localFacade = try String(contentsOfFile: (output + "Packages/Local1/BUILD").string)
+        #expect(localFacade.contains("name = \"LocalLib1\""))
+        #expect(localFacade.contains("actual = \"@swiftpkg_local1//:LocalLib1\""))
+        let remoteFacade = try String(contentsOfFile: (output + "Packages/AnyCodable/BUILD").string)
+        #expect(remoteFacade.contains("actual = \"@swiftpkg_anycodable//:AnyCodable\""))
     }
 
     @Test
@@ -155,7 +165,8 @@ struct RoadmapTreeBuilderTests {
         /// The two command line tools Xcode copies into `Contents/MacOS`.
         #expect(appBuild.contains("\"//Targets/iina-cli:iina-cli\": \"MacOS\""))
         #expect(appBuild.contains("\"//Targets/iina-plugin:iina-plugin\": \"MacOS\""))
-        #expect(appBuild.contains("@swiftpkg_grmustache.swift//:Mustache"))
+        #expect(appBuild.contains("//Packages/GRMustache.swift:Mustache"))
+        #expect(!appBuild.contains("@swiftpkg_"))
         #expect(appBuild.contains("macos_application("))
         #expect(appBuild.contains("minimum_os_version = \"10.15\""))
 
