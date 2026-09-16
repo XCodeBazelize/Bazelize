@@ -13,7 +13,9 @@ extension PluginSwiftPM {
 
     static let patches: [(name: String, content: String)] = [
         (name: "rspm-clang-target-headers.patch", content: clangTargetHeadersPatch),
-        (name: "rspm-metal-headers.patch", content: metalHeadersPatch)
+        (name: "rspm-metal-headers.patch", content: metalHeadersPatch),
+        (name: "rspm-default-isolation-settings.patch", content: defaultIsolationSettingsPatch),
+        (name: "rspm-default-isolation-copts.patch", content: defaultIsolationCoptsPatch)
     ]
 
     /// The `patches` attribute of the module override.
@@ -107,5 +109,86 @@ extension PluginSwiftPM {
      precompiled_bundles_and_labels = [
          (r, "{}_{}".format(bundle_label_name, _sanitized_bundle_file_name(r.split("/")[-1])))
          for r in sorted_resources
+"""#
+
+    /// `SwiftSetting.defaultIsolation` (SE-0466) is parsed and then dropped as an
+    /// unrecognized setting, so a package written against `MainActor` by default
+    /// does not compile. Bazel applies one patch per file, so the setting and the
+    /// flag it maps to come as a pair.
+    ///
+    /// Example: IceCubesApp, whose local packages all declare it.
+    private static let defaultIsolationSettingsPatch = #"""
+--- a/swiftpkg/internal/pkginfos.bzl
++++ b/swiftpkg/internal/pkginfos.bzl
+@@ -1862,6 +1879,7 @@
+     language_modes = []
+     experimental_features = []
+     upcoming_features = []
++    default_isolations = []
+     for bs in build_settings:
+         if bs.kind == build_setting_kinds.define:
+             defines.append(bs)
+@@ -1873,6 +1891,8 @@
+             experimental_features.append(bs)
+         elif bs.kind == build_setting_kinds.upcoming_features:
+             upcoming_features.append(bs)
++        elif bs.kind == build_setting_kinds.default_isolation:
++            default_isolations.append(bs)
+         else:
+             # We do not recognize the setting.
+             pass
+@@ -1880,7 +1900,8 @@
+        len(unsafe_flags) == 0 and \
+        len(language_modes) == 0 and \
+        len(experimental_features) == 0 and \
+-       len(upcoming_features) == 0:
++       len(upcoming_features) == 0 and \
++       len(default_isolations) == 0:
+         return None
+     return struct(
+         defines = defines,
+@@ -1888,6 +1909,7 @@
+         language_modes = language_modes,
+         experimental_features = experimental_features,
+         upcoming_features = upcoming_features,
++        default_isolations = default_isolations,
+     )
+ 
+ def _new_linker_settings(build_settings):
+@@ -2083,6 +2105,7 @@
+ )
+ 
+ build_setting_kinds = struct(
++    default_isolation = "defaultIsolation",
+     define = "define",
+     header_search_path = "headerSearchPath",
+     linked_framework = "linkedFramework",
+"""#
+
+    /// The other half: `swiftc`'s `-default-isolation`.
+    private static let defaultIsolationCoptsPatch = #"""
+--- a/swiftpkg/internal/swiftpkg_build_files.bzl
++++ b/swiftpkg/internal/swiftpkg_build_files.bzl
+@@ -176,6 +176,20 @@
+                     condition = experimental_feature.condition,
+                 )
+                 features.append(new_experimental_feature)
++        for bs in target.swift_settings.default_isolations:
++            for default_isolation in lists.flatten(bzl_selects.new_from_build_setting(bs)):
++                # SE-0466: the manifest setting maps to the compiler flag that
++                # controls the module's default actor isolation.
++                copts.append(bzl_selects.new(
++                    value = "-default-isolation",
++                    kind = default_isolation.kind,
++                    condition = default_isolation.condition,
++                ))
++                copts.append(bzl_selects.new(
++                    value = default_isolation.value,
++                    kind = default_isolation.kind,
++                    condition = default_isolation.condition,
++                ))
+         for bs in target.swift_settings.upcoming_features:
+             for upcoming_feature in lists.flatten(bzl_selects.new_from_build_setting(bs)):
+                 new_upcoming_feature = bzl_selects.new(
 """#
 }
