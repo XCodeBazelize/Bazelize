@@ -53,6 +53,7 @@ extension Target {
             generateCopiedFiles(builder, kit)
             generateXPCService(builder, kit)
         case "com.apple.product-type.app-extension":
+            generateStrings(builder, kit)
             generateCopiedProducts(builder, kit)
             generateCopiedFiles(builder, kit)
             generateExtension(builder, kit)
