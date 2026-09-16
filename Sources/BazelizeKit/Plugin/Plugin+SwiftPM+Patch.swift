@@ -24,7 +24,8 @@ extension PluginSwiftPM {
         (name: "rspm-clang-target-headers.patch", content: clangTargetHeadersPatch),
         (name: "rspm-metal-headers.patch", content: metalHeadersPatch),
         (name: "rspm-default-isolation-settings.patch", content: defaultIsolationSettingsPatch),
-        (name: "rspm-default-isolation-copts.patch", content: defaultIsolationCoptsPatch)
+        (name: "rspm-default-isolation-copts.patch", content: defaultIsolationCoptsPatch),
+        (name: "rspm-local-archive-artifact.patch", content: localArchiveArtifactPatch)
     ]
 
     var patches: [(name: String, content: String)] {
@@ -215,5 +216,32 @@ extension PluginSwiftPM {
          for bs in target.swift_settings.upcoming_features:
              for upcoming_feature in lists.flatten(bzl_selects.new_from_build_setting(bs)):
                  new_upcoming_feature = bzl_selects.new(
+"""#
+
+    /// A binary target whose `path` points at an archive in the checkout is ignored:
+    /// the artifact scan looks for a directory, finds nothing and generates no
+    /// target, while the package's own products still depend on it. SPM unzips such
+    /// an archive itself.
+    ///
+    /// Example: CodeEditLanguages, which ships
+    /// `CodeLanguagesContainer.xcframework.zip`.
+    private static let localArchiveArtifactPatch = #"""
+--- a/swiftpkg/internal/repo_rules.bzl
++++ b/swiftpkg/internal/repo_rules.bzl
+@@ -151,6 +151,14 @@
+     repository_ctx.file(path, content = content, executable = False)
+ 
+ def _artifact_infos_from_path(repository_ctx, path):
++    # A binary target can point at an archive in the checkout, which SPM unzips
++    # itself; nothing in it is visible until it is extracted.
++    if path.endswith(".zip") and not repository_files.is_directory(repository_ctx, path):
++        output = path + ".extracted"
++        if not repository_files.path_exists(repository_ctx, output):
++            repository_ctx.extract(archive = path, output = output)
++        path = output
++
+     if path.endswith(".xcframework"):
+         xcframework_dirs = [path]
+     else:
 """#
 }
