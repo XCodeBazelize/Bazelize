@@ -92,7 +92,7 @@ extension Target {
                     frameworks
                 },
                 entitlements: entitlementsLabel(project: kit.project),
-                families: prefer(\.platform.deviceFamily)?.map(\.code),
+                families: deviceFamilies,
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto

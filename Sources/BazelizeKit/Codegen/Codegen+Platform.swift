@@ -37,4 +37,17 @@ extension Target {
 
         return prefer(\.platform.sdk)
     }
+
+    /// The device families a bundle rule is built for.
+    ///
+    /// `TARGETED_DEVICE_FAMILY` is optional in a project file: Xcode then builds
+    /// for every family the platform has, and an iOS bundle rule requires the
+    /// attribute, so the default has to be stated.
+    var deviceFamilies: [String]? {
+        if let declared = prefer(\.platform.deviceFamily), !declared.isEmpty {
+            return declared.map(\.code)
+        }
+
+        return platformSDK == .iOS ? [XCode.DeviceFamily.iphone.code, XCode.DeviceFamily.ipad.code] : nil
+    }
 }

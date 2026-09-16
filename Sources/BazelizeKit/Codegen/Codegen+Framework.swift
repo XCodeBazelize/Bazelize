@@ -19,7 +19,7 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                families: prefer(\.platform.deviceFamily)?.map(\.code),
+                families: deviceFamilies,
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto

@@ -86,7 +86,7 @@ extension Target {
                 entitlements: entitlementsLabel(project: project),
                 extensions: embeddedExtensions(project: project),
                 frameworks: embeddedFrameworks(project: project),
-                families: prefer(\.platform.deviceFamily)?.map(\.code),
+                families: deviceFamilies,
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
