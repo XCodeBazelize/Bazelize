@@ -51,6 +51,7 @@ extension Target {
                     definesHeader
                     prefixHeader
                 },
+                tags: manual,
                 testonly: isTest,
                 visibility: .private))
 
@@ -58,6 +59,7 @@ extension Target {
             Rules.Builtin.Call.alias(
                 name: "\(name)_library",
                 actual: .named("\(name)_swift"),
+                tags: manual,
                 visibility: .public))
     }
 

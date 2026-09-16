@@ -52,6 +52,7 @@ extension Target {
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: sdkFrameworks(project: project),
+                tags: manual,
                 testonly: isTest,
                 visibility: .private,
                 weak_sdk_frameworks: weakFrameworksSDK))
@@ -61,6 +62,7 @@ extension Target {
                 Rules.Builtin.Call.alias(
                     name: "\(name)_library",
                     actual: .named("\(name)_objc"),
+                    tags: manual,
                     visibility: .public))
         }
     }

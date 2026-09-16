@@ -91,6 +91,7 @@ extension Target {
                     intentSources
                     assetSymbolSources
                 },
+                tags: manual,
                 weak_sdk_frameworks: weakFrameworksSDK,
                 deps: .build {
                     linkedFrameworksLibrary(project: project)
@@ -104,6 +105,7 @@ extension Target {
             Rules.Builtin.Call.alias(
                 name: "\(name)_library",
                 actual: .named("\(name)_mixed"),
+                tags: manual,
                 visibility: .public))
     }
 

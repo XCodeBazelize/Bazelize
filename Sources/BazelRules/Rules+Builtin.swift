@@ -79,12 +79,14 @@ extension Rules.Builtin.Call {
     public static func alias(
         name: String,
         actual: Starlark.Label,
+        tags: [String]? = nil,
         visibility: Starlark.Statement.Argument.Visibility? = nil)
         -> Starlark.Statement.Call
     {
         .init("alias") {
             "name" => name
             "actual" => actual
+            if let tags { "tags" => tags }
             if let visibility {
                 visibility.argument
             }

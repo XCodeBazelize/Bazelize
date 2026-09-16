@@ -1,6 +1,13 @@
 import Util
 
 extension Target {
+    /// A target's library is compiled through the bundle rule that transitions it
+    /// to the target's platform. On its own it would be compiled for the host,
+    /// which is not what an iOS target's sources are written against, so no
+    /// wildcard pattern may pick one up.
+    var manual: [String] {
+        ["manual"]
+    }
     /// A target with no sources of its own has no library to link, so no rule can
     /// produce its product: UTM wraps an externally built binary in a bundle that
     /// way. Nothing references a rule that is not emitted either.
