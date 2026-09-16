@@ -128,7 +128,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
-| auto-discovered resources（xib／xcassets／metal／xcstrings） | 同上，`.metal` 連同該 target 的 header 一起進 resource group |
+| auto-discovered resources（xib／xcassets／metal／xcstrings／`.lproj`） | 同上；有 `.metal` 時該 target 的 header 也一起進 resource group，因為 bundler 會把它們當 Metal header 編 |
 | `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳 |
 | `headerSearchPath` | `includes`，而且該目錄被 `exclude` 丟掉時 header 仍然留作輸入 |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
@@ -148,10 +148,14 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 `manual`：package target 是透過會轉場到某個平台的 bundle 規則建起來的，wildcard
 pattern 不該把 iOS-only 的 package 拿去編 host。
 
+C 系 target 的公開 header 會連結到一個產生出來的 interface 目錄，module map 就放在
+同一層，而那個目錄就是 header search path。clang 只在「找到 header 的那個目錄」找
+`module.modulemap`，所以 map 必須和 header 同層，而 checkout 不是我們能寫的地方。
+
 module map 決定 C 系模組叫什麼。沒有它，模組名會由 label 推導出來，原始碼就沒辦法
-用自己寫的名字 import；package 自己帶的 map 優先，因為那是它想提供的介面。每個依賴
-的 map 也會一起交給 compiler：Swift 端的模組是規則給的，C 系端 `@import` 兄弟
-target 則沒人給。
+用自己寫的名字 import；package 自己帶的 map 優先，因為那是它想提供的介面。用 header
+search path 找得到，是每個消費端都能解到模組的原因——Swift 或 C 系、同一個 package、
+別的 package、或 Xcode target 都一樣，因為只有 Swift 端的模組是規則給的。
 
 package 的原始碼是一個 target 一條 symlink，checkout 其餘部分不會進 build；
 `.bazelignore` 也把 SwiftPM 的工作目錄排除在外。兩件事同一個理由：package 可能
@@ -271,24 +275,35 @@ system library，加上原本的 Swift。
 | CodeEdit | package 全部建得起來；app 自己的原始碼被 Swift 6.4 擋下 |
 | CotEditor | package 全部建得起來；app 自己的原始碼被 Swift 6.4 擋下 |
 | IceCubesApp | package 全部建得起來；app 自己的原始碼和 iOS 27 SDK 撞名（`SwiftUI.Document`） |
-| UTM | 見下面的 platform floor |
+| UTM | package 都建得起來；app 本身需要預先 build 的 sysroot，另有一處原始碼靠 Xcode 的 project headermap 用檔名 include header |
 | PlayCover | `swift package resolve` 在 package 自己的 manifest 上就失敗 |
 
 沒建起來的四個，失敗點都不在我們產生的東西裡：三個是自己的原始碼碰上更新的
 compiler 與 SDK，一個是上游 manifest。
 
-### 已知限制：platform floor
+### 平台版本
 
-package 會宣告自己支援的平台版本，SwiftPM 編它的 target 時取「自己的 floor 和
-使用端的 floor 之中較高的那個」。bazelize 一律用專案的 deployment target 編所有
-package target，而這正是 rspm 依賴當時被釘在 1.15.0 的原因——之後的版本會把每個
-target 轉場到它自己的 floor，然後在依賴宣告更高版本時 analysis 失敗。
+package 會宣告自己支援的平台版本，SwiftPM 編它的 target 時取「自己宣告的」和
+「使用端的」之中較高的那個。bazelize 一律用專案的 deployment target 編所有 package
+target：版本存在於「拉它進來的 bundle 規則」的 platform transition 裡，library
+規則本身沒有版本這個屬性。逐 target 遵守它，正是 rspm 依賴當時被釘在 1.15.0 的
+原因——之後的版本會把每個 target 轉場到它自己的 floor，然後在依賴宣告更高版本時
+analysis 失敗。
 
-所以 package 要求比專案高時就會編不過，錯誤是那些新 API 的 availability。UTM 就是
-這個情形：iOS 14 的專案，用到宣告 iOS 16 與 iOS 18 的 package。
+package 要求的版本還是會算出來，算法和 SwiftPM 一樣：
 
-要逐 target 遵守 floor，需要一個「拉高 deployment target 又不把依賴圖切開」的
-轉場，那是階段 3 的事。
+1. manifest 的 `platforms:` 對該平台宣告的值；
+2. 沒宣告就用 SwiftPM 建該平台的最低版本——macOS 12、iOS 與 tvOS 15、watchOS 9、
+   visionOS 1、Mac Catalyst 15、DriverKit 21；
+3. 專案有建該平台但沒寫版本時，問已安裝的 SDK：它附的 `XCTest` 的 deployment
+   target，就是 SwiftPM 問同一個問題的方式。
+
+算出來的值會和「專案自己的 target 之中最低的 deployment target」比。package 要求
+更高時，會在執行結束時把兩個版本一起講出來——不然失敗會以「別人原始碼深處的
+availability 錯誤」的形式出現。
+
+要用 package 要求的版本去編它，需要一個「拉高 deployment target 又不把依賴圖切開」
+的轉場，那是階段 3 的事。
 
 ## 分階段與通過條件
 

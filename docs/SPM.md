@@ -139,7 +139,7 @@ No test pins how a package's rules are produced either.
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
-| auto-discovered resources (xib/xcassets/metal/xcstrings) | as above; `.metal` enters the resource group with that target's headers |
+| auto-discovered resources (xib/xcassets/metal/xcstrings/`.lproj`) | as above; a `.metal` file takes the target's headers into the resource group, because the bundler compiles them as Metal headers |
 | `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent |
 | `headerSearchPath` | `includes`, and the headers there stay inputs even when `exclude` drops the directory |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
@@ -161,12 +161,16 @@ package target is built through the bundle rule that transitions it to a
 platform, so a wildcard pattern must not compile an iOS-only package for the
 host.
 
-A module map is what names a C-family module. Without one the module is named
+A C-family target's public headers are linked into a generated interface
+directory with its module map beside them, and that directory is the header
+search path. clang looks for `module.modulemap` in the directory a header was
+found in, so the map has to sit next to the headers, and the checkout is not
+ours to write into. A module map is what names a C-family module. Without one the module is named
 after the label and the target cannot be imported by the name its own sources
 use; a module map the package ships is preferred, because it is the interface
-the package intends. The map of every dependency is passed to the compiler as
-well: a Swift consumer is handed a module by the rules, a C-family one
-`@import`ing a sibling target is not.
+the package intends. Reaching it through a header search path is what lets every
+consumer resolve the module — Swift or C-family, this package, another one, or an
+Xcode target — since only a Swift consumer is handed a module by the rules.
 
 A package's sources are linked one target at a time, so the rest of a checkout
 stays out of the build, and `.bazelignore` keeps SwiftPM's working directory
@@ -293,27 +297,39 @@ resource-carrying, binary and system-library targets, next to the Swift ones.
 | CodeEdit | every package builds; the app's own sources are rejected by Swift 6.4 |
 | CotEditor | every package builds; the app's own sources are rejected by Swift 6.4 |
 | IceCubesApp | every package builds; the app's own sources collide with the iOS 27 SDK (`SwiftUI.Document`) |
-| UTM | see the platform floor below |
+| UTM | its packages build; the app needs a prebuilt sysroot, and one source imports a header by basename through Xcode's project headermap |
 | PlayCover | `swift package resolve` fails on the package's own manifest |
 
 The four that do not build fail in code that is not generated here: three in
 their own sources against a newer compiler and SDK, one in a package manifest
 upstream.
 
-### Known limitation: platform floors
+### Platform versions
 
 A package declares the platform versions it supports, and SwiftPM compiles each
-of its targets at the higher of that floor and the consumer's. Bazelize compiles
-every package target at the project's deployment target, which is what pinned
-the rspm dependency at 1.15.0 — later versions transition each target to its
-own floor and then fail analysis when a dependency declares a higher one.
+of its targets at the higher of that and the consumer's. Bazelize compiles every
+package target at the project's deployment target: the version lives in the
+platform transition of the bundle rule that pulls the target in, and a library
+rule has no version of its own. Honouring it per target is what pinned the rspm
+dependency at 1.15.0 — later versions transition each target to its own floor
+and then fail analysis when a dependency declares a higher one.
 
-A package that requires more than the project does therefore fails to compile,
-with availability errors naming the newer API. UTM is that case: an iOS 14
-project consuming packages that declare iOS 16 and iOS 18.
+The version a package asks for is still decided, the way SwiftPM decides it:
 
-Honouring the floor per target needs a transition that raises the deployment
-target without splitting the graph, which is stage 3 work.
+1. what the manifest's `platforms:` declares for that platform;
+2. else the oldest version SwiftPM builds that platform for — macOS 12, iOS and
+   tvOS 15, watchOS 9, visionOS 1, Mac Catalyst 15, DriverKit 21;
+3. else, for a platform the project builds without naming a version, what the
+   installed SDK reports: the deployment target of the `XCTest` it ships, which
+   is how SwiftPM asks the same question.
+
+That version is compared with the lowest deployment target among the project's
+own targets. A package that needs more is named at the end of the run, with both
+versions, because the failure otherwise surfaces as an availability error deep
+in someone else's source.
+
+Compiling such a package at the version it asks for needs a transition that
+raises the deployment target without splitting the graph, which is stage 3 work.
 
 ## Stages and exit criteria
 
