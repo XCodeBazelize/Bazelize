@@ -15,8 +15,6 @@ TESTS = \
 .PHONY: bazelize
 bazelize:
 	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT)
-	cd $(OUTPUT) && swift package resolve
-	cd $(OUTPUT) && bazel mod tidy
 
 .PHONY: build
 build: bazelize
@@ -37,10 +35,6 @@ test:
 .PHONY: uitest
 uitest:
 	cd $(OUTPUT) && bazel test $(SIMULATOR_FLAGS) //Targets/ExampleUITests
-
-.PHONY: updatePkg
-updatePkg:
-	cd $(OUTPUT) && bazel mod tidy
 
 .PHONY: clear
 clear:

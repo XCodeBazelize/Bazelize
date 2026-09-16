@@ -115,16 +115,6 @@ jobs:
         run: |
           ../../bazelize --project Example.xcodeproj --output App
 
-      - name: Resolve SPM Deps
-        working-directory: fixture/iOS/App
-        run: |
-          swift package resolve
-
-      - name: Update SPM Deps
-        working-directory: fixture/iOS/App
-        run: |
-          bazel mod tidy
-
       - name: Build Application
         working-directory: fixture/iOS/App
         run: |
