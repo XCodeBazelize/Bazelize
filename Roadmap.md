@@ -165,17 +165,94 @@ alias(
 
 ---
 
+## 階段 0 的結果（已量測）
+
+語料：12 個 app 目前展開出的 **119 個 package／208 個非測試 target**（讀 rspm 產生
+在 external repo 裡的 `dump.json` 與 `desc.json`；`swift package dump-package`
+與 `describe` 的輸出）。
+
+### target 種類
+
+| module type | 數量 |
+|---|---|
+| SwiftTarget | 170 |
+| ClangTarget | 50 |
+| BinaryTarget | 2 |
+| SystemLibraryTarget | 2 |
+| PluginTarget | 1 |
+
+沒有 macro target，也沒有混合語言 target（SwiftPM 本來就不允許）。
+
+### build settings（用到的 target 數／package 數）
+
+| setting | targets | packages |
+|---|---|---|
+| `swift.enableUpcomingFeature` | 116 | 5 |
+| `c.headerSearchPath` | 44 | 28 |
+| `swift.strictMemorySafety` | 23 | 4 |
+| `swift.enableExperimentalFeature` | 21 | 14 |
+| `swift.define` | 14 | 4 |
+| `swift.swiftLanguageMode` | 13 | 13 |
+| `swift.defaultIsolation` | 10 | 10 |
+| `c.define` | 6 | 3 |
+| `linker.linkedLibrary` | 1 | 1 |
+| `linker.linkedFramework` | 1 | 1 |
+| `swift.unsafeFlags` | 1 | 1 |
+
+### 其他形狀
+
+- **resources**：32 個 package（`.copy` 37 處、`.process` 4 處）→ 需要 resource
+  bundle 與 `Bundle.module` accessor。
+- **manifest 形狀**：明列 `sources` 30 個 target、`exclude` 32、
+  `publicHeadersPath` 33 → clang target 的檔案收集不能只靠慣例。
+- **tools-version** 從 4.2 到 6.3 都有（最多的是 5.3，30 個）。
+- **plugin 使用**：9 個 package，**全部是 SwiftLint**
+  （`SwiftLintPlugin` 5 個、`SwiftLintPlugins` 4 個）——只做 lint，不產生原始碼。
+- **plugin target**：只有 1 個，swift-argument-parser 的 `GenerateManual`，
+  語料裡沒有人消費它。
+- **binary target**：2 個（Sparkle 的遠端 xcframework、CodeEditLanguages 的本地
+  `.zip`）。
+
+### 這代表什麼
+
+把「lint-only 的 build tool plugin 略過（印警告）」和「不產生也不輸出沒人消費的
+plugin target／product」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
+
+| 階段支援的範圍 | 覆蓋 package |
+|---|---|
+| 純 Swift library、無 resource | 58 |
+| ＋ clang／resources／binary／system | 61（累計 119） |
+| macro、會產生原始碼的 plugin | 0（語料裡沒有） |
+
+每個 app 需要的最低階段（用各 workspace 的 `Package.resolved` 展開）：
+
+| app | pins | 需要到 |
+|---|---|---|
+| Rectangle | 2 | 階段 2 |
+| SwiftBar | 5 | 階段 2 |
+| MonitorControl | 6 | 階段 2 |
+| iina | 4 | 階段 2 |
+| IceCubesApp | 20 | 階段 2 |
+| VirtualBuddy | 6 | 階段 2（只差 argument-parser 的 plugin target 要略過） |
+| UTM | 15 | 階段 2（同上） |
+| PlayCover | 8 | 階段 2（同上） |
+| CotEditor | 29 | 階段 2（＋SwiftLint plugin 略過） |
+| CodeEdit | 34 | 階段 2（＋SwiftLint plugin 略過） |
+
+也就是說：**macro 與真 plugin 可以整段延後**，階段 2 做完就能覆蓋全部語料。
+
 ## 分階段與通過條件
 
 每一階段的通過條件都一樣：**12 個 app 至少維持現狀**（7 個綠的仍綠、blocked 的
 理由不變），加上 114 單元測試與 iOS fixture。
 
-| 階段 | 範圍 | 目標 app |
+| 階段 | 範圍 | 目標 |
 |---|---|---|
-| 0 | 只做統計：掃現有 136 個 checkout，量出用到哪些 target 種類／setting／resource／plugin／macro | — |
-| 1 | 純 Swift target、無 resource、無 plugin；flag 切換，預設仍走 rspm | Rectangle（2 個 package） |
-| 2 | clang target、resource bundle + accessor、binary target | MonitorControl、SwiftBar、VirtualBuddy、iina |
-| 3 | build tool plugin、macro | CotEditor、IceCubesApp |
+| 0 ✅ | 量測語料 | 見上 |
+| 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
+| 1 | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`unsafeFlags`；lint-only plugin 略過並警告；plugin target 不產生。flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
+| 2 | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 全部 12 個 app 至少維持現狀 |
+| 3 | macro／會產生原始碼的 build tool plugin | 語料外的需求出現時再做 |
 | 4 | 預設切換，移除 rspm 依賴、`Patches/` 與版本守門 | 全部 |
 
 階段 1–3 期間 rspm 與自製產生器**不混用**：同一個 workspace 只走其中一條，由
