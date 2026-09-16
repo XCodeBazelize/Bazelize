@@ -22,6 +22,12 @@ $Output/ <- Bazel Root
             Sources/
             Generated/
 
+    Packages/
+        $Package1/
+            BUILD
+            Package/
+            Generated/
+
     Prebuilt/
         BUILD
         A.xcframework
@@ -87,10 +93,32 @@ Sources/B/B.swift -> <real>/B/B.swift
 Sources/C -> <real>/C
 ```
 
+## Package Layout
+
+Each Swift package the project depends on has its own directory under
+`Packages/`, whoever generates its rules.
+
+```text
+Packages/
+    $Package/
+        BUILD
+        Package/
+        Generated/
+```
+
+- the directory is named after the package as a human reads it: the last path
+  component of the URL without `.git`, or the directory name of a local package
+- `Package/` is one symlink to the package's sources, remote or local
+- a product is a label in this directory, so `//Packages/$Package:$Product` is
+  what a target depends on regardless of how the rules are generated
+
+See [SwiftPM](SPM.md) for what the rules themselves look like.
+
 ## Special Directories
 
-- `Generated/` is target-local and reserved for files generated for that target
+- `Generated/` is target-local or package-local and reserved for files generated for it
 - `Prebuilt/` is global at the root level and stores prebuilt binaries
+- `Packages/` is global at the root level and stores the Swift packages' rules
 
 ## Deferred
 

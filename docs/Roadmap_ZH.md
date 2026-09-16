@@ -22,6 +22,12 @@ $Output/ <- Bazel Root
             Sources/
             Generated/
 
+    Packages/
+        $Package1/
+            BUILD
+            Package/
+            Generated/
+
     Prebuilt/
         BUILD
         A.xcframework
@@ -87,10 +93,31 @@ Sources/B/B.swift -> <real>/B/B.swift
 Sources/C -> <real>/C
 ```
 
+## Package Layout
+
+專案依賴的每個 Swift package 都會在 `Packages/` 底下有自己的目錄，不論它的規則
+是誰產生的。
+
+```text
+Packages/
+    $Package/
+        BUILD
+        Package/
+        Generated/
+```
+
+- 目錄名取人看得懂的 package 名：remote 用 URL 最後一段去掉 `.git`，local 用目錄名
+- `Package/` 是一條指向該 package 原始碼的 symlink，遠端或本地皆然
+- product 就是這個目錄裡的 label，所以不論規則怎麼產生，target 依賴的都是
+  `//Packages/$Package:$Product`
+
+規則本身長什麼樣見 [SwiftPM](SPM_ZH.md)。
+
 ## Special Directories
 
-- `Generated/` 是 target-local，保留給該 target 專屬的 generated files
+- `Generated/` 是 target-local 或 package-local，保留給它專屬的 generated files
 - `Prebuilt/` 是 root-level global directory，用來放 prebuilt binaries
+- `Packages/` 是 root-level global directory，用來放 Swift package 的規則
 
 ## Deferred
 
