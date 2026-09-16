@@ -45,18 +45,4 @@ public enum SPMParser {
 
         return (products, targets)
     }
-
-    public static func allPackageNames(path: String) async throws -> [String] {
-        let packagePath = try Basics.AbsolutePath(validating: path)
-        let observability = ObservabilitySystem { _,_ in }
-
-        let workspace = try Workspace(forRootPackage: packagePath)
-        let graph = try await workspace.loadPackageGraph(
-            rootPath: packagePath,
-            observabilityScope: observability.topScope)
-
-        return graph.packages.filter { package in
-            !graph.isRootPackage(package)
-        }.map(\.manifest.displayName)
-    }
 }

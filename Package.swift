@@ -27,7 +27,7 @@ let package = Package(
         /// that matches the toolchain; it is what sets this package's macOS floor.
         .package(
             url: "https://github.com/swiftlang/swift-package-manager",
-            branch: "swift-6.3.3-RELEASE"),
+            branch: "swift-6.4.0-RELEASE"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
