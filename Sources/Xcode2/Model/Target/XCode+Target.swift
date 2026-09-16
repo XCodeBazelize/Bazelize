@@ -133,7 +133,10 @@ extension XCode.Target {
     ]
 
     public var resources: [String] {
-        filePaths(files.resources)
+        var seen = Set<String>()
+        return filePaths(files.resources)
+            .map(\.resourceWrapperPath)
+            .filter { seen.insert($0).inserted }
     }
 
     public var xibs: [String] {
@@ -202,5 +205,39 @@ extension XCode.Target {
 
     private func filePaths(_ files: [XCode.File]) -> [String] {
         files.compactMap(filePath)
+    }
+}
+
+extension String {
+    /// Directories Xcode treats as one resource, however they were discovered.
+    ///
+    /// A synchronized root group lists the files inside an asset catalog rather
+    /// than the catalog, and the catalog is what `actool` compiles and what the
+    /// rules take as an attribute.
+    fileprivate static let resourceWrapperExtensions: Set<String> = [
+        "bundle",
+        "docc",
+        "icon",
+        "mlpackage",
+        "scnassets",
+        "xcassets",
+        "xcdatamodeld",
+        "xcstickers"
+    ]
+
+    /// The path truncated at the wrapper that owns it, or the path itself.
+    fileprivate var resourceWrapperPath: String {
+        var components: [String] = []
+
+        for component in split(separator: "/").map(String.init) {
+            components.append(component)
+
+            let suffix = component.split(separator: ".").last.map(String.init) ?? ""
+            if Self.resourceWrapperExtensions.contains(suffix) {
+                return components.joined(separator: "/")
+            }
+        }
+
+        return self
     }
 }

@@ -224,7 +224,13 @@ struct SynchronizedFile {
     }
 
     var category: Category {
-        typedFileType?.category ?? .other
+        /// A synchronized group lists the files inside a wrapper Xcode treats as one
+        /// resource — an asset catalog, a `.docc` bundle — and those files have
+        /// every extension imaginable. What owns them decides what they are.
+        if path.isInsideResourceWrapper {
+            return .resource
+        }
+        return typedFileType?.category ?? .other
     }
 
     var file: XCode.File {
@@ -317,5 +323,26 @@ extension String {
     func delete(prefix: String) -> String? {
         guard hasPrefix(prefix) else { return nil }
         return String(dropFirst(prefix.count))
+    }
+}
+
+extension String {
+    /// Directories Xcode treats as one resource, whatever they contain.
+    fileprivate static let resourceWrapperExtensions: Set<String> = [
+        "bundle",
+        "docc",
+        "icon",
+        "mlpackage",
+        "scnassets",
+        "xcassets",
+        "xcdatamodeld",
+        "xcstickers"
+    ]
+
+    fileprivate var isInsideResourceWrapper: Bool {
+        split(separator: "/").dropLast().contains { component in
+            let suffix = component.split(separator: ".").last.map(String.init) ?? ""
+            return Self.resourceWrapperExtensions.contains(suffix)
+        }
     }
 }
