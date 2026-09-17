@@ -150,7 +150,7 @@ No test pins how a package's rules are produced either.
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
 | build tool plugin (SwiftLint etc.) | stage 3; skipped with a warning |
-| macro / compiler plugin | stage 3; `swift_compiler_plugin` |
+| macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
 | traits (SE-0450) | expanded into `-D` and conditional deps per enabled trait |
 
 Two SwiftPM behaviours are matched on every generated `swift_library`:
@@ -198,6 +198,8 @@ output of `swift package dump-package` and `describe`).
 | PluginTarget | 1 |
 
 No macro targets, and no mixed-language targets (SwiftPM does not allow them).
+The iOS fixture declares one instead, so the rules for a macro are exercised by
+a build rather than by inspection.
 
 ### Build settings (targets / packages using them)
 
@@ -240,7 +242,7 @@ a plugin target nobody consumes" as rules, **all 119 packages fall into stages
 |---|---|
 | pure Swift libraries, no resources | 58 |
 | + clang / resources / binary / system | 61 (119 cumulative) |
-| macros, source-generating plugins | 0 (none in the corpus) |
+| macros, source-generating plugins | 0 (none in the corpus; the fixture has a macro) |
 
 The minimum stage each app needs (expanded from each workspace's
 `Package.resolved`):
@@ -343,7 +345,7 @@ reason), plus the 114 unit tests and the iOS fixture.
 | 0.5 ✅ | the `//Packages` facade (aliases into rspm) | all apps; label shape settled |
 | 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind a flag, rspm still the default | 58 packages build on their own |
 | 2 ✅ | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude` / module maps), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | the 7 green apps build and run; every package of the other five builds |
-| 3 | macros, source-generating build tool plugins, per-target platform floors | when something outside the corpus needs it |
+| 3 | macro targets ✅; source-generating build tool plugins and per-target platform versions remain | when something outside the corpus needs it |
 | 4 ✅ | the rspm dependency, `Patches/`, the version gate and the mode flag are gone | the 7 green apps build and run |
 
 Stage 4 removed the alternative rather than keeping a flag: two paths would

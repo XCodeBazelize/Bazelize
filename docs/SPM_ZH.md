@@ -139,7 +139,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
 | build tool plugin（SwiftLint 等） | 階段 3；先跳過並警告 |
-| macro / compiler plugin | 階段 3；`swift_compiler_plugin` |
+| macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 依 enabled traits 展開成 `-D` 與條件依賴 |
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
@@ -180,7 +180,8 @@ package 自己宣告的 platform floor 是**故意忽略**的——逐 package �
 | SystemLibraryTarget | 2 |
 | PluginTarget | 1 |
 
-沒有 macro target，也沒有混合語言 target（SwiftPM 本來就不允許）。
+沒有 macro target，也沒有混合語言 target（SwiftPM 本來就不允許）。iOS fixture 自己
+補了一個 macro，所以 macro 的規則是用「建起來並驗證展開結果」來檢查，不是靠讀產出。
 
 ### build settings（用到的 target 數／package 數）
 
@@ -221,7 +222,7 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 |---|---|
 | 純 Swift library、無 resource | 58 |
 | ＋ clang／resources／binary／system | 61（累計 119） |
-| macro、會產生原始碼的 plugin | 0（語料裡沒有） |
+| macro、會產生原始碼的 plugin | 0（語料裡沒有；fixture 自己有一個 macro） |
 
 每個 app 需要的最低階段（用各 workspace 的 `Package.resolved` 展開）：
 
@@ -316,7 +317,7 @@ availability 錯誤」的形式出現。
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
-| 3 | macro、會產生原始碼的 build tool plugin、逐 target 的 platform floor | 語料外的需求出現時再做 |
+| 3 | macro target ✅；會產生原始碼的 build tool plugin 與逐 target 的平台版本還沒做 | 語料外的需求出現時再做 |
 | 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡
