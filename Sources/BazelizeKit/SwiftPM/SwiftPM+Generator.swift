@@ -266,9 +266,15 @@ extension SwiftPM {
             case "test":
                 return nil
             case "plugin":
-                /// Every plugin in the wild so far is a linter: it produces no
-                /// source, so a build without it is the same build.
-                return .unsupported("plugin targets are not generated")
+                /// A command plugin runs when someone asks for it by name, so a
+                /// build never needs it. A build tool plugin does run while a
+                /// target is built, and not running it is what the run reports.
+                switch target.capability {
+                case .command:
+                    return nil
+                case .buildTool, .none:
+                    return .unsupported("a build tool plugin is not run")
+                }
             case "binary":
                 return .binary
             case "system":
