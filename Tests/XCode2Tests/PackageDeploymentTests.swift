@@ -58,6 +58,15 @@ struct PackageDeploymentTests {
     }
 
     @Test
+    func anUndeclaredPlatformIsNotReported() {
+        let deployment = SwiftPM.Deployment(project: ["ios": "14.0"])
+
+        /// SwiftPM raises the consumer to its own floor too, so a package that
+        /// declares nothing is never why a graph is rejected.
+        #expect(deployment.unmet(package(platforms: [("macos", "13.0")])).isEmpty)
+    }
+
+    @Test
     func aPackageWithinTheProjectsReachIsNotReported() {
         let deployment = SwiftPM.Deployment(project: ["ios": "18.5"])
 

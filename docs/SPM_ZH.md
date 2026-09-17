@@ -303,8 +303,21 @@ package 要求的版本還是會算出來，算法和 SwiftPM 一樣：
 更高時，會在執行結束時把兩個版本一起講出來——不然失敗會以「別人原始碼深處的
 availability 錯誤」的形式出現。
 
-要用 package 要求的版本去編它，需要一個「拉高 deployment target 又不把依賴圖切開」
-的轉場，那是階段 3 的事。
+「用 package 要求的版本去編它」並不是解法，因為 SwiftPM 自己也不這樣做——它直接拒絕
+這張圖：
+
+```text
+error: The package product 'Dep-product' requires minimum platform version 14.0
+for the macOS platform, but this target supports 12.0
+```
+
+為較新平台建出來的模組，較舊平台不能 import（Swift 也是直接報錯），所以唯一的解法
+是專案拉高自己的 deployment target，或 package 降低它宣告的版本。把「是哪個 package、
+哪兩個版本」講出來，就是這件事的全部。
+
+同一個實驗也顯示 SwiftPM 比較之前會把**兩邊**都拉到它自己的最低版本（上面那個專案
+宣告 macOS 11，錯誤訊息裡是 12），所以「沒宣告」的 package 永遠不會是圖被拒絕的原因。
+因此這裡只回報 manifest 明確宣告的版本。
 
 ## 分階段與通過條件
 
@@ -317,7 +330,7 @@ availability 錯誤」的形式出現。
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
-| 3 | macro target ✅；會產生原始碼的 build tool plugin 與逐 target 的平台版本還沒做 | 語料外的需求出現時再做 |
+| 3 | macro target ✅；逐 target 的平台版本 ✅（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；會產生原始碼的 build tool plugin 還沒做 | 語料外的需求出現時再做 |
 | 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡

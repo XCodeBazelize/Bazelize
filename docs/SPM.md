@@ -330,8 +330,23 @@ own targets. A package that needs more is named at the end of the run, with both
 versions, because the failure otherwise surfaces as an availability error deep
 in someone else's source.
 
-Compiling such a package at the version it asks for needs a transition that
-raises the deployment target without splitting the graph, which is stage 3 work.
+Compiling such a package at the version it asks for is not the answer, because
+SwiftPM does not do that either. It rejects the graph:
+
+```text
+error: The package product 'Dep-product' requires minimum platform version 14.0
+for the macOS platform, but this target supports 12.0
+```
+
+A module built for a newer platform cannot be imported by an older one — Swift
+errors on that too — so the only resolution is the project raising its own
+deployment target, or the package lowering what it declares. Saying which
+package and which two versions is therefore the whole of it.
+
+The same experiment shows SwiftPM raises *both* sides to its own floor before
+comparing them (the project above declares macOS 11 and is reported as 12), so a
+package that declares nothing is never the reason a graph is rejected. Only a
+version a manifest states is reported here.
 
 ## Stages and exit criteria
 
@@ -345,7 +360,7 @@ reason), plus the 114 unit tests and the iOS fixture.
 | 0.5 ✅ | the `//Packages` facade (aliases into rspm) | all apps; label shape settled |
 | 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind a flag, rspm still the default | 58 packages build on their own |
 | 2 ✅ | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude` / module maps), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | the 7 green apps build and run; every package of the other five builds |
-| 3 | macro targets ✅; source-generating build tool plugins and per-target platform versions remain | when something outside the corpus needs it |
+| 3 | macro targets ✅; per-target platform versions ✅ (nothing to build — SwiftPM rejects such a graph, so the report is the answer); source-generating build tool plugins remain | when something outside the corpus needs it |
 | 4 ✅ | the rspm dependency, `Patches/`, the version gate and the mode flag are gone | the 7 green apps build and run |
 
 Stage 4 removed the alternative rather than keeping a flag: two paths would

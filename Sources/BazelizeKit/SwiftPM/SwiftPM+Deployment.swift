@@ -36,19 +36,25 @@ extension SwiftPM {
             return Self.oldest[platform]
         }
 
-        /// The platforms a package would be compiled for at a version the project
-        /// does not provide.
+        /// The platforms where the package asks for more than the project provides.
+        ///
+        /// Only a version the manifest states counts. SwiftPM raises both sides to
+        /// its own floor before comparing them — a package that declares nothing is
+        /// never the reason a graph is rejected — so the default is not something to
+        /// warn about.
         func unmet(_ package: Package) -> [(platform: String, required: String, project: String)] {
             project.keys.sorted().compactMap { platform in
                 guard
                     let floor = project[platform],
-                    let required = required(package, platform: platform),
-                    Self.isNewer(required, than: floor)
+                    let declared = package.manifest.platforms
+                        .first(where: { $0.platformName == platform })?
+                        .version,
+                    Self.isNewer(declared, than: floor)
                 else {
                     return nil
                 }
 
-                return (platform, required, floor)
+                return (platform, declared, floor)
             }
         }
 
