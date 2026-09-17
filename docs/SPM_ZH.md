@@ -52,6 +52,11 @@ package 的 BUILD 不在那裡，而在
 
 ## 輸出
 
+輸入可以是 `.xcodeproj`，也可以是 `Package.swift`——直接傳進來的 package 會被當成
+「一個什麼都沒有的 project 底下唯一那個本地 package」來載入，所以以下結構兩種輸入都
+一樣。package 輸入多出來的是：它自己的測試 target 會產生成 `swift_test`，因為把工具
+指向一個 package，就是指向那個 package 的測試。
+
 ```text
 App/
 ├── MODULE.bazel              # 不再有 rspm
@@ -126,6 +131,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | binary target（xcframework） | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
 | binary target（本地 archive） | 先解壓，再同上 |
 | executable target | `swift_binary` |
+| 傳進來那個 package 的測試 target | `swift_test` |
 | executable product | `alias` 指向該 target 的 binary |
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
@@ -140,7 +146,9 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin（SwiftLint 等） | 不執行；結束時把該 plugin 的名字講出來（見下） |
+| build tool plugin（自己的 package） | 產生階段由 SwiftPM 執行；它寫出來的原始碼進「要求它的那個 target」 |
+| build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
+| command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 依 enabled traits 展開成 `-D` 與條件依賴 |
 
@@ -323,21 +331,30 @@ for the macOS platform, but this target supports 12.0
 
 ### build tool plugin
 
-plugin 不會被執行，而是在結束時把它的名字講出來。要改變這件事，考慮過兩條路：
+plugin 會讀 package 目錄下任何它想讀的檔案，而且產物是塞進**使用它的那個 target**，
+不是塞回自己。TbCodeGenerater 就是這個形狀：plugin 用的工具是同一個 package 的
+executable target，它讀 package 根的一個 `.tb` 檔——那個檔不屬於任何 target，還被
+`exclude` 掉——然後為這個 package 的測試 target 產生一份原始碼。
 
-- **自己實作 SwiftPM 的 plugin 協定。** plugin 是一個「host 透過 pipe 向它要 build
-  command」的程式，而那個請求裡帶著整張 package graph，用的是 SwiftPM 自己的
-  `HostToPluginMessage` 格式——那是 internal type，SwiftPM 內部用大約五百行在序列化它。
-  自己實作 host 等於把 bazelize 綁在一個會跟著 toolchain 變動的私有 schema 上。
-- **讓 SwiftPM 幫我們產生原始碼。** SwiftPM 在建 target 時就會執行 plugin，並把輸出
-  留在 `.build/plugins/outputs/` 底下。bazelize 可以在產生階段建那些用到 plugin 的
-  target，再把那些檔案收進 `srcs`——和它收 SwiftPM 既有產物的做法一樣。代價是產生階段
-  要跑一次 SwiftPM build，而且那些產生出來的原始碼只會在「再跑一次 bazelize」時更新
-  ——不過這對 bazelize 寫出來的每個檔案本來就成立。
+要把這些告訴 Bazel，就得知道「只有 plugin 能產生」的那些 command；而 plugin 產生它們
+走的是 SwiftPM 的私有協定：host 透過 pipe 向 plugin 要 build command，請求裡帶著整張
+package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部用大約五百行在
+序列化。自己實作那個 host 等於綁在一個會隨 toolchain 變動的 schema 上。
 
-語料裡真的出現「會產生原始碼的 package」時，要做的是第二條。目前語料裡的 plugin 全是
-linter，所以兩條都還不需要：plugin 需要的零件——executable target、binary target 提供
-的工具——不論如何都已經會產生。
+所以讓 SwiftPM 去跑。「建那個 target」就是讓它跑該 target 的 plugin 的唯一方式——沒有
+只跑 plugin 的指令——跑完結果留在 `.build/plugins/outputs/<package>/<target>/`。那些
+檔案被連結到 `Generated/<Target>Plugin/`，並編進「要求該 plugin 的那個 target」，
+和我們對待 SwiftPM 其他既有產物的方式一樣。
+
+換到什麼、付出什麼：
+
+- plugin 的輸入完全不用宣告；`prebuildCommand` 寫出一整個目錄也不需要 tree artifact：
+  跑完再 glob 就好。
+- 產生的原始碼在「重跑 bazelize」時更新，不是在輸入改變時更新——這對 bazelize 寫出來的
+  每個檔案本來都成立。
+- 只對「專案自己 repository 裡的 package」這樣做。跑一次 plugin 等於用 SwiftPM 建一次
+  它的 package；對每個只做 lint 的依賴都建一次會讓產生工作癱掉，所以依賴的 plugin 是
+  在結束時具名告知。
 
 ## 分階段與通過條件
 
@@ -350,7 +367,7 @@ linter，所以兩條都還不需要：plugin 需要的零件——executable ta
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
-| 3 | macro target ✅；逐 target 的平台版本 ✅（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；會產生原始碼的 build tool plugin 還沒做 | 語料外的需求出現時再做 |
+| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin，由 SwiftPM 在產生階段執行 | `spm/TbCodeGenerater` 的測試靠 plugin 產生的原始碼通過 |
 | 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡

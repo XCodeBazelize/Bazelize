@@ -58,6 +58,12 @@ The package BUILD files were not there; they were in
 
 ## Output
 
+The input is an `.xcodeproj`, or a `Package.swift` — a package handed in directly
+is loaded as the one local package of a project with nothing else in it, so
+everything below is the same either way. The difference is what a package input
+adds: its own test targets, as `swift_test`, because pointing the tool at a
+package is pointing it at that package's tests.
+
 ```text
 App/
 ├── MODULE.bazel              # no rspm
@@ -137,6 +143,7 @@ No test pins how a package's rules are produced either.
 | binary target (xcframework) | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
 | binary target (local archive) | unarchived first, then as above |
 | executable target | `swift_binary` |
+| test target of the package handed in | `swift_test` |
 | executable product | `alias` to the target's binary |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
@@ -151,7 +158,9 @@ No test pins how a package's rules are produced either.
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin (SwiftLint etc.) | not run; the plugin is named at the end of the run (see below) |
+| build tool plugin, own package | run by SwiftPM at generation time; the sources it wrote go into the target that asked for it |
+| build tool plugin, dependency | not run; the plugin is named at the end of the run |
+| command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
 | traits (SE-0450) | expanded into `-D` and conditional deps per enabled trait |
 
@@ -352,26 +361,35 @@ version a manifest states is reported here.
 
 ### Build tool plugins
 
-A plugin is not run, and the plugin is named at the end of the run instead. Two
-ways to change that were considered:
+A plugin reads whatever it likes under the package directory and puts its output
+into the target that asked for it, not into itself. TbCodeGenerater is the shape
+of it: a plugin whose tool is an executable target of the same package, reading a
+`.tb` file at the package root — a file that belongs to no target and is excluded
+from one — and generating a source file for the package's test target.
 
-- **Speak SwiftPM's plugin protocol.** A plugin is a program the host asks for
-  build commands over a pipe, and the request carries the whole package graph in
-  SwiftPM's own `HostToPluginMessage` format — an internal type, serialized by
-  some five hundred lines inside SwiftPM. Reimplementing that host ties bazelize
-  to a private schema that moves with every toolchain.
-- **Let SwiftPM materialize the generated sources.** SwiftPM runs the plugins
-  when it builds a target and leaves their output under
-  `.build/plugins/outputs/`. Bazelize could build the plugin-using targets at
-  generation time and take those files into `srcs`, the way it takes everything
-  else SwiftPM already produced. The cost is a SwiftPM build of those packages
-  during generation, and generated sources that only change when bazelize runs
-  again — which is already true of every file bazelize writes.
+Declaring that to Bazel means knowing commands only the plugin can produce, and a
+plugin produces them over a protocol private to SwiftPM: the host asks for build
+commands over a pipe, and the request carries the whole package graph in
+SwiftPM's own `HostToPluginMessage` format, serialized by some five hundred lines
+inside SwiftPM. Reimplementing that host ties bazelize to a schema that moves
+with every toolchain.
 
-The second is the one to build when a package in the corpus generates source.
-Every plugin in the corpus is a linter, so today neither is needed: the pieces a
-plugin needs — an executable target, and a tool from a binary target — are
-generated either way.
+So SwiftPM runs them. Building a target is what makes it run that target's
+plugins — there is no command that only runs them — and it leaves the result
+under `.build/plugins/outputs/<package>/<target>/`. Those files are linked into
+`Generated/<Target>Plugin/` and compiled into the target that asked for the
+plugin, the way everything else SwiftPM already produced is taken as it is.
+
+What that buys and costs:
+
+- A plugin's inputs need no declaring, and a `prebuildCommand` writing a whole
+  directory needs no tree artifact: whatever it wrote is globbed afterwards.
+- The generated sources change when bazelize runs again, not when their inputs
+  do — already true of every file bazelize writes.
+- Only a package in the project's own repository is built this way. Running a
+  plugin costs a SwiftPM build of its package, and doing that for every
+  dependency that merely lints would make generating a workspace unusable; a
+  dependency's plugin is named at the end of the run instead.
 
 ## Stages and exit criteria
 
@@ -385,7 +403,7 @@ reason), plus the 114 unit tests and the iOS fixture.
 | 0.5 ✅ | the `//Packages` facade (aliases into rspm) | all apps; label shape settled |
 | 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind a flag, rspm still the default | 58 packages build on their own |
 | 2 ✅ | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude` / module maps), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | the 7 green apps build and run; every package of the other five builds |
-| 3 | macro targets ✅; per-target platform versions ✅ (nothing to build — SwiftPM rejects such a graph, so the report is the answer); source-generating build tool plugins remain | when something outside the corpus needs it |
+| 3 ✅ | macro targets; per-target platform versions (nothing to build — SwiftPM rejects such a graph, so the report is the answer); build tool plugins, run by SwiftPM at generation time | `spm/TbCodeGenerater`'s tests pass through a plugin-generated source |
 | 4 ✅ | the rspm dependency, `Patches/`, the version gate and the mode flag are gone | the 7 green apps build and run |
 
 Stage 4 removed the alternative rather than keeping a flag: two paths would
