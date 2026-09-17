@@ -41,21 +41,25 @@ extension SwiftPM.Generator {
 
         let files = relativeFiles(of: target, in: package, prefix: prefix)
 
-        /// `.copy` keeps the item's own name and inner structure, which is what a
-        /// structured resource is; `.process` lets the bundler place each file.
+        /// `.copy` keeps the item's own name and inner structure and nothing above
+        /// it, which is a structured resource with the path above the item stripped;
+        /// `.process` lets the bundler place each file.
         var resources: [String] = []
-        var structured: [String] = []
+        var copied: [String: [String]] = [:]
         for resource in target.resources {
             let pattern = Self.pattern(of: resource.path, in: directory, prefix: prefix)
             if resource.isCopy {
-                structured.append(pattern)
+                let above = Path("\(prefix)/\(resource.path)").parent().normalize().string
+                copied[above, default: []].append(pattern)
             } else {
                 resources.append(pattern)
             }
         }
         resources = matching(resources, files)
             + matching(Self.discoveredResources(prefix: prefix), files)
-        structured = matching(structured, files)
+        let structured = copied
+            .mapValues { matching($0, files) }
+            .filter { !$0.value.isEmpty }
 
         /// A shader compiles like any other source: it includes the target's
         /// headers, so they belong to the same resource group. The bundler treats a
@@ -78,14 +82,49 @@ extension SwiftPM.Generator {
         let plist = "Generated/\(target.name)ResourceBundle-Info.plist"
         try (root + plist).write(Self.infoPlist(bundle: bundle))
 
+        /// One group per directory a copied item sits in: the group is what can say
+        /// how much of the path to drop, so the item lands at the bundle's root the
+        /// way SwiftPM copies it.
+        var groups: [String] = []
+
+        /// Processed resources join the groups when there is one, so the bundle's
+        /// attribute stays one kind of thing.
+        if !structured.isEmpty, let patterns = resources.nonEmpty {
+            let group = "\(name)Processed"
+            groups.append(group)
+
+            builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
+            builder.call(
+                Rules.Apple.Resources.Call.apple_resource_group(
+                    name: group,
+                    resources: Starlark.glob(patterns)))
+        }
+
+        for (index, prefixToStrip) in structured.keys.sorted().enumerated() {
+            guard let patterns = structured[prefixToStrip] else { continue }
+
+            let group = "\(name)Copied\(index)"
+            groups.append(group)
+
+            builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
+            builder.call(
+                Rules.Apple.Resources.Call.apple_resource_group(
+                    name: group,
+                    strip_structured_resources_prefixes: [prefixToStrip],
+                    structured_resources: Starlark.glob(patterns)))
+        }
+
         builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
         builder.call(
             Rules.Apple.Resources.Call.apple_resource_bundle(
                 name: name,
                 bundle_name: bundle,
                 infoplists: .build { [Starlark.Label.named(plist)] },
-                resources: resources.nonEmpty.map { Starlark.glob($0) },
-                structured_resources: structured.nonEmpty.map { Starlark.glob($0) },
+                /// A glob and a group cannot be added together in one attribute, so
+                /// once there is a group everything is a group.
+                resources: groups.isEmpty
+                    ? resources.nonEmpty.map { Starlark.glob($0) }
+                    : .build { groups.map { Starlark.Label.named(":\($0)") } },
                 tags: Self.manual))
 
         switch kind {
