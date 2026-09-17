@@ -277,9 +277,63 @@ extension SwiftPM {
             if link.isSymlink || link.exists {
                 try? link.delete()
             }
-            try link.symlink(directory)
+
+            /// One link for the whole directory is what a target's sources are, but
+            /// a package can keep a symlink pointing back into that directory —
+            /// GRDB's test fixtures do — and Bazel cannot glob through the cycle.
+            /// Such a tree is mirrored instead, entry by entry, without the link
+            /// that closes the loop.
+            if Self.hasCycle(directory) {
+                try Self.mirror(directory, at: link)
+            } else {
+                try link.symlink(directory)
+            }
 
             return prefix
+        }
+
+        /// Whether anything under the directory links back into it.
+        private static func hasCycle(_ directory: Path) -> Bool {
+            let root = directory.url.resolvingSymlinksInPath().path
+
+            for entry in entries(of: directory) where entry.isSymlink {
+                let resolved = entry.url.resolvingSymlinksInPath().path
+                if root == resolved || root.hasPrefix("\(resolved)/") { return true }
+            }
+
+            return false
+        }
+
+        /// A copy of the directory's shape, with one link per file.
+        private static func mirror(_ directory: Path, at destination: Path) throws {
+            try destination.mkpath()
+
+            let root = directory.url.resolvingSymlinksInPath().path
+            for child in (try? directory.children()) ?? [] {
+                let target = destination + child.lastComponent
+
+                if child.isSymlink {
+                    let resolved = child.url.resolvingSymlinksInPath().path
+                    /// The link that closes the loop; SwiftPM ignores it too.
+                    if root == resolved || root.hasPrefix("\(resolved)/") { continue }
+                }
+
+                if child.isDirectory {
+                    try mirror(child, at: target)
+                } else {
+                    try target.symlink(child)
+                }
+            }
+        }
+
+        /// Everything under a directory, links included and not followed.
+        private static func entries(of directory: Path) -> [Path] {
+            let children = (try? directory.children()) ?? []
+
+            return children.flatMap { child -> [Path] in
+                guard !child.isSymlink, child.isDirectory else { return [child] }
+                return [child] + entries(of: child)
+            }
         }
 
         static let sourcesRoot = "Sources"
