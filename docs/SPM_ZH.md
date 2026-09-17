@@ -125,6 +125,8 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | system-library target | `cc_library` + `swift_interop_hint`，用 package 自己帶的 module map |
 | binary target（xcframework） | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
 | binary target（本地 archive） | 先解壓，再同上 |
+| executable target | `swift_binary` |
+| executable product | `alias` 指向該 target 的 binary |
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
@@ -138,7 +140,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin（SwiftLint 等） | 不執行；結束時把該 plugin 的名字講出來 |
+| build tool plugin（SwiftLint 等） | 不執行；結束時把該 plugin 的名字講出來（見下） |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 依 enabled traits 展開成 `-D` 與條件依賴 |
 
@@ -318,6 +320,24 @@ for the macOS platform, but this target supports 12.0
 同一個實驗也顯示 SwiftPM 比較之前會把**兩邊**都拉到它自己的最低版本（上面那個專案
 宣告 macOS 11，錯誤訊息裡是 12），所以「沒宣告」的 package 永遠不會是圖被拒絕的原因。
 因此這裡只回報 manifest 明確宣告的版本。
+
+### build tool plugin
+
+plugin 不會被執行，而是在結束時把它的名字講出來。要改變這件事，考慮過兩條路：
+
+- **自己實作 SwiftPM 的 plugin 協定。** plugin 是一個「host 透過 pipe 向它要 build
+  command」的程式，而那個請求裡帶著整張 package graph，用的是 SwiftPM 自己的
+  `HostToPluginMessage` 格式——那是 internal type，SwiftPM 內部用大約五百行在序列化它。
+  自己實作 host 等於把 bazelize 綁在一個會跟著 toolchain 變動的私有 schema 上。
+- **讓 SwiftPM 幫我們產生原始碼。** SwiftPM 在建 target 時就會執行 plugin，並把輸出
+  留在 `.build/plugins/outputs/` 底下。bazelize 可以在產生階段建那些用到 plugin 的
+  target，再把那些檔案收進 `srcs`——和它收 SwiftPM 既有產物的做法一樣。代價是產生階段
+  要跑一次 SwiftPM build，而且那些產生出來的原始碼只會在「再跑一次 bazelize」時更新
+  ——不過這對 bazelize 寫出來的每個檔案本來就成立。
+
+語料裡真的出現「會產生原始碼的 package」時，要做的是第二條。目前語料裡的 plugin 全是
+linter，所以兩條都還不需要：plugin 需要的零件——executable target、binary target 提供
+的工具——不論如何都已經會產生。
 
 ## 分階段與通過條件
 

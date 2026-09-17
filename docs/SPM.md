@@ -136,6 +136,8 @@ No test pins how a package's rules are produced either.
 | system-library target | `cc_library` + `swift_interop_hint` over the module map the package ships |
 | binary target (xcframework) | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
 | binary target (local archive) | unarchived first, then as above |
+| executable target | `swift_binary` |
+| executable product | `alias` to the target's binary |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
@@ -149,7 +151,7 @@ No test pins how a package's rules are produced either.
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin (SwiftLint etc.) | not run; the plugin is named at the end of the run |
+| build tool plugin (SwiftLint etc.) | not run; the plugin is named at the end of the run (see below) |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
 | traits (SE-0450) | expanded into `-D` and conditional deps per enabled trait |
 
@@ -347,6 +349,29 @@ The same experiment shows SwiftPM raises *both* sides to its own floor before
 comparing them (the project above declares macOS 11 and is reported as 12), so a
 package that declares nothing is never the reason a graph is rejected. Only a
 version a manifest states is reported here.
+
+### Build tool plugins
+
+A plugin is not run, and the plugin is named at the end of the run instead. Two
+ways to change that were considered:
+
+- **Speak SwiftPM's plugin protocol.** A plugin is a program the host asks for
+  build commands over a pipe, and the request carries the whole package graph in
+  SwiftPM's own `HostToPluginMessage` format — an internal type, serialized by
+  some five hundred lines inside SwiftPM. Reimplementing that host ties bazelize
+  to a private schema that moves with every toolchain.
+- **Let SwiftPM materialize the generated sources.** SwiftPM runs the plugins
+  when it builds a target and leaves their output under
+  `.build/plugins/outputs/`. Bazelize could build the plugin-using targets at
+  generation time and take those files into `srcs`, the way it takes everything
+  else SwiftPM already produced. The cost is a SwiftPM build of those packages
+  during generation, and generated sources that only change when bazelize runs
+  again — which is already true of every file bazelize writes.
+
+The second is the one to build when a package in the corpus generates source.
+Every plugin in the corpus is a linter, so today neither is needed: the pieces a
+plugin needs — an executable target, and a tool from a binary target — are
+generated either way.
 
 ## Stages and exit criteria
 
