@@ -43,7 +43,7 @@ extension XCode {
             return .init(
                 name: root.lastComponent,
                 workspacePath: root.string,
-                projectPath: manifest.string,
+                projectPath: (root + manifest.lastComponent).string,
                 preferConfig: nil,
                 configs: [:],
                 packages: .init(
@@ -55,6 +55,14 @@ extension XCode {
 }
 
 extension XCode.Project {
+    /// The package that was handed to bazelize, when the input was a manifest
+    /// rather than an `.xcodeproj`.
+    public var packageRoot: Path? {
+        let path = Path(projectPath)
+        guard path.lastComponent == "Package.swift" else { return nil }
+        return path.parent()
+    }
+
     public var config: [String: XCode.BuildSettings]? {
         configs
     }

@@ -25,7 +25,8 @@ struct PackageDeploymentTests {
             directory: "Example",
             root: "/tmp/Example",
             manifest: manifest(platforms: platforms),
-            isLocal: false)
+            isLocal: false,
+            isRoot: false)
     }
 
     @Test

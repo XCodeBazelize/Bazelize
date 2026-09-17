@@ -19,6 +19,7 @@ extension SwiftPM.Generator {
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
+        generated: [String],
         resources: ResourceBundle?,
         builder: CodeBuilder)
     {
@@ -36,6 +37,7 @@ extension SwiftPM.Generator {
                     matching(
                         sources(of: target, prefix: prefix, extensions: ["swift"]),
                         relativeFiles(of: target, in: package, prefix: prefix))
+                        + generated
                         + (resources?.accessors ?? []),
                     exclude: excluded(target, prefix: prefix)),
                 tags: Self.manual,

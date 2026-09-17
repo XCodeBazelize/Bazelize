@@ -23,6 +23,9 @@ extension SwiftPM {
         let manifest: Manifest
         /// `true` for a package in the project's own repository.
         let isLocal: Bool
+        /// `true` for the package that was handed to bazelize, as opposed to one
+        /// something else depends on.
+        let isRoot: Bool
 
         /// The name SwiftPM files the package's artifacts under.
         var identity: String {
@@ -33,6 +36,9 @@ extension SwiftPM {
     /// Everything the generator needs about one project's package graph.
     struct Workspace {
         let packages: [Package]
+
+        /// What the build tool plugins of this project's own packages wrote.
+        let pluginOutputs: PluginOutputs
 
         /// Where SwiftPM unpacked the binary targets it fetched.
         let artifacts: Path
@@ -50,7 +56,7 @@ extension SwiftPM {
     /// checkouts are the sources the rules will point at. `dump-package` is read
     /// per checkout because it is the manifest SwiftPM itself evaluated — cheap,
     /// offline, and it spans every tools version in the graph.
-    static func loadWorkspace(output: Path) async throws -> Workspace {
+    static func loadWorkspace(output: Path, root input: Path?) async throws -> Workspace {
         try await resolve(output: output)
 
         let checkouts = output + ".build/checkouts"
@@ -64,7 +70,10 @@ extension SwiftPM {
                 directory: root.directory,
                 root: root.path,
                 manifest: manifest,
-                isLocal: root.isLocal)
+                isLocal: root.isLocal,
+                /// Both sides are made absolute: the output can be a relative path,
+                /// and the package handed in is named however the caller named it.
+                isRoot: input.map { $0.absolute().normalize() == root.path.absolute().normalize() } ?? false)
             packages.append(package)
 
             for identity in [manifest.name, root.directory, root.path.lastComponent] {
@@ -74,6 +83,7 @@ extension SwiftPM {
 
         return .init(
             packages: packages,
+            pluginOutputs: await runPlugins(of: packages),
             artifacts: output + ".build/artifacts",
             directoryByIdentity: directoryByIdentity)
     }

@@ -126,6 +126,11 @@ extension SwiftPM {
                     continue
                 }
 
+                let generated = try materialize(
+                    pluginOutputsOf: target,
+                    in: package,
+                    at: root)
+
                 let resources = try buildResources(
                     target,
                     in: package,
@@ -142,6 +147,15 @@ extension SwiftPM {
                         target,
                         in: package,
                         prefix: prefix,
+                        generated: generated,
+                        resources: resources,
+                        builder: builder)
+                case .test:
+                    buildTest(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        generated: generated,
                         resources: resources,
                         builder: builder)
                 case .swift:
@@ -149,6 +163,7 @@ extension SwiftPM {
                         target,
                         in: package,
                         prefix: prefix,
+                        generated: generated,
                         resources: resources,
                         builder: builder)
                 case .clang:
@@ -175,13 +190,16 @@ extension SwiftPM {
         /// on one that cannot: a library missing a target it links is worse than a
         /// library that is not there at all.
         private func supportedTargets(of package: Package) throws -> [String: TargetKind] {
-            let targets = package.manifest.targets.filter { $0.type != "test" }
+            /// Which targets are generated is `kind(of:)`'s answer, tests included:
+            /// the package under the tool gets its tests, one a project depends on
+            /// does not.
+            let targets = package.manifest.targets
             var supported: [String: TargetKind] = [:]
 
             for target in targets {
                 guard let kind = try kind(of: target, in: package) else { continue }
                 switch kind {
-                case .swift, .clang, .binary, .system, .macro, .executable:
+                case .swift, .clang, .binary, .system, .macro, .executable, .test:
                     supported[target.name] = kind
                 case .unsupported(let reason):
                     Log.codeGenerate.warning("""
@@ -226,6 +244,30 @@ extension SwiftPM {
         /// the rest of the checkout out of the build: a package can ship `BUILD`
         /// files of its own — swift-syntax and Yams both do — and Bazel would load
         /// them as packages of this workspace.
+        /// The sources a plugin generated, linked next to the package's rules and
+        /// compiled into the target that asked for the plugin.
+        func materialize(
+            pluginOutputsOf target: PackageTarget,
+            in package: Package,
+            at root: Path) throws -> [String]
+        {
+            let files = workspace.pluginOutputs.files(of: target.name, in: package)
+            guard !files.isEmpty else { return [] }
+
+            let directory = "Generated/\(target.name)Plugin"
+            let generated = root + directory
+            if generated.exists || generated.isSymlink {
+                try? generated.delete()
+            }
+            try generated.mkpath()
+
+            return try files.map { file in
+                let link = generated + file.lastComponent
+                try link.symlink(file)
+                return "\(directory)/\(file.lastComponent)"
+            }
+        }
+
         private func materialize(_ target: PackageTarget, in package: Package, at root: Path) throws -> String? {
             guard let directory = sourceDirectory(of: target, in: package) else { return nil }
 
@@ -256,6 +298,8 @@ extension SwiftPM {
             case macro
             /// A command line tool the package builds.
             case executable
+            /// A test suite, generated for the package the tool was pointed at.
+            case test
             case unsupported(String)
         }
 
@@ -264,7 +308,9 @@ extension SwiftPM {
         private func kind(of target: PackageTarget, in package: Package) throws -> TargetKind? {
             switch target.type {
             case "test":
-                return nil
+                /// Only the package under the tool: the tests of a package a project
+                /// depends on say nothing about the project.
+                return package.isRoot ? .test : nil
             case "plugin":
                 /// A command plugin runs when someone asks for it by name, so a
                 /// build never needs it. A build tool plugin does run while a
@@ -472,7 +518,20 @@ extension SwiftPM {
                 return directory.exists ? directory : nil
             }
 
-            for candidate in ["Sources", "Source", "src", "srcs"] {
+            /// A test target is looked for under `Tests` first, the way SwiftPM
+            /// looks for it, and a plugin under `Plugins`.
+            let conventional = ["Sources", "Source", "src", "srcs"]
+            let candidates: [String]
+            switch target.type {
+            case "test":
+                candidates = ["Tests"] + conventional
+            case "plugin":
+                candidates = ["Plugins"] + conventional
+            default:
+                candidates = conventional
+            }
+
+            for candidate in candidates {
                 let directory = package.root + candidate + target.name
                 if directory.exists { return directory }
             }
@@ -485,6 +544,7 @@ extension SwiftPM {
             _ target: PackageTarget,
             in package: Package,
             prefix: String,
+            generated: [String],
             resources: ResourceBundle?,
             builder: CodeBuilder)
         {
@@ -508,6 +568,7 @@ extension SwiftPM {
                         matching(
                             sources(of: target, prefix: prefix, extensions: ["swift"]),
                             relativeFiles(of: target, in: package, prefix: prefix))
+                            + generated
                             + (resources?.accessors ?? []),
                         exclude: excluded(target, prefix: prefix)),
                     deps: deps(of: target, in: package).nonEmpty.map { labels in
