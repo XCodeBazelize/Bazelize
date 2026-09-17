@@ -248,6 +248,7 @@ extension Rules.Swift {
             srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
             swiftc_inputs: Starlark.Value? = nil,
+            tags: [String]? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
@@ -274,6 +275,9 @@ extension Rules.Swift {
                 }
                 if let swiftc_inputs {
                     "swiftc_inputs" => swiftc_inputs
+                }
+                if let tags {
+                    "tags" => tags
                 }
                 if let testonly {
                     "testonly" => testonly

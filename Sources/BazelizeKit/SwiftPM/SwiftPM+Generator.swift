@@ -137,6 +137,13 @@ extension SwiftPM {
                 switch kind {
                 case .macro:
                     buildMacro(target, in: package, prefix: prefix, builder: builder)
+                case .executable:
+                    buildExecutable(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        resources: resources,
+                        builder: builder)
                 case .swift:
                     build(
                         target,
@@ -174,7 +181,7 @@ extension SwiftPM {
             for target in targets {
                 guard let kind = try kind(of: target, in: package) else { continue }
                 switch kind {
-                case .swift, .clang, .binary, .system, .macro:
+                case .swift, .clang, .binary, .system, .macro, .executable:
                     supported[target.name] = kind
                 case .unsupported(let reason):
                     Log.codeGenerate.warning("""
@@ -247,6 +254,8 @@ extension SwiftPM {
             case system
             /// A macro: a program the compiler loads, not a library the target links.
             case macro
+            /// A command line tool the package builds.
+            case executable
             case unsupported(String)
         }
 
@@ -266,6 +275,10 @@ extension SwiftPM {
                 return .system
             case "macro":
                 return .macro
+            case "executable", "snippet":
+                /// A tool the package builds: it has a `main`, so it links rather
+                /// than being linked.
+                return .executable
             default:
                 break
             }
@@ -625,7 +638,15 @@ extension SwiftPM {
             package: Package,
             builder: CodeBuilder)
         {
-            guard product.kind == .library else { return }
+            switch product.kind {
+            case .library:
+                break
+            case .executable:
+                buildExecutable(product, emitted: emitted, package: package, builder: builder)
+                return
+            case .plugin:
+                return
+            }
 
             /// A macro is not part of a product a consumer links: it is loaded by
             /// the compiler of whatever declares the macro, inside its own package.

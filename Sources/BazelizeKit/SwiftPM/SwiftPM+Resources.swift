@@ -89,7 +89,7 @@ extension SwiftPM.Generator {
                 tags: Self.manual))
 
         switch kind {
-        case .swift:
+        case .swift, .executable:
             let accessor = "Generated/\(target.name)ResourceBundleAccessor.swift"
             try (root + accessor).write(Self.swiftAccessor(bundle: bundle))
             return ResourceBundle(label: ":\(name)", accessors: [accessor], header: nil)
