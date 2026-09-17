@@ -138,7 +138,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin（SwiftLint 等） | 階段 3；先跳過並警告 |
+| build tool plugin（SwiftLint 等） | 不執行；結束時把該 plugin 的名字講出來 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 依 enabled traits 展開成 `-D` 與條件依賴 |
 

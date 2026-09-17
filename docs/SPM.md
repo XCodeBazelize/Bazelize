@@ -149,7 +149,7 @@ No test pins how a package's rules are produced either.
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin (SwiftLint etc.) | stage 3; skipped with a warning |
+| build tool plugin (SwiftLint etc.) | not run; the plugin is named at the end of the run |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
 | traits (SE-0450) | expanded into `-D` and conditional deps per enabled trait |
 
