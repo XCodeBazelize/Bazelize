@@ -88,8 +88,11 @@ extension Kit {
             print(tip)
         }
 
-        packageTips.forEach { tip in
-            print("# Swift package\n\(tip)")
+        if !packageTips.isEmpty {
+            print("# Swift packages")
+            packageTips.forEach { tip in
+                print(tip)
+            }
         }
 
         plugins.forEach { plugin in
@@ -111,7 +114,7 @@ extension Kit {
             workspace: workspace,
             deployment: deployment)
         try generator.generate()
-        packageTips = generator.unmetDeployment
+        packageTips = generator.notes
 
         let count = workspace.packages.count
         Log.codeGenerate.info("Generate \(count, privacy: .public) Swift packages")

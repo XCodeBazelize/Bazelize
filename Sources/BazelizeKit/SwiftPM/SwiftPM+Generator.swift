@@ -26,9 +26,9 @@ extension SwiftPM {
 
         private var kinds: [String: [String: TargetKind]] = [:]
 
-        /// What a caller tells the user about: the packages whose platform version
-        /// the project does not reach.
-        private(set) var unmetDeployment: [String] = []
+        /// What a caller tells the user about: where the build differs from what
+        /// the package asked for, and why.
+        private(set) var notes: [String] = []
 
         init(output: Path, workspace: Workspace, deployment: Deployment) {
             self.output = output
@@ -40,6 +40,7 @@ extension SwiftPM {
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
                 report(deploymentOf: package)
+                report(pluginsOf: package)
             }
 
             for package in workspace.packages {
@@ -60,7 +61,30 @@ extension SwiftPM {
                 """
 
                 Log.codeGenerate.warning("\(message, privacy: .public)")
-                unmetDeployment.append(message)
+                notes.append(message)
+            }
+        }
+
+        /// A build tool plugin is not run.
+        ///
+        /// Every plugin in the corpus is a linter, which produces no source: a
+        /// build without it is the same build. One that generates source would
+        /// leave a target missing the files it expects, and that compile error says
+        /// nothing about a plugin, so the plugin is named here instead.
+        private func report(pluginsOf package: Package) {
+            let used = package.manifest.targets
+                .filter { $0.type != "test" }
+                .flatMap(\.pluginUsages)
+                .map(\.name)
+
+            for plugin in Set(used).sorted() {
+                let message = """
+                \(package.directory) asks for the \(plugin) plugin, which is not run: \
+                a linter changes nothing, a plugin that generates source does.
+                """
+
+                Log.codeGenerate.warning("\(message, privacy: .public)")
+                notes.append(message)
             }
         }
 

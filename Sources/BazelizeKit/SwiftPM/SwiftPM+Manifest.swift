@@ -74,6 +74,8 @@ extension SwiftPM {
         let settings: [Setting]
         let resources: [Resource]
         let dependencies: [TargetDependency]
+        /// The plugins the target asks to be run while it is built.
+        let pluginUsages: [PluginUsage]
         /// A binary target's remote archive.
         let url: String?
         let checksum: String?
@@ -89,8 +91,27 @@ extension SwiftPM {
             settings = container.list(Setting.self, "settings")
             resources = container.list(Resource.self, "resources")
             dependencies = container.list(TargetDependency.self, "dependencies")
+            pluginUsages = container.list(PluginUsage.self, "pluginUsages")
             url = container.value(String.self, "url")
             checksum = container.value(String.self, "checksum")
+        }
+    }
+
+    /// `{"plugin": ["SwiftLint", "SwiftLintPlugin"]}`: the plugin's name first,
+    /// then the package it comes from, which is absent for one in the same
+    /// package.
+    struct PluginUsage: Decodable {
+        let name: String
+        let package: String?
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+            let values = container.value([String?].self, "plugin")
+                ?? container.value([String?].self, "byName")
+                ?? []
+
+            name = values.first.flatMap { $0 } ?? ""
+            package = values.count > 1 ? values[1] : nil
         }
     }
 
