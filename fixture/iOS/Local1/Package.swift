@@ -14,6 +14,9 @@ let package = Package(
         .library(
             name: "LocalLib2",
             targets: ["LocalTarget2"]),
+        .executable(
+            name: "local1-tool",
+            targets: ["Local1Tool"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -37,6 +40,8 @@ let package = Package(
             dependencies: ["RxSwift"]),
         .target(
             name: "LocalTarget3"),
+        .executableTarget(
+            name: "Local1Tool"),
         .testTarget(
             name: "Local1Tests",
             dependencies: ["LocalTarget1"]),
