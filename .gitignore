@@ -184,6 +184,7 @@ cache/
 .codex-local-skills/
 .vendor/
 app/
+spm/
 Generated/
 
 # bazelize output inside the iOS fixture

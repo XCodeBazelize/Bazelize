@@ -14,7 +14,42 @@ extension XCode {
         public let targets: [Target]
 
         public static func load(path: Path, preferConfig: String?) throws -> Self {
-            try ProjectLoader(path: path, preferConfig: preferConfig).model()
+            if let manifest = Self.manifest(at: path) {
+                return package(at: manifest)
+            }
+
+            return try ProjectLoader(path: path, preferConfig: preferConfig).model()
+        }
+
+        /// The `Package.swift` a path names, directly or as its directory.
+        static func manifest(at path: Path) -> Path? {
+            if path.lastComponent == "Package.swift", path.exists { return path }
+
+            let manifest = path + "Package.swift"
+            return manifest.exists ? manifest : nil
+        }
+
+        /// A Swift package on its own, described as a project with no targets of its
+        /// own.
+        ///
+        /// Everything a package needs is already generated for a package a project
+        /// depends on: the rules live under `Packages/`, reached by product labels.
+        /// A package given directly is the same thing — the one local package of a
+        /// project that has nothing else in it — so nothing else has to know the
+        /// input was a manifest.
+        private static func package(at manifest: Path) -> Self {
+            let root = manifest.parent().absolute()
+
+            return .init(
+                name: root.lastComponent,
+                workspacePath: root.string,
+                projectPath: manifest.string,
+                preferConfig: nil,
+                configs: [:],
+                packages: .init(
+                    remote: [],
+                    local: [.init(name: root.lastComponent, relativePath: ".")]),
+                targets: [])
         }
     }
 }
