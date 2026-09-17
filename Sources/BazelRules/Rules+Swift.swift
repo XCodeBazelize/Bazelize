@@ -136,6 +136,7 @@ extension Rules.Swift {
             copts: [String]? = nil,
             module_name: String? = nil,
             package_name: String? = nil,
+            plugins: Starlark.Value? = nil,
             srcs: Starlark.Value,
             deps: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
@@ -165,6 +166,9 @@ extension Rules.Swift {
                 }
                 if let package_name {
                     "package_name" => package_name
+                }
+                if let plugins {
+                    "plugins" => plugins
                 }
                 "srcs" => srcs
 
@@ -555,13 +559,21 @@ extension Rules.Swift {
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_compiler_plugin(
             name: String,
+            srcs: Starlark.Value? = nil,
+            copts: [String]? = nil,
             deps: Starlark.Value? = nil,
+            module_name: String? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_compiler_plugin.call {
                 "name" => name
+                if let srcs { "srcs" => srcs }
+                if let copts { "copts" => copts }
                 if let deps { "deps" => deps }
+                if let module_name { "module_name" => module_name }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }

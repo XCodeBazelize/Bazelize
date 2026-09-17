@@ -104,7 +104,7 @@ extension SwiftPM.Generator {
                 label: ":\(name)",
                 accessors: [header, implementation],
                 header: header)
-        case .binary, .system, .unsupported:
+        case .binary, .system, .macro, .unsupported:
             return nil
         }
     }

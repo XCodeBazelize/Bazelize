@@ -111,6 +111,8 @@ extension SwiftPM {
                     builder: builder)
 
                 switch kind {
+                case .macro:
+                    buildMacro(target, in: package, prefix: prefix, builder: builder)
                 case .swift:
                     build(
                         target,
@@ -148,7 +150,7 @@ extension SwiftPM {
             for target in targets {
                 guard let kind = try kind(of: target, in: package) else { continue }
                 switch kind {
-                case .swift, .clang, .binary, .system:
+                case .swift, .clang, .binary, .system, .macro:
                     supported[target.name] = kind
                 case .unsupported(let reason):
                     Log.codeGenerate.warning("""
@@ -219,6 +221,8 @@ extension SwiftPM {
             case clang
             case binary
             case system
+            /// A macro: a program the compiler loads, not a library the target links.
+            case macro
             case unsupported(String)
         }
 
@@ -237,7 +241,7 @@ extension SwiftPM {
             case "system":
                 return .system
             case "macro":
-                return .unsupported("macro targets are not generated yet")
+                return .macro
             default:
                 break
             }
@@ -454,6 +458,9 @@ extension SwiftPM {
                     /// Which targets `package` visibility reaches: every target of
                     /// the same package, which is what the name identifies.
                     package_name: package.manifest.name,
+                    plugins: plugins(of: target, in: package).nonEmpty.map { macros in
+                        .build { macros }
+                    },
                     srcs: Starlark.glob(
                         matching(
                             sources(of: target, prefix: prefix, extensions: ["swift"]),
@@ -503,6 +510,28 @@ extension SwiftPM {
         /// Directory types SwiftPM's file rules ignore.
         static let ignoredExtensions = ["docc", "xcprivacy"]
 
+        /// The macros a target loads: a macro target is a program the compiler
+        /// runs, so it belongs in `plugins` rather than in `deps`.
+        func plugins(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
+            let macros = package.manifest.targets.filter { other in
+                if case .macro = kinds[package.directory]?[other.name] { return true }
+                return false
+            }.map(\.name)
+
+            let names = target.dependencies.compactMap { dependency -> String? in
+                switch dependency.kind {
+                case .target(let name), .byName(let name):
+                    return macros.contains(name) ? name : nil
+                case .product:
+                    return nil
+                }
+            }
+
+            return Set(names).sorted().map { name in
+                Starlark.Label.named(":\(ruleName(of: name, in: package))")
+            }
+        }
+
         func deps(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
             let localTargets = Set(package.manifest.targets.map(\.name))
             let localProducts = Dictionary(
@@ -512,11 +541,11 @@ extension SwiftPM {
             let labels: [String] = target.dependencies.compactMap { dependency in
                 switch dependency.kind {
                 case .target(let name):
-                    return localTargets.contains(name)
-                        ? ":\(ruleName(of: name, in: package))"
-                        : nil
+                    guard localTargets.contains(name), !isMacro(name, in: package) else { return nil }
+                    return ":\(ruleName(of: name, in: package))"
                 case .byName(let name):
                     if localTargets.contains(name) {
+                        guard !isMacro(name, in: package) else { return nil }
                         return ":\(ruleName(of: name, in: package))"
                     }
                     if localProducts[name] != nil { return ":\(name)" }
@@ -527,6 +556,11 @@ extension SwiftPM {
             }
 
             return Array(Set(labels)).sorted().map(Starlark.Label.named)
+        }
+
+        private func isMacro(_ target: String, in package: Package) -> Bool {
+            if case .macro = kinds[package.directory]?[target] { return true }
+            return false
         }
 
         /// A product of another package is reached through the facade, so the label
@@ -569,7 +603,11 @@ extension SwiftPM {
         {
             guard product.kind == .library else { return }
 
-            let targets = product.targets.filter { emitted.contains($0) }
+            /// A macro is not part of a product a consumer links: it is loaded by
+            /// the compiler of whatever declares the macro, inside its own package.
+            let targets = product.targets.filter { target in
+                emitted.contains(target) && !isMacro(target, in: package)
+            }
             guard !targets.isEmpty else { return }
 
             /// A product of one target is that target under another name; several
