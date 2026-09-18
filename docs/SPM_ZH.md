@@ -408,6 +408,9 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡
 每個 app 用自製產生器的結果都不比 rspm 差。
 
-## 待決事項
+## 不做的事
 
-1. registry package（`.package(id:)`）階段幾支援？目前語料沒有。
+- **registry package（`.package(id:)`）**：目前的階段都不實作。語料裡沒有任何一個，
+  而 SwiftPM 自己會把它解析進 checkouts，所以要做的時候是「多認一種 dependency 種類」，
+  不是改產出的形狀。撞到的時候：該 package 的 target 會被當成解不到而略過並具名回報，
+  這和其他不支援的種類一樣。

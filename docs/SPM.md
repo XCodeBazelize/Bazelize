@@ -454,7 +454,11 @@ Stage 4 removed the alternative rather than keeping a flag: two paths would
 mean two dependency graphs, and the generated one is at least as good on every
 app in the corpus.
 
-## Open questions
+## Not done
 
-1. Which stage supports registry packages (`.package(id:)`)? Nothing in the
-   corpus uses one.
+- **Registry packages (`.package(id:)`)**: no stage implements them. Nothing in
+  the corpus uses one, and SwiftPM resolves them into checkouts itself, so the
+  work is recognising one more kind of dependency rather than changing the shape
+  of the output. Until then a registry package's targets are skipped as
+  unresolvable and named at the end of the run, like every other unsupported
+  kind.
