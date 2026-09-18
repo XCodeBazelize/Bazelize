@@ -10,7 +10,7 @@ import Foundation
 // MARK: - SwiftPM
 
 /// Generating Bazel rules for the Swift packages a project depends on.
-public enum SwiftPM {}
+public enum SwiftPM { }
 
 extension SwiftPM {
     /// A package manifest, as `swift package dump-package` prints it.
@@ -76,15 +76,6 @@ extension SwiftPM {
         let dependencies: [TargetDependency]
         /// The plugins the target asks to be run while it is built.
         let pluginUsages: [PluginUsage]
-        /// `{"buildTool": null}` or `{"command": [...]}` for a plugin target.
-        let pluginCapability: [String: AnyDecodable?]?
-
-        var capability: PluginCapability? {
-            guard let pluginCapability else { return nil }
-            if pluginCapability.keys.contains("command") { return .command }
-            if pluginCapability.keys.contains("buildTool") { return .buildTool }
-            return nil
-        }
         /// A binary target's remote archive.
         let url: String?
         let checksum: String?
@@ -101,18 +92,9 @@ extension SwiftPM {
             resources = container.list(Resource.self, "resources")
             dependencies = container.list(TargetDependency.self, "dependencies")
             pluginUsages = container.list(PluginUsage.self, "pluginUsages")
-            pluginCapability = container.value([String: AnyDecodable?].self, "pluginCapability")
             url = container.value(String.self, "url")
             checksum = container.value(String.self, "checksum")
         }
-    }
-
-    /// What a plugin target can be asked to do.
-    enum PluginCapability {
-        /// Runs while a target is built, and may generate source.
-        case buildTool
-        /// Runs when someone asks for it by name, never during a build.
-        case command
     }
 
     /// `{"plugin": ["SwiftLint", "SwiftLintPlugin"]}`: the plugin's name first,
@@ -295,10 +277,12 @@ extension KeyedDecodingContainer where Key == SwiftPM.AnyKey {
         try? decodeIfPresent(type, forKey: SwiftPM.AnyKey(key))
     }
 
-    func list<T: Decodable>(_ type: T.Type, _ key: String) -> [T] {
+    func list<T: Decodable>(_: T.Type, _ key: String) -> [T] {
         (try? decodeIfPresent([T].self, forKey: SwiftPM.AnyKey(key))) ?? []
     }
 }
+
+// MARK: - AnyDecodable
 
 /// Anything, decoded only to be ignored.
 struct AnyDecodable: Decodable {
@@ -314,7 +298,7 @@ struct AnyDecodable: Decodable {
         } else if let value = try? container.decode(Bool.self) {
             self.value = value
         } else {
-            self.value = nil
+            value = nil
         }
     }
 }

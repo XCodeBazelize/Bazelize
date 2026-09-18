@@ -37,6 +37,8 @@ extension SwiftPM {
         }
 
         func generate() throws {
+            notes.append(contentsOf: workspace.pluginOutputs.notes)
+
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
                 report(deploymentOf: package)
@@ -65,13 +67,18 @@ extension SwiftPM {
             }
         }
 
-        /// A build tool plugin is not run.
+        /// A dependency's build tool plugin is not run.
         ///
-        /// Every plugin in the corpus is a linter, which produces no source: a
-        /// build without it is the same build. One that generates source would
-        /// leave a target missing the files it expects, and that compile error says
-        /// nothing about a plugin, so the plugin is named here instead.
+        /// The plugins of a package in the project's own repository are run while
+        /// the workspace is generated; a dependency's are not, because running one
+        /// costs a SwiftPM build of its package. Every plugin in the corpus is a
+        /// linter, which produces no source: a build without it is the same build.
+        /// One that generates source would leave a target missing the files it
+        /// expects, and that compile error says nothing about a plugin, so the
+        /// plugin is named here instead.
         private func report(pluginsOf package: Package) {
+            guard !package.isRoot, !package.isLocal else { return }
+
             let used = package.manifest.targets
                 .filter { $0.type != "test" }
                 .flatMap(\.pluginUsages)
@@ -366,15 +373,11 @@ extension SwiftPM {
                 /// depends on say nothing about the project.
                 return package.isRoot ? .test : nil
             case "plugin":
-                /// A command plugin runs when someone asks for it by name, so a
-                /// build never needs it. A build tool plugin does run while a
-                /// target is built, and not running it is what the run reports.
-                switch target.capability {
-                case .command:
-                    return nil
-                case .buildTool, .none:
-                    return .unsupported("a build tool plugin is not run")
-                }
+                /// A plugin is a program SwiftPM runs, never a rule this workspace
+                /// builds: a command plugin runs when someone asks for it by name,
+                /// and a build tool plugin runs while the workspace is generated.
+                /// Whether it ran is what the run reports.
+                return nil
             case "binary":
                 return .binary
             case "system":

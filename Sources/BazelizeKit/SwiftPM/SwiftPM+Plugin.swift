@@ -24,11 +24,17 @@ extension SwiftPM {
     /// building its package with SwiftPM, and doing that for every dependency that
     /// merely lints would make generating a workspace cost a full SwiftPM build.
     struct PluginOutputs: Sendable {
+        /// What kept a plugin from producing what a target expects, for the run to
+        /// say out loud: the compile error a missing generated file causes names
+        /// the file, never the plugin.
+        let notes: [String]
+
         /// Keyed `<package directory>/<target>`.
         private let files: [String: [Path]]
 
-        init(files: [String: [Path]] = [:]) {
+        init(files: [String: [Path]] = [:], notes: [String] = []) {
             self.files = files
+            self.notes = notes
         }
 
         func files(of target: String, in package: Package) -> [Path] {
@@ -40,6 +46,7 @@ extension SwiftPM {
     /// wrote.
     static func runPlugins(of packages: [Package]) async -> PluginOutputs {
         var files: [String: [Path]] = [:]
+        var notes: [String] = []
 
         for package in packages where package.isRoot || package.isLocal {
             let targets = package.manifest.targets
@@ -48,7 +55,10 @@ extension SwiftPM {
             guard !targets.isEmpty else { continue }
 
             for target in targets {
-                await build(target: target, of: package)
+                if let failure = await build(target: target, of: package) {
+                    notes.append(failure)
+                    continue
+                }
 
                 let produced = outputs(of: target, in: package)
                 guard !produced.isEmpty else { continue }
@@ -56,14 +66,17 @@ extension SwiftPM {
             }
         }
 
-        return .init(files: files)
+        return .init(files: files, notes: notes)
     }
 
     // MARK: Private
 
     /// Building the target is what makes SwiftPM run its plugins; there is no
     /// command that only runs them.
-    private static func build(target: String, of package: Package) async {
+    ///
+    /// Returns why the plugins did not run, or `nil` when they did.
+    private static func build(target: String, of package: Package) async -> String? {
+        let failure: String
         do {
             let result = try await Subprocess.run(
                 .name("swift"),
@@ -75,19 +88,19 @@ extension SwiftPM {
                 output: .discarded,
                 error: .discarded)
 
-            guard result.terminationStatus.isSuccess else {
-                Log.codeGenerate.warning("""
-                Cannot run the plugins of \(package.directory, privacy: .public)/\
-                \(target, privacy: .public): swift build failed
-                """)
-                return
-            }
+            if result.terminationStatus.isSuccess { return nil }
+            failure = "swift build failed"
         } catch {
-            Log.codeGenerate.warning("""
-            Cannot run the plugins of \(package.directory, privacy: .public)/\
-            \(target, privacy: .public): \(error.localizedDescription, privacy: .public)
-            """)
+            failure = error.localizedDescription
         }
+
+        let message = """
+        \(package.directory)/\(target) did not run its plugins: \(failure). \
+        The target is built with SwiftPM to run them, so whatever they generate \
+        is missing from it.
+        """
+        Log.codeGenerate.warning("\(message, privacy: .public)")
+        return message
     }
 
     /// `.build/plugins/outputs/<identity>/<target>/<destination>/<plugin>/…`
