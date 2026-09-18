@@ -108,7 +108,10 @@ extension Kit {
     private final func generateSwiftPackages() async throws {
         let workspace = try await SwiftPM.loadWorkspace(
             output: outputRoot,
-            root: project.packageRoot)
+            root: project.packageRoot,
+            locals: project.packages.local.map { local in
+                project.workspaceRoot + local.relativePath
+            })
         let deployment = await deployment()
 
         let generator = SwiftPM.Generator(

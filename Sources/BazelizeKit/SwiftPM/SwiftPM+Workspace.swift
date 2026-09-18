@@ -56,14 +56,19 @@ extension SwiftPM {
     /// checkouts are the sources the rules will point at. `dump-package` is read
     /// per checkout because it is the manifest SwiftPM itself evaluated — cheap,
     /// offline, and it spans every tools version in the graph.
-    static func loadWorkspace(output: Path, root input: Path?) async throws -> Workspace {
+    ///
+    /// `locals` are the packages of the project's own repository, the same ones the
+    /// generated manifest declares as `path:` dependencies. They are handed in
+    /// rather than read back out of that manifest: the caller that wrote it knows
+    /// them.
+    static func loadWorkspace(output: Path, root input: Path?, locals: [Path]) async throws -> Workspace {
         try await resolve(output: output)
 
         let checkouts = output + ".build/checkouts"
         var packages: [Package] = []
         var directoryByIdentity: [String: String] = [:]
 
-        for root in try roots(output: output, checkouts: checkouts) {
+        for root in try roots(checkouts: checkouts, locals: locals) {
             guard let manifest = try await manifest(at: root.path) else { continue }
 
             let package = Package(
@@ -113,9 +118,9 @@ extension SwiftPM {
         }
     }
 
-    /// Remote packages live in `.build/checkouts`; a local one is wherever the
-    /// manifest points, and is read in place.
-    private static func roots(output: Path, checkouts: Path) throws -> [Root] {
+    /// Remote packages live in `.build/checkouts`; a local one is wherever its
+    /// manifest is, and is read in place.
+    private static func roots(checkouts: Path, locals: [Path]) throws -> [Root] {
         var roots: [Root] = []
 
         if checkouts.exists {
@@ -124,27 +129,13 @@ extension SwiftPM {
             }
         }
 
-        for path in localPaths(output: output) {
-            let resolved = (output + path).normalize()
-            guard resolved.exists else { continue }
-            roots.append(.init(directory: resolved.lastComponent, path: resolved, isLocal: true))
+        for path in locals {
+            let root = path.absolute().normalize()
+            guard root.exists else { continue }
+            roots.append(.init(directory: root.lastComponent, path: root, isLocal: true))
         }
 
         return roots.sorted { $0.directory < $1.directory }
-    }
-
-    /// The `path:` dependencies of the generated manifest.
-    private static func localPaths(output: Path) -> [String] {
-        guard let manifest: String = try? (output + "Package.swift").read() else { return [] }
-
-        let pattern = #"\.package\(path:\s*"([^"]+)"\)"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
-
-        return regex.matches(in: manifest, range: NSRange(manifest.startIndex..., in: manifest))
-            .compactMap { match in
-                guard let range = Range(match.range(at: 1), in: manifest) else { return nil }
-                return String(manifest[range])
-            }
     }
 
     private static func manifest(at root: Path) async throws -> Manifest? {
