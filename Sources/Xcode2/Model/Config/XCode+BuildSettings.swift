@@ -50,6 +50,15 @@ extension XCode {
                 })
         }
 
+        /// Values for the settings this configuration does not state itself.
+        func with(defaults: [String: String]) -> BuildSettings {
+            .init(
+                name: name,
+                setting: setting.merging(defaults) { current, _ in
+                    current
+                })
+        }
+
         public subscript(key: String) -> String? {
             resolved(setting[key], visited: [key])
         }

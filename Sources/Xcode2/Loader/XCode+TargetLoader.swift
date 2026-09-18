@@ -20,13 +20,23 @@ struct TargetLoader {
         /// settings reference them freely (`INFOPLIST_FILE = $(SRCROOT)/...`).
         let workspace = project.workspacePath.string
         mergedConfig = configList.merge(defaultConfigList).mapValues { settings in
-            settings.with(overrides: [
-                "TARGET_NAME": native.name,
-                "PROJECT_NAME": project.name,
-                "SRCROOT": workspace,
-                "SOURCE_ROOT": workspace,
-                "PROJECT_DIR": workspace,
-            ])
+            settings
+                .with(overrides: [
+                    "TARGET_NAME": native.name,
+                    "PROJECT_NAME": project.name,
+                    "SRCROOT": workspace,
+                    "SOURCE_ROOT": workspace,
+                    "PROJECT_DIR": workspace,
+                ])
+                /// What the toolchain answers for, and the configuration being
+                /// built — defaults, because a project that states one of them
+                /// itself means it: iina writes `CONFIGURATION` into an xcconfig.
+                ///
+                /// The platform is resolved rather than read: `SDKROOT` is
+                /// optional, and `auto` names no SDK at all.
+                .with(defaults: Toolchain
+                    .settings(sdk: settings.platform.resolvedSDK?.rawValue)
+                    .merging(["CONFIGURATION": settings.name]) { _, new in new })
         }
     }
 
