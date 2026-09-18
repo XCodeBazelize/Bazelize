@@ -29,12 +29,17 @@ extension SwiftPM.Generator {
     /// SwiftPM puts a target's resources in a bundle named `<Package>_<Target>`
     /// and compiles an accessor that finds it at runtime; a package reaches its
     /// own resources only through that pair, so both are generated here.
+    ///
+    /// `generated` are the files a build tool plugin produced that the target
+    /// does not compile. SwiftPM bundles those the same way, so a target whose
+    /// only resources come from a plugin still gets a bundle.
     func buildResources(
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
         root: Path,
         kind: TargetKind,
+        generated: [String],
         builder: CodeBuilder) throws -> ResourceBundle?
     {
         guard let directory = sourceDirectory(of: target, in: package) else { return nil }
@@ -57,6 +62,9 @@ extension SwiftPM.Generator {
         }
         resources = matching(resources, files)
             + matching(Self.discoveredResources(prefix: prefix), files)
+            /// A plugin's output is named as it was found on disk, so it needs no
+            /// matching against the target's own files.
+            + generated
         let structured = copied
             .mapValues { matching($0, files) }
             .filter { !$0.value.isEmpty }

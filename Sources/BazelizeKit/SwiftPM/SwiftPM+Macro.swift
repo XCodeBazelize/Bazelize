@@ -22,6 +22,7 @@ extension SwiftPM.Generator {
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
+        generated: [String],
         builder: CodeBuilder)
     {
         builder.load(loadableRule: Rules.Swift.swift_compiler_plugin)
@@ -31,7 +32,8 @@ extension SwiftPM.Generator {
                 srcs: Starlark.glob(
                     matching(
                         sources(of: target, prefix: prefix, extensions: ["swift"]),
-                        relativeFiles(of: target, in: package, prefix: prefix)),
+                        relativeFiles(of: target, in: package, prefix: prefix))
+                        + generated,
                     exclude: excluded(target, prefix: prefix)),
                 copts: copts(of: target).nonEmpty,
                 deps: deps(of: target, in: package).nonEmpty.map { labels in

@@ -136,7 +136,8 @@ extension SwiftPM {
                 let generated = try materialize(
                     pluginOutputsOf: target,
                     in: package,
-                    at: root)
+                    at: root,
+                    kind: kind)
 
                 let resources = try buildResources(
                     target,
@@ -144,17 +145,23 @@ extension SwiftPM {
                     prefix: prefix,
                     root: root,
                     kind: kind,
+                    generated: generated.resources,
                     builder: builder)
 
                 switch kind {
                 case .macro:
-                    buildMacro(target, in: package, prefix: prefix, builder: builder)
+                    buildMacro(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        generated: generated.sources,
+                        builder: builder)
                 case .executable:
                     buildExecutable(
                         target,
                         in: package,
                         prefix: prefix,
-                        generated: generated,
+                        generated: generated.sources,
                         resources: resources,
                         builder: builder)
                 case .test:
@@ -162,7 +169,7 @@ extension SwiftPM {
                         target,
                         in: package,
                         prefix: prefix,
-                        generated: generated,
+                        generated: generated.sources,
                         resources: resources,
                         builder: builder)
                 case .swift:
@@ -170,7 +177,7 @@ extension SwiftPM {
                         target,
                         in: package,
                         prefix: prefix,
-                        generated: generated,
+                        generated: generated.sources,
                         resources: resources,
                         builder: builder)
                 case .clang:
@@ -179,6 +186,7 @@ extension SwiftPM {
                         in: package,
                         prefix: prefix,
                         root: root,
+                        generated: generated,
                         resources: resources,
                         builder: builder)
                 case .binary, .system, .unsupported:
@@ -244,22 +252,29 @@ extension SwiftPM {
             return supported
         }
 
-        /// The sources stay where SwiftPM put them; the package directory carries
-        /// one link per target, the way a target's `Sources/` does.
+        /// What a plugin generated, linked next to the package's rules.
         ///
-        /// A link per target rather than one for the whole checkout is what keeps
-        /// the rest of the checkout out of the build: a package can ship `BUILD`
-        /// files of its own — swift-syntax and Yams both do — and Bazel would load
-        /// them as packages of this workspace.
-        /// The sources a plugin generated, linked next to the package's rules and
-        /// compiled into the target that asked for the plugin.
+        /// Split the way SwiftPM splits it: a file whose extension the target
+        /// compiles is a source of that target, anything else is one of its
+        /// resources. A header is neither compiled nor bundled — it is an input of
+        /// the generated source that includes it, which is the only thing SwiftPM
+        /// lets reach it too.
+        struct PluginGenerated {
+            let sources: [String]
+            let headers: [String]
+            let resources: [String]
+
+            static let none = PluginGenerated(sources: [], headers: [], resources: [])
+        }
+
         func materialize(
             pluginOutputsOf target: PackageTarget,
             in package: Package,
-            at root: Path) throws -> [String]
+            at root: Path,
+            kind: TargetKind) throws -> PluginGenerated
         {
             let files = workspace.pluginOutputs.files(of: target.name, in: package)
-            guard !files.isEmpty else { return [] }
+            guard !files.isEmpty else { return .none }
 
             let directory = "Generated/\(target.name)Plugin"
             let generated = root + directory
@@ -268,13 +283,42 @@ extension SwiftPM {
             }
             try generated.mkpath()
 
-            return try files.map { file in
+            /// What the target's own rule compiles; a Swift target compiles Swift,
+            /// and a C-family one whatever clang takes.
+            let compiled: Set<String> = {
+                if case .clang = kind { return Set(Self.compileExtensions) }
+                return ["swift"]
+            }()
+
+            var sources: [String] = []
+            var headers: [String] = []
+            var resources: [String] = []
+
+            for file in files {
                 let link = generated + file.lastComponent
                 try link.symlink(file)
-                return "\(directory)/\(file.lastComponent)"
+
+                let path = "\(directory)/\(file.lastComponent)"
+                let `extension` = file.extension ?? ""
+                if compiled.contains(`extension`) {
+                    sources.append(path)
+                } else if Self.headerExtensions.contains(`extension`) {
+                    headers.append(path)
+                } else {
+                    resources.append(path)
+                }
             }
+
+            return .init(sources: sources, headers: headers, resources: resources)
         }
 
+        /// The sources stay where SwiftPM put them; the package directory carries
+        /// one link per target, the way a target's `Sources/` does.
+        ///
+        /// A link per target rather than one for the whole checkout is what keeps
+        /// the rest of the checkout out of the build: a package can ship `BUILD`
+        /// files of its own — swift-syntax and Yams both do — and Bazel would load
+        /// them as packages of this workspace.
         private func materialize(_ target: PackageTarget, in package: Package, at root: Path) throws -> String? {
             guard let directory = sourceDirectory(of: target, in: package) else { return nil }
 

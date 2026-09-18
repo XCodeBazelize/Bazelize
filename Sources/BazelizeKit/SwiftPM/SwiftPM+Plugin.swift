@@ -104,12 +104,14 @@ extension SwiftPM {
     }
 
     /// `.build/plugins/outputs/<identity>/<target>/<destination>/<plugin>/…`
+    ///
+    /// Every file, not only the Swift ones: SwiftPM splits what a plugin produced
+    /// into the target's sources and its resources, and a `prebuildCommand`
+    /// writes a whole directory whose contents it never names.
     private static func outputs(of target: String, in package: Package) -> [Path] {
         let root = package.root + ".build/plugins/outputs" + package.identity + target
         guard root.isDirectory else { return [] }
 
-        return Generator.walk(root).filter { file in
-            file.extension == "swift"
-        }.sorted()
+        return Generator.walk(root).sorted()
     }
 }

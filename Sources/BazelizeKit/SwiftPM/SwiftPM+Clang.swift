@@ -20,6 +20,7 @@ extension SwiftPM.Generator {
         in package: SwiftPM.Package,
         prefix: String,
         root: Path,
+        generated: PluginGenerated,
         resources: ResourceBundle?,
         builder: CodeBuilder)
     {
@@ -68,6 +69,12 @@ extension SwiftPM.Generator {
                                 ? []
                                 : Self.headerExtensions.map { "\(prefix)/**/*.\($0)" }),
                         files)
+                        /// A plugin's output compiles like a source of the target,
+                        /// and the header beside it is an input the same way a
+                        /// private header is: the generated source includes it by
+                        /// name, which is all SwiftPM offers either.
+                        + generated.sources
+                        + generated.headers
                         + (resources?.accessors ?? []),
                     exclude: excludedClang(target, prefix: prefix)
                         + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
