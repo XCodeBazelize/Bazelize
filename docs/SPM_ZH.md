@@ -60,7 +60,7 @@ package 的 BUILD 不在那裡，而在
 ```text
 App/
 ├── MODULE.bazel              # 不再有 rspm
-├── Package.swift             # 保留：仍用 SwiftPM 解析依賴圖
+├── Package.swift             # 保留：重建 .build/checkouts 的唯一途徑
 ├── Package.resolved          # 保留：pin 的唯一來源
 ├── config.bazelrc
 ├── BUILD
@@ -104,6 +104,32 @@ manifest 所在的位置，就地讀取。
 另一個選項是每個遠端 package 產生一個 `git_repository`，用 `Package.resolved`
 的 revision 釘住：那是 hermetic 的，但又把 external repo 帶回來，還會重抓一份
 Bazel 手上已經有的原始碼。
+
+所以 `Package.swift` 和 `Package.resolved` 留在產物裡。規則 glob 的原始碼位於
+`.build/checkouts`，而唯一能把它們放回去的就是在產物目錄裡跑
+`swift package resolve`——新 clone、或清掉 `.build` 之後都是。它們不是給 Bazel 讀的，
+那是 rspm 需要它們的理由：`swift = "//:Package.swift"` 是 mandatory label，它的
+module extension 每次評估都在那個 label 所在目錄跑 SwiftPM。
+
+### SwiftPM 由誰執行
+
+每一步 SwiftPM 都是使用者安裝的 toolchain 的 `swift` 指令：`swift package resolve`
+取得 checkouts、每個 checkout 一次 `swift package dump-package` 讀 manifest、
+`swift build` 讓 build tool plugin 跑起來。不是 libSwiftPM，即使本 package 已經為
+舊的 `XCode` target 連了 `SwiftPMDataModel`。
+
+- plugin 這一步搬不過去：跑它需要 build system，而 `SwiftPMDataModel` 刻意只有
+  data model——`Build`、`SPMLLBuild` 與 SwiftDriver 只在完整的 `SwiftPM` product 裡。
+  用釘住的 library 解析、卻用安裝的 toolchain 建 plugin，等於同一個 `.build` 被兩個
+  版本的 SwiftPM 寫：checkouts、`Package.resolved` 格式、manifest cache 都屬於最後
+  跑的那個。「只有一個 SwiftPM，而且和 Xcode 用的是同一個」是值得保留的性質。
+- 這個依賴釘的是 branch（`swift-6.4.0-RELEASE`，對上 toolchain），而 libSwiftPM 自己
+  聲明 API 不穩定、隨時可能改。`dump-package` 的 JSON 橫跨依賴圖裡所有 tools version，
+  而且只被解碼成產生器真正要讀的那幾個欄位。
+- 成本量過了：一份 manifest 0.6 秒，本 repo 的 18 個 checkout 共 10.8 秒。改成併發
+  更慢而不是更快——同時跑八個是 14.5 秒，和共用 manifest cache 的競爭一致——所以迴圈
+  維持序列。語料裡一個 app 大約十個 package，那六秒就是換成一次 `loadPackageGraph`
+  能省下的全部。
 
 ### Label 命名
 
@@ -343,8 +369,15 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 
 所以讓 SwiftPM 去跑。「建那個 target」就是讓它跑該 target 的 plugin 的唯一方式——沒有
 只跑 plugin 的指令——跑完結果留在 `.build/plugins/outputs/<package>/<target>/`。那些
-檔案被連結到 `Generated/<Target>Plugin/`，並編進「要求該 plugin 的那個 target」，
-和我們對待 SwiftPM 其他既有產物的方式一樣。
+檔案被連結到 `Generated/<Target>Plugin/`，並按 SwiftPM 自己的分法交給「要求該 plugin
+的那個 target」：
+
+- target 自己編的副檔名（Swift target 的 `.swift`、C 系 target 的 `.c`/`.m`/…）進
+  `srcs`。
+- header 既不編也不打包，它是「它旁邊那份產生原始碼」的輸入——那份原始碼用檔名 include
+  它，而 SwiftPM 也只允許這樣：手寫的原始碼 include 不到產生的 header。
+- 其餘一切都是 resource，進該 target 的 resource bundle。只有 plugin 產生 resource 的
+  target 也因此會有 bundle，和 SwiftPM 一樣。
 
 換到什麼、付出什麼：
 
@@ -355,6 +388,8 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 - 只對「專案自己 repository 裡的 package」這樣做。跑一次 plugin 等於用 SwiftPM 建一次
   它的 package；對每個只做 lint 的依賴都建一次會讓產生工作癱掉，所以依賴的 plugin 是
   在結束時具名告知。
+- 跑不起來也會具名告知：那個 target 少掉的是 plugin 該產生的檔案，而 Bazel 端的編譯
+  錯誤只會提到那些檔案，不會提到 plugin。
 
 ## 分階段與通過條件
 
@@ -375,7 +410,4 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 
 ## 待決事項
 
-1. `Package.swift` 是否還需要出現在產物裡？只有 `swift package resolve` 需要它，
-   可以改成只在更新 pin 時才產生。
-2. registry package（`.package(id:)`）階段幾支援？目前語料沒有。
-3. 上游 rspm PR 還要不要送？那 4 個 patch 很小，對還在用 rspm 的人也有用。
+1. registry package（`.package(id:)`）階段幾支援？目前語料沒有。

@@ -67,7 +67,7 @@ package is pointing it at that package's tests.
 ```text
 App/
 ├── MODULE.bazel              # no rspm
-├── Package.swift             # kept: SwiftPM still resolves the graph
+├── Package.swift             # kept: the only way to rebuild .build/checkouts
 ├── Package.resolved          # kept: the only source of pins
 ├── config.bazelrc
 ├── BUILD
@@ -113,6 +113,39 @@ Properties of this choice:
 The alternative — one `git_repository` per remote package, pinned to the
 revision in `Package.resolved` — is hermetic but reintroduces external repos
 and fetches sources Bazel already has on disk.
+
+`Package.swift` and `Package.resolved` therefore stay in the output. The sources
+a rule globs live in `.build/checkouts`, and `swift package resolve` in the
+output directory is the only thing that can put them back — on a fresh clone, or
+after `.build` is cleaned. They are not there for Bazel to read, which is what
+rspm needed them for: a mandatory `swift = "//:Package.swift"` label whose
+directory its module extension ran SwiftPM in, on every evaluation of the
+extension.
+
+### Who runs SwiftPM
+
+Every SwiftPM step is the installed toolchain's `swift` command: `swift package
+resolve` for the checkouts, `swift package dump-package` per checkout for the
+manifests, and `swift build` to run a build tool plugin. Not libSwiftPM, even
+though this package already links `SwiftPMDataModel` for the legacy `XCode`
+target.
+
+- Plugins cannot move there. Running one needs a build system, and
+  `SwiftPMDataModel` is deliberately the data model alone — `Build`,
+  `SPMLLBuild` and SwiftDriver are only in the full `SwiftPM` product. Resolving
+  with a pinned library while plugins build with the installed toolchain would
+  put two versions of SwiftPM in one `.build`: the checkouts, the
+  `Package.resolved` format and the manifest cache would belong to whichever ran
+  last. One SwiftPM — the same one Xcode uses — is the property worth keeping.
+- The dependency is a branch (`swift-6.4.0-RELEASE`, matching the toolchain),
+  and libSwiftPM says of itself that the API is unstable and may change at any
+  time. `dump-package`'s JSON spans every tools version in the graph, and it is
+  decoded into the few fields the generator reads.
+- The cost is measured: 0.6s per manifest, so 10.8s for this repository's 18
+  checkouts. Running them concurrently is slower, not faster — 14.5s with eight
+  at a time, consistent with contention on the shared manifest cache — so the
+  loop stays sequential. An app in the corpus has around ten packages, which is
+  the six seconds a single `loadPackageGraph` would save.
 
 ### Label naming
 
@@ -377,8 +410,16 @@ with every toolchain.
 So SwiftPM runs them. Building a target is what makes it run that target's
 plugins — there is no command that only runs them — and it leaves the result
 under `.build/plugins/outputs/<package>/<target>/`. Those files are linked into
-`Generated/<Target>Plugin/` and compiled into the target that asked for the
-plugin, the way everything else SwiftPM already produced is taken as it is.
+`Generated/<Target>Plugin/` and handed to the target that asked for the plugin
+the way SwiftPM splits them itself:
+
+- an extension the target compiles (`.swift` for a Swift target, `.c`/`.m`/… for
+  a C-family one) goes into its `srcs`;
+- a header is neither compiled nor bundled: it is an input of the generated
+  source beside it, which includes it by name — and that is all SwiftPM offers
+  either, since a hand-written source cannot reach a generated header;
+- everything else is a resource of that target, so a target whose only resources
+  come from a plugin gets a bundle, exactly as it does under SwiftPM.
 
 What that buys and costs:
 
@@ -390,6 +431,9 @@ What that buys and costs:
   plugin costs a SwiftPM build of its package, and doing that for every
   dependency that merely lints would make generating a workspace unusable; a
   dependency's plugin is named at the end of the run instead.
+- A plugin that could not run is named too: what the target loses is whatever
+  the plugin generates, and the compile error names those files rather than the
+  plugin.
 
 ## Stages and exit criteria
 
@@ -412,10 +456,5 @@ app in the corpus.
 
 ## Open questions
 
-1. Does `Package.swift` still need to be part of the output? Only
-   `swift package resolve` reads it, so it could be generated only when pins
-   are updated.
-2. Which stage supports registry packages (`.package(id:)`)? Nothing in the
+1. Which stage supports registry packages (`.package(id:)`)? Nothing in the
    corpus uses one.
-3. Should the four rspm patches still go upstream? They are small and useful to
-   whoever still uses rspm.
