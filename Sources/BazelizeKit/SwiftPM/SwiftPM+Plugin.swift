@@ -24,28 +24,37 @@ extension SwiftPM {
     /// building its package with SwiftPM, and doing that for every dependency that
     /// merely lints would make generating a workspace cost a full SwiftPM build.
     struct PluginOutputs: Sendable {
+        /// What one target's plugins wrote, and the directory they wrote it into:
+        /// two plugins of the same target write into one directory each, and a
+        /// `prebuildCommand` writes a tree, so a file is only named by where it
+        /// sits under that root.
+        struct Output: Sendable {
+            let root: Path
+            let files: [Path]
+        }
+
         /// What kept a plugin from producing what a target expects, for the run to
         /// say out loud: the compile error a missing generated file causes names
         /// the file, never the plugin.
         let notes: [String]
 
         /// Keyed `<package directory>/<target>`.
-        private let files: [String: [Path]]
+        private let outputs: [String: Output]
 
-        init(files: [String: [Path]] = [:], notes: [String] = []) {
-            self.files = files
+        init(outputs: [String: Output] = [:], notes: [String] = []) {
+            self.outputs = outputs
             self.notes = notes
         }
 
-        func files(of target: String, in package: Package) -> [Path] {
-            files["\(package.directory)/\(target)"] ?? []
+        func output(of target: String, in package: Package) -> Output? {
+            outputs["\(package.directory)/\(target)"]
         }
     }
 
     /// Runs the plugins of the packages this project owns, and collects what they
     /// wrote.
     static func runPlugins(of packages: [Package]) async -> PluginOutputs {
-        var files: [String: [Path]] = [:]
+        var outputs: [String: PluginOutputs.Output] = [:]
         var notes: [String] = []
 
         for package in packages where package.isRoot || package.isLocal {
@@ -55,18 +64,23 @@ extension SwiftPM {
             guard !targets.isEmpty else { continue }
 
             for target in targets {
+                /// What a previous run left there is not what the plugins produce
+                /// now: SwiftPM names the files it declared and leaves the rest,
+                /// while everything found here is taken as the target's own.
+                try? outputsRoot(of: target, in: package).delete()
+
                 if let failure = await build(target: target, of: package) {
                     notes.append(failure)
                     continue
                 }
 
-                let produced = outputs(of: target, in: package)
-                guard !produced.isEmpty else { continue }
-                files["\(package.directory)/\(target)"] = produced
+                let produced = self.outputs(of: target, in: package)
+                guard !produced.files.isEmpty else { continue }
+                outputs["\(package.directory)/\(target)"] = produced
             }
         }
 
-        return .init(files: files, notes: notes)
+        return .init(outputs: outputs, notes: notes)
     }
 
     // MARK: Private
@@ -104,14 +118,18 @@ extension SwiftPM {
     }
 
     /// `.build/plugins/outputs/<identity>/<target>/<destination>/<plugin>/…`
-    ///
-    /// Every file, not only the Swift ones: SwiftPM splits what a plugin produced
-    /// into the target's sources and its resources, and a `prebuildCommand`
-    /// writes a whole directory whose contents it never names.
-    private static func outputs(of target: String, in package: Package) -> [Path] {
-        let root = package.root + ".build/plugins/outputs" + package.identity + target
-        guard root.isDirectory else { return [] }
+    private static func outputsRoot(of target: String, in package: Package) -> Path {
+        package.root + ".build/plugins/outputs" + package.identity + target
+    }
 
-        return Generator.walk(root).sorted()
+    /// Every file a target's plugins wrote, not only the Swift ones: SwiftPM
+    /// splits what a plugin produced into the target's sources and its resources,
+    /// and a `prebuildCommand` writes a whole directory whose contents it never
+    /// names.
+    private static func outputs(of target: String, in package: Package) -> PluginOutputs.Output {
+        let root = outputsRoot(of: target, in: package)
+        guard root.isDirectory else { return .init(root: root, files: []) }
+
+        return .init(root: root, files: Generator.walk(root).sorted())
     }
 }

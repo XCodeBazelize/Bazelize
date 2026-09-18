@@ -16,7 +16,7 @@ struct Local1Gen: BuildToolPlugin {
         let kind = target.name == "LocalTarget3" ? "clang" : "swift"
         let outputs = kind == "clang"
             ? ["LocalTarget3Generated.c", "LocalTarget3Generated.h"]
-            : ["Local1Generated.swift", "local1-generated.json"]
+            : ["Local1Generated.swift", "assets/local1-generated.json"]
 
         return [
             .buildCommand(

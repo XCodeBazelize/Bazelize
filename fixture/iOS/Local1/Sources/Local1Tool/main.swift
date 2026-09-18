@@ -19,10 +19,11 @@ guard let output = argument("--output"), let kind = argument("--kind") else {
 let directory = URL(fileURLWithPath: output, isDirectory: true)
 
 func write(_ contents: String, to name: String) throws {
-    try contents.write(
-        to: directory.appendingPathComponent(name),
-        atomically: true,
-        encoding: .utf8)
+    let file = directory.appendingPathComponent(name)
+    try FileManager.default.createDirectory(
+        at: file.deletingLastPathComponent(),
+        withIntermediateDirectories: true)
+    try contents.write(to: file, atomically: true, encoding: .utf8)
 }
 
 switch kind {
@@ -50,9 +51,11 @@ default:
         }
         """,
         to: "Local1Generated.swift")
+    /// In a directory of its own, because a plugin writes wherever it likes under
+    /// the output directory and what it wrote has to keep its place.
     try write(
         """
         {"generatedBy": "Local1Gen"}
         """,
-        to: "local1-generated.json")
+        to: "assets/local1-generated.json")
 }

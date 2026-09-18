@@ -273,8 +273,9 @@ extension SwiftPM {
             at root: Path,
             kind: TargetKind) throws -> PluginGenerated
         {
-            let files = workspace.pluginOutputs.files(of: target.name, in: package)
-            guard !files.isEmpty else { return .none }
+            guard let output = workspace.pluginOutputs.output(of: target.name, in: package) else {
+                return .none
+            }
 
             let directory = "Generated/\(target.name)Plugin"
             let generated = root + directory
@@ -294,11 +295,22 @@ extension SwiftPM {
             var headers: [String] = []
             var resources: [String] = []
 
-            for file in files {
-                let link = generated + file.lastComponent
+            let base = output.root.normalize().string
+            for file in output.files {
+                /// Where the file sits under the directory the plugins wrote into,
+                /// kept as it is: a plugin of the target has a directory of its
+                /// own there and writes a tree inside it if it likes, and renaming
+                /// that into one flat directory is a rename nothing asked for.
+                let relative = file.normalize().string
+                    .delete(prefix: base)
+                    .trimmingCharacters(in: ["/"])
+                guard !relative.isEmpty else { continue }
+
+                let link = generated + relative
+                try link.parent().mkpath()
                 try link.symlink(file)
 
-                let path = "\(directory)/\(file.lastComponent)"
+                let path = "\(directory)/\(relative)"
                 let `extension` = file.extension ?? ""
                 if compiled.contains(`extension`) {
                     sources.append(path)
