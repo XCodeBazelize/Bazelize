@@ -195,3 +195,6 @@ fixture/iOS/MODULE.bazel.lock
 fixture/iOS/Package.swift
 fixture/iOS/Package.resolved
 fixture/iOS/config.bazelrc
+
+# running a local package's build tool plugins resolves that package
+fixture/iOS/Local1/Package.resolved

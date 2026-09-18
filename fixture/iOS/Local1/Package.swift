@@ -34,14 +34,20 @@ let package = Package(
             ]),
         .target(
             name: "LocalTarget1",
-            dependencies: ["RxSwift", "Local1Macros"]),
+            dependencies: ["RxSwift", "Local1Macros"],
+            plugins: ["Local1Gen"]),
         .target(
             name: "LocalTarget2",
             dependencies: ["RxSwift"]),
         .target(
-            name: "LocalTarget3"),
+            name: "LocalTarget3",
+            plugins: ["Local1Gen"]),
         .executableTarget(
             name: "Local1Tool"),
+        .plugin(
+            name: "Local1Gen",
+            capability: .buildTool(),
+            dependencies: ["Local1Tool"]),
         .testTarget(
             name: "Local1Tests",
             dependencies: ["LocalTarget1"]),
