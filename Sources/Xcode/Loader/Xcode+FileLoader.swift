@@ -71,8 +71,8 @@ struct FileLoader {
     }
 
     var relativePath: String? {
-        let root = project.workspacePath.string
-        guard let fullPath else { return nil }
+        let root = project.workspacePath.string.realPath
+        guard let fullPath = fullPath?.realPath else { return nil }
         guard fullPath.hasPrefix(root + "/") else { return nil }
         return fullPath.delete(prefix: root + "/")
     }

@@ -341,7 +341,8 @@ struct TargetLoader {
         return (try? root.recursiveChildren())?
             .filter(\.isFile)
             .compactMap { file in
-                let relative = file.string.delete(prefix: project.workspacePath.string + "/")
+                let relative = file.string.realPath
+                    .delete(prefix: project.workspacePath.string.realPath + "/")
                 guard let relative else { return nil }
 
                 let pathInGroup = relative.delete(prefix: relativeRoot + "/") ?? ""
