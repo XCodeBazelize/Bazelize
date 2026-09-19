@@ -127,19 +127,51 @@ jobs:
         run: |
           cp "$(bazel cquery //Targets/Example --output=files | grep '\.ipa$')" ../Example.ipa
 
-      # A simulator test on a runner pays for booting the simulator, and three
-      # of them booting at once pay for it three times over: the first test took
-      # 247s here and the last one timed out at 302s having never started. The
-      # simulator is booted once, up front, and the tests run one at a time.
+      # A simulator test on a runner pays for booting the simulator, and four of
+      # them booting at once pay for it four times over: the first test took
+      # 247s here and the last timed out at 302s having never started. One
+      # simulator is booted up front, outside any test's clock, and the tests
+      # run one at a time so they share it.
+      #
+      # Which simulator is the runner's business, not ours: it has whatever
+      # runtime its Xcode ships, which is not the one this repository is
+      # developed against.
       - name: Boot Simulator
         run: |
-          udid="$(xcrun simctl list devices available \
-            | awk '/^-- iOS 27.0 --$/{f=1;next} /^-- /{f=0} f && /iPhone 17 \(/ {gsub(/[()]/,"");print $3; exit}')"
-          if [ -z "$udid" ]; then
-            udid="$(xcrun simctl create "iPhone 17" \
-              com.apple.CoreSimulator.SimDeviceType.iPhone-17 \
-              com.apple.CoreSimulator.SimRuntime.iOS-27-0)"
-          fi
+          # A device name has spaces in it, so one field per line.
+          { read -r device; read -r version; read -r udid; } < <(python3 - <<'PY'
+          import json, subprocess
+
+          def simctl(*arguments):
+              listed = subprocess.run(["xcrun", "simctl", "list", "-j", *arguments], capture_output=True, text=True)
+              return json.loads(listed.stdout)
+
+          runtimes = [runtime for runtime in simctl("runtimes")["runtimes"]
+                      if runtime["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.iOS")
+                      and runtime.get("isAvailable")]
+          runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
+          runtime = runtimes[-1]
+
+          devices = [device for device in simctl("devices", "available")["devices"].get(runtime["identifier"], [])
+                     if device["name"].startswith("iPhone")]
+          if devices:
+              name, udid = devices[-1]["name"], devices[-1]["udid"]
+          else:
+              kinds = [kind for kind in simctl("devicetypes")["devicetypes"] if kind["name"].startswith("iPhone")]
+              name = kinds[-1]["name"]
+              created = subprocess.run(
+                  ["xcrun", "simctl", "create", name, kinds[-1]["identifier"], runtime["identifier"]],
+                  capture_output=True, text=True)
+              udid = created.stdout.strip()
+
+          print(name)
+          print(runtime["version"])
+          print(udid)
+          PY
+          )
+          echo "Simulator: $device, iOS $version ($udid)"
+          echo "SIMULATOR_DEVICE=$device" >> "${GITHUB_ENV:-/dev/null}"
+          echo "SIMULATOR_VERSION=$version" >> "${GITHUB_ENV:-/dev/null}"
           xcrun simctl boot "$udid" || true
           xcrun simctl bootstatus "$udid"
 
@@ -147,8 +179,8 @@ jobs:
         working-directory: fixture/iOS/App
         run: |
           bazel test \
-            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="iPhone 17" \
-            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version=27.0 \
+            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="$SIMULATOR_DEVICE" \
+            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version="$SIMULATOR_VERSION" \
             --local_test_jobs=1 \
             --test_timeout=900 \
             --test_output=errors \
@@ -229,14 +261,6 @@ jobs:
             ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-
             ${{ runner.os }}-bazel-${{ matrix.name }}-
 
-      - name: SwiftPM Cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ matrix.name }}/App/.build
-          key: ${{ runner.os }}-spm-${{ matrix.name }}-${{ matrix.rev }}
-          restore-keys: |
-            ${{ runner.os }}-spm-${{ matrix.name }}-
-
       - name: Bazel Cache Settings
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
@@ -252,6 +276,16 @@ jobs:
           chmod +x bazelize
           git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
           git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+
+      # After the clone: a restored cache would otherwise create the directory
+      # `git clone` insists on creating itself.
+      - name: SwiftPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ matrix.name }}/App/.build
+          key: ${{ runner.os }}-spm-${{ matrix.name }}-${{ matrix.rev }}
+          restore-keys: |
+            ${{ runner.os }}-spm-${{ matrix.name }}-
 
       - name: Check out submodules
         if: matrix.submodules
