@@ -170,18 +170,21 @@ jobs:
             rev: 088351b0fc67e0b24b83e7954ad48314dda4ce04
             project: VirtualBuddy.xcodeproj
             target: //Targets/VirtualBuddy
-          - name: iina
-            repo: https://github.com/iina/iina
-            rev: c111221ea027466b79b40bfca054772d4851e06f
-            project: iina.xcodeproj
-            target: //Targets/iina
-          - name: MacPass
-            repo: https://github.com/MacPass/MacPass
-            rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
-            project: MacPass.xcodeproj
-            target: //Targets/MacPass
-            submodules: true
-            setup: carthage bootstrap --platform macOS --cache-builds
+          # Not yet green on a runner, so not yet a lane. iina is the app the
+          # notes still list an open problem for, and MacPass needs its
+          # submodules and a Carthage bootstrap that nothing here has proven.
+          # - name: iina
+          #   repo: https://github.com/iina/iina
+          #   rev: c111221ea027466b79b40bfca054772d4851e06f
+          #   project: iina.xcodeproj
+          #   target: //Targets/iina
+          # - name: MacPass
+          #   repo: https://github.com/MacPass/MacPass
+          #   rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
+          #   project: MacPass.xcodeproj
+          #   target: //Targets/MacPass
+          #   submodules: true
+          #   setup: carthage bootstrap --platform macOS --cache-builds
     steps:
       - name: Bazel Disk Cache
         uses: actions/cache@v5

@@ -6,6 +6,13 @@ import PackageDescription
 
 let package = Package(
     name: "Local1",
+    /// The host platform the macro and the plugin's tool are built for. Without
+    /// it SwiftPM builds them for the oldest macOS it supports, and swift-syntax
+    /// declares a newer one — which is a build failure, and a build failure is a
+    /// plugin that never ran.
+    platforms: [
+        .macOS(.v10_15),
+    ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
@@ -15,7 +22,7 @@ let package = Package(
             name: "LocalLib2",
             targets: ["LocalTarget2"]),
         .executable(
-            name: "local1-tool",
+            name: "Local1Tool",
             targets: ["Local1Tool"]),
     ],
     dependencies: [
