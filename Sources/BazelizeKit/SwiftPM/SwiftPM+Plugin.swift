@@ -100,10 +100,13 @@ extension SwiftPM {
                     "--target", target,
                 ]),
                 output: .discarded,
-                error: .discarded)
+                /// What SwiftPM said is the only thing that explains this: the
+                /// target failing to build is a toolchain, a network or a source
+                /// problem, and none of them can be guessed from an exit code.
+                error: .string(limit: 1024 * 1024))
 
             if result.terminationStatus.isSuccess { return nil }
-            failure = "swift build failed"
+            failure = Self.reason(result.standardError) ?? "swift build failed"
         } catch {
             failure = error.localizedDescription
         }
@@ -115,6 +118,19 @@ extension SwiftPM {
         """
         Log.codeGenerate.warning("\(message, privacy: .public)")
         return message
+    }
+
+    /// What SwiftPM complained about, without the build log around it.
+    private static func reason(_ error: String?) -> String? {
+        guard let error else { return nil }
+
+        let lines = error
+            .split(separator: "\n", omittingEmptySubsequences: true)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { $0.lowercased().hasPrefix("error:") }
+
+        let reason = lines.suffix(3).joined(separator: " ")
+        return reason.isEmpty ? nil : reason
     }
 
     /// `.build/plugins/outputs/<identity>/<target>/<destination>/<plugin>/…`

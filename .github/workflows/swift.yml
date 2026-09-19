@@ -98,10 +98,14 @@ jobs:
           pwd
           chmod +x bazelize
 
+      # A plugin that did not run leaves the target missing the sources it
+      # generates, and the compile error that follows names those sources rather
+      # than the plugin. The run says so; the lane stops there.
       - name: Bazel Generation
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --project Example.xcodeproj --output App
+          ../../bazelize --project Example.xcodeproj --output App | tee bazelize.log
+          ! grep -q "did not run its plugins" bazelize.log
 
       - name: Build Application
         working-directory: fixture/iOS/App
@@ -209,7 +213,9 @@ jobs:
         run: ${{ matrix.setup }}
 
       - name: Bazel Generation
-        run: ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App"
+        run: |
+          ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+          ! grep -q "did not run its plugins" bazelize.log
 
       - name: Build Application
         working-directory: ${{ matrix.name }}/App
@@ -252,7 +258,9 @@ jobs:
       # The package's directory name is the directory its rules live under, so
       # the clone is named after the package rather than after the lane.
       - name: Bazel Generation
-        run: ./bazelize --project "${{ matrix.name }}" --output "${{ matrix.name }}/App"
+        run: |
+          ./bazelize --project "${{ matrix.name }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+          ! grep -q "did not run its plugins" bazelize.log
 
       - name: Test Package
         working-directory: ${{ matrix.name }}/App
