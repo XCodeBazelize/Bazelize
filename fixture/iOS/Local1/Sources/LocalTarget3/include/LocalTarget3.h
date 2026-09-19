@@ -12,6 +12,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface LocalTarget3 : NSObject
 + (int) test;
 - (int) test2;
+/// What the package's build tool plugin generated.
+- (int) generated;
 @end
 
 NS_ASSUME_NONNULL_END

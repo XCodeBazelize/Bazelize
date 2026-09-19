@@ -37,9 +37,6 @@ extension SwiftPM {
     struct Workspace {
         let packages: [Package]
 
-        /// What the build tool plugins of this project's own packages wrote.
-        let pluginOutputs: PluginOutputs
-
         /// Where SwiftPM unpacked the binary targets it fetched.
         let artifacts: Path
 
@@ -67,7 +64,6 @@ extension SwiftPM {
         guard (output + "Package.swift").exists else {
             return .init(
                 packages: [],
-                pluginOutputs: .init(),
                 artifacts: output + ".build/artifacts",
                 directoryByIdentity: [:])
         }
@@ -98,7 +94,6 @@ extension SwiftPM {
 
         return .init(
             packages: packages,
-            pluginOutputs: await runPlugins(of: packages),
             artifacts: output + ".build/artifacts",
             directoryByIdentity: directoryByIdentity)
     }

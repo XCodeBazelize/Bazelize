@@ -24,6 +24,10 @@ extension SwiftPM {
 
         let deployment: Deployment
 
+        /// What this project's own packages' build tool plugins wrote, which the
+        /// generator runs itself before it writes any rule.
+        private(set) var pluginOutputs = PluginOutputs()
+
         private var kinds: [String: [String: TargetKind]] = [:]
 
         /// What a caller tells the user about: where the build differs from what
@@ -36,8 +40,9 @@ extension SwiftPM {
             self.deployment = deployment
         }
 
-        func generate() throws {
-            notes.append(contentsOf: workspace.pluginOutputs.notes)
+        func generate() async throws {
+            pluginOutputs = await runPlugins()
+            notes.append(contentsOf: pluginOutputs.notes)
 
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
@@ -267,22 +272,24 @@ extension SwiftPM {
             static let none = PluginGenerated(sources: [], headers: [], resources: [])
         }
 
+        /// What a plugin wrote for a target, split the way the target's own rule
+        /// takes it.
+        ///
+        /// The files are already where they belong: the host gave the plugin
+        /// this directory to write into, so nothing is moved or linked here —
+        /// they are real files of the package's `Generated/`, and the output
+        /// stands without the package's `.build`.
         func materialize(
             pluginOutputsOf target: PackageTarget,
             in package: Package,
             at root: Path,
             kind: TargetKind) throws -> PluginGenerated
         {
-            guard let output = workspace.pluginOutputs.output(of: target.name, in: package) else {
+            guard let output = pluginOutputs.output(of: target.name, in: package) else {
                 return .none
             }
 
             let directory = "Generated/\(target.name)Plugin"
-            let generated = root + directory
-            if generated.exists || generated.isSymlink {
-                try? generated.delete()
-            }
-            try generated.mkpath()
 
             /// What the target's own rule compiles; a Swift target compiles Swift,
             /// and a C-family one whatever clang takes.
@@ -297,18 +304,10 @@ extension SwiftPM {
 
             let base = output.root.normalize().string
             for file in output.files {
-                /// Where the file sits under the directory the plugins wrote into,
-                /// kept as it is: a plugin of the target has a directory of its
-                /// own there and writes a tree inside it if it likes, and renaming
-                /// that into one flat directory is a rename nothing asked for.
                 let relative = file.normalize().string
                     .delete(prefix: base)
                     .trimmingCharacters(in: ["/"])
                 guard !relative.isEmpty else { continue }
-
-                let link = generated + relative
-                try link.parent().mkpath()
-                try link.symlink(file)
 
                 let path = "\(directory)/\(relative)"
                 let `extension` = file.extension ?? ""

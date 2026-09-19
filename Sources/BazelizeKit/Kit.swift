@@ -118,7 +118,7 @@ extension Kit {
             output: outputRoot,
             workspace: workspace,
             deployment: deployment)
-        try generator.generate()
+        try await generator.generate()
         packageTips = generator.notes
 
         let count = workspace.packages.count

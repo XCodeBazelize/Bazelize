@@ -7,14 +7,20 @@
 
 #import "LocalTarget3.h"
 
+/// Written by the Local1Gen build tool plugin, compiled into this target by the
+/// rules bazelize generates: bazelize runs the plugin itself, so this holds on
+/// every toolchain rather than only the ones whose `swift build` runs a plugin
+/// for a C-family target.
+extern int local1_plugin_value(void);
+
 @implementation LocalTarget3
-/// The plugin's C source is compiled into this target when the toolchain runs
-/// the plugin for a C-family target, which Swift 6.3 does not and 6.4 does.
-/// Nothing here calls into it, so the fixture links either way.
 + (int) test {
     return 1 << 4;
 }
 - (int) test2 {
     return LocalTarget3.test;
+}
+- (int) generated {
+    return local1_plugin_value();
 }
 @end

@@ -26,6 +26,9 @@ extension SwiftPM {
         let dependencies: [Dependency]
         let cLanguageStandard: String?
         let cxxLanguageStandard: String?
+        /// `{"_version": "6.0.0"}`: which `PackageDescription` the manifest was
+        /// written against, which a plugin has to be compiled against too.
+        let toolsVersion: String
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -36,6 +39,7 @@ extension SwiftPM {
             dependencies = container.list(Dependency.self, "dependencies")
             cLanguageStandard = container.value(String.self, "cLanguageStandard")
             cxxLanguageStandard = container.value(String.self, "cxxLanguageStandard")
+            toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
         }
     }
 
