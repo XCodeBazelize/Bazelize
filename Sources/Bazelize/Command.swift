@@ -21,10 +21,43 @@ struct Command: AsyncParsableCommand {
         version: version,
         subcommands: [
             GenerateCommand.self,
+            PluginsCommand.self,
             XcodeCommand.self,
 //            RoadmapCommand.self,
         ],
         defaultSubcommand: GenerateCommand.self)
+}
+
+// MARK: - PluginsCommand
+
+/// Runs the build tool plugins of a generated workspace, and nothing else.
+///
+/// What a plugin writes is decided by the plugin, so a change to its own source
+/// changes the files a target compiles without anything else about the project
+/// moving. This is the command that brings those files up to date — the
+/// generated workspace exposes it as `bazel run //:plugins`, the way a Bazel
+/// workspace exposes every other thing that writes back into it.
+struct PluginsCommand: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "plugins",
+        abstract: "Run the build tool plugins of a generated workspace.")
+
+    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
+    var output = "."
+
+    @Option(name: [.customLong("local", withSingleDash: false)], help: "PATH/TO/LOCAL/PACKAGE")
+    var locals: [String] = []
+
+    func run() async throws {
+        let outputPath = Path.current + output
+        let notes = try await SwiftPM.runPlugins(
+            output: outputPath,
+            locals: locals.map { Path.current + $0 })
+
+        for note in notes {
+            print(note)
+        }
+    }
 }
 
 // MARK: - GenerateCommand

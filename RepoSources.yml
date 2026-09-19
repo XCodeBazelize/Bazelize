@@ -21,6 +21,9 @@
 - name: RulesCC
   url: https://github.com/bazelbuild/rules_cc
   module: rules_cc
+- name: RulesShell
+  url: https://github.com/bazelbuild/rules_shell
+  module: rules_shell
 - name: AppleSupport
   url: https://github.com/bazelbuild/apple_support
   module: apple_support

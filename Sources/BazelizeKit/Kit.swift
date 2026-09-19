@@ -255,6 +255,14 @@ extension Kit {
             let path = resolvedOutputPath(custom.path)
             try path.parent().mkpath()
             try path.write(custom.content)
+
+            /// A script is written to be run: `sh_binary` refuses one that is
+            /// not executable.
+            if path.extension == "sh" {
+                try FileManager.default.setAttributes(
+                    [.posixPermissions: 0o755],
+                    ofItemAtPath: path.string)
+            }
         }
 
         try plugins.forEach { plugin in

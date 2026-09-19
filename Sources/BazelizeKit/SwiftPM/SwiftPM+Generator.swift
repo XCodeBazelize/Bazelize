@@ -273,12 +273,17 @@ extension SwiftPM {
         }
 
         /// What a plugin wrote for a target, split the way the target's own rule
-        /// takes it.
+        /// takes it, as patterns rather than names.
         ///
         /// The files are already where they belong: the host gave the plugin
         /// this directory to write into, so nothing is moved or linked here —
         /// they are real files of the package's `Generated/`, and the output
         /// stands without the package's `.build`.
+        ///
+        /// What they are called is the plugin's business and changes when the
+        /// plugin does, so the rules name the directory and the kinds of file in
+        /// it, never a file. `bazel run //:plugins` writes a new set into the
+        /// same place and the rules still hold.
         func materialize(
             pluginOutputsOf target: PackageTarget,
             in package: Package,
@@ -298,9 +303,10 @@ extension SwiftPM {
                 return ["swift"]
             }()
 
-            var sources: [String] = []
-            var headers: [String] = []
-            var resources: [String] = []
+            var sources: Set<String> = []
+            var headers: Set<String> = []
+            var resources: Set<String> = []
+            var named: [String] = []
 
             let base = output.root.normalize().string
             for file in output.files {
@@ -309,18 +315,33 @@ extension SwiftPM {
                     .trimmingCharacters(in: ["/"])
                 guard !relative.isEmpty else { continue }
 
-                let path = "\(directory)/\(relative)"
-                let `extension` = file.extension ?? ""
+                /// A file with no extension is the one thing a pattern cannot
+                /// stand for, so that one is named.
+                guard let `extension` = file.extension, !`extension`.isEmpty else {
+                    named.append("\(directory)/\(relative)")
+                    continue
+                }
+
                 if compiled.contains(`extension`) {
-                    sources.append(path)
+                    sources.insert(`extension`)
                 } else if Self.headerExtensions.contains(`extension`) {
-                    headers.append(path)
+                    headers.insert(`extension`)
                 } else {
-                    resources.append(path)
+                    resources.insert(`extension`)
                 }
             }
 
-            return .init(sources: sources, headers: headers, resources: resources)
+            /// Only the kinds that are there: a pattern matching nothing fails
+            /// the package, which is what should happen when the directory is
+            /// empty — and not before that.
+            func patterns(_ extensions: Set<String>) -> [String] {
+                extensions.sorted().map { "\(directory)/**/*.\($0)" }
+            }
+
+            return .init(
+                sources: patterns(sources),
+                headers: patterns(headers),
+                resources: patterns(resources) + named)
         }
 
         /// The sources stay where SwiftPM put them; the package directory carries

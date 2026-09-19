@@ -11,6 +11,24 @@ import Subprocess
 import System
 import Util
 
+extension SwiftPM {
+    /// Runs the build tool plugins of an already generated workspace.
+    ///
+    /// Nothing else is generated: the rules are already there and do not change
+    /// when a plugin writes a different set of files, because they glob the
+    /// directory the plugin writes into. What comes back is what to tell the
+    /// user about.
+    public static func runPlugins(output: Path, locals: [Path]) async throws -> [String] {
+        let workspace = try await loadWorkspace(output: output, root: nil, locals: locals)
+        let generator = Generator(
+            output: output,
+            workspace: workspace,
+            deployment: .init(project: [:]))
+
+        return await generator.runPlugins().notes
+    }
+}
+
 extension SwiftPM.Generator {
     /// Runs the build tool plugins of the packages this project owns, into the
     /// directory their output belongs in.
