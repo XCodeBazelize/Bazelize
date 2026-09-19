@@ -130,4 +130,131 @@ jobs:
           name: iOS_Example.ipa
           path: fixture/iOS/Example.ipa
           if-no-files-found: ignore # 'warn' or 'ignore'
+
+  # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
+  # lane clones what it measures at the revision it was measured against.
+  IntegrateApp:
+    runs-on: macos-26
+    needs: [artifact]
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: stats
+            repo: https://github.com/exelban/stats
+            rev: b4251e2ba05511de6b51b296d7b9e98a9c6545f5
+            project: Stats.xcodeproj
+            target: //Targets/Stats
+          - name: MonitorControl
+            repo: https://github.com/MonitorControl/MonitorControl
+            rev: 71b8c5ae51955d17b05688371ea7b899b684bdbd
+            project: MonitorControl.xcodeproj
+            target: //Targets/MonitorControl
+          - name: SwiftBar
+            repo: https://github.com/swiftbar/SwiftBar
+            rev: 05cb6cb1123bc7227ee2b39f390f8bccb839fed0
+            project: SwiftBar.xcodeproj
+            target: //Targets/SwiftBar
+          - name: Rectangle
+            repo: https://github.com/rxhanson/Rectangle
+            rev: b4c9c47c00b4df9cbfb3489dc5eae2f1249ad24a
+            project: Rectangle.xcodeproj
+            target: //...
+          - name: VirtualBuddy
+            repo: https://github.com/insidegui/VirtualBuddy
+            rev: 088351b0fc67e0b24b83e7954ad48314dda4ce04
+            project: VirtualBuddy.xcodeproj
+            target: //Targets/VirtualBuddy
+          - name: iina
+            repo: https://github.com/iina/iina
+            rev: c111221ea027466b79b40bfca054772d4851e06f
+            project: iina.xcodeproj
+            target: //Targets/iina
+          - name: MacPass
+            repo: https://github.com/MacPass/MacPass
+            rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
+            project: MacPass.xcodeproj
+            target: //Targets/MacPass
+            submodules: true
+            setup: carthage bootstrap --platform macOS --cache-builds
+    steps:
+      - name: Bazel Disk Cache
+        uses: actions/cache@v5
+        with:
+          path: ~/bazel-disk
+          key: ${{ runner.os }}-bazel-disk-${{ matrix.name }}-${{ matrix.rev }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-disk-${{ matrix.name }}-
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Clone ${{ matrix.name }}
+        run: |
+          chmod +x bazelize
+          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
+          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+
+      - name: Check out submodules
+        if: matrix.submodules
+        working-directory: ${{ matrix.name }}
+        run: git submodule update --init --recursive
+
+      - name: Set up ${{ matrix.name }}
+        if: matrix.setup
+        working-directory: ${{ matrix.name }}
+        run: ${{ matrix.setup }}
+
+      - name: Bazel Generation
+        run: ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App"
+
+      - name: Build Application
+        working-directory: ${{ matrix.name }}/App
+        run: bazel build --disk_cache=~/bazel-disk ${{ matrix.target }}
+
+  IntegratePackage:
+    runs-on: macos-26
+    needs: [artifact]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # A package whose tests only compile through a source its own build
+          # tool plugin generates.
+          - name: TbCodeGenerater
+            repo: https://github.com/yume190/TbCodeGenerater
+            rev: b7071d5e67189f48d5d71e06225dd1cb02470995
+            target: //Packages/TbCodeGenerater/...
+    steps:
+      - name: Bazel Disk Cache
+        uses: actions/cache@v5
+        with:
+          path: ~/bazel-disk
+          key: ${{ runner.os }}-bazel-disk-${{ matrix.name }}-${{ matrix.rev }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-disk-${{ matrix.name }}-
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Clone ${{ matrix.name }}
+        run: |
+          chmod +x bazelize
+          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
+          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+
+      # The package's directory name is the directory its rules live under, so
+      # the clone is named after the package rather than after the lane.
+      - name: Bazel Generation
+        run: ./bazelize --project "${{ matrix.name }}" --output "${{ matrix.name }}/App"
+
+      - name: Test Package
+        working-directory: ${{ matrix.name }}/App
+        run: bazel test --disk_cache=~/bazel-disk ${{ matrix.target }}
  
