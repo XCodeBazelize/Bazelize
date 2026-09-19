@@ -105,7 +105,7 @@ jobs:
         working-directory: fixture/iOS
         run: |
           ../../bazelize --project Example.xcodeproj --output App | tee bazelize.log
-          ! grep -q "did not run its plugins" bazelize.log
+          ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
         working-directory: fixture/iOS/App
@@ -218,54 +218,58 @@ jobs:
       - name: Bazel Generation
         run: |
           ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
-          ! grep -q "did not run its plugins" bazelize.log
+          ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
         working-directory: ${{ matrix.name }}/App
         run: bazel build --disk_cache=~/bazel-disk ${{ matrix.target }}
 
-  IntegratePackage:
-    runs-on: macos-26
-    needs: [artifact]
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # A package whose tests only compile through a source its own build
-          # tool plugin generates.
-          - name: TbCodeGenerater
-            repo: https://github.com/yume190/TbCodeGenerater
-            rev: b7071d5e67189f48d5d71e06225dd1cb02470995
-            target: //Packages/TbCodeGenerater/...
-    steps:
-      - name: Bazel Disk Cache
-        uses: actions/cache@v5
-        with:
-          path: ~/bazel-disk
-          key: ${{ runner.os }}-bazel-disk-${{ matrix.name }}-${{ matrix.rev }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-disk-${{ matrix.name }}-
-
-      - name: Download Bazelize
-        uses: actions/download-artifact@v8
-        with:
-          name: bazelize
-
-      - name: Clone ${{ matrix.name }}
-        run: |
-          chmod +x bazelize
-          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
-          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
-
-      # The package's directory name is the directory its rules live under, so
-      # the clone is named after the package rather than after the lane.
-      - name: Bazel Generation
-        run: |
-          ./bazelize --project "${{ matrix.name }}" --output "${{ matrix.name }}/App" | tee bazelize.log
-          ! grep -q "did not run its plugins" bazelize.log
-
-      - name: Test Package
-        working-directory: ${{ matrix.name }}/App
-        run: bazel test --disk_cache=~/bazel-disk ${{ matrix.target }}
- 
+  # Not yet green on a runner, so not yet a lane: Swift 6.3 looks a plugin's
+  # tool up as a product, and this package's executable product is named
+  # `tbCodeGenerater` while the target its plugin names is `TbCodeGenerater`,
+  # so the package does not build there at all. Renaming the product upstream
+  # fixes it, and the pinned revision moves with it.
+  # IntegratePackage:
+  #   runs-on: macos-26
+  #   needs: [artifact]
+  #   timeout-minutes: 60
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #         - name: TbCodeGenerater
+  #           repo: https://github.com/yume190/TbCodeGenerater
+  #           rev: b7071d5e67189f48d5d71e06225dd1cb02470995
+  #           target: //Packages/TbCodeGenerater/...
+  #   steps:
+  #     - name: Bazel Disk Cache
+  #       uses: actions/cache@v5
+  #       with:
+  #         path: ~/bazel-disk
+  #         key: ${{ runner.os }}-bazel-disk-${{ matrix.name }}-${{ matrix.rev }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-bazel-disk-${{ matrix.name }}-
+  #
+  #     - name: Download Bazelize
+  #       uses: actions/download-artifact@v8
+  #       with:
+  #         name: bazelize
+  #
+  #     - name: Clone ${{ matrix.name }}
+  #       run: |
+  #         chmod +x bazelize
+  #         git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
+  #         git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+  #
+  #     # The package's directory name is the directory its rules live under, so
+  #     # the clone is named after the package rather than after the lane.
+  #     - name: Bazel Generation
+  #       run: |
+  #         ./bazelize --project "${{ matrix.name }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+  #         ! grep -q "did not run the" bazelize.log
+  #
+  #     - name: Test Package
+  #       working-directory: ${{ matrix.name }}/App
+  #       run: bazel test --disk_cache=~/bazel-disk ${{ matrix.target }}
+  # 
+  #
