@@ -1,10 +1,10 @@
-# XCode2 Print Target Implementation Plan
+# Xcode2 Print Target Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a `--print-target <name>` option to `bazelize xcode2` that prints a human-readable summary for one target instead of the full project JSON dump.
 
-**Architecture:** Keep JSON output as the default behavior. Move the new text rendering into a small formatter in the `XCode2` module so it can be unit tested without invoking the executable target. The CLI command will only choose between JSON mode and summary mode.
+**Architecture:** Keep JSON output as the default behavior. Move the new text rendering into a small formatter in the `Xcode2` module so it can be unit tested without invoking the executable target. The CLI command will only choose between JSON mode and summary mode.
 
 **Tech Stack:** Swift, Swift Argument Parser, XCTest
 
@@ -13,14 +13,14 @@
 ### Task 1: Lock down the text output shape
 
 **Files:**
-- Create: `Tests/XCode2Tests/TargetSummaryFormatterTests.swift`
+- Create: `Tests/Xcode2Tests/TargetSummaryFormatterTests.swift`
 - Modify: `Package.swift`
 
 - [ ] **Step 1: Write the failing test**
 
 ```swift
 func testFormatTargetSummary() throws {
-    let summary = XCode.TargetSummaryFormatter.format(project: project, target: target)
+    let summary = Xcode.TargetSummaryFormatter.format(project: project, target: target)
 
     XCTAssertTrue(summary.contains("Target: Example"))
     XCTAssertTrue(summary.contains("Type: com.apple.product-type.application"))
@@ -32,14 +32,14 @@ func testFormatTargetSummary() throws {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `swift test --filter TargetSummaryFormatterTests/testFormatTargetSummary`
-Expected: FAIL because `TargetSummaryFormatter` and the `XCode2Tests` target do not exist yet.
+Expected: FAIL because `TargetSummaryFormatter` and the `Xcode2Tests` target do not exist yet.
 
 - [ ] **Step 3: Add the new test target**
 
 ```swift
 .testTarget(
-    name: "XCode2Tests",
-    dependencies: ["XCode2"]
+    name: "Xcode2Tests",
+    dependencies: ["Xcode2"]
 ),
 ```
 
@@ -58,7 +58,7 @@ Expected: FAIL because the formatter symbol is still missing.
 
 ```swift
 public enum TargetSummaryFormatter {
-    public static func format(project: XCode.Project, target: XCode.Target) -> String {
+    public static func format(project: Xcode.Project, target: Xcode.Target) -> String {
         // build readable text sections
     }
 }

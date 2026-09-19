@@ -51,7 +51,7 @@ The command follows the existing roadmap rules:
 
 ## Minimal Behavior
 
-For each target from `XCode.Project.targets`:
+For each target from `Xcode.Project.targets`:
 
 1. create `Targets/<Target>/`
 2. create `Targets/<Target>/Sources/`
@@ -72,7 +72,7 @@ For root output:
 
 ## File Selection
 
-The initial version should use the target file model already exposed by `XCode2`:
+The initial version should use the target file model already exposed by `Xcode2`:
 
 - `target.files.sources`
 - `target.files.headers`
@@ -95,7 +95,7 @@ The roadmap already marks missing-file behavior as deferred, so this implementat
 
 Keep the command thin and move tree generation into a small reusable builder.
 
-- `RoadmapCommand` parses CLI arguments and loads `XCode.Project`
+- `RoadmapCommand` parses CLI arguments and loads `Xcode.Project`
 - `RoadmapTreeBuilder` creates directories and symlinks
 - tests cover the builder output using the `fixture/iOS2` project
 

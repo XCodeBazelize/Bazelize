@@ -25,7 +25,7 @@ enum PluginLoader {
     /// ## Package.swift
     /// ---
     ///
-    /// `.library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),`
+    /// `.library(name: "YourPlugin", type: .dynamic, targets: ["YourPlugin"]),`
     ///
     /// ### Loadable Plugin Implement
     ///
@@ -37,7 +37,7 @@ enum PluginLoader {
     ///
     /// final class YourPluginBuilder: PluginBuilder {
     ///     override final func build(_ proj: Xcode.Project) async throws -> Plugin? {
-    ///         try await Pod.load(proj)
+    ///         try await YourPlugin.load(proj)
     ///     }
     /// }
     /// ```

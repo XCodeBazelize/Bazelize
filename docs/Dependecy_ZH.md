@@ -24,10 +24,10 @@
  * 套件版本(`tag`/`commit`)，常見存放於 `xxx.lock` file。
    * 例外: `local path` 無需版本。
    * carthage: `github "SVProgressHUD/SVProgressHUD" "2.2.5"` -> `tag: "2.2.5"`
- * 對應關係(`XCode Target` vs `Module`)
+ * 對應關係(`Xcode Target` vs `Module`)
 
 ```ruby
-# XCode Target `Target1` -> Module `SVProgressHUD`
+# Xcode Target `Target1` -> Module `SVProgressHUD`
 target 'Target1' do
     pod 'SVProgressHUD'
 end
@@ -132,7 +132,7 @@ COCOAPODS: 1.11.3
 
 ---
 
-### 套件管理(SPM_XCode)
+### 套件管理(SPM_Xcode)
 
 > `.lock` 位於
 > `xxx.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
@@ -183,7 +183,7 @@ COCOAPODS: 1.11.3
 
 ---
 
-#### 套件管理(SPM_XCode) 條件
+#### 套件管理(SPM_Xcode) 條件
 
  * [x] 套件來源
  * [x] 套件版本

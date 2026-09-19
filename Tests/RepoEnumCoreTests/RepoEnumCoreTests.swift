@@ -14,7 +14,7 @@ func parsesOnlyVersionTags() {
 @Test
 func rendersDescendingAndDeduplicatedEnumCases() throws {
     let file = RepoEnumFile(
-        source: .init(name: "XCodeProj", url: "https://github.com/MobileNativeFoundation/rules_xcodeproj"),
+        source: .init(name: "XcodeProj", url: "https://github.com/MobileNativeFoundation/rules_xcodeproj"),
         tags: [
             try #require(RepoVersionTag(rawTag: "v4.0.1")),
             try #require(RepoVersionTag(rawTag: "4.0.0")),
@@ -22,11 +22,11 @@ func rendersDescendingAndDeduplicatedEnumCases() throws {
             try #require(RepoVersionTag(rawTag: "3.6.0")),
         ])
 
-    #expect(file.filename == "BazelDep+XCodeProj.swift")
+    #expect(file.filename == "BazelDep+XcodeProj.swift")
     #expect(file.content.contains(#"case v4_0_1 = "4.0.1""#))
     #expect(file.content.contains(#"case v4_0_0 = "4.0.0""#))
     #expect(file.content.contains(#"case v3_6_0 = "3.6.0""#))
-    #expect(file.content.contains("static let latest: XCodeProj = .v4_0_1"))
+    #expect(file.content.contains("static let latest: XcodeProj = .v4_0_1"))
     #expect(file.content.firstRange(of: #"case v4_0_1 = "4.0.1""#)?.lowerBound ?? file.content.startIndex <
         file.content.firstRange(of: #"case v4_0_0 = "4.0.0""#)?.lowerBound ?? file.content.endIndex)
 }

@@ -53,7 +53,7 @@ bazelize --project path/to/Package.swift
 
 ### Config
 
-All `XCode configs` is stored in `BUILD` file.
+All `Xcode configs` is stored in `BUILD` file.
 
 You can build debug version with following code.
 

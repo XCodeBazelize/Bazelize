@@ -4,7 +4,7 @@
 - name: Swift
   url: https://github.com/bazelbuild/rules_swift
   module: rules_swift
-- name: XCodeProj
+- name: XcodeProj
   url: https://github.com/MobileNativeFoundation/rules_xcodeproj
   module: rules_xcodeproj
 - name: SwiftPM

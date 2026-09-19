@@ -4,7 +4,7 @@
 
 **Goal:** Add a `bazelize roadmap` command that creates the roadmap directory tree and target source symlinks for an Xcode project.
 
-**Architecture:** The CLI command will parse `--project`, `--output`, and optional config, then load `XCode.Project` and hand off to a small tree builder. The tree builder will create root placeholders, per-target directories, and symlink target-owned filesystem entries into `Sources/` while preserving relative paths from the project root.
+**Architecture:** The CLI command will parse `--project`, `--output`, and optional config, then load `Xcode.Project` and hand off to a small tree builder. The tree builder will create root placeholders, per-target directories, and symlink target-owned filesystem entries into `Sources/` while preserving relative paths from the project root.
 
 **Tech Stack:** Swift, Swift Argument Parser, PathKit, XCTest
 
@@ -13,17 +13,17 @@
 ### Task 1: Lock down the expected output tree with a failing test
 
 **Files:**
-- Create: `Tests/XCode2Tests/RoadmapTreeBuilderTests.swift`
+- Create: `Tests/Xcode2Tests/RoadmapTreeBuilderTests.swift`
 
 - [ ] **Step 1: Write the failing test**
 
 ```swift
 func testBuildCreatesTargetTreeAndSymlinks() throws {
     let projectPath = Path.current + "fixture/iOS2/Example.xcodeproj"
-    let project = try XCode.Project.load(path: projectPath, preferConfig: nil)
+    let project = try Xcode.Project.load(path: projectPath, preferConfig: nil)
     let output = Path(NSTemporaryDirectory()) + UUID().uuidString
 
-    try XCode.RoadmapTreeBuilder(output: output).build(project: project)
+    try Xcode.RoadmapTreeBuilder(output: output).build(project: project)
 
     XCTAssertTrue((output + "Targets/Example/Sources").exists)
     XCTAssertTrue((output + "Targets/Example/Generated").exists)
@@ -46,11 +46,11 @@ Expected: FAIL because `RoadmapTreeBuilder` does not exist yet.
 - [ ] **Step 1: Add a minimal tree builder**
 
 ```swift
-public extension XCode {
+public extension Xcode {
     struct RoadmapTreeBuilder {
         let output: Path
 
-        public func build(project: XCode.Project) throws {
+        public func build(project: Xcode.Project) throws {
             // create root placeholders
             // create target directories
             // create symlinks
@@ -109,8 +109,8 @@ Add `RoadmapCommand.self` to `subcommands`.
 - [ ] **Step 3: Call the builder**
 
 ```swift
-let dump = try XCode.Project.load(path: path, preferConfig: config)
-try XCode.RoadmapTreeBuilder(output: Path.current + output).build(project: dump)
+let dump = try Xcode.Project.load(path: path, preferConfig: config)
+try Xcode.RoadmapTreeBuilder(output: Path.current + output).build(project: dump)
 ```
 
 - [ ] **Step 4: Re-run the focused test**

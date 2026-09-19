@@ -4,7 +4,7 @@
 
 ## `Bazelize` 的目標
 
- 1. 在儘量不影響現有 `XCode` 專案的情況下，達成轉移到 `bazel` 的過程。
+ 1. 在儘量不影響現有 `Xcode` 專案的情況下，達成轉移到 `bazel` 的過程。
      * 見 [Ref](#Ref)
  2. 將 `xxx.xcodeproj` 以及其相依套件，如 `pod`, `spm` ...，轉移至 `bazel`。
 
@@ -12,13 +12,13 @@
 
 ### 解析 `xcodeproj`
 
-我們能透過 [XcodeProj](https://github.com/tuist/XcodeProj) 去解析，得到其 `XCode Target` 設定，最後填入到對應的 `rules`。
+我們能透過 [XcodeProj](https://github.com/tuist/XcodeProj) 去解析，得到其 `Xcode Target` 設定，最後填入到對應的 `rules`。
 
-(後續實作方向: `XCode Target` -> 中間層 -> generate code)
+(後續實作方向: `Xcode Target` -> 中間層 -> generate code)
 
-> `XCode Target` 將視為 [Bazel Packages](https://docs.bazel.build/versions/4.2.1/build-ref.html#packages)
+> `Xcode Target` 將視為 [Bazel Packages](https://docs.bazel.build/versions/4.2.1/build-ref.html#packages)
 
-見 [`XCode Target` setting](#XCode-Target-setting)
+見 [`Xcode Target` setting](#Xcode-Target-setting)
 
 ---
 
@@ -40,23 +40,23 @@
 
 我們目前會著重在 `swift_library` 及 `objc_library` 的實作。
 
-所幸，`XCode Target` 似乎同時只支援一種語言。
+所幸，`Xcode Target` 似乎同時只支援一種語言。
 
 > 例外: application 可透過 `bridge-header` 或 generated header `${target_name}-Swift.h`，
 
 
-### `XCode Target` type
+### `Xcode Target` type
 
-我們先從 `XCode Target` type 暸解起，初步我們會先實作較為常見的幾種 type。
+我們先從 `Xcode Target` type 暸解起，初步我們會先實作較為常見的幾種 type。
 
 見 [PBXProductType][product_type]
 
-### 辨識 `XCode Target` type
+### 辨識 `Xcode Target` type
 
 主要由 [PBXProductType][product_type] 以及 [XCConfigurationList][config_list] 作為判斷標準。
 
 
-### `XCode Target` + `Naming Rule`
+### `Xcode Target` + `Naming Rule`
 
 `BUILD` file 主要由兩種 rule 組成，`xxx_library` and `main rule`。
 
@@ -204,7 +204,7 @@ ios_application(
 
 ---
 
-## `XCode Target` setting
+## `Xcode Target` setting
 
  * [ ] type(application/framework/...)
  * [ ] setting
@@ -242,7 +242,7 @@ prefix `INFOPLIST_KEY_`
 
 ## 建議事項
 
- * XCode Target -> 中間層實作
+ * Xcode Target -> 中間層實作
  * 多語言 Target
  * 支援 plugin
  

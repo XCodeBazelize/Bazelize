@@ -1,7 +1,7 @@
 extension BazelDep {
     /// https://github.com/MobileNativeFoundation/rules_xcodeproj
-    enum XCodeProj: String {
-        static let latest: XCodeProj = .v4_1_0
+    enum XcodeProj: String {
+        static let latest: XcodeProj = .v4_1_0
 
         case v4_1_0 = "4.1.0"
         case v4_0_1 = "4.0.1"

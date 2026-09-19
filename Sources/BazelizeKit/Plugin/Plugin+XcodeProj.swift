@@ -1,5 +1,5 @@
 //
-//  PluginXCodeProj.swift
+//  PluginXcodeProj.swift
 //
 //
 //  Created by Yume on 2023/2/3.
@@ -8,11 +8,11 @@
 import Foundation
 import XcodeProj
 
-// MARK: - PluginXCodeProj
+// MARK: - PluginXcodeProj
 
 /// https://github.com/MobileNativeFoundation/rules_xcodeproj
-final class PluginXCodeProj: PluginBuiltin {
-    let dep: BazelDep.XCodeProj = .latest
+final class PluginXcodeProj: PluginBuiltin {
+    let dep: BazelDep.XcodeProj = .latest
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(
             name: "rules_xcodeproj",

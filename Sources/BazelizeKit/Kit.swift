@@ -38,7 +38,7 @@ public final class Kit {
         pluginSPM,
         PluginApple(self),
         PluginSwift(self),
-        PluginXCodeProj(self),
+        PluginXcodeProj(self),
         PluginPlistFragment(self),
         PluginLinker(self),
     ]

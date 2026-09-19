@@ -81,7 +81,7 @@ For `Static` and `Static2`:
 
 `Example` depends on Swift package products, so a placeholder `MODULE.bazel` is not enough.
 
-Generate a minimal root `Package.swift` from `XCode.Project.packages`:
+Generate a minimal root `Package.swift` from `Xcode.Project.packages`:
 
 - remotes -> `.package(url: ..., ...)`
 - locals -> `.package(path: ...)`

@@ -30,8 +30,7 @@ build: format
 
 .PHONY: test
 test:
-	swift test -v --skip CocoapodTests 2>&1 | xcpretty
-#	COCOAPOD=$(shell which pod) swift test -v 2>&1 | xcbeautify
+	swift test -v 2>&1 | xcpretty
 
 .PHONY: bazelize
 bazelize: install

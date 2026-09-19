@@ -4,7 +4,7 @@
 
 **Goal:** Make the roadmap output generate package-shaped Bazel files that move `fixture/iOS2/Example.xcodeproj` toward `bazel run //Example:Example`.
 
-**Architecture:** Extend `RoadmapTreeBuilder` so it owns both filesystem materialization and minimal Bazel file generation. The builder will emit root files (`BUILD`, `MODULE.bazel`, `Package.swift`) and one package `BUILD` per target using lightweight string templates driven by the `XCode2` model.
+**Architecture:** Extend `RoadmapTreeBuilder` so it owns both filesystem materialization and minimal Bazel file generation. The builder will emit root files (`BUILD`, `MODULE.bazel`, `Package.swift`) and one package `BUILD` per target using lightweight string templates driven by the `Xcode2` model.
 
 **Tech Stack:** Swift, PathKit, XCTest
 
@@ -13,7 +13,7 @@
 ### Task 1: Lock down package-shaped output and BUILD content with a failing test
 
 **Files:**
-- Modify: `Tests/XCode2Tests/RoadmapTreeBuilderTests.swift`
+- Modify: `Tests/Xcode2Tests/RoadmapTreeBuilderTests.swift`
 
 - [ ] **Step 1: Add assertions for package layout and BUILD text**
 
@@ -92,7 +92,7 @@ Expected: PASS
 ### Task 4: Verify the new Bazel file output
 
 **Files:**
-- Modify: `Tests/XCode2Tests/RoadmapTreeBuilderTests.swift`
+- Modify: `Tests/Xcode2Tests/RoadmapTreeBuilderTests.swift`
 
 - [ ] **Step 1: Run the builder test suite**
 
