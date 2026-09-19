@@ -62,6 +62,16 @@ extension SwiftPM {
     /// rather than read back out of that manifest: the caller that wrote it knows
     /// them.
     static func loadWorkspace(output: Path, root input: Path?, locals: [Path]) async throws -> Workspace {
+        /// A project with no packages has no manifest written for it, and asking
+        /// SwiftPM to resolve one is an error rather than an empty graph.
+        guard (output + "Package.swift").exists else {
+            return .init(
+                packages: [],
+                pluginOutputs: .init(),
+                artifacts: output + ".build/artifacts",
+                directoryByIdentity: [:])
+        }
+
         try await resolve(output: output)
 
         let checkouts = output + ".build/checkouts"
