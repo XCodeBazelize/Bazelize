@@ -9,7 +9,7 @@ import ArgumentParser
 import BazelizeKit
 import Foundation
 import PathKit
-import XCode2
+import Xcode
 
 // MARK: - Command
 
@@ -21,7 +21,7 @@ struct Command: AsyncParsableCommand {
         version: version,
         subcommands: [
             GenerateCommand.self,
-            XCode2Command.self,
+            XcodeCommand.self,
 //            RoadmapCommand.self,
         ],
         defaultSubcommand: GenerateCommand.self)
@@ -73,11 +73,11 @@ struct GenerateCommand: AsyncParsableCommand {
     }
 }
 
-// MARK: - XCode2Command
+// MARK: - XcodeCommand
 
-struct XCode2Command: AsyncParsableCommand {
+struct XcodeCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "xcode2",
+        commandName: "xcode",
         abstract: "Dump an Xcode project structure as JSON or print one target summary.")
 
     @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
@@ -93,14 +93,14 @@ struct XCode2Command: AsyncParsableCommand {
 
     func run() async throws {
         let path = Path.current + project
-        let dump = try XCode.Project.load(path: path, preferConfig: config)
+        let dump = try Xcode.Project.load(path: path, preferConfig: config)
 
         if let printTarget {
             guard let target = dump.targets.first(where: { $0.name == printTarget }) else {
                 throw ValidationError("Target '\(printTarget)' not found.")
             }
 
-            print(XCode.TargetSummaryFormatter.format(project: dump, target: target))
+            print(Xcode.TargetSummaryFormatter.format(project: dump, target: target))
             return
         }
 

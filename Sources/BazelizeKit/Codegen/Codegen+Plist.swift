@@ -285,7 +285,7 @@ extension String {
 
 /// plist_auto
 ///
-/// plist properties written in XCode config with prefix `INFOPLIST_KEY_`
+/// plist properties written in Xcode config with prefix `INFOPLIST_KEY_`
 extension Target {
     // MARK: Internal
 
@@ -327,7 +327,7 @@ extension Target {
 
 /// plist_default
 ///
-/// Needed plist properties written in XCode config
+/// Needed plist properties written in Xcode config
 extension Target {
     // MARK: Internal
 

@@ -2,7 +2,7 @@ import BazelRules
 import Foundation
 import PathKit
 import Starlark
-import XCode2
+import Xcode
 
 /// `ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS`
 ///

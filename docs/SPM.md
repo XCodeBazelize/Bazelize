@@ -126,9 +126,8 @@ extension.
 
 Every SwiftPM step is the installed toolchain's `swift` command: `swift package
 resolve` for the checkouts, `swift package dump-package` per checkout for the
-manifests, and `swift build` to run a build tool plugin. Not libSwiftPM, even
-though this package already links `SwiftPMDataModel` for the legacy `XCode`
-target.
+manifests, and `swift build` to run a build tool plugin. Not libSwiftPM, which
+this package no longer depends on at all.
 
 - Plugins cannot move there. Running one needs a build system, and
   `SwiftPMDataModel` is deliberately the data model alone — `Build`,
@@ -137,15 +136,15 @@ target.
   put two versions of SwiftPM in one `.build`: the checkouts, the
   `Package.resolved` format and the manifest cache would belong to whichever ran
   last. One SwiftPM — the same one Xcode uses — is the property worth keeping.
-- The dependency is a branch (`swift-6.4.0-RELEASE`, matching the toolchain),
-  and libSwiftPM says of itself that the API is unstable and may change at any
-  time. `dump-package`'s JSON spans every tools version in the graph, and it is
+- Depending on it means pinning a branch to match the toolchain, and libSwiftPM
+  says of itself that the API is unstable and may change at any time.
+  `dump-package`'s JSON spans every tools version in the graph, and it is
   decoded into the few fields the generator reads.
-- The cost is measured: 0.6s per manifest, so 10.8s for this repository's 18
-  checkouts. Running them concurrently is slower, not faster — 14.5s with eight
-  at a time, consistent with contention on the shared manifest cache — so the
-  loop stays sequential. An app in the corpus has around ten packages, which is
-  the six seconds a single `loadPackageGraph` would save.
+- The cost is measured: 0.6s per manifest, so 10.8s for eighteen checkouts.
+  Running them concurrently is slower, not faster — 14.5s with eight at a time,
+  consistent with contention on the shared manifest cache — so the loop stays
+  sequential. An app in the corpus has around ten packages, which is the six
+  seconds a single `loadPackageGraph` would save.
 
 ### Label naming
 

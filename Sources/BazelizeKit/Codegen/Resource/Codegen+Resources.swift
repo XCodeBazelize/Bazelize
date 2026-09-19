@@ -2,7 +2,7 @@ import BazelRules
 import Foundation
 import PathKit
 import Starlark
-import XCode2
+import Xcode
 
 extension Target {
     static let resourceGroupName = "Resources"

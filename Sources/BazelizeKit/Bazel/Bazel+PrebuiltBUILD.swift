@@ -1,7 +1,7 @@
 import BazelRules
 import PathKit
 import Starlark
-import XCode2
+import Xcode
 
 extension Bazel {
     struct PrebuiltBuild: BazelFile {
@@ -50,7 +50,7 @@ extension Bazel {
 
         /// Checked-in `.a`/`.dylib` binaries; `cc_import` is the only rule that takes
         /// a bare library and still exposes it to Swift and Objective-C targets.
-        private func buildLibraries(_ staticLibraries: [XCode.File], _ dynamicLibraries: [XCode.File]) {
+        private func buildLibraries(_ staticLibraries: [Xcode.File], _ dynamicLibraries: [Xcode.File]) {
             guard !staticLibraries.isEmpty || !dynamicLibraries.isEmpty else { return }
             builder.load(.cc_import)
 
@@ -73,7 +73,7 @@ extension Bazel {
             }
         }
 
-        private func buildXCFrameworks(_ files: [XCode.File]) {
+        private func buildXCFrameworks(_ files: [Xcode.File]) {
             guard !files.isEmpty else { return }
             builder.load(.apple_dynamic_xcframework_import)
 
@@ -90,7 +90,7 @@ extension Bazel {
             }
         }
 
-        private func buildFrameworks(_ files: [XCode.File]) {
+        private func buildFrameworks(_ files: [Xcode.File]) {
             guard !files.isEmpty else { return }
             builder.load(.apple_dynamic_framework_import)
 
@@ -107,7 +107,7 @@ extension Bazel {
             }
         }
 
-        private func unique(_ files: [XCode.File]) -> [XCode.File] {
+        private func unique(_ files: [Xcode.File]) -> [Xcode.File] {
             var seen = Set<String>()
             return files.filter { file in
                 guard let path = file.path, !path.isEmpty else { return false }

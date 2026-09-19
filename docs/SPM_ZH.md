@@ -115,18 +115,18 @@ module extension 每次評估都在那個 label 所在目錄跑 SwiftPM。
 
 每一步 SwiftPM 都是使用者安裝的 toolchain 的 `swift` 指令：`swift package resolve`
 取得 checkouts、每個 checkout 一次 `swift package dump-package` 讀 manifest、
-`swift build` 讓 build tool plugin 跑起來。不是 libSwiftPM，即使本 package 已經為
-舊的 `XCode` target 連了 `SwiftPMDataModel`。
+`swift build` 讓 build tool plugin 跑起來。不是 libSwiftPM——本 package 現在完全
+不依賴它。
 
 - plugin 這一步搬不過去：跑它需要 build system，而 `SwiftPMDataModel` 刻意只有
   data model——`Build`、`SPMLLBuild` 與 SwiftDriver 只在完整的 `SwiftPM` product 裡。
   用釘住的 library 解析、卻用安裝的 toolchain 建 plugin，等於同一個 `.build` 被兩個
   版本的 SwiftPM 寫：checkouts、`Package.resolved` 格式、manifest cache 都屬於最後
   跑的那個。「只有一個 SwiftPM，而且和 Xcode 用的是同一個」是值得保留的性質。
-- 這個依賴釘的是 branch（`swift-6.4.0-RELEASE`，對上 toolchain），而 libSwiftPM 自己
-  聲明 API 不穩定、隨時可能改。`dump-package` 的 JSON 橫跨依賴圖裡所有 tools version，
-  而且只被解碼成產生器真正要讀的那幾個欄位。
-- 成本量過了：一份 manifest 0.6 秒，本 repo 的 18 個 checkout 共 10.8 秒。改成併發
+- 要依賴它就得釘一個對上 toolchain 的 branch，而 libSwiftPM 自己聲明 API 不穩定、
+  隨時可能改。`dump-package` 的 JSON 橫跨依賴圖裡所有 tools version，而且只被解碼成
+  產生器真正要讀的那幾個欄位。
+- 成本量過了：一份 manifest 0.6 秒，18 個 checkout 共 10.8 秒。改成併發
   更慢而不是更快——同時跑八個是 14.5 秒，和共用 manifest cache 的競爭一致——所以迴圈
   維持序列。語料裡一個 app 大約十個 package，那六秒就是換成一次 `loadPackageGraph`
   能省下的全部。

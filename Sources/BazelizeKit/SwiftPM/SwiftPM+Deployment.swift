@@ -7,7 +7,7 @@
 
 import Foundation
 @preconcurrency import PathKit
-import XCode2
+import Xcode
 import Subprocess
 import Util
 

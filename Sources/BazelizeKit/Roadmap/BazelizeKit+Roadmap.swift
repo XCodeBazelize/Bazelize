@@ -166,7 +166,7 @@ extension Bazel {
             }
         }
 
-        private func preparePrebuiltFiles(project: XCode2.XCode.Project) throws {
+        private func preparePrebuiltFiles(project: Xcode.Project) throws {
             let prebuiltRoot = output + "Prebuilt"
             try prebuiltRoot.mkpath()
 
@@ -182,7 +182,7 @@ extension Bazel {
             }
         }
 
-        private func linkPackageResolvedIfPresent(project: XCode2.XCode.Project) throws {
+        private func linkPackageResolvedIfPresent(project: Xcode.Project) throws {
             let source = Path(project.workspacePath) + "Package.resolved"
             guard source.exists else { return }
 
@@ -220,7 +220,7 @@ extension Bazel {
     }
 }
 
-extension XCode2.XCode.Target {
+extension Xcode.Target {
     fileprivate func pathsForRoadmapTree(project: Project) -> [String] {
         let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
         let candidates = (allFiles.compactMap(\.roadmapRelativePath) + settingReferencedPaths + headerSearchPaths(project: project)).sorted {
@@ -261,8 +261,8 @@ extension XCode2.XCode.Target {
     }
 }
 
-extension XCode2.XCode.Project {
-    fileprivate var prebuiltFiles: [XCode2.XCode.File] {
+extension Xcode.Project {
+    fileprivate var prebuiltFiles: [Xcode.File] {
         let all = targets.flatMap { target in
             target.files.frameworks.filter { $0.label?.hasPrefix("//Prebuilt:") == true }
         }
@@ -275,7 +275,7 @@ extension XCode2.XCode.Project {
     }
 }
 
-extension XCode2.XCode.File {
+extension Xcode.File {
     fileprivate var roadmapRelativePath: String? {
         if let path, !path.isEmpty {
             return path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))

@@ -1,4 +1,4 @@
-import XCode2
+import Xcode
 
 extension Target {
     /// The platform the target builds for.
@@ -20,6 +20,6 @@ extension Target {
             return declared.map(\.code)
         }
 
-        return platformSDK == .iOS ? [XCode.DeviceFamily.iphone.code, XCode.DeviceFamily.ipad.code] : nil
+        return platformSDK == .iOS ? [Xcode.DeviceFamily.iphone.code, Xcode.DeviceFamily.ipad.code] : nil
     }
 }

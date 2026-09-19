@@ -2,4 +2,4 @@
 @_exported import Foundation
 @_exported import PathKit
 @_exported import Starlark
-@_exported import XCode2
+@_exported import Xcode

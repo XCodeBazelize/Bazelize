@@ -1,6 +1,6 @@
 import Foundation
 import PathKit
-import XCode2
+import Xcode
 
 /// Headers Xcode resolves through its implicit header map.
 ///

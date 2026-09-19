@@ -2,7 +2,7 @@ import Foundation
 import PathKit
 import Starlark
 import Util
-import XCode2
+import Xcode
 
 extension Target {
     /// The entitlements Xcode signs with, rewritten into the generated tree.

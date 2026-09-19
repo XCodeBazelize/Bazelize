@@ -22,12 +22,6 @@ let package = Package(
         .package(url: "https://github.com/swiftlang/swift-subprocess", from: "1.0.0"),
 
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
-
-        /// SwiftPMDataModel for the legacy `XCode` target, pinned to the release
-        /// that matches the toolchain; it is what sets this package's macOS floor.
-        .package(
-            url: "https://github.com/swiftlang/swift-package-manager",
-            branch: "swift-6.4.0-RELEASE"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -38,7 +32,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 "PathKit",
                 "BazelizeKit",
-                "XCode2",
+                "Xcode",
             ]),
         .executableTarget(
             name: "RepoEnumGenerator",
@@ -71,7 +65,7 @@ let package = Package(
                 "PathKit",
 
                 "BazelRules",
-                "XCode2",
+                "Xcode",
                 "Util",
                 "Starlark",
                 "PluginLoader",
@@ -112,40 +106,26 @@ let package = Package(
             dependencies: ["Util"]),
 
         .target(
-            name: "XCode",
-            dependencies: [
-                "Util",
-                "Starlark",
-                "AnyCodable",
-
-                .product(name: "XcodeProj", package: "XcodeProj"),
-                .product(name: "SwiftPMDataModel-auto", package: "swift-package-manager"),
-            ]),
-        .target(
-            name: "XCode2",
+            name: "Xcode",
             dependencies: [
                 "PathKit",
                 "AnyCodable",
 
                 .product(name: "XcodeProj", package: "XcodeProj"),
-            ],
-            path: "Sources/XCode2"),
+            ]),
         .testTarget(
-            name: "XCode2Tests",
-            dependencies: ["XCode2", "BazelizeKit"]),
+            name: "XcodeTests",
+            dependencies: ["Xcode", "BazelizeKit"]),
         .testTarget(
             name: "RepoEnumCoreTests",
             dependencies: ["RepoEnumCore"]),
-        .testTarget(
-            name: "XCodeTests",
-            dependencies: ["XCode"]),
 
         .target(
             name: "PluginLoader",
             dependencies: [
                 "PathKit",
                 "Util",
-                "XCode",
+                "Xcode",
                 .product(name: "Subprocess", package: "swift-subprocess"),
             ]),
     ])

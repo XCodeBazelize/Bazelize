@@ -1,7 +1,7 @@
 import Foundation
 import PathKit
 import Util
-import XCode2
+import Xcode
 
 extension Target {
     /// What the rule declares: the frameworks the project links plus the ones its

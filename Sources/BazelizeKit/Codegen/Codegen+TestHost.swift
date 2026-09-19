@@ -1,7 +1,7 @@
 import Foundation
 import PathKit
 import Starlark
-import XCode2
+import Xcode
 
 extension Target {
     /// The application a unit-test bundle is loaded into, from `TEST_HOST` or

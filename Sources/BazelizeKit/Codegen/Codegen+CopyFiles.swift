@@ -2,7 +2,7 @@ import BazelRules
 import Foundation
 import PathKit
 import Starlark
-import XCode2
+import Xcode
 
 extension Target {
     /// Products Xcode copies into the bundle outside the framework and extension
@@ -234,7 +234,7 @@ extension Project {
     }
 }
 
-extension XCode2.XCode.BuildPhase {
+extension Xcode.BuildPhase {
     /// Where a copy phase lands, relative to `Contents`.
     ///
     /// `nil` for a destination another rule attribute owns — a framework or an

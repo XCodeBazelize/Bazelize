@@ -9,7 +9,7 @@ import Foundation
 import PathKit
 import PluginLoader
 import Util
-import XCode
+import Xcode
 
 
 @_cdecl("createPlugin")
