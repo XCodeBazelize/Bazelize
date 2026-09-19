@@ -187,14 +187,9 @@ app/
 spm/
 Generated/
 
-# bazelize output inside the iOS fixture
-fixture/iOS/BUILD
-fixture/iOS/*/BUILD
-fixture/iOS/MODULE.bazel
-fixture/iOS/MODULE.bazel.lock
-fixture/iOS/Package.swift
-fixture/iOS/Package.resolved
-fixture/iOS/config.bazelrc
+# bazelize output inside the iOS fixture: one directory, the one `make bazelize`
+# writes
+fixture/iOS/App/
 
 # running a local package's build tool plugins resolves that package
 fixture/iOS/Local1/Package.resolved
