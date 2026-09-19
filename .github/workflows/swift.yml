@@ -127,12 +127,31 @@ jobs:
         run: |
           cp "$(bazel cquery //Targets/Example --output=files | grep '\.ipa$')" ../Example.ipa
 
+      # A simulator test on a runner pays for booting the simulator, and three
+      # of them booting at once pay for it three times over: the first test took
+      # 247s here and the last one timed out at 302s having never started. The
+      # simulator is booted once, up front, and the tests run one at a time.
+      - name: Boot Simulator
+        run: |
+          udid="$(xcrun simctl list devices available \
+            | awk '/^-- iOS 27.0 --$/{f=1;next} /^-- /{f=0} f && /iPhone 17 \(/ {gsub(/[()]/,"");print $3; exit}')"
+          if [ -z "$udid" ]; then
+            udid="$(xcrun simctl create "iPhone 17" \
+              com.apple.CoreSimulator.SimDeviceType.iPhone-17 \
+              com.apple.CoreSimulator.SimRuntime.iOS-27-0)"
+          fi
+          xcrun simctl boot "$udid" || true
+          xcrun simctl bootstatus "$udid"
+
       - name: Unit Test
         working-directory: fixture/iOS/App
         run: |
           bazel test \
             --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="iPhone 17" \
             --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version=27.0 \
+            --local_test_jobs=1 \
+            --test_timeout=900 \
+            --test_output=errors \
             //Targets/ExampleTests \
             //Targets/Framework1Tests \
             //Targets/Framework2Tests \
