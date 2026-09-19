@@ -79,13 +79,23 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Bazel iOS Cache
+      # Every `bazel` in this job reads these: the disk cache holds what the
+      # build produced, the repository cache what it downloaded. Without the
+      # second one a runner fetches rules_apple and the rest again every time.
+      - name: Bazel Cache
         uses: actions/cache@v5
         with:
-          path: fixture/iOS/cache
-          key: ${{ runner.os }}-IntegrateIOS-fixture-ios-${{ hashFiles('**/fixture/iOS/WORKSPACE') }}
+          path: |
+            ~/bazel-disk
+            ~/bazel-repo
+          key: ${{ runner.os }}-bazel-IntegrateIOS-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-IntegrateIOS-fixture-ios-
+            ${{ runner.os }}-bazel-IntegrateIOS-
+
+      - name: Bazel Cache Settings
+        run: |
+          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
+          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -186,13 +196,32 @@ jobs:
           #   submodules: true
           #   setup: carthage bootstrap --platform macOS --cache-builds
     steps:
-      - name: Bazel Disk Cache
+      # The disk cache holds what a build produced, the repository cache what it
+      # downloaded, and `.build` what SwiftPM resolved for the app's packages:
+      # generation resolves that graph before a single rule is written.
+      - name: Bazel Cache
         uses: actions/cache@v5
         with:
-          path: ~/bazel-disk
-          key: ${{ runner.os }}-bazel-disk-${{ matrix.name }}-${{ matrix.rev }}
+          path: |
+            ~/bazel-disk
+            ~/bazel-repo
+          key: ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-bazel-disk-${{ matrix.name }}-
+            ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-
+            ${{ runner.os }}-bazel-${{ matrix.name }}-
+
+      - name: SwiftPM Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ matrix.name }}/App/.build
+          key: ${{ runner.os }}-spm-${{ matrix.name }}-${{ matrix.rev }}
+          restore-keys: |
+            ${{ runner.os }}-spm-${{ matrix.name }}-
+
+      - name: Bazel Cache Settings
+        run: |
+          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
+          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -222,7 +251,7 @@ jobs:
 
       - name: Build Application
         working-directory: ${{ matrix.name }}/App
-        run: bazel build --disk_cache=~/bazel-disk ${{ matrix.target }}
+        run: bazel build ${{ matrix.target }}
 
   # Not yet green on a runner, so not yet a lane: Swift 6.3 looks a plugin's
   # tool up as a product, and this package's executable product is named
