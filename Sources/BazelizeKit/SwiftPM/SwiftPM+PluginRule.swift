@@ -54,9 +54,17 @@ extension SwiftPM.Generator {
     /// it builds them: a script that called `bazel build` itself would be a
     /// second Bazel inside the first one's lock.
     func writePluginRunner(locals: [Path]) throws {
-        let binaries = pluginBinaries
-        guard !binaries.isEmpty else { return }
+        /// The root `BUILD` declares `//:plugins` for any project with packages,
+        /// because whether one of them has a plugin is not known when that file
+        /// is written. So both of the things it names are written for any such
+        /// project: a package with nothing to run is a command that does
+        /// nothing, and a label that does not resolve is a workspace that does
+        /// not load.
+        guard (output + "Package.swift").exists else { return }
 
+        let binaries = pluginBinaries
+
+        try packagesRoot.mkpath()
         let group = CodeBuilder()
         group.call(
             Rules.Builtin.Call.filegroup(
