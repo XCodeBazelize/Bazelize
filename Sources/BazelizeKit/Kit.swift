@@ -106,19 +106,20 @@ extension Kit {
     /// Rules for the packages the project depends on, generated from their
     /// manifests instead of by `rules_swift_package_manager`.
     private final func generateSwiftPackages() async throws {
+        let locals = project.packages.local.map { local in
+            project.workspaceRoot + local.relativePath
+        }
         let workspace = try await SwiftPM.loadWorkspace(
             output: outputRoot,
             root: project.packageRoot,
-            locals: project.packages.local.map { local in
-                project.workspaceRoot + local.relativePath
-            })
+            locals: locals)
         let deployment = await deployment()
 
         let generator = SwiftPM.Generator(
             output: outputRoot,
             workspace: workspace,
             deployment: deployment)
-        try await generator.generate()
+        try await generator.generate(locals: locals)
         packageTips = generator.notes
 
         let count = workspace.packages.count

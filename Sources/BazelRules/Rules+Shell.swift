@@ -27,11 +27,15 @@ extension Rules.Shell {
     public enum Call {
         public static func sh_binary(
             name: String,
-            srcs: [String]) -> Starlark.Statement.Call
+            srcs: [String],
+            data: [String] = []) -> Starlark.Statement.Call
         {
             Rules.Shell.sh_binary.call {
                 "name" => name
                 "srcs" => srcs
+                if !data.isEmpty {
+                    "data" => data.map { Starlark.Label.named($0) }
+                }
             }
         }
     }

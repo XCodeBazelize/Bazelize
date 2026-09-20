@@ -34,7 +34,8 @@ extension SwiftPM.Generator {
                         sources(of: target, prefix: prefix, extensions: ["swift"]),
                         relativeFiles(of: target, in: package, prefix: prefix))
                         + generated,
-                    exclude: excluded(target, prefix: prefix)),
+                    exclude: excluded(target, prefix: prefix),
+                    allowEmpty: true),
                 copts: copts(of: target).nonEmpty,
                 deps: deps(of: target, in: package).nonEmpty.map { labels in
                     .build { labels }

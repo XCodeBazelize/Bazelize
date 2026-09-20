@@ -77,7 +77,8 @@ extension SwiftPM.Generator {
                         + generated.headers
                         + (resources?.accessors ?? []),
                     exclude: excludedClang(target, prefix: prefix)
-                        + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
+                        + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? []),
+                    allowEmpty: true),
                 hdrs: interface
                     .map { path in
                         matching(

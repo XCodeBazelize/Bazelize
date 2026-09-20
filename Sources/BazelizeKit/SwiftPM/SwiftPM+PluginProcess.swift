@@ -24,15 +24,15 @@ extension SwiftPM {
             toolsVersion: String,
             to executable: Path) async throws
         {
-            guard let api = try await pluginAPI() else { throw PluginError.noToolchain }
+            guard let api = pluginAPIPath else { throw PluginError.noToolchain }
 
             let result = try await Subprocess.run(
                 .name("swiftc"),
                 arguments: Arguments([
-                    "-I", api.string,
-                    "-L", api.string,
+                    "-I", api,
+                    "-L", api,
                     "-lPackagePlugin",
-                    "-Xlinker", "-rpath", "-Xlinker", api.string,
+                    "-Xlinker", "-rpath", "-Xlinker", api,
                     /// Which `PackagePlugin` API the plugin was written against;
                     /// its availability is stated in terms of it.
                     "-package-description-version", toolsVersion,
@@ -175,26 +175,31 @@ extension SwiftPM {
             return responses
         }
 
-        /// Where the toolchain keeps the module a plugin is compiled against.
-        private static func pluginAPI() async throws -> Path? {
-            let result = try await Subprocess.run(
-                .name("xcrun"),
-                arguments: Arguments(["--find", "swiftc"]),
-                output: .string(limit: 4096),
-                error: .discarded)
+        /// Where the toolchain keeps the module a plugin is compiled against,
+        /// which the rules that build a plugin need spelled out.
+        ///
+        /// `xcrun` is asked once: a run builds against one toolchain.
+        static let pluginAPIPath: String? = {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+            process.arguments = ["--find", "swiftc"]
 
-            guard
-                result.terminationStatus.isSuccess,
-                let found = Optional(result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)),
-                !found.isEmpty
-            else {
-                return nil
-            }
+            let output = Pipe()
+            process.standardOutput = output
+            process.standardError = FileHandle.nullDevice
+
+            guard (try? process.run()) != nil else { return nil }
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+
+            let found = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !found.isEmpty else { return nil }
 
             /// `<toolchain>/usr/bin/swiftc` → `<toolchain>/usr/lib/swift/pm/PluginAPI`
             let api = Path(found).parent().parent() + "lib/swift/pm/PluginAPI"
-            return api.isDirectory ? api : nil
-        }
+            return api.isDirectory ? api.string : nil
+        }()
 
         private static func errors(_ output: String?) -> String {
             guard let output else { return "no output" }

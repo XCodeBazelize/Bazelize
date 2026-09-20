@@ -9,8 +9,11 @@ extension Starlark {
         .custom(value)
     }
 
-    public static func glob(_ files: [String], exclude: [String] = []) -> Value {
-        .glob(files, exclude: exclude)
+    /// `allowEmpty` is for a directory something else writes into: the pattern
+    /// stands for what will be there, and a package that cannot be loaded until
+    /// it is cannot be the thing that puts it there.
+    public static func glob(_ files: [String], exclude: [String] = [], allowEmpty: Bool = false) -> Value {
+        .glob(files, exclude: exclude, allowEmpty: allowEmpty)
     }
 
     public indirect enum Value: Sendable, Text {
@@ -21,7 +24,7 @@ extension Starlark {
         case array([Value])
         case dictionary([String: Value])
         case select(Starlark.Select<Value>)
-        case glob([String], exclude: [String])
+        case glob([String], exclude: [String], allowEmpty: Bool)
         case custom(String)
         case none
 
@@ -104,13 +107,17 @@ extension Starlark {
                 return value ? "True" : "False"
             case .select(let value):
                 return value.text
-            case .glob(let files, let exclude):
+            case .glob(let files, let exclude, let allowEmpty):
                 let asset = Value(files.sorted()) ?? .none
-                guard !exclude.isEmpty else {
-                    return "glob(\(asset.text))"
+                var arguments = [asset.text]
+                if !exclude.isEmpty {
+                    let excluded = Value(exclude.sorted()) ?? .none
+                    arguments.append("exclude = \(excluded.text)")
                 }
-                let excluded = Value(exclude.sorted()) ?? .none
-                return "glob(\(asset.text), exclude = \(excluded.text))"
+                if allowEmpty {
+                    arguments.append("allow_empty = True")
+                }
+                return "glob(\(arguments.joined(separator: ", ")))"
             case .custom(let value):
                 return value
             case .none:

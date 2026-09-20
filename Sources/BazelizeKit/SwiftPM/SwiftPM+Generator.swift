@@ -34,13 +34,34 @@ extension SwiftPM {
         /// the package asked for, and why.
         private(set) var notes: [String] = []
 
-        init(output: Path, workspace: Workspace, deployment: Deployment) {
+        /// The plugins and tools Bazel already built, by target name. Empty
+        /// while a workspace is being generated — nothing has been built yet —
+        /// and filled by `//:plugins`, which has Bazel build them first.
+        let built: BuiltPrograms
+
+        init(
+            output: Path,
+            workspace: Workspace,
+            deployment: Deployment,
+            built: BuiltPrograms = .init())
+        {
             self.output = output
             self.workspace = workspace
             self.deployment = deployment
+            self.built = built
         }
 
-        func generate() async throws {
+        struct BuiltPrograms {
+            let plugins: [String: Path]
+            let tools: [String: Path]
+
+            init(plugins: [String: Path] = [:], tools: [String: Path] = [:]) {
+                self.plugins = plugins
+                self.tools = tools
+            }
+        }
+
+        func generate(locals: [Path] = []) async throws {
             pluginOutputs = await runPlugins()
             notes.append(contentsOf: pluginOutputs.notes)
 
@@ -53,6 +74,8 @@ extension SwiftPM {
             for package in workspace.packages {
                 try generate(package)
             }
+
+            try writePluginRunner(locals: locals)
         }
 
         /// A package that declares a platform version the project does not reach is
@@ -102,7 +125,7 @@ extension SwiftPM {
 
         // MARK: Private
 
-        private var packagesRoot: Path {
+        var packagesRoot: Path {
             output + PluginSwiftPM.packagesDirectory
         }
 
@@ -112,6 +135,19 @@ extension SwiftPM {
 
             let builder = CodeBuilder()
             var emitted = kinds[package.directory] ?? [:]
+
+            /// A plugin of a package this project owns is built by Bazel, so
+            /// `//:plugins` can run it without SwiftPM having to load — let
+            /// alone build — the package it lives in.
+            if package.isRoot || package.isLocal {
+                let used = Set(package.manifest.targets.flatMap(\.pluginUsages).map(\.name))
+                for target in package.manifest.targets
+                    where target.type == "plugin" && used.contains(target.name)
+                {
+                    guard let prefix = try materialize(target, in: package, at: root) else { continue }
+                    buildPlugin(target, in: package, prefix: prefix, builder: builder)
+                }
+            }
 
             for target in package.manifest.targets {
                 guard let kind = emitted[target.name] else { continue }
@@ -290,9 +326,10 @@ extension SwiftPM {
             at root: Path,
             kind: TargetKind) throws -> PluginGenerated
         {
-            guard let output = pluginOutputs.output(of: target.name, in: package) else {
-                return .none
-            }
+            /// A target that asks for no plugin has no such directory, and a
+            /// pattern for one would be a pattern for something that is never
+            /// coming.
+            guard !target.pluginUsages.isEmpty else { return .none }
 
             let directory = "Generated/\(target.name)Plugin"
 
@@ -303,13 +340,20 @@ extension SwiftPM {
                 return ["swift"]
             }()
 
-            var sources: Set<String> = []
-            var headers: Set<String> = []
+            /// The kinds the target could compile, whether or not the plugin has
+            /// run yet: the rules are written once and the files arrive later,
+            /// from `bazel run //:plugins`.
+            var sources = compiled
+            var headers: Set<String> = {
+                if case .clang = kind { return Set(Self.headerExtensions) }
+                return []
+            }()
             var resources: Set<String> = []
             var named: [String] = []
 
-            let base = output.root.normalize().string
-            for file in output.files {
+            let output = pluginOutputs.output(of: target.name, in: package)
+            let base = output?.root.normalize().string ?? ""
+            for file in output?.files ?? [] {
                 let relative = file.normalize().string
                     .delete(prefix: base)
                     .trimmingCharacters(in: ["/"])
@@ -331,9 +375,6 @@ extension SwiftPM {
                 }
             }
 
-            /// Only the kinds that are there: a pattern matching nothing fails
-            /// the package, which is what should happen when the directory is
-            /// empty — and not before that.
             func patterns(_ extensions: Set<String>) -> [String] {
                 extensions.sorted().map { "\(directory)/**/*.\($0)" }
             }
@@ -703,7 +744,11 @@ extension SwiftPM {
                             relativeFiles(of: target, in: package, prefix: prefix))
                             + generated
                             + (resources?.accessors ?? []),
-                        exclude: excluded(target, prefix: prefix)),
+                        exclude: excluded(target, prefix: prefix),
+                        /// The plugin's directory is globbed before anything has
+                        /// written into it: `bazel run //:plugins` does that, and
+                        /// a package that cannot load cannot run it.
+                        allowEmpty: true),
                     deps: deps(of: target, in: package).nonEmpty.map { labels in
                         .build { labels }
                     },

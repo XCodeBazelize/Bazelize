@@ -169,23 +169,6 @@ final class PluginSwiftPM: PluginBuiltin {
         pinnedRevisions[Self.repositoryModuleName(url: url).lowercased()]
     }
 
-    /// The workspace's own way to run its build tool plugins.
-    override func build(_ builder: CodeBuilder) {
-        guard hasPackages else { return }
-
-        builder.load(loadableRule: Rules.Shell.sh_binary)
-        builder.call(
-            Rules.Shell.Call.sh_binary(
-                name: "plugins",
-                srcs: ["plugins.sh"]))
-    }
-
-    override var custom: [PluginBuiltin.Custom]? {
-        guard hasPackages else { return nil }
-
-        return [package, packageResolved].compactMap { $0 } + [ignore, plugins]
-    }
-
     /// `bazel run //:plugins`: what brings the files a build tool plugin writes
     /// up to date, without generating the workspace again.
     ///
@@ -194,22 +177,26 @@ final class PluginSwiftPM: PluginBuiltin {
     /// directory rather than name the files, so they need no regenerating. This
     /// is the workspace's own way to run them, the way `bazel mod tidy` is the
     /// workspace's way to fix its module file.
-    private var plugins: PluginBuiltin.Custom {
-        let arguments = ["--output", "."] + locals.flatMap { local in
-            ["--local", (kit.project.workspaceRoot + local.relativePath).absolute().string.quoted]
-        }
+    ///
+    /// The plugins and the tools they run are `data`, so running this builds
+    /// them: the script speaks to programs Bazel made, not to SwiftPM. The
+    /// script itself is written by the package generator, which is what knows
+    /// which programs those are.
+    override func build(_ builder: CodeBuilder) {
+        guard hasPackages else { return }
 
-        return .init(
-            path: "plugins.sh",
-            content: """
-            #!/bin/bash
-            # Runs this workspace's build tool plugins, writing what they generate
-            # back into `Packages/*/Generated/*Plugin`.
-            set -euo pipefail
-            cd "${BUILD_WORKSPACE_DIRECTORY:-$(dirname "$0")}"
-            exec bazelize plugins \(arguments.joined(separator: " "))
+        builder.load(loadableRule: Rules.Shell.sh_binary)
+        builder.call(
+            Rules.Shell.Call.sh_binary(
+                name: "plugins",
+                srcs: ["plugins.sh"],
+                data: ["//\(Self.packagesDirectory):plugins"]))
+    }
 
-            """)
+    override var custom: [PluginBuiltin.Custom]? {
+        guard hasPackages else { return nil }
+
+        return [package, packageResolved].compactMap { $0 } + [ignore]
     }
 
     /// SwiftPM's working directory is not part of the Bazel workspace: a checkout

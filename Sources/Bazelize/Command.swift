@@ -48,14 +48,33 @@ struct PluginsCommand: AsyncParsableCommand {
     @Option(name: [.customLong("local", withSingleDash: false)], help: "PATH/TO/LOCAL/PACKAGE")
     var locals: [String] = []
 
+    /// `NAME=PATH`, for the programs Bazel built: `//:plugins` has them as
+    /// `data`, so a plugin runs without SwiftPM building anything.
+    @Option(name: [.customLong("plugin", withSingleDash: false)], help: "NAME=PATH/TO/PLUGIN")
+    var plugins: [String] = []
+
+    @Option(name: [.customLong("tool", withSingleDash: false)], help: "NAME=PATH/TO/TOOL")
+    var tools: [String] = []
+
     func run() async throws {
         let outputPath = Path.current + output
         let notes = try await SwiftPM.runPlugins(
             output: outputPath,
-            locals: locals.map { Path.current + $0 })
+            locals: locals.map { Path.current + $0 },
+            plugins: Self.programs(plugins),
+            tools: Self.programs(tools))
 
         for note in notes {
             print(note)
+        }
+    }
+
+    private static func programs(_ arguments: [String]) -> [String: Path] {
+        arguments.reduce(into: [:]) { programs, argument in
+            guard let separator = argument.firstIndex(of: "=") else { return }
+            let name = String(argument[..<separator])
+            let path = String(argument[argument.index(after: separator)...])
+            programs[name] = Path.current + path
         }
     }
 }

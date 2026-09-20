@@ -39,7 +39,8 @@ extension SwiftPM.Generator {
                         relativeFiles(of: target, in: package, prefix: prefix))
                         + generated
                         + (resources?.accessors ?? []),
-                    exclude: excluded(target, prefix: prefix)),
+                    exclude: excluded(target, prefix: prefix),
+                    allowEmpty: true),
                 tags: Self.manual,
                 visibility: .public))
     }

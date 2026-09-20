@@ -18,12 +18,21 @@ extension SwiftPM {
     /// when a plugin writes a different set of files, because they glob the
     /// directory the plugin writes into. What comes back is what to tell the
     /// user about.
-    public static func runPlugins(output: Path, locals: [Path]) async throws -> [String] {
+    /// `plugins` and `tools` are what Bazel built, by target name: a plugin is
+    /// a program and so is the tool it runs, and building them is Bazel's job
+    /// wherever `//:plugins` is what started this.
+    public static func runPlugins(
+        output: Path,
+        locals: [Path],
+        plugins: [String: Path] = [:],
+        tools: [String: Path] = [:]) async throws -> [String]
+    {
         let workspace = try await loadWorkspace(output: output, root: nil, locals: locals)
         let generator = Generator(
             output: output,
             workspace: workspace,
-            deployment: .init(project: [:]))
+            deployment: .init(project: [:]),
+            built: .init(plugins: plugins, tools: tools))
 
         return await generator.runPlugins().notes
     }
@@ -161,6 +170,10 @@ extension SwiftPM.Generator {
     /// so compiling it needs no package graph — which is the whole reason the
     /// host can run one without building anything else.
     private func compile(plugin target: SwiftPM.PackageTarget, in package: SwiftPM.Package) async throws -> Path {
+        /// Bazel built it: `//:plugins` has the plugin as `data`, so it is in
+        /// the runfiles by the time the host runs.
+        if let prebuilt = built.plugins[target.name], prebuilt.exists { return prebuilt }
+
         let built = output + ".bazelize/plugins" + package.directory + target.name
         if built.exists { return built }
 
@@ -230,6 +243,11 @@ extension SwiftPM.Generator {
         else {
             return nil
         }
+
+        /// Bazel built it, so SwiftPM never has to load the package the tool
+        /// lives in — which some toolchains cannot do when a plugin names its
+        /// tool by target.
+        if let prebuilt = built.tools[name], prebuilt.exists { return prebuilt }
 
         let product = package.manifest.products.first { product in
             product.targets.contains(name)
