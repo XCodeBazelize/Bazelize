@@ -11,12 +11,12 @@ import Foundation
 
 /// https://github.com/bazelbuild/rules_swift
 final class PluginSwift: PluginBuiltin {
-    let repo: Repo.Swift = .v3_4_1
+    let dep: BazelDep.Swift = .latest
 
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(
             name: "rules_swift",
-            version: repo.rawValue,
+            version: dep.rawValue,
             repo_name: "build_bazel_rules_swift")
     }
 }

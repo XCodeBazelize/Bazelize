@@ -29,6 +29,8 @@ extension Rules {
         case swift_c_module
         /// `swift_overlay(name, deps, module_name, overlay_deps, srcs)`.
         case swift_overlay
+        /// `swift_interop_hint(name, exclude_hdrs, module_map, module_name, suppressed)`.
+        case swift_interop_hint
         /// `swift_library_group(name, deps, exports)`.
         case swift_library_group
 
@@ -38,7 +40,7 @@ extension Rules {
         case swift_compiler_plugin
         /// `universal_swift_compiler_plugin(name, plugin, toolchain_types)`.
         case universal_swift_compiler_plugin
-        /// `mixed_language_library(name, module_name, srcs, deps, data, defines, copts)`.
+        /// `mixed_language_library(name, module_name, clang_srcs, swift_srcs, deps, data)`.
         case mixed_language_library
         /// `swift_feature_allowlist(name, package_groups)`.
         case swift_feature_allowlist
@@ -61,6 +63,8 @@ extension Rules {
                 "@build_bazel_rules_swift//swift:swift_c_module.bzl"
             case .swift_overlay:
                 "@build_bazel_rules_swift//swift:swift_overlay.bzl"
+            case .swift_interop_hint:
+                "@build_bazel_rules_swift//swift:swift_interop_hint.bzl"
             case .swift_library_group:
                 "@build_bazel_rules_swift//swift:swift_library_group.bzl"
             case .swift_compiler_plugin, .universal_swift_compiler_plugin:
@@ -128,8 +132,11 @@ extension Rules.Swift {
         public static func swift_library(
             name: String,
             alwayslink: Bool = true,
+            always_include_developer_search_paths: Bool? = nil,
             copts: [String]? = nil,
             module_name: String? = nil,
+            package_name: String? = nil,
+            plugins: Starlark.Value? = nil,
             srcs: Starlark.Value,
             deps: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
@@ -140,6 +147,7 @@ extension Rules.Swift {
             linkstatic: Bool? = nil,
             private_deps: Starlark.Value? = nil,
             swiftc_inputs: Starlark.Value? = nil,
+            tags: [String]? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
@@ -147,11 +155,20 @@ extension Rules.Swift {
             Rules.Swift.swift_library.call {
                 "name" => name
                 "alwayslink" => alwayslink
+                if let always_include_developer_search_paths {
+                    "always_include_developer_search_paths" => always_include_developer_search_paths
+                }
                 if let copts {
                     "copts" => copts
                 }
                 if let module_name {
                     "module_name" => module_name
+                }
+                if let package_name {
+                    "package_name" => package_name
+                }
+                if let plugins {
+                    "plugins" => plugins
                 }
                 "srcs" => srcs
 
@@ -181,6 +198,9 @@ extension Rules.Swift {
                 }
                 if let swiftc_inputs {
                     "swiftc_inputs" => swiftc_inputs
+                }
+                if let tags {
+                    "tags" => tags
                 }
                 if let testonly {
                     "testonly" => testonly
@@ -228,6 +248,7 @@ extension Rules.Swift {
             srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
             swiftc_inputs: Starlark.Value? = nil,
+            tags: [String]? = nil,
             testonly: Bool? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
@@ -254,6 +275,9 @@ extension Rules.Swift {
                 }
                 if let swiftc_inputs {
                     "swiftc_inputs" => swiftc_inputs
+                }
+                if let tags {
+                    "tags" => tags
                 }
                 if let testonly {
                     "testonly" => testonly
@@ -474,10 +498,48 @@ extension Rules.Swift {
         ///   Dependencies re-exported by the group.
         /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
+        /// Builds a `swift_interop_hint` target.
+        ///
+        /// Reference: [rules_swift `swift_interop_hint`](https://github.com/bazelbuild/rules_swift/blob/main/doc/rules.md#swift_interop_hint)
+        ///
+        /// Signature:
+        /// `swift_interop_hint(name, exclude_hdrs, module_map, module_name, suppressed)`.
+        ///
+        /// Parameters:
+        /// - `name: String`
+        ///   The Bazel target name.
+        /// - `module_map: Starlark.Label?`
+        ///   A module map written by hand, used instead of a generated one.
+        /// - `module_name: String?`
+        ///   The module name a Swift target imports.
+        /// - `exclude_hdrs: Starlark.Value?`
+        ///   Headers kept out of the generated module map.
+        /// - `suppressed: Bool?`
+        ///   Hides the C target from Swift entirely.
+        public static func swift_interop_hint(
+            name: String,
+            module_map: Starlark.Label? = nil,
+            module_name: String? = nil,
+            exclude_hdrs: Starlark.Value? = nil,
+            suppressed: Bool? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Swift.swift_interop_hint.call {
+                "name" => name
+                if let module_map { "module_map" => module_map }
+                if let module_name { "module_name" => module_name }
+                if let exclude_hdrs { "exclude_hdrs" => exclude_hdrs }
+                if let suppressed { "suppressed" => suppressed }
+                if let visibility { visibility }
+            }
+        }
+
         public static func swift_library_group(
             name: String,
             deps: Starlark.Value? = nil,
             exports: Starlark.Value? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -485,6 +547,7 @@ extension Rules.Swift {
                 "name" => name
                 if let deps { "deps" => deps }
                 if let exports { "exports" => exports }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -500,13 +563,21 @@ extension Rules.Swift {
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_compiler_plugin(
             name: String,
+            srcs: Starlark.Value? = nil,
+            copts: [String]? = nil,
             deps: Starlark.Value? = nil,
+            module_name: String? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_compiler_plugin.call {
                 "name" => name
+                if let srcs { "srcs" => srcs }
+                if let copts { "copts" => copts }
                 if let deps { "deps" => deps }
+                if let module_name { "module_name" => module_name }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -542,53 +613,133 @@ extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `module_name: String?`
-        ///   Swift module name exposed by the mixed-language target.
-        /// - `srcs: Starlark.Value?`
-        ///   Swift and Objective-C source files in the target.
-        /// - `deps: Starlark.Value?`
-        ///   Regular dependencies linked into the library.
-        /// - `data: Starlark.Value?`
-        ///   Runtime data made available to the target.
-        /// - `defines: Starlark.Value?`
-        ///   Compilation condition symbols, including `select(...)` expressions.
-        /// - `copts: [String]?`
-        ///   C or Clang compilation flags.
+        /// - `additional_objc_compiler_inputs: Starlark.Value?`
+        ///   Additional Objective-C compiler inputs.
         /// - `always_include_developer_search_paths: Bool?`
         ///   Whether to include developer search paths when building.
+        /// - `alwayslink: Bool?`
+        ///   Whether the library should always be linked.
+        /// - `clang_copts: [String]?`
+        ///   C or Clang compilation flags.
+        /// - `clang_defines: Starlark.Value?`
+        ///   Preprocessor definitions for Clang compilation.
         /// - `clang_deps: Starlark.Value?`
         ///   Additional Clang-specific dependencies.
+        /// - `clang_srcs: Starlark.Value?`
+        ///   C-family sources compiled by Clang.
+        /// - `data: Starlark.Value?`
+        ///   Runtime data made available to the target.
+        /// - `enable_modules: Bool?`
+        ///   Whether Clang modules are enabled for the target.
+        /// - `hdrs: Starlark.Value?`
+        ///   Public C-family headers published by this mixed-language target.
+        /// - `includes: [String]?`
+        ///   Header search paths exported by the target.
+        /// - `linkopts: [String]?`
+        ///   Linker options passed through to dependents.
+        /// - `module_map: Starlark.Label?`
+        ///   Explicit Clang module map.
+        /// - `module_name: String?`
+        ///   Swift module name exposed by the mixed-language target.
+        /// - `non_arc_srcs: Starlark.Value?`
+        ///   Objective-C sources that should compile without ARC.
+        /// - `sdk_dylibs: [String]?`
+        ///   SDK dylibs to link, such as `sqlite3` or `libz`.
+        /// - `sdk_frameworks: [String]?`
+        ///   SDK frameworks to link strongly.
         /// - `package_name: String?`
         ///   Optional package name used for module/package identity.
+        /// - `private_deps: Starlark.Value?`
+        ///   Dependencies that are private to the target implementation.
+        /// - `swift_copts: [String]?`
+        ///   Swift compiler flags.
+        /// - `swift_defines: Starlark.Value?`
+        ///   Swift compilation condition symbols, including `select(...)` expressions.
+        /// - `swift_plugins: Starlark.Value?`
+        ///   Swift compiler plugins to apply.
+        /// - `swift_srcs: Starlark.Value?`
+        ///   Swift sources compiled by `swiftc`.
+        /// - `swiftc_inputs: Starlark.Value?`
+        ///   Extra inputs that should be available to the Swift compiler.
+        /// - `textual_hdrs: Starlark.Value?`
+        ///   Textual headers consumed by Clang but not modularized.
+        /// - `umbrella_header: Starlark.Label?`
+        ///   Umbrella header used for the generated module.
+        /// - `weak_sdk_frameworks: [String]?`
+        ///   SDK frameworks to weakly link.
+        /// - `deps: Starlark.Value?`
+        ///   Regular dependencies linked into the library.
         /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func mixed_language_library(
             name: String,
-            module_name: String? = nil,
-            srcs: Starlark.Value? = nil,
-            deps: Starlark.Value? = nil,
-            data: Starlark.Value? = nil,
-            defines: Starlark.Value? = nil,
-            copts: [String]? = nil,
+            additional_objc_compiler_inputs: Starlark.Value? = nil,
             always_include_developer_search_paths: Bool? = nil,
+            alwayslink: Bool? = nil,
+            clang_copts: [String]? = nil,
+            clang_defines: Starlark.Value? = nil,
             clang_deps: Starlark.Value? = nil,
+            clang_srcs: Starlark.Value? = nil,
+            data: Starlark.Value? = nil,
+            enable_modules: Bool? = nil,
+            hdrs: Starlark.Value? = nil,
+            includes: [String]? = nil,
+            linkopts: [String]? = nil,
+            module_map: Starlark.Label? = nil,
+            module_name: String? = nil,
+            non_arc_srcs: Starlark.Value? = nil,
             package_name: String? = nil,
+            private_deps: Starlark.Value? = nil,
+            sdk_dylibs: [String]? = nil,
+            sdk_frameworks: [String]? = nil,
+            swift_copts: [String]? = nil,
+            swift_defines: Starlark.Value? = nil,
+            swift_plugins: Starlark.Value? = nil,
+            swift_srcs: Starlark.Value? = nil,
+            swiftc_inputs: Starlark.Value? = nil,
+            tags: [String]? = nil,
+            textual_hdrs: Starlark.Value? = nil,
+            umbrella_header: Starlark.Label? = nil,
+            weak_sdk_frameworks: [String]? = nil,
+            deps: Starlark.Value? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Swift.mixed_language_library.call {
                 "name" => name
-                if let module_name { "module_name" => module_name }
-                if let srcs { "srcs" => srcs }
-                if let deps { "deps" => deps }
-                if let data { "data" => data }
-                if let defines { "defines" => defines }
-                if let copts { "copts" => copts }
+                if let additional_objc_compiler_inputs {
+                    "additional_objc_compiler_inputs" => additional_objc_compiler_inputs
+                }
                 if let always_include_developer_search_paths {
                     "always_include_developer_search_paths" => always_include_developer_search_paths
                 }
+                if let alwayslink { "alwayslink" => alwayslink }
+                if let clang_copts { "clang_copts" => clang_copts }
+                if let clang_defines { "clang_defines" => clang_defines }
                 if let clang_deps { "clang_deps" => clang_deps }
+                if let clang_srcs { "clang_srcs" => clang_srcs }
+                if let data { "data" => data }
+                if let enable_modules { "enable_modules" => enable_modules }
+                if let hdrs { "hdrs" => hdrs }
+                if let includes { "includes" => includes }
+                if let linkopts { "linkopts" => linkopts }
+                if let module_map { "module_map" => module_map }
+                if let module_name { "module_name" => module_name }
+                if let non_arc_srcs { "non_arc_srcs" => non_arc_srcs }
                 if let package_name { "package_name" => package_name }
+                if let private_deps { "private_deps" => private_deps }
+                if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
+                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
+                if let swift_copts { "swift_copts" => swift_copts }
+                if let swift_defines { "swift_defines" => swift_defines }
+                if let swift_plugins { "swift_plugins" => swift_plugins }
+                if let swift_srcs { "swift_srcs" => swift_srcs }
+                if let swiftc_inputs { "swiftc_inputs" => swiftc_inputs }
+                if let tags { "tags" => tags }
+                if let textual_hdrs { "textual_hdrs" => textual_hdrs }
+                if let umbrella_header { "umbrella_header" => umbrella_header }
+                if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
+                if let deps { "deps" => deps }
                 if let visibility { visibility }
             }
         }

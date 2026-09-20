@@ -210,28 +210,41 @@ struct RulesSwiftTests {
     func testMixedLanguageLibraryTypedCallWithSelectDefines() {
         let call = Rules.Swift.Call.mixed_language_library(
             name: "Core",
-            srcs: ["A.swift", "B.m"],
-            defines: .select(
+            alwayslink: true,
+            clang_copts: ["-fmodule-name=Core"],
+            clang_srcs: ["B.m"],
+            sdk_dylibs: ["libz"],
+            swift_defines: .select(
                 .various([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
-                ])))
+                ])),
+            swift_srcs: ["A.swift"])
 
         #expect(
             call.text
                 == """
                 mixed_language_library(
                     name = "Core",
-                    srcs = [
-                        "A.swift",
+                    alwayslink = True,
+                    clang_copts = [
+                        "-fmodule-name=Core",
+                    ],
+                    clang_srcs = [
                         "B.m",
                     ],
-                    defines = select({
+                    sdk_dylibs = [
+                        "libz",
+                    ],
+                    swift_defines = select({
                         "//:Debug": [
                             "DEBUG",
                         ],
                         "//conditions:default": None
                     }),
+                    swift_srcs = [
+                        "A.swift",
+                    ],
                 )
                 """)
     }

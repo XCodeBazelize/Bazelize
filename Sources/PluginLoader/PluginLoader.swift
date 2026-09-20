@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import XCode
+import Xcode
 
 private typealias InitFunction = @convention(c)
     () -> UnsafeMutableRawPointer
@@ -25,7 +25,7 @@ enum PluginLoader {
     /// ## Package.swift
     /// ---
     ///
-    /// `.library(name: "Cocoapod", type: .dynamic, targets: ["Cocoapod"]),`
+    /// `.library(name: "YourPlugin", type: .dynamic, targets: ["YourPlugin"]),`
     ///
     /// ### Loadable Plugin Implement
     ///
@@ -36,12 +36,12 @@ enum PluginLoader {
     /// }
     ///
     /// final class YourPluginBuilder: PluginBuilder {
-    ///     override final func build(_ proj: Project) async throws -> Plugin? {
-    ///         try await Pod.load(proj)
+    ///     override final func build(_ proj: Xcode.Project) async throws -> Plugin? {
+    ///         try await YourPlugin.load(proj)
     ///     }
     /// }
     /// ```
-    static func load(at path: String, proj: Project) async throws -> Plugin? {
+    static func load(at path: String, proj: Xcode.Project) async throws -> Plugin? {
         let openRes = dlopen(path, RTLD_NOW|RTLD_LOCAL)
         if openRes != nil {
             defer {

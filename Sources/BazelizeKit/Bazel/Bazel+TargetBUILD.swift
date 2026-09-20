@@ -1,31 +1,22 @@
-//
-//  TargetBUILD.swift
-//
-//
-//  Created by Yume on 2022/12/8.
-//
-
-
 import Foundation
 import PathKit
 import Starlark
 import Util
-import XCode
 
 extension Bazel {
     /// /{TARGET}/BUILD
     struct TargetBuild: BazelFile {
         // MARK: Lifecycle
 
-        init(_ root: Path, _ target: XCode.Target) {
+        init(_ root: Path, _ target: Target) {
             self.target = target
-            targetPath = root + target.name
+            targetPath = root + "Targets" + target.name
             path = targetPath + "BUILD"
         }
 
         // MARK: Internal
 
-        let target: XCode.Target
+        let target: Target
 
         let path: Path
         let targetPath: Path

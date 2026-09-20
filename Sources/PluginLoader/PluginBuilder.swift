@@ -7,8 +7,8 @@
 
 import Foundation
 @preconcurrency import PathKit
-import SwiftCommand
-import SystemPackage
+import Subprocess
+import System
 import Util
 
 // MARK: - PluginCompiler
@@ -19,22 +19,24 @@ import Util
 enum PluginCompiler {
     // MARK: Internal
 
-    static func build(plugins: [PluginInfo]) throws -> [PluginInfo] {
+    static func build(plugins: [PluginInfo]) async throws -> [PluginInfo] {
         try git.mkpath()
         try build.mkpath()
 
-        return plugins.compactMap { info -> PluginInfo? in
+        var result: [PluginInfo] = []
+        for info in plugins {
             if checkExist(plugin: info) {
-                return info
+                result.append(info)
+                continue
             }
             do {
-                try build(plugin: info)
-                return info
+                try await build(plugin: info)
+                result.append(info)
             } catch {
                 Log.pluginLoader.warning("Build Plugin(\(info.repo)) Fail: \(error.localizedDescription)")
-                return nil
             }
         }
+        return result
     }
 
     // MARK: Private
@@ -42,10 +44,6 @@ enum PluginCompiler {
     private static let root = Path.home + ".bazelize"
     private static let git = root + "git"
     private static let build = root + "build" + swift
-
-    private static let commandGit = Command.findInPath(withName: "git")
-    private static let commandSwift = Command.findInPath(withName: "swift")
-
 
     private static func checkExist(plugin: PluginInfo) -> Bool {
         plugin.paths
@@ -70,27 +68,15 @@ enum PluginCompiler {
     /// git checkout tag
     /// swift build -c release
     /// cp .build/release/*.dylib build/XCodeBazelize_Bazelize/tag
-    private static func build(plugin: PluginInfo) throws {
+    private static func build(plugin: PluginInfo) async throws {
         let repo = git + plugin.user_repo
         if !repo.exists {
-            _ = try commandGit?.setCWD(FilePath(git.string))
-                .addArguments("clone", plugin.url, plugin.user_repo)
-                .setStdout(.null)
-                .logging()
-                .wait()
+            try await run("git", "clone", plugin.url, plugin.user_repo, cwd: git)
         }
 
-        _ = try commandGit?.setCWD(FilePath(repo.string))
-            .addArguments("checkout", plugin.tag)
-            .setStdout(.null)
-            .logging()
-            .wait()
+        try await run("git", "checkout", plugin.tag, cwd: repo)
 
-        _ = try commandSwift?.setCWD(FilePath(repo.string))
-            .addArguments("build", "-c", "release")
-            .setStdout(.null)
-            .logging()
-            .wait()
+        try await run("swift", "build", "-c", "release", cwd: repo)
 
         let release = repo + ".build" + "release"
 
@@ -105,12 +91,39 @@ enum PluginCompiler {
     }
 }
 
-extension Command {
-    __consuming func logging() -> Self {
+extension PluginCompiler {
+    fileprivate static func run(
+        _ executable: String,
+        _ arguments: String...,
+        cwd: Path)
+        async throws
+    {
         Log.pluginLoader.info("""
-        \(cwd?.string ?? "")> \(executablePath) \(arguments.joined(separator: " "))
+        \(cwd.string)> \(executable) \(arguments.joined(separator: " "))
         """)
 
-        return self
+        let result = try await Subprocess.run(
+            .name(executable),
+            arguments: Arguments(arguments),
+            workingDirectory: FilePath(cwd.string),
+            output: .discarded,
+            error: .currentStandardError)
+
+        guard result.terminationStatus.isSuccess else {
+            throw CommandError(
+                command: "\(executable) \(arguments.joined(separator: " "))",
+                status: result.terminationStatus)
+        }
+    }
+}
+
+// MARK: - CommandError
+
+struct CommandError: Error, CustomStringConvertible {
+    let command: String
+    let status: TerminationStatus
+
+    var description: String {
+        "`\(command)` failed with \(status)"
     }
 }

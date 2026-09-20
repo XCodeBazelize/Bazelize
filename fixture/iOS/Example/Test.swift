@@ -8,5 +8,5 @@
 import Foundation
 
 func test() -> Int {
-    0
+    0b1111
 }

@@ -184,3 +184,12 @@ cache/
 .codex-local-skills/
 .vendor/
 app/
+spm/
+Generated/
+
+# bazelize output inside the iOS fixture: one directory, the one `make bazelize`
+# writes
+fixture/iOS/App/
+
+# running a local package's build tool plugins resolves that package
+fixture/iOS/Local1/Package.resolved

@@ -14,6 +14,12 @@ extension Bazel {
     struct Module: BazelFile {
         let path: Path
         public let builder = CodeBuilder()
+        private let skylib: BazelDep.BazelSkylib = .latest
+        private let cc: BazelDep.RulesCC = .latest
+        private let appleSupport: BazelDep.AppleSupport = .latest
+        /// What `//:plugins` is a `sh_binary` of: Bazel itself no longer has
+        /// that rule.
+        private let shell: BazelDep.RulesShell = .latest
 
         init(_ root: Path) {
             path = root + "MODULE.bazel"
@@ -30,8 +36,18 @@ extension Bazel {
                 "name" => "example"
                 "version" => "0.0.1"
             }
-            builder.bazel_dep(name: "bazel_skylib", version: "1.9.0")
-            builder.bazel_dep(name: "rules_cc", version: "0.2.17")
+            builder.bazel_dep(
+                name: "bazel_skylib",
+                version: skylib.rawValue)
+            builder.bazel_dep(
+                name: "apple_support",
+                version: appleSupport.rawValue)
+            builder.bazel_dep(
+                name: "rules_cc",
+                version: cc.rawValue)
+            builder.bazel_dep(
+                name: "rules_shell",
+                version: shell.rawValue)
         }
     }
 }

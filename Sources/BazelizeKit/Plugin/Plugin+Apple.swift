@@ -11,12 +11,12 @@ import Foundation
 
 /// https://github.com/bazelbuild/rules_apple
 final class PluginApple: PluginBuiltin {
-    let repo: Repo.Apple = .v4_3_3
+    let dep: BazelDep.Apple = .latest
 
     override func module(_ builder: CodeBuilder) {
         builder.bazel_dep(
             name: "rules_apple",
-            version: repo.rawValue,
+            version: dep.rawValue,
             repo_name: "build_bazel_rules_apple")
     }
 }

@@ -31,7 +31,7 @@
 //                # Cocoapod Deps
 //        \(podDeps.indent(2))
 //
-//                # XCode SPM Deps
+//                # Xcode SPM Deps
 //        \(xcodeSPMDeps.indent(2))
 //            ],
 //        )
@@ -47,7 +47,7 @@
 //            infoplists = [":Info.plist"],
 //            deps = [":_\(name)"],
 //            frameworks = [
-//                # XCode Target Deps
+//                # Xcode Target Deps
 //            \(xcodeDeps)
 //            ],
 //        )

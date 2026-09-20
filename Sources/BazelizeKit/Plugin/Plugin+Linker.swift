@@ -13,10 +13,11 @@ import Foundation
 
 /// https://github.com/keith/rules_apple_linker
 class PluginLinker: PluginBuiltin {
+    let dep: BazelDep.AppleLinker = .latest
+
     override func module(_ builder: CodeBuilder) {
-        builder.custom(
-            """
-            bazel_dep(name = "rules_apple_linker", version = "0.3.0")
-            """)
+        builder.bazel_dep(
+            name: "rules_apple_linker",
+            version: dep.rawValue)
     }
 }

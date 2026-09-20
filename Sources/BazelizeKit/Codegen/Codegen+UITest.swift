@@ -8,13 +8,12 @@
 import BazelRules
 import Foundation
 import Starlark
-import XCode
 
 extension Target {
     // MARK: Internal
 
     func generateUITest(_ builder: CodeBuilder, _ kit: Kit) {
-        switch prefer(\.sdk) {
+        switch platformSDK {
         case .iOS: generateIOSUITest(builder, kit)
         case .macOS: generateMacUITest(builder, kit)
         case .tvOS: generateTVUITest(builder, kit)
@@ -33,9 +32,9 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.iOS),
+                minimum_os_version: prefer(\.platform.iOS),
                 test_host: prefer(\.testTargetName).map { target in
-                    .init("//\(target):\(target)")
+                    .init("//Targets/\(target):\(target)")
                 },
                 visibility: .public))
     }
@@ -48,9 +47,9 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.macOS),
+                minimum_os_version: prefer(\.platform.macOS),
                 test_host: prefer(\.testTargetName).map { target in
-                    .init("//\(target):\(target)")
+                    .init("//Targets/\(target):\(target)")
                 },
                 visibility: .public))
     }
@@ -63,9 +62,9 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.tvOS),
+                minimum_os_version: prefer(\.platform.tvOS),
                 test_host: prefer(\.testTargetName).map { target in
-                    .init("//\(target):\(target)")
+                    .init("//Targets/\(target):\(target)")
                 },
                 visibility: .public))
     }
@@ -78,9 +77,9 @@ extension Target {
                 deps: .build {
                     ":\(name)_library"
                 },
-                minimum_os_version: prefer(\.watchOS),
+                minimum_os_version: prefer(\.platform.watchOS),
                 test_host: prefer(\.testTargetName).map { target in
-                    .init("//\(target):\(target)")
+                    .init("//Targets/\(target):\(target)")
                 },
                 visibility: .public))
     }

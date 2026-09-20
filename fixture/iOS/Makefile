@@ -1,48 +1,42 @@
+BAZELIZE = ../../.build/debug/bazelize
+OUTPUT = App
+
+# The simulator rules_apple runs unit tests on; override for other Xcode versions.
+SIMULATOR_FLAGS = \
+	--@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="iPhone 17" \
+	--@build_bazel_rules_apple//apple/build_settings:ios_simulator_version=27.0
+
+TESTS = \
+	//Targets/ExampleTests \
+	//Targets/Framework1Tests \
+	//Targets/Framework2Tests \
+	//Targets/Framework3Tests
+
 .PHONY: bazelize
 bazelize:
-	@bazelize --project Example.xcodeproj
-	@bazel mod tidy
-
-.PHONY: clear
-clear:
-	@bazelize --project Example.xcodeproj --clear
-	-rm Package.swift
-	-rm Package.resolved 
-	-rm MODULE.bazel 
-	-rm MODULE.bazel.lock
+	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT)
 
 .PHONY: build
-build:
-	bazel build Example
-
-.PHONY: updatePkg
-updatePkg:
-	@bazel mod tidy
+build: bazelize
+	cd $(OUTPUT) && bazel build //Targets/Example
 
 .PHONY: run
-run:
-	bazel run --config=Debug Example
+run: bazelize
+	cd $(OUTPUT) && bazel run --config=Debug //Targets/Example
 
 .PHONY: releaseRun
-releaseRun:
-	bazel run --config=Release Example
+releaseRun: bazelize
+	cd $(OUTPUT) && bazel run --config=Release //Targets/Example
 
 .PHONY: test
 test:
-	bazel test \
-		--sandbox_debug \
-		ExampleTests \
-		Framework1Tests \
-		Framework2Tests \
-		Framework3Tests
-
+	cd $(OUTPUT) && bazel test $(SIMULATOR_FLAGS) $(TESTS)
 
 .PHONY: uitest
 uitest:
-	bazel test ExampleUITests
+	cd $(OUTPUT) && bazel test $(SIMULATOR_FLAGS) //Targets/ExampleUITests
 
-
-# 
-# bazel run //:update_build_files
-# bazel test //...
-# --experimental_enable_bzlmod
+.PHONY: clear
+clear:
+	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT) --clear
+	-rm -rf $(OUTPUT)

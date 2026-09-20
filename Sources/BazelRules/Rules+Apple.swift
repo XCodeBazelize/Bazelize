@@ -46,6 +46,9 @@ extension Rules {
             case macos_bundle
             case macos_command_line_application
             case macos_extension
+            case macos_framework
+            case macos_static_framework
+            case macos_dynamic_framework
 
             case macos_ui_test
             case macos_unit_test
@@ -112,6 +115,7 @@ extension Rules {
             }
 
             case apple_bundle_import
+            case apple_intent_library
             case apple_core_data_model
             case apple_core_ml_library
             case apple_resource_bundle
@@ -149,9 +153,13 @@ extension Rules.Apple.IOS {
         /// Builds an `ios_application` target.
         public static func ios_application(
             name: String,
+            app_icons: Starlark.Value? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            extensions: [Starlark.Label]? = nil,
+            frameworks: [Starlark.Label]? = nil,
             families: [String]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
@@ -165,9 +173,13 @@ extension Rules.Apple.IOS {
         {
             Rules.Apple.IOS.ios_application.call {
                 "name" => name
+                if let app_icons { "app_icons" => app_icons }
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let extensions { "extensions" => extensions }
+                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
                 if let families { "families" => families }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -273,6 +285,7 @@ extension Rules.Apple.IOS {
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
             families: [String]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
@@ -286,6 +299,7 @@ extension Rules.Apple.IOS {
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
                 if let families { "families" => families }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
@@ -428,9 +442,14 @@ extension Rules.Apple.MacOS {
         /// Builds a `macos_application` target.
         public static func macos_application(
             name: String,
+            additional_contents: [String: String]? = nil,
+            app_icons: Starlark.Value? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            extensions: [Starlark.Label]? = nil,
+            frameworks: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
@@ -440,9 +459,16 @@ extension Rules.Apple.MacOS {
         {
             Rules.Apple.MacOS.macos_application.call {
                 "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
+                if let app_icons { "app_icons" => app_icons }
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let extensions, !extensions.isEmpty { "extensions" => extensions }
+                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
                 if let resources { "resources" => resources }
@@ -451,11 +477,38 @@ extension Rules.Apple.MacOS {
             }
         }
 
-        public static func macos_extension(
+        /// Builds a `macos_framework` target.
+        public static func macos_framework(
             name: String,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.MacOS.macos_framework.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let visibility { visibility }
+            }
+        }
+
+        public static func macos_extension(
+            name: String,
+            additional_contents: [String: String]? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            frameworks: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
@@ -465,9 +518,46 @@ extension Rules.Apple.MacOS {
         {
             Rules.Apple.MacOS.macos_extension.call {
                 "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
                 if let bundle_id { "bundle_id" => bundle_id }
                 if let bundle_name { "bundle_name" => bundle_name }
                 if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_xpc_service` target.
+        public static func macos_xpc_service(
+            name: String,
+            additional_contents: [String: String]? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.MacOS.macos_xpc_service.call {
+                "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
                 if let infoplists { "infoplists" => infoplists }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
                 if let resources { "resources" => resources }
@@ -941,12 +1031,14 @@ extension Rules.Apple.General {
         public static func apple_dynamic_xcframework_import(
             name: String,
             xcframework_imports: Starlark.Value,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_dynamic_xcframework_import.call {
                 "name" => name
                 "xcframework_imports" => xcframework_imports
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -955,12 +1047,14 @@ extension Rules.Apple.General {
         public static func apple_static_xcframework_import(
             name: String,
             xcframework_imports: Starlark.Value,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_static_xcframework_import.call {
                 "name" => name
                 "xcframework_imports" => xcframework_imports
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -1086,15 +1180,21 @@ extension Rules.Apple.Resources {
         /// Builds an `apple_resource_bundle` target.
         public static func apple_resource_bundle(
             name: String,
+            bundle_name: String? = nil,
+            infoplists: Starlark.Value? = nil,
             resources: Starlark.Value? = nil,
             structured_resources: Starlark.Value? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_resource_bundle.call {
                 "name" => name
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let infoplists { "infoplists" => infoplists }
                 if let resources { "resources" => resources }
                 if let structured_resources { "structured_resources" => structured_resources }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }
@@ -1103,6 +1203,7 @@ extension Rules.Apple.Resources {
         public static func apple_resource_group(
             name: String,
             resources: Starlark.Value? = nil,
+            strip_structured_resources_prefixes: [String]? = nil,
             structured_resources: Starlark.Value? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
@@ -1110,6 +1211,9 @@ extension Rules.Apple.Resources {
             Rules.Apple.Resources.apple_resource_group.call {
                 "name" => name
                 if let resources { "resources" => resources }
+                if let strip_structured_resources_prefixes, !strip_structured_resources_prefixes.isEmpty {
+                    "strip_structured_resources_prefixes" => strip_structured_resources_prefixes
+                }
                 if let structured_resources { "structured_resources" => structured_resources }
                 if let visibility { visibility }
             }
@@ -1125,6 +1229,98 @@ extension Rules.Apple.Resources {
             Rules.Apple.Resources.swift_apple_core_ml_library.call {
                 "name" => name
                 "srcs" => srcs
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `swift_intent_library` target.
+        ///
+        /// Parameters:
+        /// - `name: String`
+        ///   The Bazel target name.
+        /// - `src: Starlark.Label`
+        ///   The `.intentdefinition` file to generate classes from.
+        /// - `class_prefix: String?`
+        ///   Class prefix for the generated classes.
+        /// - `class_visibility: String?`
+        ///   Swift visibility of the generated classes: `public`, `private` or `project`.
+        /// - `swift_version: String?`
+        ///   Swift language version used for the generated classes.
+        /// - `testonly: Bool?`
+        ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
+        ///   Repo-local convenience for emitting a `visibility` attribute.
+        public static func swift_intent_library(
+            name: String,
+            src: Starlark.Label,
+            class_prefix: String? = nil,
+            class_visibility: String? = nil,
+            swift_version: String? = nil,
+            testonly: Bool? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.Resources.swift_intent_library.call {
+                "name" => name
+                "src" => src
+                if let class_prefix { "class_prefix" => class_prefix }
+                if let class_visibility { "class_visibility" => class_visibility }
+                if let swift_version { "swift_version" => swift_version }
+                if let testonly { "testonly" => testonly }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `apple_intent_library` target.
+        ///
+        /// Unlike `swift_intent_library` this exposes the generated sources directly,
+        /// so they can be compiled into the module that uses them — which is how
+        /// Xcode treats an `.intentdefinition` belonging to a target.
+        ///
+        /// Parameters:
+        /// - `name: String`
+        ///   The Bazel target name.
+        /// - `src: Starlark.Label`
+        ///   The `.intentdefinition` file to generate classes from.
+        /// - `language: String`
+        ///   `Swift` or `Objective-C`.
+        /// - `class_prefix: String?`
+        ///   Class prefix for the generated classes.
+        /// - `class_visibility: String?`
+        ///   Swift visibility of the generated classes: `public`, `private` or `project`.
+        /// - `header_name: String?`
+        ///   Generated header name, required for Objective-C.
+        /// - `swift_version: String?`
+        ///   Swift language version used for the generated classes.
+        /// - `tags: [String]?`
+        ///   Bazel tags; the rule is meant to be built only through its consumer.
+        /// - `testonly: Bool?`
+        ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
+        /// - `visibility: Starlark.Statement.Argument.Visibility?`
+        ///   Repo-local convenience for emitting a `visibility` attribute.
+        public static func apple_intent_library(
+            name: String,
+            src: Starlark.Label,
+            language: String,
+            class_prefix: String? = nil,
+            class_visibility: String? = nil,
+            header_name: String? = nil,
+            swift_version: String? = nil,
+            tags: [String]? = nil,
+            testonly: Bool? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.Resources.apple_intent_library.call {
+                "name" => name
+                "src" => src
+                "language" => language
+                if let class_prefix { "class_prefix" => class_prefix }
+                if let class_visibility { "class_visibility" => class_visibility }
+                if let header_name { "header_name" => header_name }
+                if let swift_version { "swift_version" => swift_version }
+                if let tags { "tags" => tags }
+                if let testonly { "testonly" => testonly }
                 if let visibility { visibility }
             }
         }

@@ -9,7 +9,6 @@ import BazelRules
 import Foundation
 import PathKit
 import Starlark
-import XCode
 
 extension Bazel {
     /// /BUILD

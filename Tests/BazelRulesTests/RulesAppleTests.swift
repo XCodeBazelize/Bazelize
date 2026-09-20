@@ -340,6 +340,8 @@ struct RulesAppleTests {
             name: "ShareExt",
             bundle_id: "com.example.share",
             deps: [":ShareExt_library"],
+            entitlements: "Sources/ShareExt/ShareExt.entitlements",
+            families: ["iphone", "ipad"],
             minimum_os_version: "18.0")
 
         #expect(
@@ -350,6 +352,11 @@ struct RulesAppleTests {
                     bundle_id = "com.example.share",
                     deps = [
                         ":ShareExt_library",
+                    ],
+                    entitlements = "Sources/ShareExt/ShareExt.entitlements",
+                    families = [
+                        "iphone",
+                        "ipad",
                     ],
                     minimum_os_version = "18.0",
                 )

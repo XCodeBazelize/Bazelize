@@ -1,0 +1,58 @@
+//
+//  PluginXcodeProj.swift
+//
+//
+//  Created by Yume on 2023/2/3.
+//
+
+import Foundation
+import XcodeProj
+
+// MARK: - PluginXcodeProj
+
+/// https://github.com/MobileNativeFoundation/rules_xcodeproj
+final class PluginXcodeProj: PluginBuiltin {
+    let dep: BazelDep.XcodeProj = .latest
+    override func module(_ builder: CodeBuilder) {
+        builder.bazel_dep(
+            name: "rules_xcodeproj",
+            version: dep.rawValue)
+    }
+
+    // TODO:
+    /// top target
+    /// custom project_name
+    /// not support swift_library -> static library
+    /// target_environments `device` need provision_profile
+    override func build(_ builder: CodeBuilder) {
+        let targets = kit.project.targets
+        let other = targets
+            .map(\.name)
+            .sorted()
+            .map { name in
+                """
+                "//Targets/\(name):\(name)",
+                """
+            }.withNewLine.indent(2)
+
+        builder.load(
+            module: "@rules_xcodeproj//xcodeproj:defs.bzl",
+            symbols: ["top_level_target", "xcodeproj"])
+
+        builder.custom("""
+        # Xcode
+        xcodeproj(
+            name = "xcodeproj",
+            # Custom Project Name
+            project_name = "App",
+            tags = ["manual"],
+            top_level_targets = [
+                # main target, maybe some `ios_application`
+                top_level_target(":App", target_environments = ["device", "simulator"]),
+                # all other target
+        \(other)
+            ],
+        )
+        """)
+    }
+}

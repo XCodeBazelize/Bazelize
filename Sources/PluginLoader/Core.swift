@@ -8,14 +8,14 @@
 // import Foundation
 // import PathKit
 // import Util
-// import XCode
+// import Xcode
 //
 ///// start -> load xcode
 ///// start -> load plugin list
 ///// load plugin list -> build plugin
 ///// build plugin -> load plugin
 ///// load xcode -> load plugin
-// public func load(manifest: Path, _ proj: Project) async throws -> [Plugin] {
+// public func load(manifest: Path, _ proj: Xcode.Project) async throws -> [Plugin] {
 //    guard manifest.exists else {
 //        return []
 //    }
