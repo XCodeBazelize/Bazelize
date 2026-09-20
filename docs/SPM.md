@@ -241,8 +241,9 @@ output of `swift package dump-package` and `describe`).
 | PluginTarget | 1 |
 
 No macro targets, and no mixed-language targets (SwiftPM does not allow them).
-The iOS fixture declares one instead, so the rules for a macro are exercised by
-a build rather than by inspection.
+Nothing in the corpus exercises a macro or a source-generating plugin by being
+built, so what covers those is `spm/TbCodeGenerater`, whose tests only compile
+through a source its own build tool plugin generates.
 
 ### Build settings (targets / packages using them)
 
@@ -285,7 +286,7 @@ a plugin target nobody consumes" as rules, **all 119 packages fall into stages
 |---|---|
 | pure Swift libraries, no resources | 58 |
 | + clang / resources / binary / system | 61 (119 cumulative) |
-| macros, source-generating plugins | 0 (none in the corpus; the fixture has a macro) |
+| macros, source-generating plugins | 0 (none in the corpus; `spm/TbCodeGenerater` covers a source-generating plugin) |
 
 The minimum stage each app needs (expanded from each workspace's
 `Package.resolved`):

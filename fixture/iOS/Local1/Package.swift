@@ -1,18 +1,10 @@
 // swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
-import CompilerPluginSupport
 import PackageDescription
 
 let package = Package(
     name: "Local1",
-    /// The host platform the macro and the plugin's tool are built for. Without
-    /// it SwiftPM builds them for the oldest macOS it supports, and swift-syntax
-    /// declares a newer one — which is a build failure, and a build failure is a
-    /// plugin that never ran.
-    platforms: [
-        .macOS(.v10_15),
-    ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
         .library(
@@ -21,40 +13,22 @@ let package = Package(
         .library(
             name: "LocalLib2",
             targets: ["LocalTarget2"]),
-        .executable(
-            name: "Local1Tool",
-            targets: ["Local1Tool"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
         .package(url: "https://github.com/ReactiveX/RxSwift", from: "6.5.0"),
-        .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
         // Targets can depend on other targets in this package, and on products in packages this package depends on.
-        .macro(
-            name: "Local1Macros",
-            dependencies: [
-                .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-            ]),
         .target(
             name: "LocalTarget1",
-            dependencies: ["RxSwift", "Local1Macros"],
-            plugins: ["Local1Gen"]),
+            dependencies: ["RxSwift"]),
         .target(
             name: "LocalTarget2",
             dependencies: ["RxSwift"]),
         .target(
-            name: "LocalTarget3",
-            plugins: ["Local1Gen"]),
-        .executableTarget(
-            name: "Local1Tool"),
-        .plugin(
-            name: "Local1Gen",
-            capability: .buildTool(),
-            dependencies: ["Local1Tool"]),
+            name: "LocalTarget3"),
         .testTarget(
             name: "Local1Tests",
             dependencies: ["LocalTarget1"]),

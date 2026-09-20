@@ -216,8 +216,9 @@ package 自己宣告的 platform floor 是**故意忽略**的——逐 package �
 | SystemLibraryTarget | 2 |
 | PluginTarget | 1 |
 
-沒有 macro target，也沒有混合語言 target（SwiftPM 本來就不允許）。iOS fixture 自己
-補了一個 macro，所以 macro 的規則是用「建起來並驗證展開結果」來檢查，不是靠讀產出。
+沒有 macro target，也沒有混合語言 target（SwiftPM 本來就不允許）。語料裡沒有任何
+東西會「靠建起來」驗證 macro 或會產生原始碼的 plugin，這兩件事由
+`spm/TbCodeGenerater` 守著——它的測試只有靠自己 build tool plugin 產生的原始碼才編得過。
 
 ### build settings（用到的 target 數／package 數）
 
@@ -258,7 +259,7 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 |---|---|
 | 純 Swift library、無 resource | 58 |
 | ＋ clang／resources／binary／system | 61（累計 119） |
-| macro、會產生原始碼的 plugin | 0（語料裡沒有；fixture 自己有一個 macro） |
+| macro、會產生原始碼的 plugin | 0（語料裡沒有；會產生原始碼的 plugin 由 `spm/TbCodeGenerater` 守著） |
 
 每個 app 需要的最低階段（用各 workspace 的 `Package.resolved` 展開）：
 
