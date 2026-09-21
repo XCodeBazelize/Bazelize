@@ -71,6 +71,8 @@ App/
 ├── Package.resolved          # kept: the only source of pins
 ├── config.bazelrc
 ├── BUILD
+├── plugins.sh                # what `bazel run //:plugins` runs
+├── tools/bazel               # what makes `bazel list` a command
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # unchanged
 └── Packages/                 # ★ new
@@ -82,6 +84,22 @@ App/
 ```
 
 `Patches/` disappears entirely.
+
+### What the workspace can be asked and told
+
+| command | what it does |
+|---|---|
+| `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
+| `bazel list config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
+| `bazel list trait` | the traits its packages declare, which are on, and why |
+
+`list` is not a Bazel command: `tools/bazel` is, which is the wrapper Bazelisk
+runs instead of Bazel and hands the real binary in `BAZEL_REAL`. `list` is
+answered there — no server starts to print a list — and every other command
+goes straight through. Both answers are read from the workspace as it is now
+rather than from something written into it at generation time, because a
+`.bazelrc` gets edited and a manifest's traits change with the manifest. Both
+answer for any workspace: no configuration and no trait are answers too.
 
 ### How a package's sources get in
 
@@ -182,13 +200,14 @@ No test pins how a package's rules are produced either.
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`: the bytes as `PackageResources`, and nothing in a bundle |
 | auto-discovered resources (xib/xcassets/metal/xcstrings/`.lproj`) | as above; a `.metal` file takes the target's headers into the resource group, because the bundler compiles them as Metal headers |
-| `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent |
+| `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent; `.define("A", to: "1")` is one flag, `-DA=1` |
 | `headerSearchPath` | `includes`, and the headers there stay inputs even when `exclude` drops the directory |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
 | `swiftLanguageMode` | `-swift-version` |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
 | `defaultIsolation` | `-default-isolation <value>` |
-| `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
+| `interoperabilityMode` | `-cxx-interoperability-mode=default` for `.Cxx`, nothing for `.C`, which is what the compiler does anyway |
+| `cLanguageStandard` / `cxxLanguageStandard` | `-std=`, for the language the target is written in; a target that compiles both is named instead, because one rule takes one `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
 | build tool plugin, own package | built by Bazel, run by bazelize (`bazel run //:plugins`); what it writes is globbed into the target that asked for it |
@@ -196,7 +215,8 @@ No test pins how a package's rules are produced either.
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
 | traits (SE-0450) | resolved: a package gets its defaults unless a dependent names traits instead, and a setting conditional on a trait that is off is dropped |
-| `.when(platforms:)` on a setting | dropped unless the project builds one of those platforms |
+| `.when(platforms:)` on a setting or a dependency | dropped unless the project builds one of those platforms; a platform no Apple toolchain builds is always dropped |
+| `.when(traits:)` on a dependency | dropped unless one of those traits is on |
 | `.when(configuration:)` on a setting | kept: which configuration a rule is built in is Bazel's answer, not the generator's |
 
 Two SwiftPM behaviours are matched on every generated `swift_library`:

@@ -98,6 +98,56 @@ extension SwiftPM.Generator {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
     }
 
+    /// `bazel list config` and `bazel list trait`: what a generated workspace
+    /// can be asked about itself.
+    ///
+    /// Bazel has no way to add a command, but its launcher does: Bazelisk runs
+    /// `tools/bazel` instead of Bazel itself and hands it the real binary in
+    /// `BAZEL_REAL`. So `list` is answered by the wrapper and everything else
+    /// goes straight through — no server starts to print a list.
+    ///
+    /// It is written for every workspace: a project with no packages still has
+    /// configurations, and packages that declare no trait is an answer too.
+    func writeListCommand(locals: [Path]) throws {
+        let directory = output + "tools"
+        try directory.mkpath()
+
+        /// `tools` is a package of its own, so nothing globs the wrapper into
+        /// a rule of the workspace's root package.
+        try (directory + "BUILD").write("# The `bazel` launcher's wrapper lives here, and is not a build input.\n")
+
+        let arguments = locals
+            .flatMap { local in ["--local", local.absolute().string.quoted] }
+            .joined(separator: " ")
+
+        let script = directory + "bazel"
+        try script.write("""
+        #!/bin/bash
+        # The `bazel` this workspace runs: `bazel list config` says what
+        # `--config=<name>` it defines, `bazel list trait` says which traits its
+        # packages declare and which of them are on. Every other command is the
+        # one Bazel would have run.
+        set -euo pipefail
+        workspace="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+        if [[ "${1:-}" == "list" ]]; then
+            shift
+            exec bazelize list "$@" --output "$workspace" \(arguments)
+        fi
+
+        if [[ -z "${BAZEL_REAL:-}" ]]; then
+            echo "tools/bazel ran without BAZEL_REAL: run Bazel through Bazelisk." >&2
+            exit 1
+        fi
+
+        exec "$BAZEL_REAL" "$@"
+
+        """)
+
+        /// The launcher only runs a wrapper it can execute.
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
+    }
+
     /// What a plugin needs built: the plugin itself, and the tools it runs.
     private var pluginBinaries: [PluginBinary] {
         var binaries: [PluginBinary] = []

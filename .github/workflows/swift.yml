@@ -319,6 +319,8 @@ jobs:
           - name: BuildToolPlugin
             plugins: true
           - name: CommandPlugin
+          - name: Clang
+          - name: DependencyCondition
           - name: Macro
           - name: Trait
           - name: TargetSources
@@ -360,6 +362,14 @@ jobs:
         if: matrix.plugins
         working-directory: spm/${{ matrix.name }}/App
         run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
+
+      # The workspace's own commands, which answer whatever the package is:
+      # a package with no trait and no configuration answers that.
+      - name: List Workspace
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list config
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list trait
 
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App

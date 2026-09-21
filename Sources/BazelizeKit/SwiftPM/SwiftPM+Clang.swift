@@ -98,6 +98,7 @@ extension SwiftPM.Generator {
                     of: target,
                     in: package,
                     module: module,
+                    compiled: compiled,
                     resources: resources).nonEmpty,
                 enable_modules: true,
                 includes: includes(
@@ -259,6 +260,7 @@ extension SwiftPM.Generator {
         of target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         module: String,
+        compiled: [String],
         resources: ResourceBundle?) -> [String]
     {
         var copts = ["-fmodule-name=\(module)"] + clangDefines(of: target)
@@ -269,12 +271,7 @@ extension SwiftPM.Generator {
             copts.append("-include$(location \(header))")
         }
 
-        if let standard = package.manifest.cLanguageStandard {
-            copts.append("-std=\(standard)")
-        }
-        if let standard = package.manifest.cxxLanguageStandard {
-            copts.append("-std=\(standard)")
-        }
+        copts += standards(of: target, in: package, compiled: compiled)
 
         for setting in target.settings where setting.tool == "c" || setting.tool == "cxx" {
             guard setting.name == "unsafeFlags" else { continue }
@@ -283,6 +280,47 @@ extension SwiftPM.Generator {
 
         return copts
     }
+
+    /// `-std=`, for the language the target is actually written in.
+    ///
+    /// SwiftPM compiles each file with the standard of its own language; one
+    /// rule has one `copts`, and clang rejects a C standard for a C++ file as
+    /// firmly as the other way round. So the standard is the one that fits what
+    /// the target compiles, and a target that compiles both is named instead of
+    /// being given a flag that breaks half of it.
+    private func standards(
+        of target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        compiled: [String]) -> [String]
+    {
+        let extensions = Set(compiled)
+        let cxx = !extensions.isDisjoint(with: Self.cxxExtensions)
+        let c = !extensions.isDisjoint(with: Self.cExtensions)
+
+        switch (c, cxx) {
+        case (true, false):
+            return package.manifest.cLanguageStandard.map { ["-std=\($0)"] } ?? []
+        case (false, true):
+            return package.manifest.cxxLanguageStandard.map { ["-std=\($0)"] } ?? []
+        case (true, true):
+            guard package.manifest.cLanguageStandard != nil || package.manifest.cxxLanguageStandard != nil else {
+                return []
+            }
+
+            let message = """
+            \(package.directory)'s \(target.name) compiles C and C++ in one target, \
+            and one rule takes one `-std`: the language standards the package \
+            declares are left off.
+            """
+            note(message)
+            return []
+        case (false, false):
+            return []
+        }
+    }
+
+    private static let cExtensions: Set<String> = ["c", "m"]
+    private static let cxxExtensions: Set<String> = ["cc", "cpp", "cxx", "c++", "mm"]
 }
 
 extension SwiftPM.Generator {
@@ -292,10 +330,12 @@ extension SwiftPM.Generator {
     /// Flags, not the `defines` attribute, for the same reason as a Swift target:
     /// the attribute would propagate into everything downstream.
     func clangDefines(of target: SwiftPM.PackageTarget) -> [String] {
-        let declared = target.settings.flatMap { setting -> [String] in
-            guard setting.name == "define" else { return [] }
-            guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
-            return setting.values
+        let declared = target.settings.compactMap { setting -> String? in
+            guard setting.name == "define" else { return nil }
+            guard setting.tool == "c" || setting.tool == "cxx" else { return nil }
+            /// `.define("A", to: "1")` is dumped as two values, and is one flag:
+            /// `-DA=1`.
+            return setting.values.nonEmpty?.joined(separator: "=")
         }
 
         return (["SWIFT_PACKAGE"] + declared).map { "-D\($0)" }

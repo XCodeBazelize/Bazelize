@@ -349,9 +349,14 @@ extension SwiftPM.Generator {
         @end
 
         NSBundle *\(module)_SWIFTPM_MODULE_BUNDLE(void) {
-            NSArray *candidates = @[
+            /// The same candidates the Swift accessor tries, in the same
+            /// order: on macOS a bundle's resources are under `Resources`, and
+            /// only a flat bundle has them beside the binary.
+            NSArray<NSURL *> *candidates = @[
+                [[NSBundle mainBundle] resourceURL] ?: [[NSBundle mainBundle] bundleURL],
+                [[NSBundle bundleForClass:[\(module)_BundleFinder class]] resourceURL]
+                    ?: [[NSBundle bundleForClass:[\(module)_BundleFinder class]] bundleURL],
                 [[NSBundle mainBundle] bundleURL],
-                [[NSBundle bundleForClass:[\(module)_BundleFinder class]] bundleURL],
             ];
 
             for (NSURL *base in candidates) {

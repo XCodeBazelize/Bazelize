@@ -34,6 +34,13 @@ extension SwiftPM {
         /// the package asked for, and why.
         private(set) var notes: [String] = []
 
+        /// Something a caller has to be told: it is logged where a run is
+        /// watched, and carried back for the report at the end of one.
+        func note(_ message: String) {
+            Log.codeGenerate.warning("\(message, privacy: .public)")
+            notes.append(message)
+        }
+
         /// The plugins and tools Bazel already built, by target name. Empty
         /// while a workspace is being generated — nothing has been built yet —
         /// and filled by `//:plugins`, which has Bazel build them first.
@@ -76,6 +83,7 @@ extension SwiftPM {
             }
 
             try writePluginRunner(locals: locals)
+            try writeListCommand(locals: locals)
         }
 
         /// A package that declares a platform version the project does not reach is

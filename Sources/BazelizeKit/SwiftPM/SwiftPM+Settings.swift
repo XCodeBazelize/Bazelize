@@ -35,8 +35,10 @@ extension SwiftPM.Generator {
             case "strictMemorySafety":
                 return ["-strict-memory-safety"]
             case "interoperabilityMode":
-                guard let mode = setting.values.first else { return [] }
-                return ["-cxx-interoperability-mode=\(mode)"]
+                /// The manifest names the language; the compiler takes a mode.
+                /// `.C` is what it does anyway, and has no flag.
+                guard setting.values.first == "Cxx" else { return [] }
+                return ["-cxx-interoperability-mode=default"]
             case "unsafeFlags":
                 return setting.values
             default:

@@ -64,6 +64,8 @@ App/
 ├── Package.resolved          # 保留：pin 的唯一來源
 ├── config.bazelrc
 ├── BUILD
+├── plugins.sh                # `bazel run //:plugins` 跑的就是它
+├── tools/bazel               # 讓 `bazel list` 變成一個指令的東西
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # 完全不變
 └── Packages/                 # ★ 新增
@@ -75,6 +77,20 @@ App/
 ```
 
 `Patches/` 整組消失。
+
+### 這個 workspace 可以被問什麼
+
+| 指令 | 做什麼 |
+|---|---|
+| `bazel run //:plugins` | 讓 Bazel 建這個 workspace 的 build tool plugin 與它們的工具、執行它們，把產生的檔案寫回 `Packages/*/Generated/` |
+| `bazel list config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
+| `bazel list trait` | 它的 package 宣告了哪些 trait、哪些是開的、為什麼 |
+
+`list` 不是 Bazel 的指令，`tools/bazel` 才是：Bazelisk 會執行這個 wrapper 而不是
+Bazel 本身，並把真正的執行檔放在 `BAZEL_REAL`。`list` 在那裡就回答完了——印一份清單
+不需要起一個 Bazel server——其他指令原封不動往下傳。兩個答案都是「現在」讀出來的，
+不是產生當下寫死的：`.bazelrc` 會被人改，manifest 的 trait 也會跟著 manifest 變。
+兩個指令對任何 workspace 都答得出來：沒有 config、沒有 trait 也是答案。
 
 ### package 的原始碼怎麼進來
 
@@ -164,13 +180,14 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`：把 bytes 變成 `PackageResources`，bundle 裡什麼都不放 |
 | auto-discovered resources（xib／xcassets／metal／xcstrings／`.lproj`） | 同上；有 `.metal` 時該 target 的 header 也一起進 resource group，因為 bundler 會把它們當 Metal header 編 |
-| `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳 |
+| `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳；`.define("A", to: "1")` 是一個 flag：`-DA=1` |
 | `headerSearchPath` | `includes`，而且該目錄被 `exclude` 丟掉時 header 仍然留作輸入 |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
 | `swiftLanguageMode` | `-swift-version` |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
 | `defaultIsolation` | `-default-isolation <value>` |
-| `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
+| `interoperabilityMode` | `.Cxx` 給 `-cxx-interoperability-mode=default`；`.C` 什麼都不給，那本來就是編譯器的行為 |
+| `cLanguageStandard` / `cxxLanguageStandard` | `-std=`，看 target 實際寫的是哪種語言；同時編 C 與 C++ 的 target 兩個都不給，並具名回報——一條規則只有一個 `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
 | build tool plugin（自己的 package） | Bazel 建、bazelize 跑（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
@@ -178,7 +195,8 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 會解析：沒人指名就用 package 自己的預設 traits，有人指名就用指名的；條件在「沒開的 trait」上的 setting 直接丟掉 |
-| setting 上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉 |
+| setting 或依賴上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉；Apple toolchain 根本不建的平台一律丟掉 |
+| 依賴上的 `.when(traits:)` | 那些 trait 沒開就丟掉 |
 | setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
