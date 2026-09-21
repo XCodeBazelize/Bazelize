@@ -3,7 +3,7 @@
 import PackageDescription
 
 /// A dependency can be conditional: on the platform being built, or on a trait
-/// being on. What the condition excludes must not be built at all.
+/// being on. What the condition excludes is not part of the build.
 ///
 /// The conditional ones are packages of their own because a target of the
 /// package being built is compiled whether anything depends on it or not — only
@@ -31,5 +31,10 @@ let package = Package(
         .target(name: "Always"),
         .testTarget(
             name: "ConditionalTests",
-            dependencies: ["Conditional"]),
+            dependencies: ["Conditional"],
+            swiftSettings: [
+                /// So the test can say which build it is in: the trait decides
+                /// this define the same way it decides the dependency.
+                .define("EXTRAS", .when(traits: ["Extras"])),
+            ]),
     ])

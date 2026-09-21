@@ -36,10 +36,8 @@ extension SwiftPM.Generator {
                         + generated,
                     exclude: excluded(target, prefix: prefix),
                     allowEmpty: true),
-                copts: copts(of: target).nonEmpty,
-                deps: deps(of: target, in: package).nonEmpty.map { labels in
-                    .build { labels }
-                },
+                copts: copts(of: target, in: package),
+                deps: deps(of: target, in: package),
                 module_name: Self.moduleName(target.name),
                 tags: Self.manual,
                 visibility: .public))

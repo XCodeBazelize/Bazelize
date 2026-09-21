@@ -321,6 +321,9 @@ jobs:
           - name: CommandPlugin
           - name: Clang
           - name: DependencyCondition
+            # A trait is a flag, so the build that turns one on is a build to
+            # test as well: the dependency behind it is linked only then.
+            config: DependencyCondition.Extras
           - name: Macro
           - name: Trait
           - name: TargetSources
@@ -374,3 +377,8 @@ jobs:
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...
+
+      - name: Test Package With Trait
+        if: matrix.config
+        working-directory: spm/${{ matrix.name }}/App
+        run: bazel test //... --config=${{ matrix.config }}

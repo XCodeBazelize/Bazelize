@@ -218,3 +218,11 @@ extension Array where Element == Starlark.Value {
         .array(self)
     }
 }
+
+extension Array where Element == String {
+    /// A list of flags as a value, so an attribute that takes one can also take
+    /// a `select`. `nil` rather than an empty attribute.
+    public var starlark: Starlark.Value? {
+        isEmpty ? nil : .array(map { .label(.init($0)) })
+    }
+}

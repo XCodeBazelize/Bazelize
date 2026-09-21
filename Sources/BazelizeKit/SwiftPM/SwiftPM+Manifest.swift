@@ -45,20 +45,25 @@ extension SwiftPM {
             toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
         }
 
-        /// The manifest with every setting that does not apply removed, so
-        /// nothing downstream has to know a condition exists.
+        /// The manifest with everything the platform rules out removed.
+        ///
+        /// A trait's condition survives: which traits are on is a question the
+        /// build answers, through a flag per trait, so what is conditional on
+        /// one becomes a `select` rather than a decision taken here. A platform
+        /// cannot be that — a package rule is built through the transition of
+        /// whatever pulls it in — so it is decided now.
         ///
         /// `platforms` empty means the caller does not know which platforms are
-        /// built, and a platform condition is then left alone.
-        func resolving(traits: Set<String>, platforms: Set<String>) -> Manifest {
+        /// built, which still rules out the ones no Apple toolchain builds.
+        func resolving(platforms: Set<String>) -> Manifest {
             var resolved = self
             resolved.targets = targets.map { target in
                 var target = target
                 target.settings = target.settings.filter { setting in
-                    setting.applies(traits: traits, platforms: platforms)
+                    setting.condition?.applies(platforms: platforms) ?? true
                 }
                 target.dependencies = target.dependencies.filter { dependency in
-                    dependency.applies(traits: traits, platforms: platforms)
+                    dependency.condition?.applies(platforms: platforms) ?? true
                 }
                 return target
             }
@@ -159,9 +164,10 @@ extension SwiftPM {
             kind.values.first?.values ?? []
         }
 
-        /// Whether the setting is one this build uses.
-        func applies(traits: Set<String>, platforms: Set<String>) -> Bool {
-            condition?.applies(traits: traits, platforms: platforms) ?? true
+        /// The traits the setting is conditional on, of which one being on is
+        /// what puts it in the build. Empty means it is always in.
+        var traits: [String] {
+            condition?.traits ?? []
         }
     }
 
@@ -261,9 +267,10 @@ extension SwiftPM {
                 .init(codingPath: decoder.codingPath, debugDescription: "Unknown target dependency"))
         }
 
-        /// Whether the dependency is one this build links.
-        func applies(traits: Set<String>, platforms: Set<String>) -> Bool {
-            condition?.applies(traits: traits, platforms: platforms) ?? true
+        /// The traits the dependency is conditional on, of which one being on
+        /// is what links it. Empty means it is always linked.
+        var traits: [String] {
+            condition?.traits ?? []
         }
     }
 
@@ -388,28 +395,20 @@ extension SwiftPM {
 }
 
 extension SwiftPM.SettingCondition {
-    /// Whether what carries this condition is part of this build: a condition
-    /// naming traits needs one of them on, and a condition naming platforms
-    /// needs one of them built.
+    /// Whether the platform this condition names is one the project builds.
     ///
     /// `platforms` empty means the caller does not know which platforms the
     /// project builds, which still rules out the platforms Bazelize never
     /// builds for — Linux, Android, Windows and the rest are not what an Xcode
     /// project or an Apple toolchain produces.
     ///
-    /// A configuration is not one of these: which configuration a rule is
-    /// built in is decided when Bazel builds it, not when it is generated.
-    func applies(traits: Set<String>, platforms: Set<String>) -> Bool {
-        if !self.traits.isEmpty, self.traits.allSatisfy({ !traits.contains($0) }) {
-            return false
-        }
+    /// Traits are not decided here, and neither is a configuration: both are
+    /// answered when Bazel builds, not when the rules are written.
+    func applies(platforms: Set<String>) -> Bool {
+        guard !platformNames.isEmpty else { return true }
 
         let built = platforms.isEmpty ? Self.apple : platforms
-        if !platformNames.isEmpty, platformNames.allSatisfy({ !built.contains($0) }) {
-            return false
-        }
-
-        return true
+        return !platformNames.allSatisfy { !built.contains($0) }
     }
 
     /// The platforms an Apple toolchain builds, which is every platform that

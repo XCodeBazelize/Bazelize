@@ -36,12 +36,12 @@ extension SwiftPM.Generator {
                     /// Which `PackagePlugin` the plugin was written against; its
                     /// availability is stated in terms of the tools version.
                     "-package-description-version", package.manifest.toolsVersion,
-                ],
+                ].starlark,
                 linkopts: [
                     "-L", api,
                     "-lPackagePlugin",
                     "-Xlinker", "-rpath", "-Xlinker", api,
-                ],
+                ].starlark,
                 module_name: Self.moduleName(target.name),
                 srcs: Starlark.glob(["\(prefix)/**/*.swift"]),
                 tags: Self.manual,
@@ -71,6 +71,9 @@ extension SwiftPM.Generator {
                 name: "plugins",
                 srcs: .build { binaries.map(\.label).sorted().map { Starlark.Label.named($0) } },
                 visibility: .public))
+        /// The flags every trait is switched with, in the package the
+        /// generator owns.
+        buildTraitRules(group)
         try (packagesRoot + "BUILD").write(group.build())
 
         let arguments = ["--output", "."]

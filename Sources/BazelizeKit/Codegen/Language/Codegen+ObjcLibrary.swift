@@ -40,15 +40,15 @@ extension Target {
                     }
                     copiedResourceGroups(project: project)
                 },
-                copts: [
+                copts: ([
                     "-fblocks",
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + forceIncludeFlags,
+                ] + forceIncludeFlags).starlark,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
-                linkopts: sdkLinkopts,
+                linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: sdkFrameworks(project: project),

@@ -43,6 +43,7 @@ App/
 ├── Package.swift             # synthesized manifest, read by rspm
 ├── Package.resolved          # seeded from Xcode's Package.resolved
 ├── config.bazelrc
+├── traits.bazelrc            # one `--config` per trait of the packages
 ├── BUILD
 ├── Prebuilt/                 # project-owned .framework/.a/.dylib (symlinks)
 └── Targets/<XcodeTarget>/
@@ -91,7 +92,7 @@ App/
 |---|---|
 | `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
 | `bazel list config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
-| `bazel list trait` | the traits its packages declare, which are on, and why |
+| `bazel list trait` | the traits its packages declare, which are on, and the `--config` that switches each |
 
 `list` is not a Bazel command: `tools/bazel` is, which is the wrapper Bazelisk
 runs instead of Bazel and hands the real binary in `BAZEL_REAL`. `list` is
@@ -214,9 +215,9 @@ No test pins how a package's rules are produced either.
 | build tool plugin, dependency | not run; the plugin is named at the end of the run |
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
-| traits (SE-0450) | resolved: a package gets its defaults unless a dependent names traits instead, and a setting conditional on a trait that is off is dropped |
+| traits (SE-0450) | a `bool_flag` each, defaulting to what the manifests resolve to, with a `--config=<Package>.<Trait>` beside it; what is conditional on one is a `select` |
 | `.when(platforms:)` on a setting or a dependency | dropped unless the project builds one of those platforms; a platform no Apple toolchain builds is always dropped |
-| `.when(traits:)` on a dependency | dropped unless one of those traits is on |
+| `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag, so the build decides it — a condition naming several traits is a `config_setting_group` |
 | `.when(configuration:)` on a setting | kept: which configuration a rule is built in is Bazel's answer, not the generator's |
 
 Two SwiftPM behaviours are matched on every generated `swift_library`:

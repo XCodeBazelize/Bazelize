@@ -37,6 +37,7 @@ App/
 ├── Package.swift             # 給 rspm 讀的合成 manifest
 ├── Package.resolved          # 由 Xcode 的 Package.resolved 播種
 ├── config.bazelrc
+├── traits.bazelrc            # 每個 package trait 一個 `--config`
 ├── BUILD
 ├── Prebuilt/                 # 專案自帶的 .framework/.a/.dylib（symlink）
 └── Targets/<XcodeTarget>/
@@ -84,7 +85,7 @@ App/
 |---|---|
 | `bazel run //:plugins` | 讓 Bazel 建這個 workspace 的 build tool plugin 與它們的工具、執行它們，把產生的檔案寫回 `Packages/*/Generated/` |
 | `bazel list config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
-| `bazel list trait` | 它的 package 宣告了哪些 trait、哪些是開的、為什麼 |
+| `bazel list trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
 
 `list` 不是 Bazel 的指令，`tools/bazel` 才是：Bazelisk 會執行這個 wrapper 而不是
 Bazel 本身，並把真正的執行檔放在 `BAZEL_REAL`。`list` 在那裡就回答完了——印一份清單
@@ -194,9 +195,9 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
-| traits（SE-0450） | 會解析：沒人指名就用 package 自己的預設 traits，有人指名就用指名的；條件在「沒開的 trait」上的 setting 直接丟掉 |
+| traits（SE-0450） | 一個 trait 一個 `bool_flag`，預設值就是 manifest 解析出來的結果，旁邊配一個 `--config=<Package>.<Trait>`；條件掛在 trait 上的東西變成 `select` |
 | setting 或依賴上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉；Apple toolchain 根本不建的平台一律丟掉 |
-| 依賴上的 `.when(traits:)` | 那些 trait 沒開就丟掉 |
+| setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`，由 build 當下決定；條件寫了多個 trait 就產生 `config_setting_group` |
 | setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM

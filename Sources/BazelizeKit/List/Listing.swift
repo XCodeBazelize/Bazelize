@@ -47,13 +47,10 @@ public enum Listing {
         return lines.joined(separator: "\n")
     }
 
-    /// `bazel run //list:trait`: the traits of every package in the workspace,
-    /// and which of them this build has on.
+    /// `bazel list trait`: the traits of every package in the workspace, which
+    /// of them a build gets by default, and what to say to change that.
     public static func traits(output: Path, locals: [Path]) async throws -> String {
         let workspace = try await SwiftPM.loadWorkspace(output: output, root: nil, locals: locals)
-        let enabled = SwiftPM.enabledTraits(
-            of: workspace.packages.map { (identity: $0.identity, manifest: $0.manifest) },
-            directoryByIdentity: workspace.directoryByIdentity)
 
         let declaring = workspace.packages
             .filter { !$0.manifest.traits.isEmpty }
@@ -65,7 +62,7 @@ public enum Listing {
 
         var lines = ["Traits of this workspace's packages:", ""]
         for package in declaring {
-            let turnedOn = enabled[package.identity] ?? []
+            let turnedOn = workspace.traits[package.identity] ?? []
             lines.append("  \(package.directory)")
 
             for trait in package.manifest.traits.sorted(by: { $0.name < $1.name }) {
@@ -77,18 +74,22 @@ public enum Listing {
                     continue
                 }
 
+                let on = turnedOn.contains(trait.name)
                 let enables = trait.enabledTraits.sorted().joined(separator: ", ")
                 lines.append(
-                    "    \(turnedOn.contains(trait.name) ? "on " : "off") \(trait.name)"
-                        + (enables.isEmpty ? "" : " (enables \(enables))"))
+                    "    \(on ? "on " : "off") \(trait.name)"
+                        + (enables.isEmpty ? "" : " (enables \(enables))")
+                        + "  --config=\(package.directory).\(trait.name)\(on ? "-off" : "")")
             }
         }
 
         lines.append("")
         lines.append("""
-        A trait is on when the package makes it a default, or when something \
-        that depends on the package asks for it by name. Change either in the \
-        manifest, then generate the workspace again.
+        A trait is on by default when its package makes it one, or when \
+        something that depends on that package asks for it by name. Every \
+        trait is a flag, so a build switches one with the `--config` beside \
+        it — `--config=<Package>.<Trait>` to turn it on, `-off` to turn it \
+        off — and `bazel list config` lists them with everything else.
         """)
         return lines.joined(separator: "\n")
     }

@@ -43,6 +43,10 @@ extension SwiftPM {
         /// Which directory a package identity or manifest name resolves to, so a
         /// product dependency can be turned into a label.
         let directoryByIdentity: [String: String]
+
+        /// Which traits each package is built with unless the build says
+        /// otherwise, by identity.
+        let traits: [String: Set<String>]
     }
 }
 
@@ -70,7 +74,8 @@ extension SwiftPM {
             return .init(
                 packages: [],
                 artifacts: output + ".build/artifacts",
-                directoryByIdentity: [:])
+                directoryByIdentity: [:],
+                traits: [:])
         }
 
         try await resolve(output: output)
@@ -106,8 +111,8 @@ extension SwiftPM {
         manifests.sort { $0.root.directory < $1.root.directory }
 
         /// Which traits are on is a property of the graph, not of one manifest,
-        /// so it is answered once every manifest is read — and then the
-        /// conditions are resolved away.
+        /// so it is answered once every manifest is read. It is what the flag
+        /// of each trait defaults to, not something resolved away here.
         let traits = enabledTraits(
             of: manifests.map { (identity: $0.root.directory.lowercased(), manifest: $0.manifest) },
             directoryByIdentity: directoryByIdentity)
@@ -115,9 +120,7 @@ extension SwiftPM {
             Package(
                 directory: entry.root.directory,
                 root: entry.root.path,
-                manifest: entry.manifest.resolving(
-                    traits: traits[entry.root.directory.lowercased()] ?? [],
-                    platforms: platforms),
+                manifest: entry.manifest.resolving(platforms: platforms),
                 isLocal: entry.root.isLocal,
                 /// Both sides are made absolute: the output can be a relative path,
                 /// and the package handed in is named however the caller named it.
@@ -127,7 +130,8 @@ extension SwiftPM {
         return .init(
             packages: packages,
             artifacts: output + ".build/artifacts",
-            directoryByIdentity: directoryByIdentity)
+            directoryByIdentity: directoryByIdentity,
+            traits: traits)
     }
 
     /// The traits each package is built with, by identity.

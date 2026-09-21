@@ -39,7 +39,7 @@ extension SwiftPM.Generator {
             Rules.Swift.Call.swift_library(
                 name: library,
                 always_include_developer_search_paths: true,
-                copts: copts(of: target).nonEmpty,
+                copts: copts(of: target, in: package),
                 module_name: Self.moduleName(target.name),
                 package_name: package.manifest.name,
                 srcs: Starlark.glob(
@@ -50,13 +50,11 @@ extension SwiftPM.Generator {
                         + (resources?.accessors ?? []),
                     exclude: excluded(target, prefix: prefix),
                     allowEmpty: true),
-                deps: deps(of: target, in: package).nonEmpty.map { labels in
-                    .build { labels }
-                },
+                deps: deps(of: target, in: package),
                 data: resources?.label.map { label in
                     .build { [Starlark.Label.named(label)] }
                 },
-                linkopts: linkopts(of: target).nonEmpty,
+                linkopts: linkopts(of: target, in: package),
                 tags: Self.manual,
                 testonly: true,
                 visibility: .private))

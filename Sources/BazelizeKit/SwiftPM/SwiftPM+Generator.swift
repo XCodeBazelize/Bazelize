@@ -30,6 +30,10 @@ extension SwiftPM {
 
         private var kinds: [String: [String: TargetKind]] = [:]
 
+        /// The `config_setting_group` a condition on several traits asked for,
+        /// by name, written with the flags once every rule is generated.
+        var traitGroups: [String: [String]] = [:]
+
         /// What a caller tells the user about: where the build differs from what
         /// the package asked for, and why.
         private(set) var notes: [String] = []
@@ -84,6 +88,10 @@ extension SwiftPM {
 
             try writePluginRunner(locals: locals)
             try writeListCommand(locals: locals)
+            /// Written whether or not there is a trait to switch: the root
+            /// `.bazelrc` imports it, and an import of a file that is not
+            /// there is a workspace that does not load.
+            try writeTraitConfigs()
         }
 
         /// A package that declares a platform version the project does not reach is
@@ -738,7 +746,7 @@ extension SwiftPM {
                     /// search paths, which is how a test-support library finds
                     /// XCTest.
                     always_include_developer_search_paths: true,
-                    copts: copts(of: target).nonEmpty,
+                    copts: copts(of: target, in: package),
                     module_name: Self.moduleName(target.name),
                     /// Which targets `package` visibility reaches: every target of
                     /// the same package, which is what the name identifies.
@@ -757,13 +765,11 @@ extension SwiftPM {
                         /// written into it: `bazel run //:plugins` does that, and
                         /// a package that cannot load cannot run it.
                         allowEmpty: true),
-                    deps: deps(of: target, in: package).nonEmpty.map { labels in
-                        .build { labels }
-                    },
+                    deps: deps(of: target, in: package),
                     data: resources?.label.map { label in
                         .build { [Starlark.Label.named(label)] }
                     },
-                    linkopts: linkopts(of: target).nonEmpty,
+                    linkopts: linkopts(of: target, in: package),
                     tags: Self.manual,
                     visibility: .public))
         }
@@ -822,13 +828,15 @@ extension SwiftPM {
             }
         }
 
-        func deps(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
+        /// What the target links, with whatever a trait decides in a `select`
+        /// on that trait's flag.
+        func deps(of target: PackageTarget, in package: Package) -> Starlark.Value? {
             let localTargets = Set(package.manifest.targets.map(\.name))
             let localProducts = Dictionary(
                 package.manifest.products.map { ($0.name, $0) },
                 uniquingKeysWith: { first, _ in first })
 
-            let labels: [String] = target.dependencies.compactMap { dependency in
+            func dependencyLabel(_ dependency: SwiftPM.TargetDependency) -> String? {
                 switch dependency.kind {
                 case .target(let name):
                     guard localTargets.contains(name), !isMacro(name, in: package) else { return nil }
@@ -845,7 +853,25 @@ extension SwiftPM {
                 }
             }
 
-            return Array(Set(labels)).sorted().map(Starlark.Label.named)
+            var always: Set<String> = []
+            var conditions: [String] = []
+            var byCondition: [String: Set<String>] = [:]
+
+            for dependency in target.dependencies {
+                guard let label = dependencyLabel(dependency) else { continue }
+
+                guard let condition = traitCondition(dependency.traits, in: package) else {
+                    always.insert(label)
+                    continue
+                }
+
+                if byCondition[condition] == nil { conditions.append(condition) }
+                byCondition[condition, default: []].insert(label)
+            }
+
+            return traitValue(
+                always.sorted(),
+                conditional: conditions.map { ($0, (byCondition[$0] ?? []).sorted()) })
         }
 
         private func isMacro(_ target: String, in package: Package) -> Bool {

@@ -48,9 +48,9 @@ extension Rules.Cc {
             srcs: Starlark.Value? = nil,
             hdrs: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
-            copts: [String]? = nil,
+            copts: Starlark.Value? = nil,
             includes: [String]? = nil,
-            linkopts: [String]? = nil,
+            linkopts: Starlark.Value? = nil,
             tags: [String]? = nil,
             textual_hdrs: Starlark.Value? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)

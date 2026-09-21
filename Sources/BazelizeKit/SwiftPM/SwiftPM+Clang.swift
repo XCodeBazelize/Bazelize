@@ -87,9 +87,7 @@ extension SwiftPM.Generator {
                     }?
                     .nonEmpty
                     .map { Starlark.glob($0) },
-                deps: deps(of: target, in: package).nonEmpty.map { labels in
-                    .build { labels }
-                },
+                deps: deps(of: target, in: package),
                 data: resources?.label.map { label in
                     .build { [Starlark.Label.named(label)] }
                 },
@@ -99,13 +97,13 @@ extension SwiftPM.Generator {
                     in: package,
                     module: module,
                     compiled: compiled,
-                    resources: resources).nonEmpty,
+                    resources: resources),
                 enable_modules: true,
                 includes: includes(
                     of: target,
                     prefix: prefix,
                     interface: interface).nonEmpty,
-                linkopts: linkopts(of: target).nonEmpty,
+                linkopts: linkopts(of: target, in: package),
                 /// The module a dependent's `@import` names: the package target's
                 /// own name, not the one Bazel derives from the label.
                 module_name: module,
@@ -261,24 +259,38 @@ extension SwiftPM.Generator {
         in package: SwiftPM.Package,
         module: String,
         compiled: [String],
-        resources: ResourceBundle?) -> [String]
+        resources: ResourceBundle?) -> Starlark.Value?
     {
-        var copts = ["-fmodule-name=\(module)"] + clangDefines(of: target)
+        var always = ["-fmodule-name=\(module)", "-DSWIFT_PACKAGE"]
 
         /// SwiftPM force-includes the accessor, so a source reaches its bundle
         /// without importing anything.
         if let header = resources?.header {
-            copts.append("-include$(location \(header))")
+            always.append("-include$(location \(header))")
         }
 
-        copts += standards(of: target, in: package, compiled: compiled)
+        always += standards(of: target, in: package, compiled: compiled)
 
-        for setting in target.settings where setting.tool == "c" || setting.tool == "cxx" {
-            guard setting.name == "unsafeFlags" else { continue }
-            copts.append(contentsOf: setting.values)
+        return grouped(target.settings, in: package, always: always, flags: Self.clangFlags)
+    }
+
+    /// The flags of one C-family setting.
+    ///
+    /// Flags, not the `defines` attribute, for the same reason as a Swift
+    /// target: the attribute would propagate into everything downstream.
+    private static func clangFlags(_ setting: SwiftPM.Setting) -> [String] {
+        guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
+
+        switch setting.name {
+        case "define":
+            /// `.define("A", to: "1")` is dumped as two values, and is one
+            /// flag: `-DA=1`.
+            return setting.values.nonEmpty.map { ["-D\($0.joined(separator: "="))"] } ?? []
+        case "unsafeFlags":
+            return setting.values
+        default:
+            return []
         }
-
-        return copts
     }
 
     /// `-std=`, for the language the target is actually written in.
@@ -321,23 +333,4 @@ extension SwiftPM.Generator {
 
     private static let cExtensions: Set<String> = ["c", "m"]
     private static let cxxExtensions: Set<String> = ["cc", "cpp", "cxx", "c++", "mm"]
-}
-
-extension SwiftPM.Generator {
-    /// `c.define` and `cxx.define`, plus the `SWIFT_PACKAGE` every package target
-    /// compiles with.
-    ///
-    /// Flags, not the `defines` attribute, for the same reason as a Swift target:
-    /// the attribute would propagate into everything downstream.
-    func clangDefines(of target: SwiftPM.PackageTarget) -> [String] {
-        let declared = target.settings.compactMap { setting -> String? in
-            guard setting.name == "define" else { return nil }
-            guard setting.tool == "c" || setting.tool == "cxx" else { return nil }
-            /// `.define("A", to: "1")` is dumped as two values, and is one flag:
-            /// `-DA=1`.
-            return setting.values.nonEmpty?.joined(separator: "=")
-        }
-
-        return (["SWIFT_PACKAGE"] + declared).map { "-D\($0)" }
-    }
 }

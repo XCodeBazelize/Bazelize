@@ -1065,7 +1065,7 @@ extension Rules.Apple.General {
             deps: [Starlark.Label],
             avoid_deps: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
-            linkopts: [String]? = nil,
+            linkopts: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             platform_type: String? = nil,
             sdk_dylibs: [String]? = nil,

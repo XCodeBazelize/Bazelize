@@ -83,7 +83,12 @@ extension Bazel {
     /// Bazel only reads `config.bazelrc` when the root `.bazelrc` imports it, so
     /// the generated flags are inert without this file.
     struct RootRC {
-        static let importLine = "import %workspace%/config.bazelrc"
+        /// What the root file has to import for the generated flags to be
+        /// read: the project's configurations, and the traits of its packages.
+        static let importLines = [
+            "import %workspace%/config.bazelrc",
+            "import %workspace%/traits.bazelrc",
+        ]
 
         let path: Path
 
@@ -91,18 +96,17 @@ extension Bazel {
             path = root + ".bazelrc"
         }
 
-        /// Creates `.bazelrc` when missing and otherwise appends the import once,
-        /// because the file may be hand-written and carry unrelated flags.
+        /// Creates `.bazelrc` when missing and otherwise appends each import
+        /// once, because the file may be hand-written and carry unrelated
+        /// flags.
         func ensureImport() throws {
-            guard let existing = try? String(contentsOfFile: path.string, encoding: .utf8) else {
-                try path.write(Self.importLine + "\n")
-                return
-            }
-
-            guard !existing.components(separatedBy: .newlines).contains(Self.importLine) else { return }
+            let existing = (try? String(contentsOfFile: path.string, encoding: .utf8)) ?? ""
+            let lines = existing.components(separatedBy: .newlines)
+            let missing = Self.importLines.filter { !lines.contains($0) }
+            guard !missing.isEmpty else { return }
 
             let separator = existing.hasSuffix("\n") || existing.isEmpty ? "" : "\n"
-            try path.write(existing + separator + Self.importLine + "\n")
+            try path.write(existing + separator + missing.joined(separator: "\n") + "\n")
         }
     }
 }

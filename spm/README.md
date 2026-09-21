@@ -32,6 +32,7 @@ bazel run //:plugins   # only the packages with a build tool plugin need this
 bazel test //...
 bazel list config      # what `--config=<name>` the workspace defines
 bazel list trait       # which traits its packages declare, and which are on
+bazel test //... --config=<Package>.<Trait>   # …with one of them turned on
 ```
 
 `bazel run //:plugins` runs this workspace's build tool plugins and writes what

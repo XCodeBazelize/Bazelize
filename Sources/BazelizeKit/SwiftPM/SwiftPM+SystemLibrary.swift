@@ -53,7 +53,7 @@ extension SwiftPM.Generator {
                     .nonEmpty
                     .map { Starlark.glob($0) },
                 includes: [prefix],
-                linkopts: Self.linkopts(moduleMap: root + moduleMap).nonEmpty,
+                linkopts: Self.linkopts(moduleMap: root + moduleMap).starlark,
                 tags: Self.manual,
                 visibility: .public))
 
