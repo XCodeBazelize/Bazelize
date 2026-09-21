@@ -306,9 +306,8 @@ jobs:
         working-directory: ${{ matrix.name }}/App
         run: bazel build ${{ matrix.target }}
 
-  # A package whose tests only compile through a source its own build tool
-  # plugin generates. The plugin and its tool are built by Bazel, so this
-  # holds on a toolchain that cannot load the package with SwiftPM at all.
+  # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
+  # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
     runs-on: macos-26
     needs: [artifact]
@@ -317,20 +316,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TbCodeGenerater
-            repo: https://github.com/yume190/TbCodeGenerater
-            rev: b7071d5e67189f48d5d71e06225dd1cb02470995
-            target: //Packages/TbCodeGenerater/...
+          - name: BuildToolPlugin
+            plugins: true
+          - name: CommandPlugin
+          - name: Macro
+          - name: Trait
+          - name: TargetSources
+          - name: TargetPath
+          - name: TargetExclude
+          - name: TargetResource
     steps:
+      - uses: actions/checkout@v6
+
       - name: Bazel Cache
         uses: actions/cache@v5
         with:
           path: |
             ~/bazel-disk
             ~/bazel-repo
-          key: ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-${{ github.run_id }}
+          key: ${{ runner.os }}-bazel-${{ matrix.name }}-${{ github.run_id }}
           restore-keys: |
-            ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-
             ${{ runner.os }}-bazel-${{ matrix.name }}-
 
       - name: Bazel Cache Settings
@@ -343,27 +348,19 @@ jobs:
         with:
           name: bazelize
 
-      - name: Clone ${{ matrix.name }}
+      - name: Bazel Generation
         run: |
           chmod +x bazelize
-          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
-          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+          ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App"
 
-      # The package's directory name is the directory its rules live under, so
-      # the clone is named after the package rather than after the lane.
-      # Generation runs the plugins with what it has, which on this toolchain is
-      # not enough to build the plugin's tool — `//:plugins` is what builds the
-      # plugin and the tool with Bazel and runs them, so that is what the lane
-      # checks. Nothing else is regenerated: the rules glob the directory.
-      - name: Bazel Generation
-        run: ./bazelize --project "${{ matrix.name }}" --output "${{ matrix.name }}/App"
-
+      # A build tool plugin is a program: Bazel builds it and bazelize runs it,
+      # which is what puts the sources it generates where the rules glob for
+      # them. Only the packages that have one need the step.
       - name: Run Plugins
-        working-directory: ${{ matrix.name }}/App
-        run: |
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
+        if: matrix.plugins
+        working-directory: spm/${{ matrix.name }}/App
+        run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
 
       - name: Test Package
-        working-directory: ${{ matrix.name }}/App
-        run: bazel test ${{ matrix.target }}
-
+        working-directory: spm/${{ matrix.name }}/App
+        run: bazel test //...

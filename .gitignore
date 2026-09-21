@@ -184,7 +184,11 @@ cache/
 .codex-local-skills/
 .vendor/
 app/
-spm/
+
+# The SwiftPM fixtures are this repository's; what a run writes into them is not
+spm/*/App/
+spm/*/.build/
+spm/*/Package.resolved
 Generated/
 
 # bazelize output inside the iOS fixture: one directory, the one `make bazelize`

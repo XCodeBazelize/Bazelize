@@ -1,0 +1,21 @@
+
+def flag : Flag<["-"], "flag">,
+    HelpText<"flag">;
+
+def joined : Joined<["-"], "joined">,
+    HelpText<"joined">;
+
+def separate : Separate<["-"], "separate">,
+    HelpText<"Separate">;
+
+def commaJoined : CommaJoined<["-"], "commaJoined">,
+    HelpText<"commaJoined">;
+
+def multiArg : MultiArg<["-"], "multiArg", 3>,
+    HelpText<"multiArg">;
+
+def joinedOrSeparate : JoinedOrSeparate<["-"], "joinedOrSeparate">,
+    HelpText<"joinedOrSeparate">;
+
+def joinedAndSeparate : JoinedAndSeparate<["-"], "joinedAndSeparate">,
+    HelpText<"joinedAndSeparate">;

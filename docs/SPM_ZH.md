@@ -162,6 +162,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
+| `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`：把 bytes 變成 `PackageResources`，bundle 裡什麼都不放 |
 | auto-discovered resources（xib／xcassets／metal／xcstrings／`.lproj`） | 同上；有 `.metal` 時該 target 的 header 也一起進 resource group，因為 bundler 會把它們當 Metal header 編 |
 | `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳 |
 | `headerSearchPath` | `includes`，而且該目錄被 `exclude` 丟掉時 header 仍然留作輸入 |
@@ -172,11 +173,13 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin（自己的 package） | 產生階段由 SwiftPM 執行；它寫出來的原始碼進「要求它的那個 target」 |
+| build tool plugin（自己的 package） | Bazel 建、bazelize 跑（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
 | build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
-| traits（SE-0450） | 依 enabled traits 展開成 `-D` 與條件依賴 |
+| traits（SE-0450） | 會解析：沒人指名就用 package 自己的預設 traits，有人指名就用指名的；條件在「沒開的 trait」上的 setting 直接丟掉 |
+| setting 上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉 |
+| setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
 一律整份連結 package library；還有 `always_include_developer_search_paths`，
@@ -218,7 +221,7 @@ package 自己宣告的 platform floor 是**故意忽略**的——逐 package �
 
 沒有 macro target，也沒有混合語言 target（SwiftPM 本來就不允許）。語料裡沒有任何
 東西會「靠建起來」驗證 macro 或會產生原始碼的 plugin，這兩件事由
-`spm/TbCodeGenerater` 守著——它的測試只有靠自己 build tool plugin 產生的原始碼才編得過。
+`spm/` 守著——一個主題一個 package，測試只有在那件事產對了才會過。
 
 ### build settings（用到的 target 數／package 數）
 
@@ -259,7 +262,7 @@ target」當成規則，語料裡**119 個 package 全部落在階段 1–2**：
 |---|---|
 | 純 Swift library、無 resource | 58 |
 | ＋ clang／resources／binary／system | 61（累計 119） |
-| macro、會產生原始碼的 plugin | 0（語料裡沒有；會產生原始碼的 plugin 由 `spm/TbCodeGenerater` 守著） |
+| macro、會產生原始碼的 plugin | 0（語料裡沒有；由 `spm/Macro` 與 `spm/BuildToolPlugin` 守著） |
 
 每個 app 需要的最低階段（用各 workspace 的 `Package.resolved` 展開）：
 
@@ -359,7 +362,7 @@ for the macOS platform, but this target supports 12.0
 ### build tool plugin
 
 plugin 會讀 package 目錄下任何它想讀的檔案，而且產物是塞進**使用它的那個 target**，
-不是塞回自己。TbCodeGenerater 就是這個形狀：plugin 用的工具是同一個 package 的
+不是塞回自己。`spm/BuildToolPlugin` 就是這個形狀：plugin 用的工具是同一個 package 的
 executable target，它讀 package 根的一個 `.tb` 檔——那個檔不屬於任何 target，還被
 `exclude` 掉——然後為這個 package 的測試 target 產生一份原始碼。
 
@@ -403,7 +406,7 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
-| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin，由 SwiftPM 在產生階段執行 | `spm/TbCodeGenerater` 的測試靠 plugin 產生的原始碼通過 |
+| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin，Bazel 建、bazelize 跑 | `spm/BuildToolPlugin` 的測試靠 plugin 產生的原始碼通過 |
 | 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡

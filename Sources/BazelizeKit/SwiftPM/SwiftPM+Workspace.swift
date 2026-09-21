@@ -58,7 +58,12 @@ extension SwiftPM {
     /// generated manifest declares as `path:` dependencies. They are handed in
     /// rather than read back out of that manifest: the caller that wrote it knows
     /// them.
-    static func loadWorkspace(output: Path, root input: Path?, locals: [Path]) async throws -> Workspace {
+    static func loadWorkspace(
+        output: Path,
+        root input: Path?,
+        locals: [Path],
+        platforms: Set<String> = []) async throws -> Workspace
+    {
         /// A project with no packages has no manifest written for it, and asking
         /// SwiftPM to resolve one is an error rather than an empty graph.
         guard (output + "Package.swift").exists else {
@@ -71,31 +76,108 @@ extension SwiftPM {
         try await resolve(output: output)
 
         let checkouts = output + ".build/checkouts"
-        var packages: [Package] = []
+        var manifests: [(root: Root, manifest: Manifest)] = []
         var directoryByIdentity: [String: String] = [:]
 
-        for root in try roots(checkouts: checkouts, locals: locals) {
-            guard let manifest = try await manifest(at: root.path) else { continue }
+        /// A worklist rather than a list: a package read in place can declare
+        /// `path:` dependencies of its own, and those are not in
+        /// `.build/checkouts` either — the manifest that declares one is the
+        /// only thing that knows where it is.
+        var pending = try roots(checkouts: checkouts, locals: locals)
+        var seen: Set<String> = []
 
-            let package = Package(
-                directory: root.directory,
-                root: root.path,
-                manifest: manifest,
-                isLocal: root.isLocal,
-                /// Both sides are made absolute: the output can be a relative path,
-                /// and the package handed in is named however the caller named it.
-                isRoot: input.map { $0.absolute().normalize() == root.path.absolute().normalize() } ?? false)
-            packages.append(package)
+        while !pending.isEmpty {
+            let root = pending.removeFirst()
+            guard seen.insert(root.path.string).inserted else { continue }
+            guard let manifest = try await manifest(at: root.path) else { continue }
+            manifests.append((root, manifest))
 
             for identity in [manifest.name, root.directory, root.path.lastComponent] {
                 directoryByIdentity[identity.lowercased()] = root.directory
             }
+
+            for dependency in manifest.dependencies {
+                guard let path = dependency.path else { continue }
+                let local = Path(path).absolute().normalize()
+                guard local.isDirectory else { continue }
+                pending.append(.init(directory: local.lastComponent, path: local, isLocal: true))
+            }
+        }
+        manifests.sort { $0.root.directory < $1.root.directory }
+
+        /// Which traits are on is a property of the graph, not of one manifest,
+        /// so it is answered once every manifest is read — and then the
+        /// conditions are resolved away.
+        let traits = enabledTraits(
+            of: manifests.map { (identity: $0.root.directory.lowercased(), manifest: $0.manifest) },
+            directoryByIdentity: directoryByIdentity)
+        let packages = manifests.map { entry in
+            Package(
+                directory: entry.root.directory,
+                root: entry.root.path,
+                manifest: entry.manifest.resolving(
+                    traits: traits[entry.root.directory.lowercased()] ?? [],
+                    platforms: platforms),
+                isLocal: entry.root.isLocal,
+                /// Both sides are made absolute: the output can be a relative path,
+                /// and the package handed in is named however the caller named it.
+                isRoot: input.map { $0.absolute().normalize() == entry.root.path.absolute().normalize() } ?? false)
         }
 
         return .init(
             packages: packages,
             artifacts: output + ".build/artifacts",
             directoryByIdentity: directoryByIdentity)
+    }
+
+    /// The traits each package is built with, by identity.
+    ///
+    /// A package gets its own default traits unless something that depends on it
+    /// names traits instead — naming them replaces the defaults, which is why a
+    /// manifest that wants both says so. A trait can enable further traits, so
+    /// the set is closed over that.
+    static func enabledTraits(
+        of manifests: [(identity: String, manifest: Manifest)],
+        directoryByIdentity: [String: String]) -> [String: Set<String>]
+    {
+        /// A dependency names the package by SwiftPM's identity for it, which is
+        /// not always the directory the package is filed under.
+        func identity(of dependency: Dependency) -> String {
+            directoryByIdentity[dependency.identity]?.lowercased() ?? dependency.identity
+        }
+
+        var requested: [String: Set<String>] = [:]
+        for entry in manifests {
+            for dependency in entry.manifest.dependencies where !dependency.traits.isEmpty {
+                requested[identity(of: dependency), default: []].formUnion(dependency.traits)
+            }
+        }
+
+        var enabled: [String: Set<String>] = [:]
+        for entry in manifests {
+            /// Nothing asked for anything in particular, so the defaults are what
+            /// is on — as they are for the package the tool was pointed at.
+            let names = requested[entry.identity] ?? ["default"]
+            enabled[entry.identity] = close(names, in: entry.manifest)
+        }
+        return enabled
+    }
+
+    /// A trait can enable other traits, and `default` is the trait a build that
+    /// asks for nothing gets. Neither is a define, so `default` is not part of
+    /// the answer.
+    private static func close(_ names: Set<String>, in manifest: Manifest) -> Set<String> {
+        let byName = Dictionary(manifest.traits.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+
+        var enabled: Set<String> = []
+        var pending = Array(names)
+        while let name = pending.popLast() {
+            guard enabled.insert(name).inserted else { continue }
+            pending += byName[name]?.enabledTraits ?? []
+        }
+
+        enabled.remove("default")
+        return enabled
     }
 
     // MARK: Private

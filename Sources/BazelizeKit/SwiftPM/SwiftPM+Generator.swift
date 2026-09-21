@@ -752,8 +752,8 @@ extension SwiftPM {
                     deps: deps(of: target, in: package).nonEmpty.map { labels in
                         .build { labels }
                     },
-                    data: resources.map { bundle in
-                        .build { [Starlark.Label.named(bundle.label)] }
+                    data: resources?.label.map { label in
+                        .build { [Starlark.Label.named(label)] }
                     },
                     linkopts: linkopts(of: target).nonEmpty,
                     tags: Self.manual,

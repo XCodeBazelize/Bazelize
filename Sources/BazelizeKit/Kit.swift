@@ -109,11 +109,14 @@ extension Kit {
         let locals = project.packages.local.map { local in
             project.workspaceRoot + local.relativePath
         }
+        let deployment = await deployment()
         let workspace = try await SwiftPM.loadWorkspace(
             output: outputRoot,
             root: project.packageRoot,
-            locals: locals)
-        let deployment = await deployment()
+            locals: locals,
+            /// Which platforms the project builds decides whether a setting
+            /// conditional on one applies at all.
+            platforms: Set(deployment.project.keys))
 
         let generator = SwiftPM.Generator(
             output: outputRoot,

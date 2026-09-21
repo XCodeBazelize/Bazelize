@@ -22,8 +22,10 @@ extension SwiftPM {
         let name: String
         let platforms: [Platform]
         let products: [PackageProduct]
-        let targets: [PackageTarget]
+        var targets: [PackageTarget]
         let dependencies: [Dependency]
+        /// The package's own build-time options.
+        let traits: [Trait]
         let cLanguageStandard: String?
         let cxxLanguageStandard: String?
         /// `{"_version": "6.0.0"}`: which `PackageDescription` the manifest was
@@ -37,9 +39,27 @@ extension SwiftPM {
             products = container.list(PackageProduct.self, "products")
             targets = container.list(PackageTarget.self, "targets")
             dependencies = container.list(Dependency.self, "dependencies")
+            traits = container.list(Trait.self, "traits")
             cLanguageStandard = container.value(String.self, "cLanguageStandard")
             cxxLanguageStandard = container.value(String.self, "cxxLanguageStandard")
             toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
+        }
+
+        /// The manifest with every setting that does not apply removed, so
+        /// nothing downstream has to know a condition exists.
+        ///
+        /// `platforms` empty means the caller does not know which platforms are
+        /// built, and a platform condition is then left alone.
+        func resolving(traits: Set<String>, platforms: Set<String>) -> Manifest {
+            var resolved = self
+            resolved.targets = targets.map { target in
+                var target = target
+                target.settings = target.settings.filter { setting in
+                    setting.applies(traits: traits, platforms: platforms)
+                }
+                return target
+            }
+            return resolved
         }
     }
 
@@ -75,7 +95,7 @@ extension SwiftPM {
         let sources: [String]?
         let exclude: [String]
         let publicHeadersPath: String?
-        let settings: [Setting]
+        var settings: [Setting]
         let resources: [Resource]
         let dependencies: [TargetDependency]
         /// The plugins the target asks to be run while it is built.
@@ -123,6 +143,9 @@ extension SwiftPM {
     struct Setting: Decodable {
         let tool: String
         let kind: [String: SettingValues]
+        /// When the setting applies: the platforms it is limited to, and the
+        /// traits that have to be on. Absent means always.
+        let condition: SettingCondition?
 
         /// `define`, `headerSearchPath`, `defaultIsolation`…
         var name: String? {
@@ -131,6 +154,41 @@ extension SwiftPM {
 
         var values: [String] {
             kind.values.first?.values ?? []
+        }
+
+        /// Whether the setting is one this build uses: a condition naming
+        /// traits needs one of them on, and a condition naming platforms needs
+        /// one of them built.
+        ///
+        /// A configuration is not one of these: which configuration a rule is
+        /// built in is decided when Bazel builds it, not when it is generated,
+        /// so a setting conditional on one is kept.
+        func applies(traits: Set<String>, platforms: Set<String>) -> Bool {
+            guard let condition else { return true }
+
+            if !condition.traits.isEmpty, condition.traits.allSatisfy({ !traits.contains($0) }) {
+                return false
+            }
+            if !condition.platformNames.isEmpty, !platforms.isEmpty,
+               condition.platformNames.allSatisfy({ !platforms.contains($0) })
+            {
+                return false
+            }
+            return true
+        }
+    }
+
+    /// `{"platformNames": ["ios"], "traits": ["Fast"], "config": "debug"}`
+    struct SettingCondition: Decodable {
+        let platformNames: [String]
+        let traits: [String]
+        let config: String?
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+            platformNames = container.list(String.self, "platformNames")
+            traits = container.list(String.self, "traits")
+            config = container.value(String.self, "config")
         }
     }
 
@@ -163,6 +221,12 @@ extension SwiftPM {
 
         var isCopy: Bool {
             rule.keys.contains("copy")
+        }
+
+        /// `.embedInCode`: the file is not bundled at all, its bytes are a
+        /// generated source the target compiles.
+        var isEmbedInCode: Bool {
+            rule.keys.contains("embedInCode")
         }
     }
 
@@ -212,6 +276,10 @@ extension SwiftPM {
         let name: String?
         let path: String?
         let url: String?
+        /// The traits of that package this one turns on. Empty means the
+        /// dependency's own defaults, which is what a dependency that says
+        /// nothing gets.
+        let traits: [String]
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -223,6 +291,7 @@ extension SwiftPM {
                 name = entry.nameForTargetDependencyResolutionOnly
                 path = entry.path
                 url = entry.location?.url
+                traits = (entry.traits ?? []).map(\.name)
                 return
             }
 
@@ -236,6 +305,21 @@ extension SwiftPM {
         let nameForTargetDependencyResolutionOnly: String?
         let path: String?
         let location: DependencyLocation?
+        let traits: [Trait]?
+    }
+
+    /// `{"name": "Fast", "enabledTraits": []}`: one of a package's build-time
+    /// options. The one named `default` is what a build that asks for nothing
+    /// gets.
+    struct Trait: Decodable {
+        let name: String
+        let enabledTraits: [String]
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+            name = try container.decode(String.self, forKey: AnyKey("name"))
+            enabledTraits = container.list(String.self, "enabledTraits")
+        }
     }
 
     /// `{"remote": [{"urlString": "https://…"}]}`

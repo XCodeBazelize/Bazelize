@@ -14,10 +14,11 @@ import Util
 extension SwiftPM.Generator {
     /// What a target's resources add to its own rule.
     struct ResourceBundle {
-        /// The rule the library carries as `data`.
-        let label: String
+        /// The rule the library carries as `data`, absent when the target's only
+        /// resources are embedded in its code.
+        let label: String?
         /// Generated sources compiled into the library: the accessor a package's
-        /// own code calls to reach its bundle.
+        /// own code calls to reach its bundle, and the bytes of what it embeds.
         let accessors: [String]
         /// The header a C-family target force-includes, so `SWIFTPM_MODULE_BUNDLE`
         /// resolves without the sources importing anything.
@@ -48,12 +49,16 @@ extension SwiftPM.Generator {
 
         /// `.copy` keeps the item's own name and inner structure and nothing above
         /// it, which is a structured resource with the path above the item stripped;
-        /// `.process` lets the bundler place each file.
+        /// `.process` lets the bundler place each file. `.embedInCode` is not
+        /// bundled at all.
         var resources: [String] = []
         var copied: [String: [String]] = [:]
+        var embedded: [String] = []
         for resource in target.resources {
             let pattern = Self.pattern(of: resource.path, in: directory, prefix: prefix)
-            if resource.isCopy {
+            if resource.isEmbedInCode {
+                embedded.append(resource.path)
+            } else if resource.isCopy {
                 let above = Path("\(prefix)/\(resource.path)").parent().normalize().string
                 copied[above, default: []].append(pattern)
             } else {
@@ -79,9 +84,17 @@ extension SwiftPM.Generator {
                 relativeFiles(of: target, in: package, prefix: prefix, excluding: false))
         }
 
+        /// What is embedded is compiled, not bundled, so it is the one kind of
+        /// resource a target can have without having a bundle.
+        let embeddedSource = try Self.embed(embedded, of: target, in: directory, root: root, kind: kind)
+
         /// A declared resource that is not on disk leaves nothing to bundle, and a
         /// bundle rule without resources is an empty bundle.
-        guard !resources.isEmpty || !structured.isEmpty else { return nil }
+        guard !resources.isEmpty || !structured.isEmpty else {
+            return embeddedSource.map {
+                ResourceBundle(label: nil, accessors: [$0], header: nil)
+            }
+        }
 
         let bundle = "\(package.manifest.name)_\(target.name)"
         let name = "\(ruleName(of: target.name, in: package))Resources"
@@ -139,7 +152,10 @@ extension SwiftPM.Generator {
         case .swift, .executable, .test:
             let accessor = "Generated/\(target.name)ResourceBundleAccessor.swift"
             try (root + accessor).write(Self.swiftAccessor(bundle: bundle))
-            return ResourceBundle(label: ":\(name)", accessors: [accessor], header: nil)
+            return ResourceBundle(
+                label: ":\(name)",
+                accessors: [accessor] + (embeddedSource.map { [$0] } ?? []),
+                header: nil)
         case .clang:
             let module = Self.moduleName(target.name)
             let header = "Generated/\(target.name)ResourceBundleAccessor.h"
@@ -154,6 +170,54 @@ extension SwiftPM.Generator {
         case .binary, .system, .macro, .unsupported:
             return nil
         }
+    }
+
+    /// `.embedInCode`: the bytes of each file, as the source SwiftPM compiles in
+    /// place of bundling them.
+    ///
+    /// Only Swift reads it — SwiftPM generates Swift, and names each file's
+    /// array after the file — so a C-family target embedding something gets
+    /// nothing here, the same as from SwiftPM.
+    private static func embed(
+        _ paths: [String],
+        of target: SwiftPM.PackageTarget,
+        in directory: Path,
+        root: Path,
+        kind: TargetKind) throws -> String?
+    {
+        guard !paths.isEmpty else { return nil }
+        switch kind {
+        case .swift, .executable, .test: break
+        case .clang, .binary, .system, .macro, .unsupported: return nil
+        }
+
+        var arrays: [String] = []
+        for path in paths.sorted() {
+            let file = directory + Path(path)
+            guard file.isFile, let bytes = try? Data(contentsOf: file.url) else { continue }
+            let name = identifier(of: file.lastComponent)
+            arrays.append("static let \(name): [UInt8] = [\(bytes.map(String.init).joined(separator: ","))]")
+        }
+        guard !arrays.isEmpty else { return nil }
+
+        let source = "Generated/\(target.name)EmbeddedResources.swift"
+        try (root + "Generated").mkpath()
+        try (root + source).write("""
+        struct PackageResources {
+        \(arrays.joined(separator: "\n"))
+        }
+
+        """)
+        return source
+    }
+
+    /// A file's name as SwiftPM names its array: what cannot be in an identifier
+    /// is an underscore.
+    private static func identifier(of name: String) -> String {
+        let mangled = String(name.map { character in
+            character.isLetter || character.isNumber || character == "_" ? character : "_"
+        })
+        return mangled.first?.isNumber == true ? "_\(mangled)" : mangled
     }
 
     /// The resource types SwiftPM treats as resources without being told, so a
