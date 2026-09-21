@@ -31,10 +31,5 @@ let package = Package(
         .target(name: "Always"),
         .testTarget(
             name: "ConditionalTests",
-            dependencies: ["Conditional"],
-            swiftSettings: [
-                /// So the test can say which build it is in: the trait decides
-                /// this define the same way it decides the dependency.
-                .define("EXTRAS", .when(traits: ["Extras"])),
-            ]),
+            dependencies: ["Conditional"]),
     ])

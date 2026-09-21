@@ -215,7 +215,7 @@ No test pins how a package's rules are produced either.
 | build tool plugin, dependency | not run; the plugin is named at the end of the run |
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
-| traits (SE-0450) | a `bool_flag` each, defaulting to what the manifests resolve to, with a `--config=<Package>.<Trait>` beside it; what is conditional on one is a `select` |
+| traits (SE-0450) | a `bool_flag` each, defaulting to what the manifests resolve to, with a `--config=<Package>.<Trait>` that turns one on; a trait that is on defines its own name for that package's Swift sources, the way SwiftPM compiles it |
 | `.when(platforms:)` on a setting or a dependency | dropped unless the project builds one of those platforms; a platform no Apple toolchain builds is always dropped |
 | `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag, so the build decides it — a condition naming several traits is a `config_setting_group` |
 | `.when(configuration:)` on a setting | kept: which configuration a rule is built in is Bazel's answer, not the generator's |

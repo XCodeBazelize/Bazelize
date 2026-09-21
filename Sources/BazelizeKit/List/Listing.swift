@@ -79,17 +79,17 @@ public enum Listing {
                 lines.append(
                     "    \(on ? "on " : "off") \(trait.name)"
                         + (enables.isEmpty ? "" : " (enables \(enables))")
-                        + "  --config=\(package.directory).\(trait.name)\(on ? "-off" : "")")
+                        + (on ? "" : "  --config=\(package.directory).\(trait.name)"))
             }
         }
 
         lines.append("")
         lines.append("""
         A trait is on by default when its package makes it one, or when \
-        something that depends on that package asks for it by name. Every \
-        trait is a flag, so a build switches one with the `--config` beside \
-        it — `--config=<Package>.<Trait>` to turn it on, `-off` to turn it \
-        off — and `bazel list config` lists them with everything else.
+        something that depends on that package asks for it by name. Anything \
+        else is asked for by the `--config` beside it, which defines the \
+        trait's own name for that package's sources and pulls in whatever is \
+        behind it. `bazel list config` lists them with everything else.
         """)
         return lines.joined(separator: "\n")
     }

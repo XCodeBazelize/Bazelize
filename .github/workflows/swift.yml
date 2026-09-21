@@ -326,6 +326,7 @@ jobs:
             config: DependencyCondition.Extras
           - name: Macro
           - name: Trait
+            config: Trait.Slow
           - name: TargetSources
           - name: TargetPath
           - name: TargetExclude
@@ -378,7 +379,14 @@ jobs:
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...
 
+      # Both ways round, and not only that both pass: a trait is a compilation
+      # condition named after itself, so the flag reaching swiftc is the thing
+      # to see.
       - name: Test Package With Trait
         if: matrix.config
         working-directory: spm/${{ matrix.name }}/App
-        run: bazel test //... --config=${{ matrix.config }}
+        run: |
+          bazel test //... --config=${{ matrix.config }}
+          trait="${{ matrix.config }}"
+          ! bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
+          bazel aquery --config=${{ matrix.config }} 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"

@@ -137,12 +137,17 @@ extension SwiftPM.Generator {
         }
     }
 
-    /// `--config=<Package>.<Trait>` for every trait, and `-off` for turning one
-    /// off that the graph turns on.
+    /// `--config=<Package>.<Trait>` for every trait a package declares.
     ///
     /// A configuration is how a Bazel workspace is told what to build, so it is
-    /// how a trait is asked for too. The file is always written, because a
-    /// `.bazelrc` that imports a file that is not there does not load.
+    /// how a trait is asked for too. Only asked for: a trait adds — it defines
+    /// its own name and pulls in what is behind it — so there is nothing to
+    /// name for turning one off. A trait the manifests turn on is on already,
+    /// and the flag underneath takes `=false` for the rare build that wants it
+    /// without.
+    ///
+    /// The file is always written, because a `.bazelrc` that imports a file
+    /// that is not there does not load.
     func writeTraitConfigs() throws {
         let flags = traitFlags
         var lines = [
@@ -157,11 +162,9 @@ extension SwiftPM.Generator {
         }
 
         for flag in flags {
-            let label = "--//\(PluginSwiftPM.packagesDirectory):\(flag.name)"
             lines.append("")
             lines.append("# \(flag.package): \(flag.trait)\(flag.isDefault ? ", on by default" : "")")
-            lines.append("build:\(flag.config) \(label)=true")
-            lines.append("build:\(flag.config)-off \(label)=false")
+            lines.append("build:\(flag.config) --//\(PluginSwiftPM.packagesDirectory):\(flag.name)=true")
         }
 
         try (output + "traits.bazelrc").write(lines.joined(separator: "\n") + "\n")

@@ -29,7 +29,23 @@ extension SwiftPM.Generator {
             /// must not compile as if it were a package — Xcode's generated asset
             /// symbols, for one, switch on `SWIFT_PACKAGE`.
             always: Self.define("SWIFT_PACKAGE"),
+            /// A trait is a compilation condition of the package that declares
+            /// it: `#if Fast` is how a source asks. Swift only — SwiftPM does
+            /// not hand it to clang, so neither is it handed to `-Xcc`.
+            conditional: traitDefines(of: package),
             flags: Self.swiftFlags)
+    }
+
+    /// `-D<Trait>` for every trait the package declares, each behind its own
+    /// flag: the traits the build turned on are the ones defined.
+    private func traitDefines(of package: SwiftPM.Package) -> [(condition: String, values: [String])] {
+        package.manifest.traits
+            .filter { $0.name != "default" }
+            .sorted { $0.name < $1.name }
+            .compactMap { trait in
+                guard let condition = traitCondition([trait.name], in: package) else { return nil }
+                return (condition, ["-D\(trait.name)"])
+            }
     }
 
     /// A package can name a system library or framework it needs; nothing else in
@@ -106,11 +122,17 @@ extension SwiftPM.Generator {
         _ settings: [SwiftPM.Setting],
         in package: SwiftPM.Package,
         always base: [String],
+        conditional seeds: [(condition: String, values: [String])] = [],
         flags: (SwiftPM.Setting) -> [String]) -> Starlark.Value?
     {
         var always = base
         var conditions: [String] = []
         var byCondition: [String: [String]] = [:]
+
+        for seed in seeds {
+            if byCondition[seed.condition] == nil { conditions.append(seed.condition) }
+            byCondition[seed.condition, default: []] += seed.values
+        }
 
         for setting in settings {
             let values = flags(setting)

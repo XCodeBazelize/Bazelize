@@ -7,10 +7,11 @@ func theUnconditionalDependencyIsAlwaysLinked() {
 }
 
 /// Both ways round: `bazel test //...` has the trait off, and
-/// `bazel test //... --config=DependencyCondition.Extras` has it on.
+/// `bazel test //... --config=DependencyCondition.Extras` has it on. The
+/// trait is a condition of every target of the package, tests included.
 @Test
 func aTraitDecidesWhetherItsDependencyIsLinked() {
-    #if EXTRAS
+    #if Extras
     #expect(Conditional.extras == 3)
     #else
     #expect(Conditional.extras == nil)

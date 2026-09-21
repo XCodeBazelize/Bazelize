@@ -195,7 +195,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
-| traits（SE-0450） | 一個 trait 一個 `bool_flag`，預設值就是 manifest 解析出來的結果，旁邊配一個 `--config=<Package>.<Trait>`；條件掛在 trait 上的東西變成 `select` |
+| traits（SE-0450） | 一個 trait 一個 `bool_flag`，預設值就是 manifest 解析出來的結果，旁邊配一個會把它打開的 `--config=<Package>.<Trait>`；開著的 trait 會為該 package 的 Swift 原始碼定義同名條件，跟 SwiftPM 一樣 |
 | setting 或依賴上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉；Apple toolchain 根本不建的平台一律丟掉 |
 | setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`，由 build 當下決定；條件寫了多個 trait 就產生 `config_setting_group` |
 | setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |

@@ -2,9 +2,9 @@
 
 import PackageDescription
 
-/// Traits: a package's own build-time options. Three things decide which ones
-/// are on — the package's defaults, what a dependent asks for by name, and
-/// nothing else — and a build setting can be conditional on one.
+/// Traits: a package's own build-time options. A trait that is on is a
+/// compilation condition of that package's own sources — `#if Fast` — and can
+/// carry settings and dependencies of its own.
 let package = Package(
     name: "Trait",
     products: [
@@ -25,8 +25,9 @@ let package = Package(
                 .product(name: "Dependency", package: "Dependency"),
             ],
             swiftSettings: [
-                .define("FAST", .when(traits: ["Fast"])),
-                .define("SLOW", .when(traits: ["Slow"])),
+                /// A setting of its own, on top of the condition the trait is:
+                /// `Slow` defines `Slow`, and this as well.
+                .define("SLOW_EXTRA", .when(traits: ["Slow"])),
             ]),
         .testTarget(
             name: "TraitTests",

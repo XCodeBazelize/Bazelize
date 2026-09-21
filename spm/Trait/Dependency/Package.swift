@@ -12,9 +12,5 @@ let package = Package(
         .trait(name: "Extra"),
     ],
     targets: [
-        .target(
-            name: "Dependency",
-            swiftSettings: [
-                .define("EXTRA", .when(traits: ["Extra"])),
-            ]),
+        .target(name: "Dependency"),
     ])
