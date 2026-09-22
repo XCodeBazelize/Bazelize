@@ -26,11 +26,6 @@ func aProcessedResourceIsInTheBundle() {
 }
 
 @Test
-func anEmbeddedResourceIsInTheBinary() {
-    #expect(TargetResource.embedded == "embedded")
-}
-
-@Test
 func localizedResourcesAreFiledUnderTheirLocalization() {
     #expect(TargetResource.explicitLocalization == #""explicit" = "explicit localization";"#)
     #expect(TargetResource.lprojLocalization == "from lproj")
@@ -58,12 +53,14 @@ func platformResourcesReachTheBundle() {
     #expect(has("Model.momd", "Model.xcdatamodeld"))
     #expect(has("default.metallib", "Shader.metal"))
     #expect(has("Catalog.xcstrings", "Catalog.strings"))
+    /// A privacy manifest is shipped, not compiled: it is in the bundle under
+    /// its own name because the manifest declares it.
+    #expect(has("PrivacyInfo.xcprivacy"))
 }
 
 @Test
-func documentationAndPrivacyAreNotResources() {
+func aDocumentationCatalogueIsNotAResource() {
     let bundled = TargetResource.bundled
 
     #expect(!bundled.contains { $0.hasSuffix(".docc") || $0.hasSuffix(".md") })
-    #expect(!bundled.contains { $0.hasSuffix(".xcprivacy") })
 }

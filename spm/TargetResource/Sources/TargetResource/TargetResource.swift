@@ -20,11 +20,6 @@ public enum TargetResource {
         return try? String(contentsOf: url, encoding: .utf8).trimmed
     }
 
-    /// Embedded in code: no bundle at all, the bytes are a generated source.
-    public static var embedded: String {
-        String(decoding: PackageResources.greeting_txt, as: UTF8.self).trimmed
-    }
-
     /// The explicitly localized resource: declared with `localization:`, so it
     /// is filed under the package's default localization.
     public static var explicitLocalization: String? {

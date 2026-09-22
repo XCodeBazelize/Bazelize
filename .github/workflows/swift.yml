@@ -349,19 +349,18 @@ jobs:
               //Packages/Products:ProductSnippet
           - name: RemoteArtifactBundle
             plugins: true
-            # The default build system will not run a program a binary target
-            # downloaded, which is SwiftPM's own limitation rather than
-            # anything this package does.
-            swiftpm: --build-system native
           - name: RemoteXCFramework
           - name: SwiftSettings
           - name: SystemLibrary
+          - name: TargetEmbed
+            # `.embedInCode` generates nothing under the default build system
+            # in this toolchain, which is SwiftPM's own gap rather than
+            # anything this package does — and the only reason this rule has a
+            # package of its own.
+            swiftpm: --build-system native
           - name: TargetExclude
           - name: TargetPath
           - name: TargetResource
-            # `.embedInCode` generates nothing under the default build system
-            # in this toolchain, for the same reason.
-            swiftpm: --build-system native
           - name: TargetSources
           - name: Trait
             traits: Fast,Slow

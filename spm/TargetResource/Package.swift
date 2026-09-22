@@ -21,7 +21,8 @@ let package = Package(
                 .copy("single.txt"),
                 .process("Processed"),
                 .process("Localized", localization: .default),
-                .embedInCode("Embedded/greeting.txt"),
+                /// A privacy manifest is a file a package ships as it is.
+                .copy("PrivacyInfo.xcprivacy"),
                 /// Kinds the platform compiles rather than copies.
                 .process("Assets.xcassets"),
                 .process("Panel.xib"),

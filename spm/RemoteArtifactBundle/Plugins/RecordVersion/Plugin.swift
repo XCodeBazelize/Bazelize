@@ -4,13 +4,15 @@ import PackagePlugin
 @main
 struct RecordVersion: BuildToolPlugin {
     func createBuildCommands(context: PluginContext, target: Target) async throws -> [Command] {
-        let output = context.pluginWorkDirectoryURL.appending(component: "Version.generated.swift")
+        let directory = context.pluginWorkDirectoryURL.appending(component: "Generated")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let output = directory.appending(component: "Version.generated.swift")
         /// The program the bundle ships, asked for by the name the bundle's
         /// `info.json` files it under.
         let tool = try context.tool(named: "periphery")
 
         return [
-            .buildCommand(
+            .prebuildCommand(
                 displayName: "Record what the bundled program answers",
                 executable: URL(fileURLWithPath: "/bin/sh"),
                 arguments: [
@@ -20,7 +22,7 @@ struct RecordVersion: BuildToolPlugin {
                     printf 'public let toolVersion = "%s"\\n' "$answer" > '\(output.path())'
                     """,
                 ],
-                outputFiles: [output]),
+                outputFilesDirectory: directory),
         ]
     }
 }

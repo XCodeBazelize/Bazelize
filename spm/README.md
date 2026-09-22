@@ -28,7 +28,8 @@ would not tell us anything.
 | `TraitGraph` | the whole trait graph: traits that enable traits, a condition naming several, and dependencies taking `.defaults`, nothing, or a named selection |
 | `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled, and a link back to the target's own directory that must not be walked |
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
-| `TargetResource` | every resource rule: `.copy` of a directory and of a single file, `.process`, `.embedInCode`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model, a shader that includes a header, a string catalogue, a test target's own resources, and the `.docc` and `.xcprivacy` SwiftPM ignores |
+| `TargetEmbed` | `.embedInCode`, the one rule with no bundle at all: the file's bytes are a generated source |
+| `TargetResource` | every other resource rule: `.copy` of a directory and of a single file, `.process`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model, a shader that includes a header, a string catalogue, a privacy manifest, a test target's own resources, and the `.docc` SwiftPM ignores |
 
 Every package of a fixture builds and — where it has tests — passes them, the
 package beside the one bazelize is pointed at included: those are dependencies
@@ -83,8 +84,8 @@ runtime. The generated `tools/bazel` wrapper also exposes them as
 
 `App/` is generated, and is not checked in.
 
-Two packages need `swift test --build-system native`: the default build system
-in this toolchain generates nothing for `.embedInCode` (`TargetResource`) and
-will not run a program a binary target downloaded (`RemoteArtifactBundle`).
-Neither is anything the packages themselves ask for, and the Bazel side of both
-is built the same way as every other fixture.
+`TargetEmbed` needs `swift test --build-system native`: the default build
+system in this toolchain generates nothing for `.embedInCode`, which is
+SwiftPM's own gap rather than anything the package asks for — and the only
+reason that rule has a package of its own. Its Bazel side is built the same
+way as every other fixture.
