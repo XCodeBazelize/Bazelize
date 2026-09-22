@@ -1,9 +1,23 @@
+import Foundation
 import TargetResource
 import Testing
 
 @Test
 func aCopiedResourceKeepsItsDirectory() {
     #expect(TargetResource.copied == "copied")
+}
+
+@Test
+func aCopiedFileKeepsItsName() {
+    #expect(TargetResource.copiedFile == "single file")
+}
+
+@Test
+func aTestTargetReachesItsOwnBundle() {
+    let url = Bundle.module.url(forResource: "sample", withExtension: "txt")
+    let contents = url.flatMap { try? String(contentsOf: $0, encoding: .utf8) }
+
+    #expect(contents?.trimmingCharacters(in: .whitespacesAndNewlines) == "test fixture")
 }
 
 @Test

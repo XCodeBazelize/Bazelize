@@ -7,6 +7,12 @@ public enum TargetResource {
         return try? String(contentsOf: url, encoding: .utf8).trimmed
     }
 
+    /// A copied file, which keeps its name and nothing above it.
+    public static var copiedFile: String? {
+        guard let url = Bundle.module.url(forResource: "single", withExtension: "txt") else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8).trimmed
+    }
+
     /// Processed: the file is in the bundle, and where it was is not part of
     /// how it is named.
     public static var processed: String? {

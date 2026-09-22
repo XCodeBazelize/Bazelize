@@ -16,6 +16,9 @@ let package = Package(
             name: "TargetResource",
             resources: [
                 .copy("Copied"),
+                /// A single file rather than a directory: it lands at the
+                /// bundle's root under its own name.
+                .copy("single.txt"),
                 .process("Processed"),
                 .process("Localized", localization: .default),
                 .embedInCode("Embedded/greeting.txt"),
@@ -25,7 +28,12 @@ let package = Package(
                 .process("Shader.metal"),
                 .process("Catalog.xcstrings"),
             ]),
+        /// A test target has resources the same way any other target does, and
+        /// its own bundle to reach them through.
         .testTarget(
             name: "TargetResourceTests",
-            dependencies: ["TargetResource"]),
+            dependencies: ["TargetResource"],
+            resources: [
+                .process("Fixtures"),
+            ]),
     ])
