@@ -1,0 +1,124 @@
+# TODO
+
+What the SwiftPM side of bazelize does not do yet, and why. Written after the
+`spm/` fixture corpus reached 24 packages, all of which build and test both
+ways (`swift build`/`swift test` and `bazelize` + `bazel test //...`).
+
+Ordered by what a user would hit first.
+
+## A. Generator behaviour
+
+### A1. An executable target's resources are not bundled
+
+A program built by `swift_binary` gets the generated `Bundle.module` accessor
+and no bundle: `apple_resource_bundle` hands its resources to whatever bundles
+them — an app or a test — and a program is neither, so the rule produces
+something nothing puts anywhere. The binary compiles and `fatalError`s when it
+runs.
+
+`cquery --output=files` on such a bundle is empty, and its `OutputGroupInfo` is
+an empty depset, so `data = [":XResources"]` on the binary brings nothing into
+runfiles either.
+
+Today the generator says so out loud while generating (`SwiftPM+Resources.swift`,
+the `.executable` case) rather than leaving it to be found by a crash.
+
+A fix means writing the bundle directory into the generated workspace —
+`Generated/<Package>_<Target>.bundle` with the Info.plist and one link per
+resource — carrying it as `data`, and teaching the accessor the runfiles
+candidates. The cost is that `.process` no longer compiles: an asset catalogue,
+a xib or a shader in a program's resources would be copied rather than built,
+which is a divergence from SwiftPM worth reporting where it happens.
+
+SwiftPM writes that bundle beside the program, so a package shipping a CLI tool
+with resources works there and not here.
+
+### A2. An undeclared privacy manifest is not bundled
+
+`PrivacyInfo.xcprivacy` sitting beside a target's sources is bundled by
+SwiftPM's default build system and by nothing here — the generator's discovered
+resource types do not include it. A package that declares it (`.copy`) works
+either way, which is what `spm/TargetResource` does.
+
+Adding `xcprivacy` to the discovered types would match the default build
+system, and diverge from `--build-system native`, which ignores it. Decide
+which one is the contract before changing it.
+
+### A3. A resource bundle is flat, not wrapped — not planned
+
+On macOS SwiftPM produces `Bundle.bundle/Contents/Resources/…`; rules_apple
+produces a flat `Bundle.bundle/…` on every platform by design, which is the iOS
+shape. Measured: `Bundle.module.infoDictionary` and every `url(forResource:)`
+lookup answer the same on both, and only code that builds `Contents/Resources`
+paths by hand would notice. Aligning means not using `apple_resource_bundle`
+and assembling the bundle ourselves, which is not worth it.
+
+## B. Coverage
+
+### B1. Nothing in `spm/` is built for iOS
+
+Every fixture is macOS. `spm/Platform` declares `.iOS(.v16)` but its tests run
+on macOS, so the iOS bundle shape, `minimum_os_version` on an iOS rule and the
+platform transition a package rule is built through are covered only by
+`fixture/iOS`, which is the Xcode side. This is the largest hole.
+
+### B2. `.xcmappingmodel` — not planned
+
+Its source is a Core Data XML persistent store that only Xcode's modeler
+writes; a hand-written `xcmapping.xml` is rejected by `mapc` (`Unknown store
+type, format, or version`), and there is no sample on a machine with Xcode
+installed to copy the format from. Nothing about it is particular to bazelize
+either: it is globbed and grouped exactly as `.xcdatamodeld` is, which is built
+and asserted, and what would compile it is rules_apple's own action.
+
+What migration is actually built on — a versioned `.xcdatamodeld` with both
+versions in the bundle and a mapping derivable between them — is covered.
+
+### B3. A dependency pinned by branch, revision or exact version
+
+Every fixture uses `from:`. For the generator these are the same path: SwiftPM
+resolves them and the generator reads the checkout. Low value.
+
+### B4. A package with no products, and a plugin-only package
+
+Both are real shapes; neither is exercised.
+
+### B5. A target whose sources sit at the package root
+
+`sourceDirectory(of:in:)` falls back to `package.root + target.name`, but
+SwiftPM only looks in `Sources`, `Source`, `src` and `srcs` unless the target
+names a `path:`. Check whether that fallback is reachable at all: if it is not,
+delete it rather than write a fixture for it.
+
+### B6. A macro used from another package
+
+A build tool plugin from another package is covered (`spm/PluginDependency`);
+a macro target is not.
+
+### B7. Asset catalogue variants
+
+Only a colour set is built. An app icon set, a symbol set and the generated
+asset symbols are not.
+
+## C. Process
+
+### C1. Sub-packages have no tests — by design
+
+Eleven packages under the fixtures (`vendor-kit`, `Alt`, `Other`, `Stamping`,
+`Products`, `Trait/Dependency`, `TraitGraph/*Dependency`,
+`DependencyCondition/Extras`, `DependencyCondition/LinuxOnly`) are dependencies
+with nothing of their own to assert. CI builds every one of them and runs
+`swift test` only where a `Tests` directory exists, rather than padding them
+with tests that prove nothing.
+
+### C2. A fixture lane does not fail on a generator note
+
+`IntegrateIOS` greps the generation log for `did not run the`; the package
+lanes check nothing. A note like A1's would not turn CI red. Cheap to add:
+generate into a log and fail the lane on the notes that matter.
+
+### C3. `TargetEmbed` needs `--build-system native`
+
+`.embedInCode` generates no `PackageResources` under the default build system
+in this toolchain, which is SwiftPM's own gap. It is the only fixture that
+needs the flag, which is why that rule has a package of its own.
