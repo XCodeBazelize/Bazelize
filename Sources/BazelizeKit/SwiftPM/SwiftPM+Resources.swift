@@ -149,7 +149,19 @@ extension SwiftPM.Generator {
                 tags: Self.manual))
 
         switch kind {
-        case .swift, .executable, .test:
+        case .executable:
+            /// A resource bundle is built by whatever bundles it — an app or a
+            /// test — and a program is neither: the rule produces the bundle
+            /// for nothing to put anywhere, so `Bundle.module` finds nothing at
+            /// run time. SwiftPM writes the bundle beside the program, so the
+            /// difference is said out loud rather than discovered by a crash.
+            note("""
+            \(package.directory)/\(target.name) is a program with resources, which \
+            Bazel has nothing to bundle into: it is built, but `Bundle.module` finds \
+            nothing when it runs.
+            """)
+            fallthrough
+        case .swift, .test:
             let accessor = "Generated/\(target.name)ResourceBundleAccessor.swift"
             try (root + accessor).write(Self.swiftAccessor(bundle: bundle))
             return ResourceBundle(
