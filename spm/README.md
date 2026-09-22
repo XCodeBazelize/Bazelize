@@ -10,12 +10,14 @@ would not tell us anything.
 | `ArtifactBundle` | a binary target that ships a program: the plugin's tool comes out of an `.artifactbundle`, and the source it writes is what the target compiles |
 | `BinaryTarget` | a local zipped XCFramework, which links statically |
 | `BuildToolPlugin` | a build tool plugin and the tool it runs: the test target only compiles through a source the plugin generates |
-| `Clang` | the C-family shapes: Objective-C, Objective-C++, assembly, public headers somewhere of its own, a private header search path, defines with and without a value, a module map the package ships, C and C++ `unsafeFlags`, C++ interoperability, and the bundle a C target reaches without importing anything |
+| `Clang` | the C-family shapes: Objective-C, Objective-C++, assembly, public headers somewhere of its own, a private header search path, defines with and without a value, a module map the package ships, C and C++ `unsafeFlags`, the package's language standards, C++ interoperability, the bundle a C target reaches without importing anything, and tests written in XCTest as well as swift-testing |
 | `CommandPlugin` | a plugin that is run on demand rather than while building, which nothing in a build may try to run |
 | `ConfigurationCondition` | settings conditional on debug and release, which the build decides rather than the generator |
 | `DependencyCondition` | dependencies conditional on a platform and on a trait: what the condition excludes must not be built |
 | `DependencyShape` | how a dependency is named: `.target`, by name, `.product`, a package whose identity is neither its directory nor its manifest name, and `moduleAliases` renaming a module that would otherwise clash |
 | `Macro` | a macro target, loaded by the compiler while the target beside it is compiled |
+| `Platform` | what a platform decides and when: a setting conditional on a platform an Apple toolchain builds is kept, one conditional on Linux or Windows is gone before the rules are written, and the package's own deployment target is what its rules are built for |
+| `PluginDependency` | a build tool plugin that belongs to another package, named with the package it comes from, running that package's tool |
 | `PrebuildPlugin` | a plugin's `.prebuildCommand`, which names a directory rather than the files it writes |
 | `ProductShapes` | products over several targets: `.static`, `.dynamic` and automatic libraries, a product named after one of its own targets, an executable product under another name, and a `Snippets/` program |
 | `RemoteXCFramework` | a remote XCFramework SwiftPM fetches, which links dynamically |
@@ -23,10 +25,10 @@ would not tell us anything.
 | `SystemLibrary` | system-library targets: module maps whose `link` and `link framework` directives say what to link, and a library whose header only `pkg-config` knows the way to — which is why this one needs `PKG_CONFIG_PATH` (see below) |
 | `Trait` | the package's own traits, a default one, and a dependency whose trait is turned on by name |
 | `TraitGraph` | the whole trait graph: traits that enable traits, a condition naming several, and dependencies taking `.defaults`, nothing, or a named selection |
-| `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled |
+| `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled, and a link back to the target's own directory that must not be walked |
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
 | `TargetExclude` | `exclude:`, where a named file and a named directory must not be compiled |
-| `TargetResource` | every resource rule: `.copy`, `.process`, `.embedInCode`, an explicit localization, a `.lproj` directory, an asset catalogue, a xib, a shader, a string catalogue, and the `.docc` and `.xcprivacy` SwiftPM ignores |
+| `TargetResource` | every resource rule: `.copy` of a directory and of a single file, `.process`, `.embedInCode`, an explicit localization, a `.lproj` directory, an asset catalogue, a xib, a shader, a string catalogue, a test target's own resources, and the `.docc` and `.xcprivacy` SwiftPM ignores |
 
 A package that must not compile a file says so in the file: it is a
 `#error(…)`, so a generator that globs too much fails loudly instead of
