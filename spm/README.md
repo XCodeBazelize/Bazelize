@@ -29,12 +29,20 @@ would not tell us anything.
 | `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled, and a link back to the target's own directory that must not be walked |
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
 | `TargetEmbed` | `.embedInCode`, the one rule with no bundle at all: the file's bytes are a generated source |
-| `TargetResource` | every other resource rule: `.copy` of a directory and of a single file, `.process`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model, a shader that includes a header, a string catalogue, a privacy manifest, a test target's own resources, and the `.docc` SwiftPM ignores |
+| `TargetResource` | every other resource rule: `.copy` of a directory and of a single file, `.process`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model with two versions, a shader that includes a header, a string catalogue, a privacy manifest, a test target's own resources, and the `.docc` SwiftPM ignores |
 
 Every package of a fixture builds and — where it has tests — passes them, the
 package beside the one bazelize is pointed at included: those are dependencies
 with sources of their own, and one that stopped building should be found here
 rather than in whatever it broke.
+
+`.xcmappingmodel` is the one resource kind with no fixture: its source is a
+Core Data XML persistent store that only Xcode's modeler writes — a hand-written
+one is rejected by `mapc` — so there is nothing to check in. Nothing about it is
+particular to bazelize either: it is globbed and grouped exactly as
+`.xcdatamodeld` is, which is built and asserted, and what would compile it is
+rules_apple's own action. The versioned model covers what migration is built
+on: both versions in the bundle, with a mapping derivable between them.
 
 A package that must not compile a file says so in the file: it is a
 `#error(…)`, so a generator that globs too much fails loudly instead of

@@ -68,3 +68,13 @@ func aDocumentationCatalogueIsNotAResource() {
 
     #expect(!bundled.contains { $0.hasSuffix(".docc") || $0.hasSuffix(".md") })
 }
+
+@Test
+func bothVersionsOfTheDataModelAreCompiled() {
+    /// The one thing a versioned model is for: an older version and a newer
+    /// one in the same bundle, with a migration derivable between them.
+    let migration = TargetResource.modelMigration
+
+    #expect(migration?.from == 1)
+    #expect(migration?.to == 2)
+}

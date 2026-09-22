@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 public enum TargetResource {
@@ -41,6 +42,27 @@ public enum TargetResource {
             return nil
         }
         return bundle.localizedString(forKey: "lproj", value: nil, table: nil)
+    }
+
+    /// The two versions of the data model, loaded out of what `momc` compiled.
+    ///
+    /// A versioned `.xcdatamodeld` is what migration is built on: both
+    /// versions have to be in the bundle, and a mapping between them has to be
+    /// derivable from them — which is what `nil` here would deny.
+    public static var modelMigration: (from: Int, to: Int)? {
+        guard let momd = Bundle.module.url(forResource: "Model", withExtension: "momd"),
+              let source = NSManagedObjectModel(contentsOf: momd.appendingPathComponent("Model.mom")),
+              let destination = NSManagedObjectModel(contentsOf: momd.appendingPathComponent("Model2.mom")),
+              (try? NSMappingModel.inferredMappingModel(
+                  forSourceModel: source,
+                  destinationModel: destination)) != nil
+        else {
+            return nil
+        }
+
+        return (
+            source.entitiesByName["Item"]?.properties.count ?? 0,
+            destination.entitiesByName["Item"]?.properties.count ?? 0)
     }
 
     /// What is in the bundle, by name. A platform resource is compiled by
