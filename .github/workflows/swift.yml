@@ -7,12 +7,14 @@ on:
     paths:
       - 'Sources/**'
       - 'Tests/**'
+      - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
   pull_request:
     paths:
       - 'Sources/**'
       - 'Tests/**'
+      - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
 
@@ -318,6 +320,10 @@ jobs:
         include:
           - name: ArtifactBundle
             plugins: true
+            # A package rule carries `manual`, so a wildcard build never picks
+            # one up: a program a package builds is named to be run.
+            programs: |
+              //Packages/ArtifactBundle:GreetTool -- /tmp/artifact-bundle.swift
           - name: BinaryTarget
           - name: BuildToolPlugin
             plugins: true
@@ -333,6 +339,9 @@ jobs:
           - name: PrebuildPlugin
             plugins: true
           - name: ProductShapes
+            programs: |
+              //Packages/Products:renamed-tool
+              //Packages/Products:ProductSnippet
           - name: RemoteXCFramework
           - name: SwiftSettings
           - name: SystemLibrary
@@ -392,6 +401,19 @@ jobs:
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...
 
+      # A program is not a test: the rules that build one carry `manual`, so
+      # `//...` never builds it. Running it is what says it links and works.
+      - name: Run Package Programs
+        if: matrix.programs
+        working-directory: spm/${{ matrix.name }}/App
+        env:
+          PROGRAMS: ${{ matrix.programs }}
+        run: |
+          while read -r program; do
+            [ -n "$program" ] || continue
+            bazel run $program
+          done <<< "$PROGRAMS"
+
       # Both ways round, and not only that both pass: a trait is a compilation
       # condition named after itself, so the flag reaching swiftc is the thing
       # to see.
@@ -419,3 +441,13 @@ jobs:
           for trait in "${traits[@]}"; do
             bazel test //... "--config=${PACKAGE}.${trait}"
           done
+
+      # What each selection resolves to, exactly: the closure of the trait
+      # asked for, and nothing of the defaults it replaced.
+      - name: Probe Trait Selections
+        if: matrix.name == 'TraitGraph'
+        working-directory: spm/TraitGraph/App
+        run: |
+          bazel run //Packages/TraitGraph:TraitProbe -- Leaf Middle Top
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Middle -- Leaf Middle
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Alternative -- Alternative
