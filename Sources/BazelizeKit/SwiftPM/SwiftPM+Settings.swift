@@ -28,7 +28,9 @@ extension SwiftPM.Generator {
             /// everything that depends on the library, and a project's own target
             /// must not compile as if it were a package — Xcode's generated asset
             /// symbols, for one, switch on `SWIFT_PACKAGE`.
-            always: Self.define("SWIFT_PACKAGE") + Self.aliasFlags(of: target),
+            always: Self.define("SWIFT_PACKAGE")
+                + Self.aliasFlags(of: target)
+                + Self.languageMode(of: target, in: package),
             /// A trait is a compilation condition of the package that declares
             /// it: `#if Fast` is how a source asks. Swift only — SwiftPM does
             /// not hand it to clang, so neither is it handed to `-Xcc`.
@@ -60,6 +62,42 @@ extension SwiftPM.Generator {
             .flatMap { module, alias in
                 ["-module-alias", "\(module)=\(alias)"]
             }
+    }
+
+    /// `-swift-version` for a package that declares which language modes it
+    /// compiles in.
+    ///
+    /// SwiftPM builds such a package in the newest mode it declares that its
+    /// own tools version reaches: swift-syntax declares 5 and 6 from a 5.8
+    /// manifest, and is compiled as Swift 5 — where `@retroactive` on a type of
+    /// the same package is a warning rather than an error.
+    ///
+    /// A target that names a mode of its own is compiled in that instead, so
+    /// the package's is only passed when the target says nothing.
+    private static func languageMode(
+        of target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package) -> [String]
+    {
+        let named: Set<String> = ["swiftLanguageMode", "swiftLanguageVersion"]
+        let overridden = target.settings.contains { setting in
+            setting.tool == "swift" && named.contains(setting.name ?? "")
+        }
+        guard !overridden else { return [] }
+
+        let tools = version(package.manifest.toolsVersion)
+        let newest = package.manifest.swiftLanguageModes
+            .filter { !tools.lexicographicallyPrecedes(version($0)) }
+            .max { left, right in
+                version(left).lexicographicallyPrecedes(version(right))
+            }
+        guard let newest else { return [] }
+
+        return ["-swift-version", newest]
+    }
+
+    /// `6.1` as the numbers it compares by.
+    private static func version(_ value: String) -> [Int] {
+        value.split(separator: ".").map { Int($0) ?? 0 }
     }
 
     /// A package can name a system library or framework it needs; nothing else in

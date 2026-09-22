@@ -1,7 +1,8 @@
 import Foundation
 
-/// `swiftLanguageMode(.v5)`: the target compiles as Swift 5 whatever the
-/// manifest's tools version is.
+/// The package's `swiftLanguageModes`: this target names no mode of its own,
+/// so it compiles in the one the package declares, whatever the manifest's
+/// tools version is.
 #if swift(>=6.0)
 #error("The target must compile in Swift 5 language mode")
 #endif

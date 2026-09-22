@@ -1,3 +1,4 @@
+import LanguageModeOverride
 import SwiftSettings
 import Testing
 
@@ -17,4 +18,9 @@ func linkedLibraryAndFrameworkAreLinked() {
 @Test @MainActor
 func linkerUnsafeFlagsReachTheLink() {
     #expect(SettingProbe.aliased() == 42)
+}
+
+@Test @MainActor
+func aTargetsOwnLanguageModeWinsOverThePackages() {
+    #expect(languageModeOverride == 6)
 }

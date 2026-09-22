@@ -17,7 +17,8 @@ let package = Package(
             name: "SwiftSettings",
             swiftSettings: [
                 .define("MANIFEST_DEFINE"),
-                .swiftLanguageMode(.v5),
+                /// Not the language mode: that one the package declares, and
+                /// this target inherits.
                 .enableUpcomingFeature("MemberImportVisibility"),
                 .enableExperimentalFeature("Extern"),
                 .strictMemorySafety(),
@@ -39,7 +40,15 @@ let package = Package(
                     "-Xlinker", "_swiftsettings_probe_alias",
                 ]),
             ]),
+        /// The package's mode is the default, not the rule: a target that names
+        /// one of its own is compiled in that.
+        .target(
+            name: "LanguageModeOverride",
+            swiftSettings: [
+                .swiftLanguageMode(.v6),
+            ]),
         .testTarget(
             name: "SwiftSettingsTests",
-            dependencies: ["SwiftSettings"]),
-    ])
+            dependencies: ["LanguageModeOverride", "SwiftSettings"]),
+    ],
+    swiftLanguageModes: [.v5])

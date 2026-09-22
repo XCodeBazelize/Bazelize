@@ -28,6 +28,10 @@ extension SwiftPM {
         let traits: [Trait]
         let cLanguageStandard: String?
         let cxxLanguageStandard: String?
+        /// `swiftLanguageModes`, which the dump still calls by its old name:
+        /// the language modes the package's targets compile in unless one of
+        /// them says otherwise.
+        let swiftLanguageModes: [String]
         /// `{"_version": "6.0.0"}`: which `PackageDescription` the manifest was
         /// written against, which a plugin has to be compiled against too.
         let toolsVersion: String
@@ -42,6 +46,7 @@ extension SwiftPM {
             traits = container.list(Trait.self, "traits")
             cLanguageStandard = container.value(String.self, "cLanguageStandard")
             cxxLanguageStandard = container.value(String.self, "cxxLanguageStandard")
+            swiftLanguageModes = container.list(String.self, "swiftLanguageVersions")
             toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
         }
 
@@ -111,6 +116,11 @@ extension SwiftPM {
         /// A binary target's remote archive.
         let url: String?
         let checksum: String?
+        /// A system library target's `pkg-config` name, which is how the
+        /// machine is asked where that library is.
+        let pkgConfig: String?
+        /// What installs the library this target wraps, by package manager.
+        let providers: [Provider]
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -126,6 +136,28 @@ extension SwiftPM {
             pluginUsages = container.list(PluginUsage.self, "pluginUsages")
             url = container.value(String.self, "url")
             checksum = container.value(String.self, "checksum")
+            pkgConfig = container.value(String.self, "pkgConfig")
+            providers = container.list(Provider.self, "providers")
+        }
+    }
+
+    /// `{"brew": [["zlib"]]}`: a package manager, and what it installs.
+    struct Provider: Decodable {
+        let manager: String
+        let packages: [String]
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+
+            for key in container.allKeys {
+                guard let names = container.list([String].self, key.stringValue).first else { continue }
+                manager = key.stringValue
+                packages = names
+                return
+            }
+
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: decoder.codingPath, debugDescription: "Unknown provider"))
         }
     }
 
