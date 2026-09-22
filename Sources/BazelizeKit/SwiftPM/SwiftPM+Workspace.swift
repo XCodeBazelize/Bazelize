@@ -80,7 +80,7 @@ extension SwiftPM {
 
         try await resolve(output: output)
 
-        let checkouts = output + ".build/checkouts"
+        let scratch = output + ".build"
         var manifests: [(root: Root, manifest: Manifest)] = []
         var directoryByIdentity: [String: String] = [:]
 
@@ -88,7 +88,7 @@ extension SwiftPM {
         /// `path:` dependencies of its own, and those are not in
         /// `.build/checkouts` either — the manifest that declares one is the
         /// only thing that knows where it is.
-        var pending = try roots(checkouts: checkouts, locals: locals)
+        var pending = try roots(scratch: scratch, locals: locals)
         var seen: Set<String> = []
 
         while !pending.isEmpty {
@@ -97,7 +97,7 @@ extension SwiftPM {
             guard let manifest = try await manifest(at: root.path) else { continue }
             manifests.append((root, manifest))
 
-            for identity in [manifest.name, root.directory, root.path.lastComponent] {
+            for identity in [manifest.name] + root.identities {
                 directoryByIdentity[identity.lowercased()] = root.directory
             }
 
@@ -185,13 +185,72 @@ extension SwiftPM {
         return enabled
     }
 
-    // MARK: Private
+    // MARK: Internal
 
-    private struct Root {
+    struct Root {
         let directory: String
         let path: Path
         let isLocal: Bool
+        /// What a dependency can call this package, beside its manifest's own
+        /// name: the directory it is filed under, and — for one downloaded from
+        /// a registry — the name inside its scope.
+        let identities: [String]
+
+        init(directory: String, path: Path, isLocal: Bool, identities: [String]? = nil) {
+            self.directory = directory
+            self.path = path
+            self.isLocal = isLocal
+            self.identities = identities ?? [directory, path.lastComponent]
+        }
     }
+
+    /// Where the packages of a resolved workspace are.
+    ///
+    /// A package from source control is a checkout, a local one is read in
+    /// place, and one from a registry is an archive SwiftPM unpacked under
+    /// `registry/downloads/<scope>/<name>/<version>` — the version is the
+    /// directory, so what names the package is the two above it.
+    static func roots(scratch: Path, locals: [Path]) throws -> [Root] {
+        var roots: [Root] = []
+
+        let checkouts = scratch + "checkouts"
+        if checkouts.exists {
+            for child in try checkouts.children() where child.isDirectory {
+                roots.append(.init(directory: child.lastComponent, path: child, isLocal: false))
+            }
+        }
+
+        let downloads = scratch + "registry/downloads"
+        if downloads.exists {
+            for scope in try downloads.children() where scope.isDirectory {
+                for package in try scope.children() where package.isDirectory {
+                    /// One version is resolved, and a stale one is left behind:
+                    /// the one with a manifest is the one that was unpacked.
+                    let versions = try package.children()
+                        .filter { ($0 + "Package.swift").exists }
+                        .sorted { $0.lastComponent < $1.lastComponent }
+                    guard let version = versions.last else { continue }
+
+                    let identity = "\(scope.lastComponent).\(package.lastComponent)"
+                    roots.append(.init(
+                        directory: identity,
+                        path: version,
+                        isLocal: false,
+                        identities: [identity, package.lastComponent]))
+                }
+            }
+        }
+
+        for path in locals {
+            let root = path.absolute().normalize()
+            guard root.exists else { continue }
+            roots.append(.init(directory: root.lastComponent, path: root, isLocal: true))
+        }
+
+        return roots.sorted { $0.directory < $1.directory }
+    }
+
+    // MARK: Private
 
     /// `swift package resolve` fetches what `Package.resolved` pins; without it
     /// there are no checkouts to read.
@@ -208,26 +267,6 @@ extension SwiftPM {
         guard result.terminationStatus.isSuccess else {
             throw SwiftPMError.resolveFailed(status: "\(result.terminationStatus)")
         }
-    }
-
-    /// Remote packages live in `.build/checkouts`; a local one is wherever its
-    /// manifest is, and is read in place.
-    private static func roots(checkouts: Path, locals: [Path]) throws -> [Root] {
-        var roots: [Root] = []
-
-        if checkouts.exists {
-            for child in try checkouts.children() where child.isDirectory {
-                roots.append(.init(directory: child.lastComponent, path: child, isLocal: false))
-            }
-        }
-
-        for path in locals {
-            let root = path.absolute().normalize()
-            guard root.exists else { continue }
-            roots.append(.init(directory: root.lastComponent, path: root, isLocal: true))
-        }
-
-        return roots.sorted { $0.directory < $1.directory }
     }
 
     private static func manifest(at root: Path) async throws -> Manifest? {
