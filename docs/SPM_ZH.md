@@ -66,7 +66,7 @@ App/
 ├── config.bazelrc
 ├── BUILD
 ├── plugins.sh                # `bazel run //:plugins` 跑的就是它
-├── tools/bazel               # 讓 `bazel list` 變成一個指令的東西
+├── tools/                    # Bazel 原生的 workspace 查詢指令
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # 完全不變
 └── Packages/                 # ★ 新增
@@ -84,14 +84,13 @@ App/
 | 指令 | 做什麼 |
 |---|---|
 | `bazel run //:plugins` | 讓 Bazel 建這個 workspace 的 build tool plugin 與它們的工具、執行它們，把產生的檔案寫回 `Packages/*/Generated/` |
-| `bazel list config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
-| `bazel list trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
+| `bazel run //tools:list-config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
+| `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
 
-`list` 不是 Bazel 的指令，`tools/bazel` 才是：Bazelisk 會執行這個 wrapper 而不是
-Bazel 本身，並把真正的執行檔放在 `BAZEL_REAL`。`list` 在那裡就回答完了——印一份清單
-不需要起一個 Bazel server——其他指令原封不動往下傳。兩個答案都是「現在」讀出來的，
-不是產生當下寫死的：`.bazelrc` 會被人改，manifest 的 trait 也會跟著 manifest 變。
-兩個指令對任何 workspace 都答得出來：沒有 config、沒有 trait 也是答案。
+兩個清單指令都是產生出來的 `sh_binary` target。答案來自產生 package rules
+時使用的同一份 resolved workspace 與設定檔；執行時只需要 Bazel，不需要
+`bazelize`。產生的 `tools/bazel` wrapper 仍保留較短的
+`bazel list config|trait` alias，其他指令則原封不動往下傳。
 
 ### package 的原始碼怎麼進來
 

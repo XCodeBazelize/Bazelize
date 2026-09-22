@@ -101,54 +101,77 @@ extension SwiftPM.Generator {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
     }
 
-    /// `bazel list config` and `bazel list trait`: what a generated workspace
-    /// can be asked about itself.
+    /// Bazel-native commands that describe the generated workspace.
     ///
-    /// Bazel has no way to add a command, but its launcher does: Bazelisk runs
-    /// `tools/bazel` instead of Bazel itself and hands it the real binary in
-    /// `BAZEL_REAL`. So `list` is answered by the wrapper and everything else
-    /// goes straight through — no server starts to print a list.
-    ///
-    /// It is written for every workspace: a project with no packages still has
-    /// configurations, and packages that declare no trait is an answer too.
-    func writeListCommand(locals: [Path]) throws {
+    /// The answers are embedded in executable targets, so using them never
+    /// depends on whichever `bazelize` executable happens to be on `PATH`.
+    /// Bazel itself has no extension point for custom commands; `tools/bazel`
+    /// keeps `bazel list config|trait` as aliases for the two `bazel run`
+    /// targets and forwards every other command unchanged.
+    func writeListingCommands() throws {
         let directory = output + "tools"
         try directory.mkpath()
 
-        /// `tools` is a package of its own, so nothing globs the wrapper into
-        /// a rule of the workspace's root package.
-        try (directory + "BUILD").write("# The `bazel` launcher's wrapper lives here, and is not a build input.\n")
+        let listings = [
+            ("config", try Listing.config(output: output)),
+            ("trait", Listing.traits(workspace: workspace))
+        ]
+        let builder = CodeBuilder()
+        builder.load(loadableRule: Rules.Shell.sh_binary)
 
-        let arguments = locals
-            .flatMap { local in ["--local", local.absolute().string.quoted] }
-            .joined(separator: " ")
+        for (topic, contents) in listings {
+            let name = "list-\(topic)"
+            let script = directory + "\(name).sh"
+            try script.write("""
+            #!/bin/bash
+            cat <<'BAZELIZE_LIST'
+            \(contents)
+            BAZELIZE_LIST
 
-        let script = directory + "bazel"
-        try script.write("""
+            """)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: script.string)
+            builder.call(
+                Rules.Shell.Call.sh_binary(
+                    name: name,
+                    srcs: ["\(name).sh"]))
+        }
+
+        try (directory + "BUILD").write(builder.build())
+
+        try writeBazelWrapper(to: directory + "bazel")
+    }
+
+    private func writeBazelWrapper(to wrapper: Path) throws {
+        try wrapper.write("""
         #!/bin/bash
-        # The `bazel` this workspace runs: `bazel list config` says what
-        # `--config=<name>` it defines, `bazel list trait` says which traits its
-        # packages declare and which of them are on. Every other command is the
-        # one Bazel would have run.
+        # Bazelisk runs this workspace wrapper and exposes Bazel as BAZEL_REAL.
         set -euo pipefail
-        workspace="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
-        if [[ "${1:-}" == "list" ]]; then
-            shift
-            exec bazelize list "$@" --output "$workspace" \(arguments)
-        fi
 
         if [[ -z "${BAZEL_REAL:-}" ]]; then
             echo "tools/bazel ran without BAZEL_REAL: run Bazel through Bazelisk." >&2
             exit 1
         fi
 
+        if [[ "${1:-}" == "list" ]]; then
+            case "${2:-}" in
+                config|trait)
+                    exec "$BAZEL_REAL" run "//tools:list-${2}"
+                    ;;
+                *)
+                    echo "Usage: bazel list config|trait" >&2
+                    exit 2
+                    ;;
+            esac
+        fi
+
         exec "$BAZEL_REAL" "$@"
 
         """)
-
-        /// The launcher only runs a wrapper it can execute.
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: wrapper.string)
     }
 
     /// What a plugin needs built: the plugin itself, and the tools it runs.
@@ -215,4 +238,3 @@ extension SwiftPM.Generator {
         let isPlugin: Bool
     }
 }
-

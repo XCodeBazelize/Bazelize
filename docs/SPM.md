@@ -73,7 +73,7 @@ App/
 ├── config.bazelrc
 ├── BUILD
 ├── plugins.sh                # what `bazel run //:plugins` runs
-├── tools/bazel               # what makes `bazel list` a command
+├── tools/                    # Bazel-native workspace inspection commands
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # unchanged
 └── Packages/                 # ★ new
@@ -91,16 +91,14 @@ App/
 | command | what it does |
 |---|---|
 | `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
-| `bazel list config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
-| `bazel list trait` | the traits its packages declare, which are on, and the `--config` that switches each |
+| `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
+| `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
 
-`list` is not a Bazel command: `tools/bazel` is, which is the wrapper Bazelisk
-runs instead of Bazel and hands the real binary in `BAZEL_REAL`. `list` is
-answered there — no server starts to print a list — and every other command
-goes straight through. Both answers are read from the workspace as it is now
-rather than from something written into it at generation time, because a
-`.bazelrc` gets edited and a manifest's traits change with the manifest. Both
-answer for any workspace: no configuration and no trait are answers too.
+Both listing commands are generated `sh_binary` targets. Their answers are
+embedded from the same resolved workspace and configuration files that generate
+the package rules; running them requires Bazel, but no `bazelize` executable.
+The generated `tools/bazel` wrapper keeps `bazel list config|trait` as shorter
+aliases and forwards every other command unchanged.
 
 ### How a package's sources get in
 

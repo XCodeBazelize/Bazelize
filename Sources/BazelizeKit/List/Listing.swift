@@ -10,16 +10,14 @@ import Foundation
 
 // MARK: - Listing
 
-/// The questions a generated workspace answers about itself.
+/// The answers embedded in a generated workspace's listing executables.
 ///
-/// Both are read from the workspace as it is now rather than written into it
-/// when it was generated: a `.bazelrc` is edited by hand, and a manifest's
-/// traits change with the manifest. An answer that was true at generation time
-/// and is false now is worse than no answer.
-public enum Listing {
-    /// `bazel run //list:config`: the configurations this workspace defines,
-    /// and what every build gets whether it names one or not.
-    public static func config(output: Path) throws -> String {
+/// Configuration files are read after generation, and trait state comes from
+/// the same resolved workspace that generated the package rules.
+enum Listing {
+    /// The configurations this workspace defines, and what every build gets
+    /// whether it names one or not.
+    static func config(output: Path) throws -> String {
         let rc = try configurations(in: output)
 
         var lines: [String] = []
@@ -47,11 +45,9 @@ public enum Listing {
         return lines.joined(separator: "\n")
     }
 
-    /// `bazel list trait`: the traits of every package in the workspace, which
-    /// of them a build gets by default, and what to say to change that.
-    public static func traits(output: Path, locals: [Path]) async throws -> String {
-        let workspace = try await SwiftPM.loadWorkspace(output: output, root: nil, locals: locals)
-
+    /// The traits of every package in the workspace, which of them a build gets
+    /// by default, and what to say to change that.
+    static func traits(workspace: SwiftPM.Workspace) -> String {
         let declaring = workspace.packages
             .filter { !$0.manifest.traits.isEmpty }
             .sorted { $0.directory < $1.directory }
@@ -89,7 +85,7 @@ public enum Listing {
         something that depends on that package asks for it by name. Anything \
         else is asked for by the `--config` beside it, which defines the \
         trait's own name for that package's sources and pulls in whatever is \
-        behind it. `bazel list config` lists them with everything else.
+        behind it. `bazel run //tools:list-config` lists them with everything else.
         """)
         return lines.joined(separator: "\n")
     }

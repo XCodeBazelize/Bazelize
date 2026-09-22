@@ -87,11 +87,11 @@ extension SwiftPM {
             }
 
             try writePluginRunner(locals: locals)
-            try writeListCommand(locals: locals)
             /// Written whether or not there is a trait to switch: the root
             /// `.bazelrc` imports it, and an import of a file that is not
             /// there is a workspace that does not load.
             try writeTraitConfigs()
+            try writeListingCommands()
         }
 
         /// A package that declares a platform version the project does not reach is

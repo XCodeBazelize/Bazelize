@@ -22,54 +22,10 @@ struct Command: AsyncParsableCommand {
         subcommands: [
             GenerateCommand.self,
             PluginsCommand.self,
-            ListCommand.self,
             XcodeCommand.self,
 //            RoadmapCommand.self,
         ],
         defaultSubcommand: GenerateCommand.self)
-}
-
-// MARK: - ListCommand
-
-/// Answers a question about a generated workspace: `bazel run //list:config`
-/// and `bazel run //list:trait` are the workspace's own way to ask them.
-///
-/// Both answers are read from the workspace as it is now, not from something
-/// written into it when it was generated: a `.bazelrc` gets edited, and a
-/// manifest's traits change with the manifest.
-struct ListCommand: AsyncParsableCommand {
-    enum Topic: String, ExpressibleByArgument, CaseIterable {
-        /// The `--config=<name>` this workspace defines.
-        case config
-        /// The traits its packages declare, and which of them are on.
-        case trait
-    }
-
-    static let configuration = CommandConfiguration(
-        commandName: "list",
-        abstract: "List what a generated workspace is built with.")
-
-    @Argument(help: "config|trait")
-    var topic: Topic
-
-    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
-    var output = "."
-
-    @Option(name: [.customLong("local", withSingleDash: false)], help: "PATH/TO/LOCAL/PACKAGE")
-    var locals: [String] = []
-
-    func run() async throws {
-        let outputPath = Path.current + output
-
-        switch topic {
-        case .config:
-            print(try Listing.config(output: outputPath))
-        case .trait:
-            print(try await Listing.traits(
-                output: outputPath,
-                locals: locals.map { Path.current + $0 }))
-        }
-    }
 }
 
 // MARK: - PluginsCommand

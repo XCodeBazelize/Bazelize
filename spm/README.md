@@ -12,7 +12,7 @@ would not tell us anything.
 | `CommandPlugin` | a plugin that is run on demand rather than while building, which nothing in a build may try to run |
 | `DependencyCondition` | dependencies conditional on a platform and on a trait: what the condition excludes must not be built |
 | `Macro` | a macro target, loaded by the compiler while the target beside it is compiled |
-| `Trait` | the package's own traits, a default one, a dependency whose trait is turned on by name, and build settings conditional on each |
+| `Trait` | the package's own traits, a default one, and a dependency whose trait is turned on by name |
 | `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled |
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
 | `TargetExclude` | `exclude:`, where a named file and a named directory must not be compiled |
@@ -30,8 +30,8 @@ bazelize --project . --output App
 cd App
 bazel run //:plugins   # only the packages with a build tool plugin need this
 bazel test //...
-bazel list config      # what `--config=<name>` the workspace defines
-bazel list trait       # which traits its packages declare, and which are on
+bazel run //tools:list-config   # what `--config=<name>` the workspace defines
+bazel run //tools:list-trait    # which traits its packages declare, and which are on
 bazel test //... --config=<Package>.<Trait>   # …with one of them turned on
 ```
 
@@ -40,7 +40,8 @@ they generate into `Packages/<package>/Generated/`. It is a separate step
 because a plugin is a program: Bazel builds it, and bazelize runs it as SwiftPM
 would.
 
-`bazel list` is a command the generated `tools/bazel` adds, which Bazelisk runs
-in Bazel's place. `bazelize` has to be on `PATH` for either.
+The listing commands are generated Bazel targets and do not need `bazelize` at
+runtime. The generated `tools/bazel` wrapper also exposes them as
+`bazel list config|trait`.
 
 `App/` is generated, and is not checked in.
