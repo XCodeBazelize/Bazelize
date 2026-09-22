@@ -1,5 +1,7 @@
 # TODO
 
+中文版：[TODO.zh-Hant.md](TODO.zh-Hant.md)
+
 What the SwiftPM side of bazelize does not do yet, and why. Written after the
 `spm/` fixture corpus reached 24 packages, all of which build and test both
 ways (`swift build`/`swift test` and `bazelize` + `bazel test //...`).
