@@ -201,6 +201,7 @@ jobs:
   # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
   # lane clones what it measures at the revision it was measured against.
   IntegrateApp:
+    name: IntegrateApp (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
     timeout-minutes: 120
@@ -311,6 +312,7 @@ jobs:
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
+    name: IntegratePackage (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
     timeout-minutes: 60
