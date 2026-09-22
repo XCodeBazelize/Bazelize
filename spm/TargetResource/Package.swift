@@ -21,6 +21,12 @@ let package = Package(
                 .copy("single.txt"),
                 .process("Processed"),
                 .process("Localized", localization: .default),
+                /// The localization a resource falls back to, which is a
+                /// directory rather than a language.
+                .process("Base.lproj"),
+                /// A localization copied as it is: what is inside is not
+                /// compiled, and the directory keeps its name.
+                .copy("de.lproj"),
                 /// A privacy manifest is a file a package ships as it is.
                 .copy("PrivacyInfo.xcprivacy"),
                 /// Kinds the platform compiles rather than copies.

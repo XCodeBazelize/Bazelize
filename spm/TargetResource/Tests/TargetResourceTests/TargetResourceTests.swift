@@ -37,6 +37,10 @@ func everyLocalizationIsItsOwn() {
     /// says what it says.
     #expect(TargetResource.lprojLocalization("en") == "from lproj")
     #expect(TargetResource.lprojLocalization("ja") == "lproj から")
+    /// `Base` is a localization of its own — what a resource falls back to —
+    /// and a copied one is in the bundle whether or not anything compiled it.
+    #expect(TargetResource.lprojLocalization("Base") == "from base")
+    #expect(TargetResource.lprojLocalization("de") == "aus de")
 }
 
 @Test
