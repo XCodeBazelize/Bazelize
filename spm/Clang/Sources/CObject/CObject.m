@@ -5,6 +5,12 @@
 #error "C unsafe flags must reach Objective-C sources"
 #endif
 
+/// `cLanguageStandard: .c11`, which is the package's to declare and nothing
+/// else's: without it the compiler picks its own default.
+#if __STDC_VERSION__ != 201112L
+#error "The package's C language standard must reach the compiler"
+#endif
+
 @implementation CObject
 
 + (int)value {
