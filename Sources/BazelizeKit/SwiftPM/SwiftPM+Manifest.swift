@@ -237,6 +237,9 @@ extension SwiftPM {
         /// The last element of the array a dependency is dumped as: the
         /// platforms it is limited to, and the traits that have to be on.
         let condition: SettingCondition?
+        /// `moduleAliases`: what the modules of that product are called here,
+        /// which is how two packages that both ship a `Core` are both used.
+        let moduleAliases: [String: String]
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -260,6 +263,9 @@ extension SwiftPM {
 
                 self.kind = kind
                 condition = values.compactMap(\.condition).last
+                moduleAliases = values.compactMap(\.aliases).reduce(into: [:]) { all, aliases in
+                    all.merge(aliases) { _, later in later }
+                }
                 return
             }
 
@@ -279,6 +285,7 @@ extension SwiftPM {
     struct DependencyElement: Decodable {
         let name: String?
         let condition: SettingCondition?
+        let aliases: [String: String]?
 
         init(from decoder: Decoder) throws {
             if let single = try? decoder.singleValueContainer(),
@@ -286,6 +293,7 @@ extension SwiftPM {
             {
                 self.name = name
                 condition = nil
+                aliases = nil
                 return
             }
 
@@ -297,10 +305,12 @@ extension SwiftPM {
                 container.allKeys.contains(where: { Self.conditionKeys.contains($0.stringValue) })
             else {
                 condition = nil
+                aliases = try? decoder.singleValueContainer().decode([String: String].self)
                 return
             }
 
             condition = try? SettingCondition(from: decoder)
+            aliases = nil
         }
 
         private static let conditionKeys: Set<String> = ["platformNames", "traits", "config"]

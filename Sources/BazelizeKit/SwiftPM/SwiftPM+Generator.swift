@@ -34,6 +34,19 @@ extension SwiftPM {
         /// by name, written with the flags once every rule is generated.
         var traitGroups: [String: [String]] = [:]
 
+        /// Conditions that require both a trait expression and a build
+        /// configuration, emitted after every package has registered its use.
+        var conditionGroups: [String: [String]] = [:]
+
+        /// SwiftPM build configurations used by conditional settings.
+        var configurationConditions: Set<String> = []
+
+        /// What a consumer calls another package's module: the aliases asked
+        /// for, by the package that owns the module and the target inside it.
+        /// Collected before anything is written, because the rule that carries
+        /// an alias belongs to the package being aliased.
+        var moduleAliases: [String: [String: Set<String>]] = [:]
+
         /// What a caller tells the user about: where the build differs from what
         /// the package asked for, and why.
         private(set) var notes: [String] = []
@@ -81,6 +94,8 @@ extension SwiftPM {
                 report(deploymentOf: package)
                 report(pluginsOf: package)
             }
+
+            collectModuleAliases()
 
             for package in workspace.packages {
                 try generate(package)
@@ -250,6 +265,12 @@ extension SwiftPM {
                     continue
                 }
             }
+            try buildSnippets(
+                in: package,
+                root: root,
+                emitted: emitted,
+                builder: builder)
+
 
             for product in package.manifest.products {
                 build(product, emitted: Set(emitted.keys), package: package, builder: builder)
@@ -738,40 +759,60 @@ extension SwiftPM {
             resources: ResourceBundle?,
             builder: CodeBuilder)
         {
-            builder.load(loadableRule: Rules.Swift.swift_library)
-            builder.call(
-                Rules.Swift.Call.swift_library(
-                    name: ruleName(of: target.name, in: package),
-                    /// SwiftPM compiles every package target with the developer
-                    /// search paths, which is how a test-support library finds
-                    /// XCTest.
-                    always_include_developer_search_paths: true,
-                    copts: copts(of: target, in: package),
-                    module_name: Self.moduleName(target.name),
-                    /// Which targets `package` visibility reaches: every target of
-                    /// the same package, which is what the name identifies.
-                    package_name: package.manifest.name,
-                    plugins: plugins(of: target, in: package).nonEmpty.map { macros in
-                        .build { macros }
-                    },
-                    srcs: Starlark.glob(
-                        matching(
-                            sources(of: target, prefix: prefix, extensions: ["swift"]),
-                            relativeFiles(of: target, in: package, prefix: prefix))
-                            + generated
-                            + (resources?.accessors ?? []),
-                        exclude: excluded(target, prefix: prefix),
-                        /// The plugin's directory is globbed before anything has
-                        /// written into it: `bazel run //:plugins` does that, and
-                        /// a package that cannot load cannot run it.
-                        allowEmpty: true),
-                    deps: deps(of: target, in: package),
-                    data: resources?.label.map { label in
-                        .build { [Starlark.Label.named(label)] }
-                    },
-                    linkopts: linkopts(of: target, in: package),
-                    tags: Self.manual,
-                    visibility: .public))
+            /// The module under its own name, and once more under each name a
+            /// consumer aliased it to: aliasing is that consumer's view of the
+            /// module, and a module is named when it is compiled.
+            for module in [target.name] + aliases(of: target.name, in: package) {
+                let isAlias = module != target.name
+
+                builder.load(loadableRule: Rules.Swift.swift_library)
+                builder.call(
+                    Rules.Swift.Call.swift_library(
+                        name: isAlias
+                            ? Self.aliasRuleName(of: target.name, as: module)
+                            : ruleName(of: target.name, in: package),
+                        /// SwiftPM compiles every package target with the developer
+                        /// search paths, which is how a test-support library finds
+                        /// XCTest.
+                        always_include_developer_search_paths: true,
+                        copts: copts(of: target, in: package),
+                        module_name: Self.moduleName(module),
+                        /// Which targets `package` visibility reaches: every target of
+                        /// the same package, which is what the name identifies.
+                        package_name: package.manifest.name,
+                        plugins: plugins(of: target, in: package).nonEmpty.map { macros in
+                            .build { macros }
+                        },
+                        srcs: Starlark.glob(
+                            matching(
+                                sources(of: target, prefix: prefix, extensions: ["swift"]),
+                                relativeFiles(of: target, in: package, prefix: prefix))
+                                + generated
+                                + (resources?.accessors ?? []),
+                            exclude: excluded(target, prefix: prefix),
+                            /// The plugin's directory is globbed before anything has
+                            /// written into it: `bazel run //:plugins` does that, and
+                            /// a package that cannot load cannot run it.
+                            allowEmpty: true),
+                        deps: deps(of: target, in: package),
+                        data: resources?.label.map { label in
+                            .build { [Starlark.Label.named(label)] }
+                        },
+                        linkopts: linkopts(of: target, in: package),
+                        tags: Self.manual,
+                        visibility: .public))
+            }
+        }
+
+        /// What consumers call this package's module instead of its own name.
+        private func aliases(of target: String, in package: Package) -> [String] {
+            (moduleAliases[package.directory]?[target] ?? []).sorted()
+        }
+
+        /// The rule that compiles a target under an alias: a name of its own,
+        /// because the alias is often what a product is already called.
+        static func aliasRuleName(of target: String, as alias: String) -> String {
+            "\(target)_as_\(alias)"
         }
 
         /// An explicit `sources` list names files or directories; without one the
@@ -836,20 +877,30 @@ extension SwiftPM {
                 package.manifest.products.map { ($0.name, $0) },
                 uniquingKeysWith: { first, _ in first })
 
-            func dependencyLabel(_ dependency: SwiftPM.TargetDependency) -> String? {
+            func dependencyLabels(_ dependency: SwiftPM.TargetDependency) -> [String] {
                 switch dependency.kind {
                 case .target(let name):
-                    guard localTargets.contains(name), !isMacro(name, in: package) else { return nil }
-                    return ":\(ruleName(of: name, in: package))"
+                    guard localTargets.contains(name), !isMacro(name, in: package) else { return [] }
+                    return [":\(ruleName(of: name, in: package))"]
                 case .byName(let name):
                     if localTargets.contains(name) {
-                        guard !isMacro(name, in: package) else { return nil }
-                        return ":\(ruleName(of: name, in: package))"
+                        guard !isMacro(name, in: package) else { return [] }
+                        return [":\(ruleName(of: name, in: package))"]
                     }
-                    if localProducts[name] != nil { return ":\(name)" }
-                    return label(product: name, package: nil, from: package)
+                    if localProducts[name] != nil { return [":\(name)"] }
+                    return label(product: name, package: nil, from: package).map { [$0] } ?? []
                 case .product(let name, let packageName):
-                    return label(product: name, package: packageName, from: package)
+                    /// An aliased module is compiled under the name this package
+                    /// calls it, so what is linked is that rule rather than the
+                    /// product the module is part of.
+                    if !dependency.moduleAliases.isEmpty {
+                        return aliasLabels(
+                            of: dependency.moduleAliases,
+                            product: name,
+                            package: packageName,
+                            from: package)
+                    }
+                    return label(product: name, package: packageName, from: package).map { [$0] } ?? []
                 }
             }
 
@@ -858,15 +909,16 @@ extension SwiftPM {
             var byCondition: [String: Set<String>] = [:]
 
             for dependency in target.dependencies {
-                guard let label = dependencyLabel(dependency) else { continue }
+                let labels = dependencyLabels(dependency)
+                guard !labels.isEmpty else { continue }
 
                 guard let condition = traitCondition(dependency.traits, in: package) else {
-                    always.insert(label)
+                    always.formUnion(labels)
                     continue
                 }
 
                 if byCondition[condition] == nil { conditions.append(condition) }
-                byCondition[condition, default: []].insert(label)
+                byCondition[condition, default: []].formUnion(labels)
             }
 
             return traitValue(
@@ -891,6 +943,57 @@ extension SwiftPM {
             }
 
             return "//\(PluginSwiftPM.packagesDirectory)/\(owner.directory):\(product)"
+        }
+
+        /// What an aliasing consumer links: the aliased module of every target
+        /// the product holds, plus each target it did not rename.
+        private func aliasLabels(
+            of aliases: [String: String],
+            product: String,
+            package name: String?,
+            from package: Package) -> [String]
+        {
+            guard let owner = self.package(ofProduct: product, package: name, from: package) else {
+                Log.codeGenerate.warning("""
+                No package for product \(product, privacy: .public) \
+                required by \(package.directory, privacy: .public)
+                """)
+                return []
+            }
+
+            let directory = "//\(PluginSwiftPM.packagesDirectory)/\(owner.directory)"
+            let targets = owner.manifest.products
+                .first { $0.name == product }?
+                .targets ?? []
+
+            return targets.map { target in
+                guard let alias = aliases[target] else {
+                    return "\(directory):\(ruleName(of: target, in: owner))"
+                }
+                return "\(directory):\(Self.aliasRuleName(of: target, as: alias))"
+            }
+        }
+
+        /// Every alias any package asks for, filed under the package that owns
+        /// the module: that package's `BUILD` is where the aliased rule goes.
+        private func collectModuleAliases() {
+            for package in workspace.packages {
+                for target in package.manifest.targets {
+                    for dependency in target.dependencies {
+                        guard
+                            !dependency.moduleAliases.isEmpty,
+                            case .product(let product, let owner) = dependency.kind,
+                            let source = self.package(ofProduct: product, package: owner, from: package)
+                        else {
+                            continue
+                        }
+
+                        for (module, alias) in dependency.moduleAliases {
+                            moduleAliases[source.directory, default: [:]][module, default: []].insert(alias)
+                        }
+                    }
+                }
+            }
         }
 
         /// Which package declares a product: the one the dependency names, or the

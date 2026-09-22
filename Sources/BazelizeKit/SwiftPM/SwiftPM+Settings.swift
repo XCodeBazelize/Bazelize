@@ -15,8 +15,8 @@ extension SwiftPM.Generator {
     /// anything the rules model: a `defines` attribute would re-tokenize a value
     /// and a feature is not a flag the rules know.
     ///
-    /// A setting conditional on a trait is a `select` on that trait's flag, so
-    /// the build decides it rather than this run.
+    /// A conditional setting becomes a `select` on its traits and build
+    /// configuration, so the build decides it rather than this run.
     func copts(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Starlark.Value? {
         grouped(
             target.settings,
@@ -28,7 +28,7 @@ extension SwiftPM.Generator {
             /// everything that depends on the library, and a project's own target
             /// must not compile as if it were a package — Xcode's generated asset
             /// symbols, for one, switch on `SWIFT_PACKAGE`.
-            always: Self.define("SWIFT_PACKAGE"),
+            always: Self.define("SWIFT_PACKAGE") + Self.aliasFlags(of: target),
             /// A trait is a compilation condition of the package that declares
             /// it: `#if Fast` is how a source asks. Swift only — SwiftPM does
             /// not hand it to clang, so neither is it handed to `-Xcc`.
@@ -45,6 +45,20 @@ extension SwiftPM.Generator {
             .compactMap { trait in
                 guard let condition = traitCondition([trait.name], in: package) else { return nil }
                 return (condition, ["-D\(trait.name)"])
+            }
+    }
+
+    /// `-module-alias <name in source>=<name it is compiled under>` for every
+    /// module this target renamed: the alias is what keeps two packages that
+    /// ship the same module name apart, and the sources keep saying what they
+    /// always said.
+    private static func aliasFlags(of target: SwiftPM.PackageTarget) -> [String] {
+        target.dependencies
+            .flatMap { dependency in
+                dependency.moduleAliases.sorted { $0.key < $1.key }
+            }
+            .flatMap { module, alias in
+                ["-module-alias", "\(module)=\(alias)"]
             }
     }
 
@@ -113,10 +127,11 @@ extension SwiftPM.Generator {
         ["-D\(name)", "-Xcc", "-D\(name)"]
     }
 
-    /// Settings as one list plus one `select` per trait condition.
+    /// Settings as one list plus one `select` per trait or configuration
+    /// condition.
     ///
-    /// One `select` per condition rather than one with every key: two traits can
-    /// be on at once, and a `select` whose keys both match is an error rather
+    /// One `select` per condition rather than one with every key: two conditions
+    /// can be on at once, and a `select` whose keys both match is an error rather
     /// than both lists.
     func grouped(
         _ settings: [SwiftPM.Setting],
@@ -138,7 +153,7 @@ extension SwiftPM.Generator {
             let values = flags(setting)
             guard !values.isEmpty else { continue }
 
-            guard let condition = traitCondition(setting.traits, in: package) else {
+            guard let condition = settingCondition(setting.condition, in: package) else {
                 always += values
                 continue
             }
