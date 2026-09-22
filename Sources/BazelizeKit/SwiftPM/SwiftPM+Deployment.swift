@@ -178,6 +178,6 @@ extension SwiftPM.Deployment {
             output: .string(limit: 1024 * 1024))
 
         guard result.terminationStatus.isSuccess else { return "" }
-        return result.standardOutput ?? ""
+        return result.standardOutput
     }
 }

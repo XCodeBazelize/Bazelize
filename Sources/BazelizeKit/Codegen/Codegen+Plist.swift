@@ -251,6 +251,9 @@ extension String {
             guard !reserved.contains(key) else { continue }
 
             let modifier = Range(match.range(at: 2), in: self).map { String(self[$0]) }
+            /// `$(KEY:default=value)` is the only modifier that answers what a
+            /// missing setting is; any other one — `:lower`, say — leaves the
+            /// reference as it was rather than pasting the modifier in.
             guard let value = settings[key] ?? modifier?.delete(prefix: "default=") else { continue }
 
             result.replaceSubrange(wholeRange, with: value)

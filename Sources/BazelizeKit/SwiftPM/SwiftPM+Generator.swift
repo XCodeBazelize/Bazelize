@@ -391,9 +391,14 @@ extension SwiftPM {
             let output = pluginOutputs.output(of: target.name, in: package)
             let base = output?.root.normalize().string ?? ""
             for file in output?.files ?? [] {
-                let relative = file.normalize().string
-                    .delete(prefix: base)
+                let path = file.normalize().string
+                /// A file the plugin wrote somewhere else is not this target's
+                /// to name.
+                guard let relative = path.delete(prefix: base)?
                     .trimmingCharacters(in: ["/"])
+                else {
+                    continue
+                }
                 guard !relative.isEmpty else { continue }
 
                 /// A file with no extension is the one thing a pattern cannot

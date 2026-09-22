@@ -73,7 +73,6 @@ struct FileLoader {
     var relativePath: String? {
         let root = project.workspacePath.string.realPath
         guard let fullPath = fullPath?.realPath else { return nil }
-        guard fullPath.hasPrefix(root + "/") else { return nil }
         return fullPath.delete(prefix: root + "/")
     }
 
@@ -320,6 +319,10 @@ func unique<T>(_ values: [T], key: (T) -> String) -> [T] {
 }
 
 extension String {
+    /// What is left after the prefix, or `nil` when the string does not start
+    /// with one. Its own rather than `Util`'s: this module does not depend on
+    /// that one, and a four-line answer is cheaper than a module that drags
+    /// Yams in behind it.
     func delete(prefix: String) -> String? {
         guard hasPrefix(prefix) else { return nil }
         return String(dropFirst(prefix.count))
