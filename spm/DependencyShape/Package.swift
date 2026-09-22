@@ -16,6 +16,7 @@ let package = Package(
         /// dependency is written as neither.
         .package(name: "Vendor", path: "vendor-kit"),
         .package(path: "Other"),
+        .package(path: "Alt"),
     ],
     targets: [
         .target(name: "Local"),
@@ -28,6 +29,10 @@ let package = Package(
                 "Helper",
                 /// A product of another package.
                 .product(name: "VendorCore", package: "Vendor"),
+                /// A product of a third package, called what the one above is
+                /// called: a product name is the package's, so the dependency
+                /// says which package it means.
+                .product(name: "VendorCore", package: "Alt"),
                 /// A product whose module is called `Core` too, so it is
                 /// renamed here.
                 .product(

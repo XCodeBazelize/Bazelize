@@ -11,10 +11,10 @@ would not tell us anything.
 | `BinaryTarget` | a local zipped XCFramework, which links statically |
 | `BuildToolPlugin` | a build tool plugin and the tool it runs: the test target only compiles through a source the plugin generates |
 | `Clang` | the C-family shapes: Objective-C, Objective-C++, assembly, public headers somewhere of its own, a private header search path, defines with and without a value, a module map the package ships, C and C++ `unsafeFlags`, the package's language standards, C++ interoperability, the bundle a C target reaches without importing anything, and tests written in XCTest as well as swift-testing |
-| `CommandPlugin` | a plugin that is run on demand rather than while building, which nothing in a build may try to run |
+| `CommandPlugin` | a plugin that is run on demand rather than while building, with the permissions such a plugin asks for, which nothing in a build may grant it or try to run |
 | `ConfigurationCondition` | settings conditional on debug and release, which the build decides rather than the generator |
 | `DependencyCondition` | dependencies conditional on a platform and on a trait: what the condition excludes must not be built |
-| `DependencyShape` | how a dependency is named: `.target`, by name, `.product`, a package whose identity is neither its directory nor its manifest name, and `moduleAliases` renaming a module that would otherwise clash |
+| `DependencyShape` | how a dependency is named: `.target`, by name, `.product`, a package whose identity is neither its directory nor its manifest name, two packages shipping a product of the same name, and `moduleAliases` renaming a module that would otherwise clash |
 | `Macro` | a macro target, loaded by the compiler while the target beside it is compiled |
 | `Platform` | what a platform decides and when: a setting conditional on a platform an Apple toolchain builds is kept, one conditional on Linux or Windows is gone before the rules are written, and the package's own deployment target is what its rules are built for |
 | `PluginDependency` | a build tool plugin that belongs to another package, named with the package it comes from, running that package's tool |

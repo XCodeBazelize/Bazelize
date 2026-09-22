@@ -15,7 +15,12 @@ let package = Package(
         .plugin(
             name: "Hello",
             capability: .command(
-                intent: .custom(verb: "hello", description: "Prints the package's greeting."))),
+                intent: .custom(verb: "hello", description: "Prints the package's greeting."),
+                /// What such a plugin has to ask for before it may do it, and
+                /// what a build must never grant it: nothing here runs it.
+                permissions: [
+                    .writeToPackageDirectory(reason: "Writes the greeting it prints."),
+                ])),
         .testTarget(
             name: "GreetingTests",
             dependencies: ["Greeting"]),
