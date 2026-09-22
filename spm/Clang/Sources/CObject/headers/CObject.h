@@ -1,5 +1,15 @@
 #import <Foundation/Foundation.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+/// What the target's assembly source defines: a C symbol, so it keeps its name
+/// when this header is read as C++ too.
+int assembly_value(void);
+#ifdef __cplusplus
+}
+#endif
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface CObject : NSObject

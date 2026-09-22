@@ -15,3 +15,31 @@ func aProcessedResourceIsInTheBundle() {
 func anEmbeddedResourceIsInTheBinary() {
     #expect(TargetResource.embedded == "embedded")
 }
+
+@Test
+func localizedResourcesAreFiledUnderTheirLocalization() {
+    #expect(TargetResource.explicitLocalization == #""explicit" = "explicit localization";"#)
+    #expect(TargetResource.lprojLocalization == "from lproj")
+}
+
+@Test
+func platformResourcesReachTheBundle() {
+    let bundled = TargetResource.bundled
+
+    func has(_ names: String...) -> Bool {
+        names.contains { name in bundled.contains { $0 == name || $0.hasSuffix("/\(name)") } }
+    }
+
+    #expect(has("Assets.car", "Assets.xcassets"))
+    #expect(has("Panel.nib", "Panel.xib"))
+    #expect(has("default.metallib", "Shader.metal"))
+    #expect(has("Catalog.xcstrings", "Catalog.strings"))
+}
+
+@Test
+func documentationAndPrivacyAreNotResources() {
+    let bundled = TargetResource.bundled
+
+    #expect(!bundled.contains { $0.hasSuffix(".docc") || $0.hasSuffix(".md") })
+    #expect(!bundled.contains { $0.hasSuffix(".xcprivacy") })
+}

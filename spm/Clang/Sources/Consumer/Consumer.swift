@@ -18,7 +18,15 @@ public enum Consumer {
         CObject.greeting()
     }
 
+    public static var assembly: Int32 {
+        assembly_value()
+    }
+
     public static var twice: Int32 {
         demo.twice(21)
+    }
+
+    public static var objectiveCxxLength: Int32 {
+        demo.objectiveCxxLength()
     }
 }

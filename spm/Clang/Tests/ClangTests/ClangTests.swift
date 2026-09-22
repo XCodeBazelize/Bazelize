@@ -21,3 +21,9 @@ func aCTargetReachesItsOwnBundle() {
 func cxxInteroperabilityWorks() {
     #expect(Consumer.twice == 42)
 }
+
+@Test
+func assemblyAndObjectiveCxxCompile() {
+    #expect(Consumer.assembly == 9)
+    #expect(Consumer.objectiveCxxLength == 6)
+}

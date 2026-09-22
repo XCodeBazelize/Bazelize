@@ -1,6 +1,9 @@
 #import "CObject.h"
 
 #import "CInternal.h"
+#ifndef C_UNSAFE_FLAG
+#error "C unsafe flags must reach Objective-C sources"
+#endif
 
 @implementation CObject
 

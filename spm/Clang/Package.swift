@@ -24,8 +24,13 @@ let package = Package(
                 .headerSearchPath("internal"),
                 .define("C_FLAG"),
                 .define("C_VALUE", to: "7"),
+                .unsafeFlags(["-DC_UNSAFE_FLAG"]),
             ]),
-        .target(name: "CxxLib"),
+        .target(
+            name: "CxxLib",
+            cxxSettings: [
+                .unsafeFlags(["-DCXX_UNSAFE_FLAG"]),
+            ]),
         .target(
             name: "Consumer",
             dependencies: ["CObject", "CxxLib"],
