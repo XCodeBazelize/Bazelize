@@ -27,6 +27,8 @@ let package = Package(
                 .process("Panel.xib"),
                 .process("Shader.metal"),
                 .process("Catalog.xcstrings"),
+                .process("Main.storyboard"),
+                .process("Model.xcdatamodeld"),
             ]),
         /// A test target has resources the same way any other target does, and
         /// its own bundle to reach them through.

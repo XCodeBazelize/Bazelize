@@ -37,6 +37,17 @@ public enum TargetResource {
         NSLocalizedString("lproj", bundle: .module, comment: "")
     }
 
+    /// The same key in whichever localization is asked for: a bundle with two
+    /// of them answers each, which one with only a fallback cannot.
+    public static func lprojLocalization(_ language: String) -> String? {
+        guard let path = Bundle.module.path(forResource: language, ofType: "lproj"),
+              let bundle = Bundle(path: path)
+        else {
+            return nil
+        }
+        return bundle.localizedString(forKey: "lproj", value: nil, table: nil)
+    }
+
     /// What is in the bundle, by name. A platform resource is compiled by
     /// whoever builds it — `Assets.car`, `Panel.nib`, `default.metallib` — and
     /// copied as it is by whoever cannot, so both names are the same resource

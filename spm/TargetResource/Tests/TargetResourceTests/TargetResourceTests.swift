@@ -37,6 +37,14 @@ func localizedResourcesAreFiledUnderTheirLocalization() {
 }
 
 @Test
+func everyLocalizationIsItsOwn() {
+    /// Not one answering for both: each `.lproj` is in the bundle, and each
+    /// says what it says.
+    #expect(TargetResource.lprojLocalization("en") == "from lproj")
+    #expect(TargetResource.lprojLocalization("ja") == "lproj から")
+}
+
+@Test
 func platformResourcesReachTheBundle() {
     let bundled = TargetResource.bundled
 
@@ -46,6 +54,8 @@ func platformResourcesReachTheBundle() {
 
     #expect(has("Assets.car", "Assets.xcassets"))
     #expect(has("Panel.nib", "Panel.xib"))
+    #expect(has("Main.storyboardc", "Main.storyboard"))
+    #expect(has("Model.momd", "Model.xcdatamodeld"))
     #expect(has("default.metallib", "Shader.metal"))
     #expect(has("Catalog.xcstrings", "Catalog.strings"))
 }

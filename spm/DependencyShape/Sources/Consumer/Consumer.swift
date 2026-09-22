@@ -13,4 +13,9 @@ public enum Consumer {
     /// Two packages ship a product called `VendorCore`; these are the modules
     /// behind each one.
     public static let sameNamedProducts = [vendorCore, altCore]
+
+    /// A dependency's own resource, which only that package's bundle holds.
+    public static var vendored: String? {
+        vendoredResource
+    }
 }

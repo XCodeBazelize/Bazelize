@@ -11,5 +11,12 @@ let package = Package(
         .library(name: "VendorCore", targets: ["VendorCore"]),
     ],
     targets: [
-        .target(name: "VendorCore"),
+        /// A package this one depends on has resources like any other, and a
+        /// bundle of its own to reach them through — which the package using
+        /// it never sees.
+        .target(
+            name: "VendorCore",
+            resources: [
+                .process("Resources"),
+            ]),
     ])

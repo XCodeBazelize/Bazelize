@@ -10,3 +10,8 @@ func everyDependencyShapeResolves() {
 func aProductNameBelongsToThePackageThatShipsIt() {
     #expect(Consumer.sameNamedProducts == ["vendor-kit", "alt"])
 }
+
+@Test
+func aDependencyReachesItsOwnBundle() {
+    #expect(Consumer.vendored == "vendored")
+}
