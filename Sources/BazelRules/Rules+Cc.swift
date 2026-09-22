@@ -49,6 +49,7 @@ extension Rules.Cc {
             hdrs: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
             copts: Starlark.Value? = nil,
+            defines: [String]? = nil,
             includes: [String]? = nil,
             linkopts: Starlark.Value? = nil,
             tags: [String]? = nil,
@@ -63,6 +64,7 @@ extension Rules.Cc {
                 if let hdrs { "hdrs" => hdrs }
                 if let deps { "deps" => deps }
                 if let copts { "copts" => copts }
+                if let defines { "defines" => defines }
                 if let includes { "includes" => includes }
                 if let linkopts { "linkopts" => linkopts }
                 if let tags { "tags" => tags }

@@ -10,3 +10,8 @@ func aSystemLibraryImportsHeadersAndLinksItsLibrary() {
 func aModuleMapLinksTheFrameworkItNames() {
     #expect(SystemLibrary.securityMessage?.isEmpty == false)
 }
+
+@Test
+func pkgConfigSuppliesTheIncludePath() {
+    #expect(SystemLibrary.greeting == 7)
+}

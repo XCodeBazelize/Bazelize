@@ -1,0 +1,4 @@
+module CGreet [system] {
+    header "shim.h"
+    export *
+}
