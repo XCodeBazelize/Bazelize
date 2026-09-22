@@ -14,6 +14,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "First"),
-        .target(name: "Second"),
+        /// `package` access reaches across the targets of one package, so this
+        /// one links the other.
+        .target(name: "Second", dependencies: ["First"]),
         .executableTarget(name: "Tool"),
     ])
