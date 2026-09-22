@@ -30,9 +30,15 @@ would not tell us anything.
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
 | `TargetResource` | every resource rule: `.copy` of a directory and of a single file, `.process`, `.embedInCode`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model, a shader that includes a header, a string catalogue, a test target's own resources, and the `.docc` and `.xcprivacy` SwiftPM ignores |
 
+Every package of a fixture builds and — where it has tests — passes them, the
+package beside the one bazelize is pointed at included: those are dependencies
+with sources of their own, and one that stopped building should be found here
+rather than in whatever it broke.
+
 A package that must not compile a file says so in the file: it is a
 `#error(…)`, so a generator that globs too much fails loudly instead of
-quietly passing.
+quietly passing. What must not be *linked* says so where it would have been
+linked, so the package holding it still builds anywhere.
 
 ## Running one
 

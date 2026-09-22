@@ -393,11 +393,32 @@ jobs:
       # What the fixture holds bazelize to is what SwiftPM does, so what
       # SwiftPM does is run too: a fixture whose two sides disagree is a
       # fixture that proves nothing.
-      - name: SwiftPM Test
+      #
+      # Every package of the fixture, not only the one bazelize is pointed at:
+      # the packages beside it are dependencies with sources of their own, and
+      # one that stopped building would be found here rather than in whatever
+      # it broke. A package with no tests is built and not run — there is
+      # nothing to run — and `App/` is generated, not a package of the fixture.
+      - name: SwiftPM Build And Test
         working-directory: spm/${{ matrix.name }}
         env:
           PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
-        run: swift test ${{ matrix.swiftpm }}
+          ARGS: ${{ matrix.swiftpm }}
+        run: |
+          status=0
+          while read -r manifest; do
+            package=$(dirname "$manifest")
+            echo "::group::$package"
+            if ! (cd "$package" && swift build $ARGS); then
+              echo "::error::swift build failed for $package"
+              status=1
+            elif [ -d "$package/Tests" ] && ! (cd "$package" && swift test $ARGS); then
+              echo "::error::swift test failed for $package"
+              status=1
+            fi
+            echo "::endgroup::"
+          done < <(find . -name Package.swift -not -path "*/App/*" -not -path "*/.build/*" | sort)
+          exit $status
 
       # A package that wraps a system library is found through `pkg-config`,
       # and a fixture that ships its own `.pc` is only found when that file's
