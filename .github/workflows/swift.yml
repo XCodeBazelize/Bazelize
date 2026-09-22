@@ -376,7 +376,12 @@ jobs:
         with:
           name: bazelize
 
+      # A package that wraps a system library is found through `pkg-config`,
+      # and a fixture that ships its own `.pc` is only found when that file's
+      # directory is on the path.
       - name: Bazel Generation
+        env:
+          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
         run: |
           chmod +x bazelize
           ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App"

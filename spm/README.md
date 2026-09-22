@@ -19,8 +19,8 @@ would not tell us anything.
 | `PrebuildPlugin` | a plugin's `.prebuildCommand`, which names a directory rather than the files it writes |
 | `ProductShapes` | products over several targets: `.static`, `.dynamic` and automatic libraries, a product named after one of its own targets, an executable product under another name, and a `Snippets/` program |
 | `RemoteXCFramework` | a remote XCFramework SwiftPM fetches, which links dynamically |
-| `SwiftSettings` | every `SwiftSetting` and `LinkerSetting`: language mode, upcoming and experimental features, strict memory safety, default isolation, unsafe flags, a linked library, a linked framework, and linker flags — each one observable, so a setting that went missing fails the build |
-| `SystemLibrary` | system-library targets: `pkgConfig`, providers, and module maps whose `link` and `link framework` directives are the only thing that says what to link |
+| `SwiftSettings` | every `SwiftSetting` and `LinkerSetting`, plus the package's own `swiftLanguageModes` and a target that overrides it: upcoming and experimental features, strict memory safety, default isolation, unsafe flags, a linked library, a linked framework, and linker flags — each one observable, so a setting that went missing fails the build |
+| `SystemLibrary` | system-library targets: module maps whose `link` and `link framework` directives say what to link, and a library whose header only `pkg-config` knows the way to — which is why this one needs `PKG_CONFIG_PATH` (see below) |
 | `Trait` | the package's own traits, a default one, and a dependency whose trait is turned on by name |
 | `TraitGraph` | the whole trait graph: traits that enable traits, a condition naming several, and dependencies taking `.defaults`, nothing, or a named selection |
 | `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled |
@@ -44,6 +44,20 @@ bazel run //tools:list-config   # what `--config=<name>` the workspace defines
 bazel run //tools:list-trait    # which traits its packages declare, and which are on
 bazel test //... --config=<Package>.<Trait>   # …with one of them turned on
 ```
+
+A package that wraps a system library is found through `pkg-config`, and the
+one `SystemLibrary` ships is in the fixture rather than on the machine, so both
+SwiftPM and bazelize need to be told where it is:
+
+```sh
+cd spm/SystemLibrary
+export PKG_CONFIG_PATH="$PWD/vendor/pkgconfig"
+swift test
+bazelize --project . --output App
+```
+
+The flags are read when the workspace is generated, so only that command needs
+the variable — the build does not.
 
 `bazel test //... --config=<Package>.<Trait>` is that package built with that
 trait selected: the selection replaces the package's defaults and carries
