@@ -21,6 +21,7 @@ would not tell us anything.
 | `PrebuildPlugin` | a plugin's `.prebuildCommand`, which names a directory rather than the files it writes |
 | `ProductShapes` | products over several targets: `.static`, `.dynamic` and automatic libraries, a product named after one of its own targets, an executable product under another name, and a `Snippets/` program |
 | `RemoteXCFramework` | a remote XCFramework SwiftPM fetches, which links dynamically |
+| `RemoteArtifactBundle` | a binary target whose program is fetched rather than found: SwiftPM checks the archive against its checksum and unpacks it where nothing local ever sits, and the plugin's tool comes out of there |
 | `SwiftSettings` | every `SwiftSetting` and `LinkerSetting`, plus the package's own `swiftLanguageModes` and a target that overrides it: upcoming and experimental features, strict memory safety, default isolation, unsafe flags, a linked library, a linked framework, and linker flags — each one observable, so a setting that went missing fails the build |
 | `SystemLibrary` | system-library targets: module maps whose `link` and `link framework` directives say what to link, and a library whose header only `pkg-config` knows the way to — which is why this one needs `PKG_CONFIG_PATH` (see below) |
 | `Trait` | the package's own traits, a default one, and a dependency whose trait is turned on by name |
@@ -76,3 +77,9 @@ runtime. The generated `tools/bazel` wrapper also exposes them as
 `bazel list config|trait`.
 
 `App/` is generated, and is not checked in.
+
+Two packages need `swift test --build-system native`: the default build system
+in this toolchain generates nothing for `.embedInCode` (`TargetResource`) and
+will not run a program a binary target downloaded (`RemoteArtifactBundle`).
+Neither is anything the packages themselves ask for, and the Bazel side of both
+is built the same way as every other fixture.
