@@ -137,9 +137,9 @@ extension SwiftPM {
     /// The traits each package is built with, by identity.
     ///
     /// A package gets its own default traits unless something that depends on it
-    /// names traits instead — naming them replaces the defaults, which is why a
-    /// manifest that wants both says so. A trait can enable further traits, so
-    /// the set is closed over that.
+    /// names a selection instead. An explicit empty selection disables defaults;
+    /// `.defaults` is encoded as the trait named `default`. A trait can enable
+    /// further traits, so the set is closed over that.
     static func enabledTraits(
         of manifests: [(identity: String, manifest: Manifest)],
         directoryByIdentity: [String: String]) -> [String: Set<String>]
@@ -152,8 +152,9 @@ extension SwiftPM {
 
         var requested: [String: Set<String>] = [:]
         for entry in manifests {
-            for dependency in entry.manifest.dependencies where !dependency.traits.isEmpty {
-                requested[identity(of: dependency), default: []].formUnion(dependency.traits)
+            for dependency in entry.manifest.dependencies {
+                let dependencyIdentity = identity(of: dependency)
+                requested[dependencyIdentity, default: []].formUnion(dependency.traits)
             }
         }
 

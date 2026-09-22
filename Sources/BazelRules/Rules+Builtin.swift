@@ -12,12 +12,16 @@ extension Rules {
 extension Rules.Builtin.Call {
     public static func config_setting(
         name: String,
+        values: [String: String]? = nil,
         flag_values: [String: String]? = nil,
         visibility: Starlark.Statement.Argument.Visibility? = nil)
         -> Starlark.Statement.Call
     {
         .init("config_setting") {
             "name" => name
+            if let values {
+                "values" => values
+            }
             if let flag_values {
                 "flag_values" => flag_values
             }

@@ -26,14 +26,20 @@ extension Rules {
 
 extension Rules.Selects {
     public enum Call {
-        /// A `config_setting` that holds when any of the given ones does.
+        /// A `config_setting` that holds when any or all of the given settings do.
         public static func config_setting_group(
             name: String,
-            match_any: [String]) -> Starlark.Statement.Call
+            match_any: [String]? = nil,
+            match_all: [String]? = nil) -> Starlark.Statement.Call
         {
             .init("selects.config_setting_group") {
                 "name" => name
-                "match_any" => match_any.map { Starlark.Label.named($0) }
+                if let matchAny = match_any {
+                    "match_any" => matchAny.map { Starlark.Label.named($0) }
+                }
+                if let matchAll = match_all {
+                    "match_all" => matchAll.map { Starlark.Label.named($0) }
+                }
             }
         }
     }

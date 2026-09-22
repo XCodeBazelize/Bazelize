@@ -21,6 +21,8 @@ extension SwiftPM.Generator {
         let config: String
         let package: String
         let trait: String
+        /// The traits selecting this one enables, including itself.
+        let selection: Set<String>
         /// What the graph resolves the trait to: a package's default traits, or
         /// what a dependent asked for by name.
         let isDefault: Bool
@@ -34,6 +36,20 @@ extension SwiftPM.Generator {
     var traitFlags: [TraitFlag] {
         workspace.packages.flatMap { package -> [TraitFlag] in
             let enabled = workspace.traits[package.identity] ?? []
+            let traits = Dictionary(
+                package.manifest.traits.map { ($0.name, $0) },
+                uniquingKeysWith: { first, _ in first })
+
+            func selection(of name: String) -> Set<String> {
+                var selected: Set<String> = []
+                var pending = [name]
+                while let next = pending.popLast() {
+                    guard selected.insert(next).inserted else { continue }
+                    pending += traits[next]?.enabledTraits ?? []
+                }
+                selected.remove("default")
+                return selected
+            }
 
             return package.manifest.traits
                 /// Not a trait: the list of traits a build that says nothing gets.
@@ -45,6 +61,7 @@ extension SwiftPM.Generator {
                         config: "\(package.directory).\(trait.name)",
                         package: package.directory,
                         trait: trait.name,
+                        selection: selection(of: trait.name),
                         isDefault: enabled.contains(trait.name))
                 }
         }
@@ -81,6 +98,42 @@ extension SwiftPM.Generator {
         return "//\(PluginSwiftPM.packagesDirectory):\(group)"
     }
 
+    /// The label a setting condition selects on. Trait names are alternatives
+    /// within the trait condition; a build configuration must also match when
+    /// the manifest names both.
+    func settingCondition(
+        _ condition: SwiftPM.SettingCondition?,
+        in package: SwiftPM.Package) -> String?
+    {
+        guard let condition else { return nil }
+
+        let trait = traitCondition(condition.traits, in: package)
+        let configuration = configurationCondition(condition.config)
+        switch (trait, configuration) {
+        case (nil, nil):
+            return nil
+        case (.some(let label), nil), (nil, .some(let label)):
+            return label
+        case (.some(let trait), .some(let configuration)):
+            let names = condition.traits.sorted() + [condition.config?.lowercased() ?? ""]
+            let group = "condition_\(Self.identifier(package.directory))_"
+                + names.map(Self.identifier).joined(separator: "_and_")
+            conditionGroups[group] = [trait, configuration]
+            return "//\(PluginSwiftPM.packagesDirectory):\(group)"
+        }
+    }
+
+    private func configurationCondition(_ configuration: String?) -> String? {
+        guard let configuration = configuration?.lowercased(),
+              configuration == "debug" || configuration == "release"
+        else {
+            return nil
+        }
+
+        configurationConditions.insert(configuration)
+        return "//\(PluginSwiftPM.packagesDirectory):swiftpm_\(configuration)"
+    }
+
     /// A list of flags or labels, plus one `select` per trait condition.
     ///
     /// One `select` each rather than one with several keys: two traits can be
@@ -105,46 +158,77 @@ extension SwiftPM.Generator {
         return .custom(parts.joined(separator: " + "))
     }
 
-    /// The flags, their settings, and the groups a condition asked for.
+    /// The flags, configuration settings, and groups a condition asked for.
     ///
     /// They live under `Packages/` because that is the package the generator
     /// owns: the root `BUILD` belongs to the project.
     func buildTraitRules(_ builder: CodeBuilder) {
         let flags = traitFlags
-        guard !flags.isEmpty else { return }
-
-        builder.load(.bool_flag)
-        for flag in flags {
-            builder.call(
-                Rules.Config.Call.bool_flag(
-                    name: flag.name,
-                    build_setting_default: flag.isDefault,
-                    visibility: .public))
-            builder.call(
-                Rules.Builtin.Call.config_setting(
-                    name: "\(flag.name)_on",
-                    flag_values: [":\(flag.name)": "true"]))
+        if !flags.isEmpty {
+            builder.load(.bool_flag)
+            for flag in flags {
+                builder.call(
+                    Rules.Config.Call.bool_flag(
+                        name: flag.name,
+                        build_setting_default: flag.isDefault,
+                        visibility: .public))
+                builder.call(
+                    Rules.Builtin.Call.config_setting(
+                        name: "\(flag.name)_on",
+                        flag_values: [":\(flag.name)": "true"]))
+            }
         }
 
-        guard !traitGroups.isEmpty else { return }
+        if configurationConditions.contains("debug") {
+            builder.call(
+                Rules.Builtin.Call.config_setting(
+                    name: "swiftpm_debug_dbg",
+                    values: ["compilation_mode": "dbg"]))
+            builder.call(
+                Rules.Builtin.Call.config_setting(
+                    name: "swiftpm_debug_fastbuild",
+                    values: ["compilation_mode": "fastbuild"]))
+        }
+        if configurationConditions.contains("release") {
+            builder.call(
+                Rules.Builtin.Call.config_setting(
+                    name: "swiftpm_release",
+                    values: ["compilation_mode": "opt"]))
+        }
+
+        let hasGroups = !traitGroups.isEmpty
+            || !conditionGroups.isEmpty
+            || configurationConditions.contains("debug")
+        guard hasGroups else { return }
 
         builder.load(loadableRule: Rules.Selects.selects)
+        if configurationConditions.contains("debug") {
+            builder.call(
+                Rules.Selects.Call.config_setting_group(
+                    name: "swiftpm_debug",
+                    match_any: [":swiftpm_debug_dbg", ":swiftpm_debug_fastbuild"]))
+        }
         for group in traitGroups.keys.sorted() {
             builder.call(
                 Rules.Selects.Call.config_setting_group(
                     name: group,
                     match_any: (traitGroups[group] ?? []).map { ":\($0)" }))
         }
+        for group in conditionGroups.keys.sorted() {
+            builder.call(
+                Rules.Selects.Call.config_setting_group(
+                    name: group,
+                    match_all: conditionGroups[group] ?? []))
+        }
     }
 
     /// `--config=<Package>.<Trait>` for every trait a package declares.
     ///
-    /// A configuration is how a Bazel workspace is told what to build, so it is
-    /// how a trait is asked for too. Only asked for: a trait adds — it defines
-    /// its own name and pulls in what is behind it — so there is nothing to
-    /// name for turning one off. A trait the manifests turn on is on already,
-    /// and the flag underneath takes `=false` for the rare build that wants it
-    /// without.
+    /// SwiftPM treats an explicit trait selection as a replacement for that
+    /// package's defaults. Each configuration therefore writes every flag for
+    /// the package, turning on only the selected trait and its transitive
+    /// `enabledTraits`. Multiple selections remain available through the
+    /// underlying boolean flags.
     ///
     /// The file is always written, because a `.bazelrc` that imports a file
     /// that is not there does not load.
@@ -161,10 +245,14 @@ extension SwiftPM.Generator {
             lines.append("# No package in this workspace declares a trait.")
         }
 
-        for flag in flags {
+        for selected in flags {
             lines.append("")
-            lines.append("# \(flag.package): \(flag.trait)\(flag.isDefault ? ", on by default" : "")")
-            lines.append("build:\(flag.config) --//\(PluginSwiftPM.packagesDirectory):\(flag.name)=true")
+            lines.append("# \(selected.package): \(selected.trait)\(selected.isDefault ? ", on by default" : "")")
+            for flag in flags where flag.package == selected.package {
+                lines.append(
+                    "build:\(selected.config) --//\(PluginSwiftPM.packagesDirectory):\(flag.name)="
+                        + (selected.selection.contains(flag.trait) ? "true" : "false"))
+            }
         }
 
         try (output + "traits.bazelrc").write(lines.joined(separator: "\n") + "\n")
