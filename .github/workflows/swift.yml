@@ -316,21 +316,34 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: ArtifactBundle
+            plugins: true
+          - name: BinaryTarget
           - name: BuildToolPlugin
             plugins: true
-          - name: CommandPlugin
           - name: Clang
+          - name: CommandPlugin
+          - name: ConfigurationCondition
           - name: DependencyCondition
             # A trait is a flag, so the build that turns one on is a build to
             # test as well: the dependency behind it is linked only then.
             config: DependencyCondition.Extras
+          - name: DependencyShape
           - name: Macro
+          - name: PrebuildPlugin
+            plugins: true
+          - name: ProductShapes
+          - name: RemoteXCFramework
+          - name: SwiftSettings
+          - name: SystemLibrary
+          - name: TargetExclude
+          - name: TargetPath
+          - name: TargetResource
+          - name: TargetSources
           - name: Trait
             traits: Fast,Slow
-          - name: TargetSources
-          - name: TargetPath
-          - name: TargetExclude
-          - name: TargetResource
+          - name: TraitGraph
+            traits: Alternative,Leaf,Middle,Top
     steps:
       - uses: actions/checkout@v6
 
@@ -391,9 +404,10 @@ jobs:
           ! bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
           bazel aquery --config=${{ matrix.config }} 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
 
-      # Select each declared trait on its own. This mirrors
-      # `swift test --traits <trait>` rather than carrying default traits into
-      # every explicit selection.
+      # Select each declared trait on its own, through the `--config` the
+      # workspace generated for it. That is what `swift test --traits <trait>`
+      # does: the selection replaces the package's defaults, and carries
+      # whatever that trait enables.
       - name: Test Each Package Trait
         if: matrix.traits
         working-directory: spm/${{ matrix.name }}/App
@@ -402,11 +416,6 @@ jobs:
           TRAITS: ${{ matrix.traits }}
         run: |
           IFS=',' read -ra traits <<< "$TRAITS"
-          disabled=()
           for trait in "${traits[@]}"; do
-            disabled+=("--//Packages:trait_${PACKAGE}_${trait}=false")
-          done
-          for trait in "${traits[@]}"; do
-            bazel test //... "${disabled[@]}" \
-              "--//Packages:trait_${PACKAGE}_${trait}=true"
+            bazel test //... "--config=${PACKAGE}.${trait}"
           done
