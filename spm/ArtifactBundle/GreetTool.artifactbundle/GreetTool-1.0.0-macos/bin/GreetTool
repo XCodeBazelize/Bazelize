@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# The program the artifact bundle ships: it writes the source its caller names.
+set -eu
+
+output="$1"
+mkdir -p "$(dirname "$output")"
+cat > "$output" <<'SWIFT'
+public let greeting = "hello from an artifact bundle"
+SWIFT

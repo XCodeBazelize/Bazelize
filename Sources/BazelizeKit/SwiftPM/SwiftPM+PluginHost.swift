@@ -231,18 +231,34 @@ extension SwiftPM.Generator {
             pluginGeneratedResources: [])
     }
 
-    /// The program a plugin runs, built by SwiftPM because it is an ordinary
-    /// executable target with ordinary dependencies.
+    /// The program a plugin runs.
     ///
-    /// Only this one product is built, rather than the target the plugin is
-    /// attached to: which product holds the tool is read from the manifest here
-    /// instead of guessed from the target's name, which is what some toolchains
-    /// get wrong.
+    /// An executable target is built by SwiftPM because it is an ordinary
+    /// target with ordinary dependencies; only that one product is built,
+    /// rather than the target the plugin is attached to, and which product
+    /// holds the tool is read from the manifest here instead of guessed from
+    /// the target's name, which is what some toolchains get wrong.
+    ///
+    /// A binary target is already a program: the artifact bundle holds one
+    /// build per platform, and the one for this machine is run as it is.
     private func tool(named name: String, in package: SwiftPM.Package) async throws -> Path? {
-        guard package.manifest.targets.contains(where: { $0.name == name && $0.type == "executable" })
-        else {
+        guard let target = package.manifest.targets.first(where: { $0.name == name }) else {
             return nil
         }
+
+        if target.type == "binary" {
+            guard
+                let artifact = artifact(of: target, in: package),
+                case .artifactBundle = artifact.kind,
+                let executable = Self.executable(inArtifactBundle: artifact.path)
+            else {
+                return nil
+            }
+
+            return artifact.path + executable
+        }
+
+        guard target.type == "executable" else { return nil }
 
         /// Bazel built it, so SwiftPM never has to load the package the tool
         /// lives in — which some toolchains cannot do when a plugin names its
