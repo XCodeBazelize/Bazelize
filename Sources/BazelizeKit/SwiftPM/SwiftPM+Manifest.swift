@@ -32,6 +32,9 @@ extension SwiftPM {
         /// the language modes the package's targets compile in unless one of
         /// them says otherwise.
         let swiftLanguageModes: [String]
+        /// The localization a package's resources fall back to, which is the
+        /// one a resource declared without a language is filed under.
+        let defaultLocalization: String?
         /// `{"_version": "6.0.0"}`: which `PackageDescription` the manifest was
         /// written against, which a plugin has to be compiled against too.
         let toolsVersion: String
@@ -47,6 +50,7 @@ extension SwiftPM {
             cLanguageStandard = container.value(String.self, "cLanguageStandard")
             cxxLanguageStandard = container.value(String.self, "cxxLanguageStandard")
             swiftLanguageModes = container.list(String.self, "swiftLanguageVersions")
+            defaultLocalization = container.value(String.self, "defaultLocalization")
             toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
         }
 

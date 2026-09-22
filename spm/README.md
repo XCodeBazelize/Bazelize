@@ -51,7 +51,9 @@ bazel run //:plugins   # only the packages with a build tool plugin need this
 bazel test //...
 bazel run //tools:list-config   # what `--config=<name>` the workspace defines
 bazel run //tools:list-trait    # which traits its packages declare, and which are on
+bazel run //tools:list-language # which localizations they ship
 bazel test //... --config=<Package>.<Trait>   # …with one of them turned on
+bazel build //... --config=lang.<code>        # …bundling that localization only
 ```
 
 A package that wraps a system library is found through `pkg-config`, and the
@@ -78,9 +80,14 @@ they generate into `Packages/<package>/Generated/`. It is a separate step
 because a plugin is a program: Bazel builds it, and bazelize runs it as SwiftPM
 would.
 
+`bazel build --config=lang.<code>` bundles that localization and `Base`, and
+nothing else; a build that names none bundles every one of them, which is what
+SwiftPM does. Several at once is the flag underneath,
+`--@build_bazel_rules_apple//apple/build_settings:locales_to_include=en,ja`.
+
 The listing commands are generated Bazel targets and do not need `bazelize` at
 runtime. The generated `tools/bazel` wrapper also exposes them as
-`bazel list config|trait`.
+`bazel list config|trait|language`.
 
 `App/` is generated, and is not checked in.
 

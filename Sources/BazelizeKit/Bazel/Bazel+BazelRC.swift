@@ -84,10 +84,12 @@ extension Bazel {
     /// the generated flags are inert without this file.
     struct RootRC {
         /// What the root file has to import for the generated flags to be
-        /// read: the project's configurations, and the traits of its packages.
+        /// read: the project's configurations, the traits of its packages, and
+        /// the localizations they ship.
         static let importLines = [
             "import %workspace%/config.bazelrc",
             "import %workspace%/traits.bazelrc",
+            "import %workspace%/languages.bazelrc",
         ]
 
         let path: Path

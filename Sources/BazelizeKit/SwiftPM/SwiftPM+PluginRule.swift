@@ -106,7 +106,7 @@ extension SwiftPM.Generator {
     /// The answers are embedded in executable targets, so using them never
     /// depends on whichever `bazelize` executable happens to be on `PATH`.
     /// Bazel itself has no extension point for custom commands; `tools/bazel`
-    /// keeps `bazel list config|trait` as aliases for the two `bazel run`
+    /// keeps `bazel list config|trait|language` as aliases for the `bazel run`
     /// targets and forwards every other command unchanged.
     func writeListingCommands() throws {
         let directory = output + "tools"
@@ -114,7 +114,8 @@ extension SwiftPM.Generator {
 
         let listings = [
             ("config", try Listing.config(output: output)),
-            ("trait", Listing.traits(workspace: workspace))
+            ("trait", Listing.traits(workspace: workspace)),
+            ("language", Listing.languages(localizations)),
         ]
         let builder = CodeBuilder()
         builder.load(loadableRule: Rules.Shell.sh_binary)
@@ -156,11 +157,11 @@ extension SwiftPM.Generator {
 
         if [[ "${1:-}" == "list" ]]; then
             case "${2:-}" in
-                config|trait)
+                config|trait|language)
                     exec "$BAZEL_REAL" run "//tools:list-${2}"
                     ;;
                 *)
-                    echo "Usage: bazel list config|trait" >&2
+                    echo "Usage: bazel list config|trait|language" >&2
                     exit 2
                     ;;
             esac

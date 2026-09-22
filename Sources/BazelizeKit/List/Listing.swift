@@ -90,6 +90,36 @@ enum Listing {
         return lines.joined(separator: "\n")
     }
 
+    /// The localizations the workspace's packages ship, and what to say to
+    /// build only one of them.
+    static func languages(_ localizations: [SwiftPM.Generator.Localization]) -> String {
+        guard !localizations.isEmpty else {
+            return "No package in this workspace ships a localization."
+        }
+
+        var lines = ["Localizations of this workspace's packages:", ""]
+        for localization in localizations {
+            let shipped = localization.packages.joined(separator: ", ")
+            let fallback = localization.defaultOf.isEmpty
+                ? ""
+                : " (the default of \(localization.defaultOf.joined(separator: ", ")))"
+
+            lines.append("  \(localization.code)\(fallback)")
+            lines.append("    shipped by \(shipped)")
+            lines.append("    --config=\(localization.config)")
+        }
+
+        lines.append("")
+        lines.append("""
+        A build that names no localization bundles every one of them, which is \
+        what SwiftPM does. Naming one is how a build ships a single language: \
+        `Base` comes along whatever is asked for, because it is what a missing \
+        localization falls back to. Several at once is the flag underneath, \
+        `--@build_bazel_rules_apple//apple/build_settings:locales_to_include=en,ja`.
+        """)
+        return lines.joined(separator: "\n")
+    }
+
     /// What the workspace's `.bazelrc` says, and what the files it imports say:
     /// the `build:<name>` lines by name, and the ones that name no
     /// configuration.

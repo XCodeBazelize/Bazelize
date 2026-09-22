@@ -106,6 +106,7 @@ extension SwiftPM {
             /// `.bazelrc` imports it, and an import of a file that is not
             /// there is a workspace that does not load.
             try writeTraitConfigs()
+            try writeLanguageConfigs()
             try writeListingCommands()
         }
 

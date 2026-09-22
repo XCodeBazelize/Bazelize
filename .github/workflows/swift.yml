@@ -438,12 +438,27 @@ jobs:
         run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
 
       # The workspace's own commands, which answer whatever the package is:
-      # a package with no trait and no configuration answers that.
+      # a package with no trait, no configuration and no localization answers
+      # that.
       - name: List Workspace
         working-directory: spm/${{ matrix.name }}/App
         run: |
           PATH="$GITHUB_WORKSPACE:$PATH" bazel list config
           PATH="$GITHUB_WORKSPACE:$PATH" bazel list trait
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list language
+
+      # A build that names a localization bundles that one and `Base`, and
+      # nothing else. What is in the bundle is the only proof of that.
+      - name: Filter Localizations
+        if: matrix.name == 'TargetResource'
+        working-directory: spm/TargetResource/App
+        run: |
+          bazel build //Packages/TargetResource:TargetResourceTests --config=lang.en
+          bundle=$(find -L bazel-bin/Packages/TargetResource -name TargetResourceTests.zip | head -1)
+          unzip -Z1 "$bundle" | grep -q "en.lproj"
+          unzip -Z1 "$bundle" | grep -q "Base.lproj"
+          ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
+          ! unzip -Z1 "$bundle" | grep -q "de.lproj"
 
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App
