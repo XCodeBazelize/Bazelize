@@ -326,7 +326,7 @@ jobs:
             config: DependencyCondition.Extras
           - name: Macro
           - name: Trait
-            config: Trait.Slow
+            traits: Fast,Slow
           - name: TargetSources
           - name: TargetPath
           - name: TargetExclude
@@ -390,3 +390,23 @@ jobs:
           trait="${{ matrix.config }}"
           ! bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
           bazel aquery --config=${{ matrix.config }} 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
+
+      # Select each declared trait on its own. This mirrors
+      # `swift test --traits <trait>` rather than carrying default traits into
+      # every explicit selection.
+      - name: Test Each Package Trait
+        if: matrix.traits
+        working-directory: spm/${{ matrix.name }}/App
+        env:
+          PACKAGE: ${{ matrix.name }}
+          TRAITS: ${{ matrix.traits }}
+        run: |
+          IFS=',' read -ra traits <<< "$TRAITS"
+          disabled=()
+          for trait in "${traits[@]}"; do
+            disabled+=("--//Packages:trait_${PACKAGE}_${trait}=false")
+          done
+          for trait in "${traits[@]}"; do
+            bazel test //... "${disabled[@]}" \
+              "--//Packages:trait_${PACKAGE}_${trait}=true"
+          done

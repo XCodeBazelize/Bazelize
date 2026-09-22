@@ -23,11 +23,6 @@ let package = Package(
             name: "Trait",
             dependencies: [
                 .product(name: "Dependency", package: "Dependency"),
-            ],
-            swiftSettings: [
-                /// A setting of its own, on top of the condition the trait is:
-                /// `Slow` defines `Slow`, and this as well.
-                .define("SLOW_EXTRA", .when(traits: ["Slow"])),
             ]),
         .testTarget(
             name: "TraitTests",

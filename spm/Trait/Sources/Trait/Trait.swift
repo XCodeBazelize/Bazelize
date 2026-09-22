@@ -15,16 +15,6 @@ public enum Trait {
         return traits
     }
 
-    /// The setting that trait carries, which is not the same thing as the
-    /// trait being on.
-    public static var slowExtra: Bool {
-        #if SLOW_EXTRA
-        return true
-        #else
-        return false
-        #endif
-    }
-
     /// Whether the trait this package asked the package next door for is on.
     public static var dependencyExtra: Bool {
         Dependency.extra
