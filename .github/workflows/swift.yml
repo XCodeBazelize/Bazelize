@@ -367,14 +367,18 @@ jobs:
           - name: SwiftSettings
           - name: SystemLibrary
           - name: TargetEmbed
-            # `.embedInCode` generates nothing under the default build system
-            # in this toolchain, which is SwiftPM's own gap rather than
-            # anything this package does — and the only reason this rule has a
-            # package of its own.
+            # `.embedInCode` generates nothing under `swiftbuild`, which is
+            # SwiftPM's own gap rather than anything this package does — and the
+            # only reason this rule has a package of its own.
             swiftpm: --build-system native
           - name: TargetExclude
           - name: TargetPath
           - name: TargetResource
+            # `native` copies a platform resource rather than compiling it: no
+            # `momc`, no `actool`, no `ibtool`. Which build system is the
+            # default moved with the toolchain, so the one that compiles what
+            # this package is about is named.
+            swiftpm: --build-system swiftbuild
           - name: TargetSources
           - name: Trait
             traits: Fast,Slow
@@ -412,6 +416,9 @@ jobs:
       # one that stopped building would be found here rather than in whatever
       # it broke. A package with no tests is built and not run — there is
       # nothing to run — and `App/` is generated, not a package of the fixture.
+      # A package that is only a plugin has nothing to build either: SwiftPM
+      # refuses the build rather than doing nothing, so it is skipped by what
+      # its manifest declares.
       - name: SwiftPM Build And Test
         working-directory: spm/${{ matrix.name }}
         env:
@@ -422,7 +429,10 @@ jobs:
           while read -r manifest; do
             package=$(dirname "$manifest")
             echo "::group::$package"
-            if ! (cd "$package" && swift build $ARGS); then
+            if ! (cd "$package" && swift package dump-package |
+                    jq -e '[.targets[] | select(.type != "plugin")] | length > 0' > /dev/null); then
+              echo "only plugins here, nothing to build"
+            elif ! (cd "$package" && swift build $ARGS); then
               echo "::error::swift build failed for $package"
               status=1
             elif [ -d "$package/Tests" ] && ! (cd "$package" && swift test $ARGS); then
