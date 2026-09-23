@@ -183,27 +183,28 @@ final class PluginSwiftPM: PluginBuiltin {
         pinnedRevisions[Self.repositoryModuleName(url: url).lowercased()]
     }
 
-    /// `bazel run //:tool`: the workspace's own commands — what it can be
-    /// asked about itself, and the one thing that writes back into it.
+    /// `bazel run //:plugins`: what brings the files a build tool plugin writes
+    /// up to date, without generating the workspace again.
     ///
-    /// `plugin` brings the files a build tool plugin writes up to date without
-    /// generating the workspace again: a plugin decides what it writes, so
-    /// changing the plugin changes those files while nothing else about the
-    /// project moves, and the rules glob the directory rather than name the
-    /// files. That is the workspace's way to run them, as `bazel mod tidy` is
-    /// its way to fix its module file.
+    /// A plugin decides what it writes, so changing the plugin changes those
+    /// files while nothing else about the project moves — and the rules glob the
+    /// directory rather than name the files, so they need no regenerating. This
+    /// is the workspace's own way to run them, the way `bazel mod tidy` is the
+    /// workspace's way to fix its module file.
     ///
     /// The plugins and the tools they run are `data`, so running this builds
     /// them: the script speaks to programs Bazel made, not to SwiftPM. The
     /// script itself is written by the package generator, which is what knows
     /// which programs those are.
     override func build(_ builder: CodeBuilder) {
+        guard hasPackages else { return }
+
         builder.load(loadableRule: Rules.Shell.sh_binary)
         builder.call(
             Rules.Shell.Call.sh_binary(
-                name: "tool",
-                srcs: ["tool.sh"],
-                data: hasPackages ? ["//\(Self.packagesDirectory):plugins"] : []))
+                name: "plugins",
+                srcs: ["plugins.sh"],
+                data: ["//\(Self.packagesDirectory):plugins"]))
     }
 
     override var custom: [PluginBuiltin.Custom]? {
