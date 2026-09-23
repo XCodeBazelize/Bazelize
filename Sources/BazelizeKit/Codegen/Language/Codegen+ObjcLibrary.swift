@@ -9,8 +9,6 @@ import BazelRules
 import Foundation
 import Starlark
 
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/7
-
 extension Target {
     func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, aliasPublic: Bool = true) {
         let project = kit.project

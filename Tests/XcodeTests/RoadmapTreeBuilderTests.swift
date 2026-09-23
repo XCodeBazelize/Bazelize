@@ -77,6 +77,24 @@ struct RoadmapTreeBuilderTests {
         #expect(static2Build.contains("objc_library("))
         #expect(static2Build.contains("name = \"Static2_objc\""))
 
+        /// A static framework has no bundle to load: its label is the library, and
+        /// whatever links it gets the objects.
+        let staticFrameworkBuild = try String(contentsOfFile: (output + "Targets/StaticFramework1/BUILD").string)
+        #expect(staticFrameworkBuild.contains("swift_library("))
+        #expect(staticFrameworkBuild.contains("alias("))
+        #expect(staticFrameworkBuild.contains("name = \"StaticFramework1\""))
+        #expect(staticFrameworkBuild.contains("actual = \"StaticFramework1_library\""))
+        #expect(!staticFrameworkBuild.contains("ios_framework("))
+        #expect(exampleBuild.contains("//Targets/StaticFramework1:StaticFramework1_library"))
+
+        /// Every label `xcodeproj` names has to exist, and the project it writes is
+        /// the one that was read.
+        let rootBuild = try String(contentsOfFile: (output + "BUILD").string)
+        #expect(rootBuild.contains("xcodeproj("))
+        #expect(rootBuild.contains("project_name = \"Example\""))
+        #expect(rootBuild.contains("//Targets/Example:Example"))
+        #expect(!rootBuild.contains("top_level_target("))
+
         let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string)
         #expect(prebuiltBuild.contains("apple_dynamic_xcframework_import("))
         #expect(prebuiltBuild.contains("name = \"SVProgressHUD\""))

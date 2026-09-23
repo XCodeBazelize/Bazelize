@@ -60,6 +60,10 @@ let project = Project(
             sources: ["Static2/**/*.m"],
             headers: .headers(public: ["Static2/**/*.h"])),
         target(
+            "StaticFramework1",
+            product: .staticFramework,
+            sources: ["StaticFramework1/**/*.swift"]),
+        target(
             "Framework3",
             product: .framework,
             sources: ["Framework3/**/*.m"],
@@ -86,6 +90,7 @@ let project = Project(
                 .target(name: "Framework1"),
                 .target(name: "Framework3"),
                 .target(name: "Static2"),
+                .target(name: "StaticFramework1"),
                 .package(product: "AnyCodable"),
                 .package(product: "LocalLib1"),
                 .package(product: "LocalLib2"),

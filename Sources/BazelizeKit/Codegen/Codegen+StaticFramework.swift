@@ -1,58 +1,32 @@
-////
-////  StaticFramework.swift
-////
-////
-////  Created by Yume on 2022/5/4.
-////
 //
-// import Foundation
-// import XcodeProj
+//  Codegen+StaticFramework.swift
 //
-////XcodeProj.PBXProductType.static
-// extension PBXNativeTarget {
-//    func generateStaitcFrameworkCode(_ kit: Kit) -> String {
-////        let bundle_id = buildSettings.bundleID ?? ""
-//        let bundle_id = ""
-//        let podDeps: String = kit.pod?[name] ?? ""
-//        let xcodeDeps = ""
-//        let xcodeSPMDeps = spm_deps.joined(separator: "\n")
 //
-//        let code = """
-//        load("@build_bazel_rules_apple//apple:ios.bzl", "ios_static_framework")
-//        load("@build_bazel_rules_swift//swift:swift.bzl", "swift_library")
+//  Created by Yume on 2022/5/4.
 //
-//        swift_library(
-//            name = "_\(name)",
-//            module_name = "\(name)",
-//            srcs = [
-//        \(srcs)
-//            ],
-//            deps = [
-//                # Cocoapod Deps
-//        \(podDeps.indent(2))
-//
-//                # Xcode SPM Deps
-//        \(xcodeSPMDeps.indent(2))
-//            ],
-//        )
-//
-//        ios_static_framework(
-//            name = "\(name)",
-//            bundle_id = "\(bundle_id)",
-//            families = [
-//                "iphone",
-//                "ipad",
-//            ],
-//            minimum_os_version = "13.0",
-//            infoplists = [":Info.plist"],
-//            deps = [":_\(name)"],
-//            frameworks = [
-//                # Xcode Target Deps
-//            \(xcodeDeps)
-//            ],
-//        )
-//        """
-//
-//        return code
-//    }
-// }
+
+import BazelRules
+import Foundation
+import Starlark
+
+extension Target {
+    /// A framework target that links statically: `MACH_O_TYPE = staticlib`, or the
+    /// product type Xcode gives a target created as a static framework.
+    ///
+    /// Nothing loads such a framework at runtime — its objects end up inside
+    /// whatever links it — so there is no bundle to build. The label a dependent
+    /// names stays valid by pointing at the library the target already generates.
+    var isStaticFramework: Bool {
+        if productType == "com.apple.product-type.framework.static" { return true }
+        guard productType == "com.apple.product-type.framework" else { return false }
+        return prefer(\.machOType) == "staticlib"
+    }
+
+    func generateStaticFrameworkCode(_ builder: CodeBuilder, _: Kit) {
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: name,
+                actual: .named("\(name)_library"),
+                visibility: .public))
+    }
+}

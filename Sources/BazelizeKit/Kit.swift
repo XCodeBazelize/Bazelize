@@ -233,8 +233,6 @@ extension Kit {
     /// {WORKSPACE}/BUILD
     private final func generateBuild() throws {
         build.setup(config: project.config)
-
-//        build.exportUncategorizedFiles(self)
         for plugin in builtinPlugins {
             plugin.build(build.builder)
         }

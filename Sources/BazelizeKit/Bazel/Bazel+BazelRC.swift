@@ -12,11 +12,7 @@ extension Bazel {
     /// [config](https://bazel.build/docs/configurable-attributes)
     /// [.bazelrc](https://bazel.build/run/bazelrc)
     ///
-    ///
-    /// TODO:
-    /// TIP: `import %workspace%/config.bazelrc` in `.bazelrc`
-    ///
-    /// /config.bazelrc
+    /// /config.bazelrc, which the generated `.bazelrc` imports.
     struct BazelRC: BazelFile {
         let path: Path
         private(set) var code = ""

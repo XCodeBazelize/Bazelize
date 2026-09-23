@@ -75,10 +75,6 @@ extension CodeBuilder {
             symbols: statementLoad.symbols)
     }
 
-//    func load(_ code: String) {
-//        statements.append(.custom(code))
-//    }
-
     func load(loadableRule rule: LoadableRule) {
         load(
             module: rule.module,
@@ -88,11 +84,6 @@ extension CodeBuilder {
 
 // MARK: - RuleBuild
 extension CodeBuilder {
-    // FIXME: (@yume190) todo remove add
-    func add(_ rule: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-        statements.append(.call(.init(rule, builder: builder)))
-    }
-
     func call(_ call: Starlark.Statement.Call) {
         statements.append(.call(call))
     }

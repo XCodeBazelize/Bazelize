@@ -31,6 +31,18 @@ extension Rules.Builtin.Call {
         }
     }
 
+    /// The `module(...)` directive every `MODULE.bazel` opens with.
+    public static func module(
+        name: String,
+        version: String)
+        -> Starlark.Statement.Call
+    {
+        .init("module") {
+            "name" => name
+            "version" => version
+        }
+    }
+
     public static func bazel_dep(
         name: String,
         version: String,

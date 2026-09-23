@@ -45,7 +45,11 @@ extension Target {
             generateApplicationCode(builder, kit)
         case "com.apple.product-type.tool":
             generateCommandLineApplicationCode(builder, kit)
-        case "com.apple.product-type.framework":
+        case "com.apple.product-type.framework", "com.apple.product-type.framework.static":
+            guard !isStaticFramework else {
+                generateStaticFrameworkCode(builder, kit)
+                break
+            }
             generateStrings(builder, kit)
             generateFrameworkCode(builder, kit)
         case "com.apple.product-type.library.static":
