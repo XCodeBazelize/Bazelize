@@ -87,12 +87,17 @@ Bazel 建的**。`Packages/Marking/BUILD` 產出來是空檔，因為建 plugin 
 「使用它的套件」，而 Marking 誰也沒用。那個空檔是刻意的：它讓那個目錄成為獨立的
 Bazel package，父層的 glob 就抓不進去。
 
-### B5. 原始碼直接放在套件根目錄的 target
+### B5. 裸的來源目錄 —— 已完成，而且它不是死碼、是缺口
 
-`sourceDirectory(of:in:)` 有一個 fallback 會找 `package.root + target.name`，
-但 SwiftPM 只會在 `Sources`、`Source`、`src`、`srcs` 裡找（除非 target 自己寫了
-`path:`）。要查的是那個 fallback 到底走不走得到：如果走不到，**刪掉**比補
-fixture 好。
+原本的 fallback 找的是 `<套件根目錄>/<target 名稱>`。SwiftPM 對那種佈局會發警告，
+而且編出來是**空模組**（import 不到）—— 所以任何合法的套件都走不到那個 fallback。
+
+SwiftPM 真正允許、而那個 fallback 漏掉的，是**來源目錄本身**：檔案直接放在
+`Sources`、沒有屬於 target 的子目錄，在沒有其他 target 會來搶的情況下是合法的。
+這種套件以前會被**靜默丟掉** —— 產出一個空的 `BUILD`、沒有任何規則。
+
+`sourceDirectory` 現在會找那裡，條件與 SwiftPM 相同：該套件只有一個同類型的
+target。`spm/ConfigurationCondition` 就是這樣的佈局，所以之後有東西會叫。
 
 ### B6. 跨套件使用 macro —— 已完成
 

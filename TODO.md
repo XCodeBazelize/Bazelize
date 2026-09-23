@@ -95,12 +95,20 @@ that *uses* it, and Marking uses nothing. The empty file is deliberate: it
 keeps the directory a Bazel package of its own, so the parent's globs do not
 reach into it.
 
-### B5. A target whose sources sit at the package root
+### B5. A bare source directory — done, and it was a gap rather than dead code
 
-`sourceDirectory(of:in:)` falls back to `package.root + target.name`, but
-SwiftPM only looks in `Sources`, `Source`, `src` and `srcs` unless the target
-names a `path:`. Check whether that fallback is reachable at all: if it is not,
-delete it rather than write a fixture for it.
+The fallback looked for `<package root>/<target name>`. SwiftPM warns about
+that layout and builds an empty module from it — a target laid out that way
+cannot be imported — so nothing valid ever reached the fallback.
+
+What SwiftPM does allow, and what the fallback missed, is the source directory
+*itself*: files in `Sources` with no directory of the target's own, which is
+legal when no other target could claim them. Such a package was dropped
+silently — an empty `BUILD` and no rule.
+
+`sourceDirectory` looks there now, guarded by the same condition SwiftPM
+applies: the package has one target of that kind. `spm/ConfigurationCondition`
+is laid out that way, so something would notice.
 
 ### B6. A macro used from another package — done
 

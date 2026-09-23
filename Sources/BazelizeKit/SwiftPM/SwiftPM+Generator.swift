@@ -753,8 +753,36 @@ extension SwiftPM {
                 if directory.exists { return directory }
             }
 
-            let flat = package.root + target.name
-            return flat.exists ? flat : nil
+            /// `Sources` itself, with the files in it and no directory of the
+            /// target's own: SwiftPM allows that when nothing else could claim
+            /// them, which is a package with one target of that kind.
+            guard Self.isOnlyTarget(target, in: package) else { return nil }
+
+            for candidate in candidates {
+                let directory = package.root + candidate
+                if directory.isDirectory { return directory }
+            }
+
+            return nil
+        }
+
+        /// Whether the package has no other target that a bare source
+        /// directory could belong to: a test target does not take `Tests` from
+        /// another test target, and a library does not take `Sources` from
+        /// another library.
+        private static func isOnlyTarget(_ target: PackageTarget, in package: Package) -> Bool {
+            let sameKind = package.manifest.targets.filter { other in
+                switch (other.type, target.type) {
+                case ("test", "test"), ("plugin", "plugin"):
+                    return true
+                case ("test", _), (_, "test"), ("plugin", _), (_, "plugin"):
+                    return false
+                default:
+                    return true
+                }
+            }
+
+            return sameKind.count == 1
         }
 
         private func build(
