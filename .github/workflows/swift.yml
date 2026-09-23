@@ -422,12 +422,30 @@ jobs:
       # A package that wraps a system library is found through `pkg-config`,
       # and a fixture that ships its own `.pc` is only found when that file's
       # directory is on the path.
+      #
+      # A note is the generator saying the build differs from what the package
+      # asked for — a plugin that did not run, a program whose resources
+      # nothing can bundle, a library pkg-config has never heard of. Every one
+      # of those builds and tests green and is wrong at run time, so no fixture
+      # may produce one silently: a lane expecting a note names it in `notes`,
+      # and anything else said is a failure.
       - name: Bazel Generation
         env:
           PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
+          NOTES: ${{ matrix.notes }}
         run: |
           chmod +x bazelize
-          ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App"
+          ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App" | tee bazelize.log
+
+          if [ -n "$NOTES" ]; then
+            if ! grep -qE "$NOTES" bazelize.log; then
+              echo "::error::the note this fixture is here for was not said: $NOTES"
+              exit 1
+            fi
+          elif [ -s bazelize.log ]; then
+            echo "::error::the generator said something no fixture expects"
+            exit 1
+          fi
 
       # A build tool plugin is a program: Bazel builds it and bazelize runs it,
       # which is what puts the sources it generates where the rules glob for

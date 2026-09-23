@@ -130,11 +130,18 @@ with nothing of their own to assert. CI builds every one of them and runs
 `swift test` only where a `Tests` directory exists, rather than padding them
 with tests that prove nothing.
 
-### C2. A fixture lane does not fail on a generator note
+### C2. A lane fails on a note no fixture expects — done
 
-`IntegrateIOS` greps the generation log for `did not run the`; the package
-lanes check nothing. A note like A1's would not turn CI red. Cheap to add:
-generate into a log and fail the lane on the notes that matter.
+A note is the generator saying the build differs from what the package asked
+for: a plugin that did not run, a program whose resources nothing can bundle, a
+library `pkg-config` has never heard of. Every one of those builds and tests
+green and is wrong at run time, and the package lanes threw the generator's
+output away.
+
+They now keep it and fail on anything said, unless the lane names the note it
+is there for in `notes`. No fixture says anything today, so the gate starts
+shut: a note that appears is a lane turning red, rather than a line nobody
+reads.
 
 ### C3. `TargetEmbed` needs `--build-system native`
 

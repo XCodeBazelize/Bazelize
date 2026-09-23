@@ -118,11 +118,15 @@ fixture 底下有 11 個套件（`vendor-kit`、`Alt`、`Other`、`Stamping`、
 本身沒有東西好斷言。CI 對每一個都跑 `swift build`，只有存在 `Tests` 目錄的才跑
 `swift test` —— 不會為了讓指令回 0 而塞一堆證明不了任何事的測試。
 
-### C2. fixture lane 不會因為產生器的提醒而失敗
+### C2. lane 會因為沒人預期的 note 而失敗 —— 已完成
 
-`IntegrateIOS` 會在產生的 log 裡 grep `did not run the`；套件的 lane 什麼都沒
-檢查。像 A1 那種提醒不會讓 CI 變紅。補起來很便宜：把產生輸出寫進 log，對在意的
-提醒讓 lane 失敗。
+note 是產生器在說「這個 build 與套件要求的不一樣」：plugin 沒跑起來、程式的
+resources 沒有東西可以打包、`pkg-config` 不認識那個函式庫。這些情況 build 與
+test 都是綠的、錯在執行期，而 package lane 以前直接把產生器的輸出丟掉。
+
+現在 lane 會留下輸出，**只要有話說就失敗**，除非該 lane 在 `notes` 裡指名它本來
+就是為那句話存在的。目前沒有任何 fixture 會說話，所以這道閘門是預設關著的：出現
+note 等於 lane 變紅，而不是多一行沒人看的字。
 
 ### C3. `TargetEmbed` 需要 `--build-system native`
 
