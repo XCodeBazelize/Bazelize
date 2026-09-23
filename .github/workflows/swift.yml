@@ -335,14 +335,12 @@ jobs:
       matrix:
         include:
           - name: ArtifactBundle
-            plugins: true
             # A package rule carries `manual`, so a wildcard build never picks
             # one up: a program a package builds is named to be run.
             programs: |
               //Packages/ArtifactBundle:GreetTool -- /tmp/artifact-bundle.swift
           - name: BinaryTarget
           - name: BuildToolPlugin
-            plugins: true
           - name: Clang
           - name: CommandPlugin
           - name: ConfigurationCondition
@@ -354,15 +352,12 @@ jobs:
           - name: Macro
           - name: Platform
           - name: PluginDependency
-            plugins: true
           - name: PrebuildPlugin
-            plugins: true
           - name: ProductShapes
             programs: |
               //Packages/Products:renamed-tool
               //Packages/Products:ProductSnippet
           - name: RemoteArtifactBundle
-            plugins: true
           - name: RemoteXCFramework
           - name: SwiftSettings
           - name: SystemLibrary
@@ -474,13 +469,9 @@ jobs:
             exit 1
           fi
 
-      # Bazel builds the plugin host, plugins and tools, then runs them from
-      # runfiles. No separately installed bazelize executable is involved.
-      # Only the packages that have a build tool plugin need the step.
-      - name: Run Plugins
-        if: matrix.plugins
-        working-directory: spm/${{ matrix.name }}/App
-        run: bazel run //:plugins
+      # Nothing runs the plugins here: generation ends with `bazel run
+      # //:plugins`, so a target whose sources a plugin generates compiles in
+      # `Test Package` below, or the generator failed to run them and said so.
 
       # The workspace's own commands, which answer whatever the package is:
       # a package with no trait, no configuration and no localization answers

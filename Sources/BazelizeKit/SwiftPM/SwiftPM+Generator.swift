@@ -24,9 +24,10 @@ extension SwiftPM {
 
         let deployment: Deployment
 
-        /// What this project's own packages' build tool plugins wrote, which the
-        /// generator runs itself before it writes any rule.
-        private(set) var pluginOutputs = PluginOutputs()
+        /// The packages whose targets use a build tool plugin, which are written
+        /// again once `bazel run //:plugins` has produced what those plugins
+        /// generate.
+        private var pluginPackages: [String] = []
 
         private var kinds: [String: [String: TargetKind]] = [:]
 
@@ -65,9 +66,6 @@ extension SwiftPM {
         }
 
         func generate(locals: [Path] = []) async throws {
-            pluginOutputs = await runPlugins()
-            notes.append(contentsOf: pluginOutputs.notes)
-
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
                 report(deploymentOf: package)
@@ -75,6 +73,13 @@ extension SwiftPM {
             }
 
             collectModuleAliases()
+
+            pluginPackages = workspace.packages
+                .filter { package in
+                    (package.isRoot || package.isLocal)
+                        && package.manifest.targets.contains { !$0.pluginUsages.isEmpty }
+                }
+                .map(\.directory)
 
             for package in workspace.packages {
                 try generate(package)
@@ -87,6 +92,25 @@ extension SwiftPM {
             try writeTraitConfigs()
             try writeLanguageConfigs()
             try writeListingCommands()
+        }
+
+        /// Whether anything is there for `bazel run //:plugins` to run.
+        var hasBuildToolPlugins: Bool {
+            !pluginPackages.isEmpty
+        }
+
+        /// Writes the rules of the packages whose plugins have now run.
+        ///
+        /// What a plugin writes is the plugin's business: the rules name the
+        /// directory and the kinds of file in it, and a kind that is neither a
+        /// source nor a header of the target — a resource, or a file with no
+        /// extension at all — is only known from what landed there. The rules
+        /// are written once more with that in hand, so the first run of a
+        /// workspace says the same thing every later one does.
+        func refreshPluginPackages() throws {
+            for package in workspace.packages where pluginPackages.contains(package.directory) {
+                try generate(package)
+            }
         }
 
         /// A package that declares a platform version the project does not reach is
@@ -108,11 +132,11 @@ extension SwiftPM {
 
         /// A dependency's build tool plugin is not run.
         ///
-        /// The plugins of a package in the project's own repository are run while
-        /// the workspace is generated; a dependency's are not, because running one
-        /// costs a SwiftPM build of its package. Every plugin in the corpus is a
-        /// linter, which produces no source: a build without it is the same build.
-        /// One that generates source would leave a target missing the files it
+        /// `//:plugins` runs the plugins of the packages in the project's own
+        /// repository; a dependency's are left alone, because a dependency is
+        /// built as it was resolved. Every plugin in the corpus is a linter,
+        /// which produces no source: a build without it is the same build. One
+        /// that generates source would leave a target missing the files it
         /// expects, and that compile error says nothing about a plugin, so the
         /// plugin is named here instead.
         private func report(pluginsOf package: Package) {
@@ -328,15 +352,14 @@ extension SwiftPM {
         /// What a plugin wrote for a target, split the way the target's own rule
         /// takes it, as patterns rather than names.
         ///
-        /// The files are already where they belong: the host gave the plugin
-        /// this directory to write into, so nothing is moved or linked here —
-        /// they are real files of the package's `Generated/`, and the output
-        /// stands without the package's `.build`.
+        /// The files are read where they belong: `bazel run //:plugins` wrote
+        /// them into the package's `Generated/`, so nothing is moved or linked
+        /// here and the output stands without the package's `.build`.
         ///
         /// What they are called is the plugin's business and changes when the
         /// plugin does, so the rules name the directory and the kinds of file in
-        /// it, never a file. `bazel run //:plugins` writes a new set into the
-        /// same place and the rules still hold.
+        /// it, never a file. A later `bazel run //:plugins` writes a new set
+        /// into the same place and the rules still hold.
         func materialize(
             pluginOutputsOf target: PackageTarget,
             in package: Package,
@@ -368,9 +391,9 @@ extension SwiftPM {
             var resources: Set<String> = []
             var named: [String] = []
 
-            let output = pluginOutputs.output(of: target.name, in: package)
-            let base = output?.root.normalize().string ?? ""
-            for file in output?.files ?? [] {
+            let outputRoot = root + directory
+            let base = outputRoot.normalize().string
+            for file in Self.walk(outputRoot) {
                 let path = file.normalize().string
                 /// A file the plugin wrote somewhere else is not this target's
                 /// to name.

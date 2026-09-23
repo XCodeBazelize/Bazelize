@@ -22,6 +22,17 @@ Or a Swift package — the `Package.swift`, or the directory holding one:
 bazelize --input path/to/Package.swift --output App
 ```
 
+A package whose targets use a build tool plugin has its plugins run at the end
+of generation, with the `//:plugins` target the run writes:
+
+```sh
+bazel run //:plugins
+```
+
+Bazel builds the plugins and their tools, so generation needs `bazel` on `PATH`
+for that step. Run the same command again whenever a plugin or its input
+changes.
+
 ---
 
 ## Bazel

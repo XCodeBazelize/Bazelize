@@ -48,6 +48,13 @@ extension SwiftPM.Generator {
                 visibility: .public))
     }
 
+    /// Where a target's plugins write: beside the rules of the package that
+    /// declares it, which is where every other generated file of that package
+    /// already is.
+    func pluginWorkDirectory(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Path {
+        output + PluginSwiftPM.packagesDirectory + package.directory + "Generated/\(target.name)Plugin"
+    }
+
     /// `bazel run //:plugins`, and everything it needs built first.
     ///
     /// Bazel builds the host, plugins and tools. The generated plan contains
