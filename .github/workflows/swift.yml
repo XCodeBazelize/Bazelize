@@ -366,18 +366,21 @@ jobs:
           - name: RemoteXCFramework
           - name: SwiftSettings
           - name: SystemLibrary
+          # Which build system SwiftPM runs by default moves with the
+          # toolchain, and the two do not implement the same resource rules, so
+          # a lane about a resource rule names the one that implements it
+          # rather than inheriting whichever the runner ships.
           - name: TargetEmbed
-            # `.embedInCode` generates nothing under `swiftbuild`, which is
-            # SwiftPM's own gap rather than anything this package does — and the
-            # only reason this rule has a package of its own.
+            # `swiftbuild` generated nothing for `.embedInCode` on the toolchain
+            # this lane was written against — Xcode 27 does — and `native` has
+            # generated it all along.
             swiftpm: --build-system native
           - name: TargetExclude
           - name: TargetPath
           - name: TargetResource
             # `native` copies a platform resource rather than compiling it: no
-            # `momc`, no `actool`, no `ibtool`. Which build system is the
-            # default moved with the toolchain, so the one that compiles what
-            # this package is about is named.
+            # `momc`, no `actool`, no `ibtool`, so the model this package is
+            # about arrives as the `.xcdatamodeld` that was written.
             swiftpm: --build-system swiftbuild
           - name: TargetSources
           - name: Trait
