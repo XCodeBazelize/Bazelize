@@ -72,7 +72,9 @@ App/
 ├── Package.resolved          # kept: the only source of pins
 ├── config.bazelrc
 ├── BUILD
-├── plugins.sh                # what `bazel run //:plugins` runs
+├── plugins.sh                # enters the Bazel-built SwiftPM plugin host
+├── plugin-host.swift         # compiled by Bazel for `//:plugins`
+├── plugin-plan.json          # plugin requests and runfile paths
 ├── tools/                    # Bazel-native workspace inspection commands
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # unchanged
@@ -94,11 +96,12 @@ App/
 | `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
 | `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
 
-Both listing commands are generated `sh_binary` targets. Their answers are
-embedded from the same resolved workspace and configuration files that generate
-the package rules; running them requires Bazel, but no `bazelize` executable.
-The generated `tools/bazel` wrapper keeps `bazel list config|trait` as shorter
-aliases and forwards every other command unchanged.
+The plugin and listing commands are generated targets. `//:plugins` builds its
+host, plugins and tools with Bazel, then runs entirely from their runfiles; it
+does not look up `bazelize` on `PATH`. The listing answers are embedded from the
+same resolved workspace and configuration files that generate the package
+rules. The generated `tools/bazel` wrapper keeps `bazel list config|trait` as
+shorter aliases and forwards every other command unchanged.
 
 ### How a package's sources get in
 
@@ -209,7 +212,7 @@ No test pins how a package's rules are produced either.
 | `cLanguageStandard` / `cxxLanguageStandard` | `-std=`, for the language the target is written in; a target that compiles both is named instead, because one rule takes one `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin, own package | built by Bazel, run by bazelize (`bazel run //:plugins`); what it writes is globbed into the target that asked for it |
+| build tool plugin, own package | host, plugin and tools all built and run by Bazel (`bazel run //:plugins`); what it writes is globbed into the target that asked for it |
 | build tool plugin, dependency | not run; the plugin is named at the end of the run |
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |

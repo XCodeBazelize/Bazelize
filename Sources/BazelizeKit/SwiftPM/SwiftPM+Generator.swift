@@ -58,9 +58,9 @@ extension SwiftPM {
             notes.append(message)
         }
 
-        /// The plugins and tools Bazel already built, by target name. Empty
-        /// while a workspace is being generated — nothing has been built yet —
-        /// and filled by `//:plugins`, which has Bazel build them first.
+        /// Plugins and tools an API caller already built, by target name.
+        /// Workspace generation leaves these empty; the generated `//:plugins`
+        /// target has its own Bazel-built host and runfiles.
         let built: BuiltPrograms
 
         init(
@@ -101,7 +101,7 @@ extension SwiftPM {
                 try generate(package)
             }
 
-            try writePluginRunner(locals: locals)
+            try writePluginRunner()
             /// Written whether or not there is a trait to switch: the root
             /// `.bazelrc` imports it, and an import of a file that is not
             /// there is a workspace that does not load.
@@ -172,7 +172,7 @@ extension SwiftPM {
             /// `//:plugins` can run it without SwiftPM having to load — let
             /// alone build — the package it lives in.
             if package.isRoot || package.isLocal {
-                let used = Set(package.manifest.targets.flatMap(\.pluginUsages).map(\.name))
+                let used = usedPluginNames(in: package)
                 for target in package.manifest.targets
                     where target.type == "plugin" && used.contains(target.name)
                 {

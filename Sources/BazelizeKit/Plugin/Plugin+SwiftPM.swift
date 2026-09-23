@@ -192,19 +192,28 @@ final class PluginSwiftPM: PluginBuiltin {
     /// is the workspace's own way to run them, the way `bazel mod tidy` is the
     /// workspace's way to fix its module file.
     ///
-    /// The plugins and the tools they run are `data`, so running this builds
-    /// them: the script speaks to programs Bazel made, not to SwiftPM. The
-    /// script itself is written by the package generator, which is what knows
-    /// which programs those are.
+    /// The plugin host, plugins and tools are all Bazel-built `data` of the
+    /// runner. Nothing is looked up through `PATH`; the generated workspace is
+    /// sufficient to run its plugins.
     override func build(_ builder: CodeBuilder) {
         guard hasPackages else { return }
 
+        builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.load(loadableRule: Rules.Shell.sh_binary)
+        builder.call(
+            Rules.Swift.Call.swift_binary(
+                name: "_plugin_host",
+                srcs: ["plugin-host.swift"],
+                tags: ["manual"]))
         builder.call(
             Rules.Shell.Call.sh_binary(
                 name: "plugins",
                 srcs: ["plugins.sh"],
-                data: ["//\(Self.packagesDirectory):plugins"]))
+                data: [
+                    ":_plugin_host",
+                    "plugin-plan.json",
+                    "//\(Self.packagesDirectory):plugins",
+                ]))
     }
 
     override var custom: [PluginBuiltin.Custom]? {

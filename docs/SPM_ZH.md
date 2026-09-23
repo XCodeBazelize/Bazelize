@@ -65,7 +65,9 @@ App/
 ├── Package.resolved          # 保留：pin 的唯一來源
 ├── config.bazelrc
 ├── BUILD
-├── plugins.sh                # `bazel run //:plugins` 跑的就是它
+├── plugins.sh                # 進入 Bazel 建出的 SwiftPM plugin host
+├── plugin-host.swift         # 由 Bazel 編成 `//:plugins` 的 host
+├── plugin-plan.json          # plugin request 與 runfile 路徑
 ├── tools/                    # Bazel 原生的 workspace 查詢指令
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # 完全不變
@@ -87,9 +89,10 @@ App/
 | `bazel run //tools:list-config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
 | `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
 
-兩個清單指令都是產生出來的 `sh_binary` target。答案來自產生 package rules
-時使用的同一份 resolved workspace 與設定檔；執行時只需要 Bazel，不需要
-`bazelize`。產生的 `tools/bazel` wrapper 仍保留較短的
+Plugin 與清單指令都是產生出來的 target。`//:plugins` 用 Bazel 建 host、
+plugin 與工具，接著完全從它們的 runfiles 執行，不會再去 `PATH` 找
+`bazelize`。清單答案來自產生 package rules 時使用的同一份 resolved
+workspace 與設定檔。產生的 `tools/bazel` wrapper 仍保留較短的
 `bazel list config|trait` alias，其他指令則原封不動往下傳。
 
 ### package 的原始碼怎麼進來
@@ -190,7 +193,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `cLanguageStandard` / `cxxLanguageStandard` | `-std=`，看 target 實際寫的是哪種語言；同時編 C 與 C++ 的 target 兩個都不給，並具名回報——一條規則只有一個 `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin（自己的 package） | Bazel 建、bazelize 跑（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
+| build tool plugin（自己的 package） | host、plugin 與工具都由 Bazel 建置並執行（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
 | build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
@@ -424,7 +427,7 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
-| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin，Bazel 建、bazelize 跑 | `spm/BuildToolPlugin` 的測試靠 plugin 產生的原始碼通過 |
+| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin 與 host 都由 Bazel 建置執行 | `spm/BuildToolPlugin` 的測試靠 plugin 產生的原始碼通過 |
 | 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡

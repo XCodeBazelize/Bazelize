@@ -18,9 +18,8 @@ extension SwiftPM {
     /// when a plugin writes a different set of files, because they glob the
     /// directory the plugin writes into. What comes back is what to tell the
     /// user about.
-    /// `plugins` and `tools` are what Bazel built, by target name: a plugin is
-    /// a program and so is the tool it runs, and building them is Bazel's job
-    /// wherever `//:plugins` is what started this.
+    /// `plugins` and `tools` are programs a direct API caller already built.
+    /// Generated workspaces use the separate host embedded in `//:plugins`.
     public static func runPlugins(
         output: Path,
         locals: [Path],
@@ -170,8 +169,7 @@ extension SwiftPM.Generator {
     /// so compiling it needs no package graph — which is the whole reason the
     /// host can run one without building anything else.
     private func compile(plugin target: SwiftPM.PackageTarget, in package: SwiftPM.Package) async throws -> Path {
-        /// Bazel built it: `//:plugins` has the plugin as `data`, so it is in
-        /// the runfiles by the time the host runs.
+        /// A direct caller may supply a plugin it already built.
         if let prebuilt = built.plugins[target.name], prebuilt.exists { return prebuilt }
 
         let built = output + ".bazelize/plugins" + package.directory + target.name
@@ -260,9 +258,8 @@ extension SwiftPM.Generator {
 
         guard target.type == "executable" else { return nil }
 
-        /// Bazel built it, so SwiftPM never has to load the package the tool
-        /// lives in — which some toolchains cannot do when a plugin names its
-        /// tool by target.
+        /// A direct caller may supply a tool it already built, avoiding a
+        /// SwiftPM build of the package that owns it.
         if let prebuilt = built.tools[name], prebuilt.exists { return prebuilt }
 
         let product = package.manifest.products.first { product in

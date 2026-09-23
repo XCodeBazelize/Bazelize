@@ -85,8 +85,9 @@ The flags underneath are there for a build that wants some other combination.
 
 `bazel run //:plugins` runs this workspace's build tool plugins and writes what
 they generate into `Packages/<package>/Generated/`. It is a separate step
-because a plugin is a program: Bazel builds it, and bazelize runs it as SwiftPM
-would.
+because a plugin is a program. Bazel builds the generated host, the plugins and
+their tools, then runs all of them from runfiles; no `bazelize` executable is
+needed at runtime.
 
 `bazel build --config=lang.<code>` bundles that localization and `Base`, and
 nothing else; a build that names none bundles every one of them, which is what
@@ -94,7 +95,7 @@ SwiftPM does. Several at once is the flag underneath,
 `--@build_bazel_rules_apple//apple/build_settings:locales_to_include=en,ja`.
 
 The listing commands are generated Bazel targets and do not need `bazelize` at
-runtime. The generated `tools/bazel` wrapper also exposes them as
+runtime either. The generated `tools/bazel` wrapper also exposes them as
 `bazel list config|trait|language`.
 
 `App/` is generated, and is not checked in.

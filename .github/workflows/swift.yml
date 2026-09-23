@@ -447,13 +447,13 @@ jobs:
             exit 1
           fi
 
-      # A build tool plugin is a program: Bazel builds it and bazelize runs it,
-      # which is what puts the sources it generates where the rules glob for
-      # them. Only the packages that have one need the step.
+      # Bazel builds the plugin host, plugins and tools, then runs them from
+      # runfiles. No separately installed bazelize executable is involved.
+      # Only the packages that have a build tool plugin need the step.
       - name: Run Plugins
         if: matrix.plugins
         working-directory: spm/${{ matrix.name }}/App
-        run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
+        run: bazel run //:plugins
 
       # The workspace's own commands, which answer whatever the package is:
       # a package with no trait, no configuration and no localization answers

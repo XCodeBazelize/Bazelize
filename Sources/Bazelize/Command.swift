@@ -30,13 +30,11 @@ struct Command: AsyncParsableCommand {
 
 // MARK: - PluginsCommand
 
-/// Runs the build tool plugins of a generated workspace, and nothing else.
+/// Runs build tool plugins directly through bazelize.
 ///
-/// What a plugin writes is decided by the plugin, so a change to its own source
-/// changes the files a target compiles without anything else about the project
-/// moving. This is the command that brings those files up to date — the
-/// generated workspace exposes it as `bazel run //:plugins`, the way a Bazel
-/// workspace exposes every other thing that writes back into it.
+/// Generated workspaces use their Bazel-built host through
+/// `bazel run //:plugins`; this command remains the direct form for callers
+/// that supply already-built plugin and tool programs.
 struct PluginsCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "plugins",
@@ -48,8 +46,7 @@ struct PluginsCommand: AsyncParsableCommand {
     @Option(name: [.customLong("local", withSingleDash: false)], help: "PATH/TO/LOCAL/PACKAGE")
     var locals: [String] = []
 
-    /// `NAME=PATH`, for the programs Bazel built: `//:plugins` has them as
-    /// `data`, so a plugin runs without SwiftPM building anything.
+    /// `NAME=PATH`, for plugin programs the caller already built.
     @Option(name: [.customLong("plugin", withSingleDash: false)], help: "NAME=PATH/TO/PLUGIN")
     var plugins: [String] = []
 
