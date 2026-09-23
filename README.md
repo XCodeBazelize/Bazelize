@@ -1,6 +1,6 @@
 # Bazelize
 
-A cli tool turn your xcode project or Swift package to bazel.
+Bazelize generates Bazel workspaces from Xcode projects and Swift packages.
 
 ---
 
@@ -13,13 +13,13 @@ mint install XCodeBazelize/Bazelize
 ## Usage
 
 ```sh
-bazelize --project YOUR.xcodeproj
+bazelize --input YOUR.xcodeproj --output App
 ```
 
 Or a Swift package — the `Package.swift`, or the directory holding one:
 
 ```sh
-bazelize --project path/to/Package.swift
+bazelize --input path/to/Package.swift --output App
 ```
 
 ---

@@ -17,7 +17,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(projectPath, nil, outputPath: output)
-        try await kit.run(projectPath)
+        try await kit.run()
 
         #expect((output + "BUILD").exists)
         #expect((output + "MODULE.bazel").exists)
@@ -126,7 +126,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(projectPath, nil, outputPath: output)
-        try await kit.run(projectPath)
+        try await kit.run()
 
         let appBuild = try String(contentsOfFile: (output + "Targets/IceCubesApp/BUILD").string)
         #expect(appBuild.contains("ios_application("))
@@ -153,7 +153,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(projectPath, "Release", outputPath: output)
-        try await kit.run(projectPath)
+        try await kit.run()
 
         let cliBuild = try String(contentsOfFile: (output + "Targets/iina-cli/BUILD").string)
         #expect(cliBuild.contains("module_name = \"iina_cli\""))
@@ -194,7 +194,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? nightlyOutput.delete() }
 
         let nightlyKit = try await Kit(projectPath, "Nightly", outputPath: nightlyOutput)
-        try await nightlyKit.run(projectPath)
+        try await nightlyKit.run()
 
         let nightlyBuild = try String(contentsOfFile: (nightlyOutput + "Targets/iina/BUILD").string)
         #expect(nightlyBuild.contains("Sources/iina/Assets.xcassets/AppIconNightly.appiconset/**"))

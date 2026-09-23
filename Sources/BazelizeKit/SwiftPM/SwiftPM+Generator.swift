@@ -58,31 +58,10 @@ extension SwiftPM {
             notes.append(message)
         }
 
-        /// Plugins and tools an API caller already built, by target name.
-        /// Workspace generation leaves these empty; the generated `//:plugins`
-        /// target has its own Bazel-built host and runfiles.
-        let built: BuiltPrograms
-
-        init(
-            output: Path,
-            workspace: Workspace,
-            deployment: Deployment,
-            built: BuiltPrograms = .init())
-        {
+        init(output: Path, workspace: Workspace, deployment: Deployment) {
             self.output = output
             self.workspace = workspace
             self.deployment = deployment
-            self.built = built
-        }
-
-        struct BuiltPrograms {
-            let plugins: [String: Path]
-            let tools: [String: Path]
-
-            init(plugins: [String: Path] = [:], tools: [String: Path] = [:]) {
-                self.plugins = plugins
-                self.tools = tools
-            }
         }
 
         func generate(locals: [Path] = []) async throws {

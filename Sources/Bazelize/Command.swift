@@ -17,63 +17,14 @@ import Xcode
 struct Command: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "bazelize",
-        abstract: "A cli tool turn your xcode project to bazel.",
+        abstract: "Generate Bazel workspaces from Xcode and Swift package inputs.",
+        discussion: "Run without a subcommand to generate a workspace.",
         version: version,
         subcommands: [
             GenerateCommand.self,
-            PluginsCommand.self,
-            XcodeCommand.self,
-//            RoadmapCommand.self,
+            DumpCommand.self
         ],
         defaultSubcommand: GenerateCommand.self)
-}
-
-// MARK: - PluginsCommand
-
-/// Runs build tool plugins directly through bazelize.
-///
-/// Generated workspaces use their Bazel-built host through
-/// `bazel run //:plugins`; this command remains the direct form for callers
-/// that supply already-built plugin and tool programs.
-struct PluginsCommand: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(
-        commandName: "plugins",
-        abstract: "Run the build tool plugins of a generated workspace.")
-
-    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
-    var output = "."
-
-    @Option(name: [.customLong("local", withSingleDash: false)], help: "PATH/TO/LOCAL/PACKAGE")
-    var locals: [String] = []
-
-    /// `NAME=PATH`, for plugin programs the caller already built.
-    @Option(name: [.customLong("plugin", withSingleDash: false)], help: "NAME=PATH/TO/PLUGIN")
-    var plugins: [String] = []
-
-    @Option(name: [.customLong("tool", withSingleDash: false)], help: "NAME=PATH/TO/TOOL")
-    var tools: [String] = []
-
-    func run() async throws {
-        let outputPath = Path.current + output
-        let notes = try await SwiftPM.runPlugins(
-            output: outputPath,
-            locals: locals.map { Path.current + $0 },
-            plugins: Self.programs(plugins),
-            tools: Self.programs(tools))
-
-        for note in notes {
-            print(note)
-        }
-    }
-
-    private static func programs(_ arguments: [String]) -> [String: Path] {
-        arguments.reduce(into: [:]) { programs, argument in
-            guard let separator = argument.firstIndex(of: "=") else { return }
-            let name = String(argument[..<separator])
-            let path = String(argument[argument.index(after: separator)...])
-            programs[name] = Path.current + path
-        }
-    }
 }
 
 // MARK: - GenerateCommand
@@ -81,67 +32,60 @@ struct PluginsCommand: AsyncParsableCommand {
 struct GenerateCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "generate",
-        abstract: "Generate Bazel files from an Xcode project.")
+        abstract: "Generate a Bazel workspace from an input.",
+        discussion: """
+        Generated files are written under --output; the input source tree is not \
+        modified.
+        """)
 
-    @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
-    var project: String
+    @Option(
+        name: [.customLong("input", withSingleDash: false)],
+        help: "Path to the Xcode or Swift package input.")
+    var input: String
 
-    @Option(name: [.customLong("output", withSingleDash: false)], help: "PATH/TO/OUTPUT")
+    @Option(
+        name: [.customLong("output", withSingleDash: false)],
+        help: "Directory where the Bazel workspace is written.")
     var output: String
 
-    @Option(name: [.short], help: "Debug/Release")
+    @Option(name: [.short], help: "Preferred Xcode build configuration.")
     var config = "Release"
 
-    @Option(name: [.long], help: "plugin list")
-    var manifest = ".bazelize.yml"
-
-    @Flag
-    var dump = false
-
-    @Flag
-    var clear = false
-
     func run() async throws {
-        let path = Path.current + project
+        let path = Path.current + input
         let outputPath = Path.current + output
         let kit = try await Kit(
             path,
             config,
             outputPath: outputPath)
 
-        guard !clear else {
-            kit.clear()
-            return
-        }
-
-        if dump {
-            try kit.dump()
-        } else {
-            try await kit.run(Path(manifest))
-        }
+        try await kit.run()
     }
 }
 
-// MARK: - XcodeCommand
+// MARK: - DumpCommand
 
-struct XcodeCommand: AsyncParsableCommand {
+struct DumpCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "xcode",
-        abstract: "Dump an Xcode project structure as JSON or print one target summary.")
+        commandName: "dump",
+        abstract: "Inspect a parsed Xcode input.",
+        discussion: "Prints the parsed model as JSON unless --print-target is provided.")
 
-    @Option(name: [.customLong("project", withSingleDash: false)], help: "PATH/TO/YOUR.xcodeproj")
-    var project: String
+    @Option(
+        name: [.customLong("input", withSingleDash: false)],
+        help: "Path to the Xcode input to inspect.")
+    var input: String
 
-    @Option(name: [.short], help: "Preferred config name used by project parsing")
+    @Option(name: [.short], help: "Preferred Xcode build configuration to resolve.")
     var config: String?
 
     @Option(
         name: [.customLong("print-target", withSingleDash: false)],
-        help: "Print a human-readable summary for a single target")
+        help: "Print a readable summary for the named target instead of JSON.")
     var printTarget: String?
 
     func run() async throws {
-        let path = Path.current + project
+        let path = Path.current + input
         let dump = try Xcode.Project.load(path: path, preferConfig: config)
 
         if let printTarget {

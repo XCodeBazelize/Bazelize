@@ -8,7 +8,6 @@
 import PluginLoader
 import Util
 import XcodeProj
-import Yams
 
 // MARK: - Kit
 
@@ -59,7 +58,7 @@ public final class Kit {
     /// generated.
     private var packageTips: [String] = []
 
-    public final func run(_: Path) async throws {
+    public final func run() async throws {
         defer { tips() }
 
 //        try await loadPlugins(mainfest)
@@ -71,14 +70,7 @@ public final class Kit {
         try await generateSwiftPackages()
         try generateTargetBuild()
     }
-
-    public final func dump() throws {
-        let encoder = YAMLEncoder()
-        let yaml = try encoder.encode(project)
-        print(yaml)
-    }
 }
-
 
 extension Kit {
 //    private final func loadPlugins(_ mainfest: Path) async throws {
@@ -305,59 +297,10 @@ extension Kit {
             try plugin.generateFile(outputRoot)
         }
     }
-}
-
-
-// MARK: - clear
-extension Kit {
-    // MARK: Public
-
-    public final func clear() {
-        clearModule()
-        clearBuild()
-        clearConfig()
-        clearPrebuiltBuild()
-        clearTargetBuild()
-        clearPluginExtraFile()
-    }
-
-    // MARK: Private
-
-    /// {WORKSPACE}/MODULE.bazel
-    private func clearModule() {
-        try? module.clear()
-    }
-
-    /// {WORKSPACE}/BUILD
-    private final func clearBuild() {
-        try? build.clear()
-    }
-
-    /// {WORKSPACE}/config.bazelrc
-    private final func clearConfig() {
-        try? config.clear()
-    }
-
-    private final func clearPrebuiltBuild() {
-        try? prebuilt.clear()
-    }
-
-    /// {WORKSPACE}/Target/BUILD
-    private final func clearTargetBuild() {
-        for build in targetsBuild {
-            try? build.clear()
-        }
-    }
-
-    private final func clearPluginExtraFile() {
-        builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
-            let path = resolvedOutputPath(custom.path)
-            try? path.delete()
-        }
-    }
 
     private func resolvedOutputPath(_ path: String) -> Path {
         let custom = Path(path)
         return custom.isAbsolute ? custom : outputRoot + custom
     }
 }
+

@@ -53,7 +53,7 @@ linked, so the package holding it still builds anywhere.
 
 ```sh
 cd spm/<package>
-bazelize --project . --output App
+bazelize --input . --output App
 cd App
 bazel run //:plugins   # only the packages with a build tool plugin need this
 bazel test //...
@@ -72,7 +72,7 @@ SwiftPM and bazelize need to be told where it is:
 cd spm/SystemLibrary
 export PKG_CONFIG_PATH="$PWD/vendor/pkgconfig"
 swift test
-bazelize --project . --output App
+bazelize --input . --output App
 ```
 
 The flags are read when the workspace is generated, so only that command needs

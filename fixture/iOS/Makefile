@@ -14,7 +14,7 @@ TESTS = \
 
 .PHONY: bazelize
 bazelize:
-	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT)
+	@$(BAZELIZE) --input Example.xcodeproj --output $(OUTPUT)
 
 .PHONY: build
 build: bazelize
@@ -38,5 +38,4 @@ uitest:
 
 .PHONY: clear
 clear:
-	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT) --clear
 	-rm -rf $(OUTPUT)

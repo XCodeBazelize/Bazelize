@@ -11,32 +11,6 @@ import Subprocess
 import System
 import Util
 
-extension SwiftPM {
-    /// Runs the build tool plugins of an already generated workspace.
-    ///
-    /// Nothing else is generated: the rules are already there and do not change
-    /// when a plugin writes a different set of files, because they glob the
-    /// directory the plugin writes into. What comes back is what to tell the
-    /// user about.
-    /// `plugins` and `tools` are programs a direct API caller already built.
-    /// Generated workspaces use the separate host embedded in `//:plugins`.
-    public static func runPlugins(
-        output: Path,
-        locals: [Path],
-        plugins: [String: Path] = [:],
-        tools: [String: Path] = [:]) async throws -> [String]
-    {
-        let workspace = try await loadWorkspace(output: output, root: nil, locals: locals)
-        let generator = Generator(
-            output: output,
-            workspace: workspace,
-            deployment: .init(project: [:]),
-            built: .init(plugins: plugins, tools: tools))
-
-        return await generator.runPlugins().notes
-    }
-}
-
 extension SwiftPM.Generator {
     /// Runs the build tool plugins of the packages this project owns, into the
     /// directory their output belongs in.
@@ -169,9 +143,6 @@ extension SwiftPM.Generator {
     /// so compiling it needs no package graph — which is the whole reason the
     /// host can run one without building anything else.
     private func compile(plugin target: SwiftPM.PackageTarget, in package: SwiftPM.Package) async throws -> Path {
-        /// A direct caller may supply a plugin it already built.
-        if let prebuilt = built.plugins[target.name], prebuilt.exists { return prebuilt }
-
         let built = output + ".bazelize/plugins" + package.directory + target.name
         if built.exists { return built }
 
@@ -257,10 +228,6 @@ extension SwiftPM.Generator {
         }
 
         guard target.type == "executable" else { return nil }
-
-        /// A direct caller may supply a tool it already built, avoiding a
-        /// SwiftPM build of the package that owns it.
-        if let prebuilt = built.tools[name], prebuilt.exists { return prebuilt }
 
         let product = package.manifest.products.first { product in
             product.targets.contains(name)
