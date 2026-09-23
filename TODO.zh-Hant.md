@@ -94,9 +94,15 @@ Bazel package，父層的 glob 就抓不進去。
 `path:`）。要查的是那個 fallback 到底走不走得到：如果走不到，**刪掉**比補
 fixture 好。
 
-### B6. 跨套件使用 macro
+### B6. 跨套件使用 macro —— 已完成
 
-跨套件的 build tool plugin 已覆蓋（`spm/PluginDependency`），macro target 沒有。
+`spm/Macro/Provider` 提供一個 macro 與宣告它的 library；root 套件透過那個
+product 使用它，與它自己原本就有的同套件 macro 並存。
+
+產生器**一行都不用改**，而這正是值得記住的地方：consumer 的規則裡只列自己套件的
+plugin，隔壁套件那個之所以生效，是因為宣告該 macro 的 library 帶著
+`plugins = [":ProviderMacros"]`，而 rules_swift 會把 compiler plugin 傳播給
+依賴那個 library 的人 —— 經過 product facade 也一樣。
 
 ### B7. asset catalog 的各種變體
 

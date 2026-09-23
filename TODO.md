@@ -102,10 +102,17 @@ SwiftPM only looks in `Sources`, `Source`, `src` and `srcs` unless the target
 names a `path:`. Check whether that fallback is reachable at all: if it is not,
 delete it rather than write a fixture for it.
 
-### B6. A macro used from another package
+### B6. A macro used from another package — done
 
-A build tool plugin from another package is covered (`spm/PluginDependency`);
-a macro target is not.
+`spm/Macro/Provider` ships a macro and the library that declares it; the root
+package uses that macro through the product, beside the macro of its own it
+already used.
+
+Nothing in the generator needed changing, which is the thing worth knowing: the
+consumer's rule lists only its own package's plugin, and the one a package away
+arrives because the library that declares the macro carries
+`plugins = [":ProviderMacros"]` and rules_swift propagates a compiler plugin to
+whoever depends on that library — through the product facade included.
 
 ### B7. Asset catalogue variants
 
