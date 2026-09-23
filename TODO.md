@@ -81,9 +81,19 @@ versions in the bundle and a mapping derivable between them — is covered.
 Every fixture uses `from:`. For the generator these are the same path: SwiftPM
 resolves them and the generator reads the checkout. Low value.
 
-### B4. A package with no products, and a plugin-only package
+### B4. A package with no products, and a plugin-only package — done
 
-Both are real shapes; neither is exercised.
+Neither needed a lane of its own. `spm/TargetExclude` declares no products at
+all — a package that is nothing but targets, built and tested and depended on
+by nothing — and `spm/PluginDependency/Marking` is nothing but a plugin and the
+plugin product that shares it, used by the package next door.
+
+Worth knowing about the second: a plugin belonging to another package is
+compiled by bazelize rather than built by Bazel. `Packages/Marking/BUILD` comes
+out empty, because the rules that build a plugin are written for the package
+that *uses* it, and Marking uses nothing. The empty file is deliberate: it
+keeps the directory a Bazel package of its own, so the parent's globs do not
+reach into it.
 
 ### B5. A target whose sources sit at the package root
 

@@ -76,9 +76,16 @@ migration 真正立足的東西 —— 有版本的 `.xcdatamodeld`、兩個版�
 所有 fixture 都用 `from:`。對產生器而言這幾種是同一條路：SwiftPM 解析完，產生
 器讀 checkout。價值低。
 
-### B4. 沒有 product 的套件，以及只有 plugin 的套件
+### B4. 沒有 product 的套件，以及只有 plugin 的套件 —— 已完成
 
-兩種都是真實形狀，目前都沒被踩過。
+兩個都不需要自己的 lane。`spm/TargetExclude` 完全不宣告 product —— 一個只有
+target 的套件，建得起來、測得過、沒有人依賴它；`spm/PluginDependency/Marking`
+則是只有一個 plugin 與對應的 plugin product，由隔壁的套件使用。
+
+第二點有件事值得記住：**屬於別的套件的 plugin 是由 bazelize 自己編的，不是
+Bazel 建的**。`Packages/Marking/BUILD` 產出來是空檔，因為建 plugin 的規則是寫給
+「使用它的套件」，而 Marking 誰也沒用。那個空檔是刻意的：它讓那個目錄成為獨立的
+Bazel package，父層的 glob 就抓不進去。
 
 ### B5. 原始碼直接放在套件根目錄的 target
 

@@ -12,12 +12,15 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "Stamping"),
+        .package(path: "Marking"),
     ],
     targets: [
         .target(
             name: "PluginDependency",
             plugins: [
                 .plugin(name: "Stamp", package: "Stamping"),
+                /// From a package that is nothing but this plugin.
+                .plugin(name: "Mark", package: "Marking"),
             ]),
         .testTarget(
             name: "PluginDependencyTests",
