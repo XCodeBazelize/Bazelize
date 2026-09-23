@@ -48,19 +48,96 @@ extension SwiftPM.Generator {
                 visibility: .public))
     }
 
-    /// `bazel run //:plugins`, and everything it needs built first.
+    /// `bazel run //:tool`: everything the generated workspace can be asked or
+    /// told, in one program.
     ///
-    /// The plugins and the tools they run are `data` of the script, so running
-    /// it builds them: a script that called `bazel build` itself would be a
-    /// second Bazel inside the first one's lock.
-    func writePluginRunner(locals: [Path]) throws {
-        /// The root `BUILD` declares `//:plugins` for any project with packages,
-        /// because whether one of them has a plugin is not known when that file
-        /// is written. So both of the things it names are written for any such
-        /// project: a package with nothing to run is a command that does
-        /// nothing, and a label that does not resolve is a workspace that does
-        /// not load.
-        guard (output + "Package.swift").exists else { return }
+    /// `list` answers out of text embedded when the workspace was generated,
+    /// so asking never depends on whichever `bazelize` happens to be on
+    /// `PATH`. `plugin` does depend on it, because running a plugin is what
+    /// bazelize does that Bazel cannot: the plugins and the tools they run are
+    /// `data` of this script, so running it builds them first — a script that
+    /// called `bazel build` itself would be a second Bazel inside the first
+    /// one's lock.
+    ///
+    /// Bazel has no extension point for custom commands, so `tools/bazel`
+    /// keeps `bazel plugin` and `bazel list …` as aliases for it and forwards
+    /// every other command unchanged.
+    func writeWorkspaceTool(locals: [Path]) throws {
+        let listings = [
+            ("config", try Listing.config(output: output)),
+            ("trait", Listing.traits(workspace: workspace)),
+            ("language", Listing.languages(localizations)),
+        ]
+
+        let answers = listings.map { topic, contents in
+            """
+                \(topic))
+                    cat <<'BAZELIZE_LIST'
+            \(contents)
+            BAZELIZE_LIST
+                    ;;
+            """
+        }.joined(separator: "\n")
+
+        let script = output + "tool.sh"
+        try script.write("""
+        #!/bin/bash
+        # What this workspace can be asked about itself, and the one thing that
+        # writes back into it.
+        set -euo pipefail
+        runfiles="${RUNFILES_DIR:-$0.runfiles}/_main"
+        cd "${BUILD_WORKSPACE_DIRECTORY:-$(dirname "$0")}"
+
+        usage() {
+            cat >&2 <<'BAZELIZE_USAGE'
+        Usage: bazel run //:tool -- <command>
+
+          plugin                      run this workspace's build tool plugins,
+                                      writing what they generate back into
+                                      Packages/*/Generated/*Plugin
+          list config                 the --config this workspace defines
+          list trait                  the traits its packages declare
+          list language               the localizations its packages ship
+        BAZELIZE_USAGE
+            exit 2
+        }
+
+        case "${1:-}" in
+        plugin)
+            \(pluginCommand(locals: locals))
+            ;;
+        list)
+            case "${2:-}" in
+        \(answers)
+            *)
+                usage
+                ;;
+            esac
+            ;;
+        *)
+            usage
+            ;;
+        esac
+
+        """)
+
+        /// `sh_binary` refuses a script that is not executable.
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
+
+        let directory = output + "tools"
+        try directory.mkpath()
+        try writeBazelWrapper(to: directory + "bazel")
+    }
+
+    /// What `plugin` runs, and the filegroup of programs it needs built.
+    ///
+    /// A project with no packages has no plugin to run and no filegroup to
+    /// name: the command says so rather than naming a label that does not
+    /// resolve, which is a workspace that does not load.
+    private func pluginCommand(locals: [Path]) throws -> String {
+        guard (output + "Package.swift").exists else {
+            return #"echo "This workspace has no Swift packages." >&2"#
+        }
 
         let binaries = pluginBinaries
 
@@ -82,66 +159,7 @@ extension SwiftPM.Generator {
                 [binary.isPlugin ? "--plugin" : "--tool", "\(binary.name)=$runfiles/\(binary.path)"]
             }
 
-        let script = output + "plugins.sh"
-        try script.write("""
-        #!/bin/bash
-        # Runs this workspace's build tool plugins, writing what they generate
-        # back into `Packages/*/Generated/*Plugin`.
-        #
-        # The plugins and their tools are built by Bazel: they are `data` of this
-        # script, so they are in its runfiles by the time it runs.
-        set -euo pipefail
-        runfiles="${RUNFILES_DIR:-$0.runfiles}/_main"
-        cd "${BUILD_WORKSPACE_DIRECTORY:-$(dirname "$0")}"
-        exec bazelize plugins \(arguments.joined(separator: " "))
-
-        """)
-
-        /// `sh_binary` refuses a script that is not executable.
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
-    }
-
-    /// Bazel-native commands that describe the generated workspace.
-    ///
-    /// The answers are embedded in executable targets, so using them never
-    /// depends on whichever `bazelize` executable happens to be on `PATH`.
-    /// Bazel itself has no extension point for custom commands; `tools/bazel`
-    /// keeps `bazel list config|trait|language` as aliases for the `bazel run`
-    /// targets and forwards every other command unchanged.
-    func writeListingCommands() throws {
-        let directory = output + "tools"
-        try directory.mkpath()
-
-        let listings = [
-            ("config", try Listing.config(output: output)),
-            ("trait", Listing.traits(workspace: workspace)),
-            ("language", Listing.languages(localizations)),
-        ]
-        let builder = CodeBuilder()
-        builder.load(loadableRule: Rules.Shell.sh_binary)
-
-        for (topic, contents) in listings {
-            let name = "list-\(topic)"
-            let script = directory + "\(name).sh"
-            try script.write("""
-            #!/bin/bash
-            cat <<'BAZELIZE_LIST'
-            \(contents)
-            BAZELIZE_LIST
-
-            """)
-            try FileManager.default.setAttributes(
-                [.posixPermissions: 0o755],
-                ofItemAtPath: script.string)
-            builder.call(
-                Rules.Shell.Call.sh_binary(
-                    name: name,
-                    srcs: ["\(name).sh"]))
-        }
-
-        try (directory + "BUILD").write(builder.build())
-
-        try writeBazelWrapper(to: directory + "bazel")
+        return "exec bazelize plugins \(arguments.joined(separator: " "))"
     }
 
     private func writeBazelWrapper(to wrapper: Path) throws {
@@ -155,17 +173,11 @@ extension SwiftPM.Generator {
             exit 1
         fi
 
-        if [[ "${1:-}" == "list" ]]; then
-            case "${2:-}" in
-                config|trait|language)
-                    exec "$BAZEL_REAL" run "//tools:list-${2}"
-                    ;;
-                *)
-                    echo "Usage: bazel list config|trait|language" >&2
-                    exit 2
-                    ;;
-            esac
-        fi
+        case "${1:-}" in
+        plugin|list)
+            exec "$BAZEL_REAL" run //:tool -- "$@"
+            ;;
+        esac
 
         exec "$BAZEL_REAL" "$@"
 

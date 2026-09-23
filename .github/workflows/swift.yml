@@ -453,7 +453,7 @@ jobs:
       - name: Run Plugins
         if: matrix.plugins
         working-directory: spm/${{ matrix.name }}/App
-        run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
+        run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:tool -- plugin
 
       # The workspace's own commands, which answer whatever the package is:
       # a package with no trait, no configuration and no localization answers
@@ -461,9 +461,9 @@ jobs:
       - name: List Workspace
         working-directory: spm/${{ matrix.name }}/App
         run: |
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel list config
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel list trait
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel list language
+          bazel run //:tool -- list config
+          bazel run //:tool -- list trait
+          bazel run //:tool -- list language
 
       # A build that names a localization bundles that one and `Base`, and
       # nothing else. What is in the bundle is the only proof of that.

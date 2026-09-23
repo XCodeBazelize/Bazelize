@@ -101,13 +101,14 @@ extension SwiftPM {
                 try generate(package)
             }
 
-            try writePluginRunner(locals: locals)
             /// Written whether or not there is a trait to switch: the root
             /// `.bazelrc` imports it, and an import of a file that is not
             /// there is a workspace that does not load.
             try writeTraitConfigs()
             try writeLanguageConfigs()
-            try writeListingCommands()
+            /// Last, because what it answers about this workspace includes the
+            /// files above.
+            try writeWorkspaceTool(locals: locals)
         }
 
         /// A package that declares a platform version the project does not reach is

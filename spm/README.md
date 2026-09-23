@@ -55,11 +55,11 @@ linked, so the package holding it still builds anywhere.
 cd spm/<package>
 bazelize --project . --output App
 cd App
-bazel run //:plugins   # only the packages with a build tool plugin need this
+bazel run //:tool -- plugin   # only the packages with a build tool plugin need this
 bazel test //...
-bazel run //tools:list-config   # what `--config=<name>` the workspace defines
-bazel run //tools:list-trait    # which traits its packages declare, and which are on
-bazel run //tools:list-language # which localizations they ship
+bazel run //:tool -- list config    # what `--config=<name>` the workspace defines
+bazel run //:tool -- list trait     # which traits its packages declare, and which are on
+bazel run //:tool -- list language  # which localizations they ship
 bazel test //... --config=<Package>.<Trait>   # …with one of them turned on
 bazel build //... --config=lang.<code>        # …bundling that localization only
 ```
@@ -83,18 +83,20 @@ trait selected: the selection replaces the package's defaults and carries
 whatever the trait enables, which is what `swift test --traits <trait>` does.
 The flags underneath are there for a build that wants some other combination.
 
-`bazel run //:plugins` runs this workspace's build tool plugins and writes what
-they generate into `Packages/<package>/Generated/`. It is a separate step
-because a plugin is a program: Bazel builds it, and bazelize runs it as SwiftPM
-would.
+`bazel run //:tool -- plugin` runs this workspace's build tool plugins and
+writes what they generate into `Packages/<package>/Generated/`. It is a
+separate step because a plugin is a program: Bazel builds it, and bazelize runs
+it as SwiftPM would.
 
 `bazel build --config=lang.<code>` bundles that localization and `Base`, and
 nothing else; a build that names none bundles every one of them, which is what
 SwiftPM does. Several at once is the flag underneath,
 `--@build_bazel_rules_apple//apple/build_settings:locales_to_include=en,ja`.
 
-The listing commands are generated Bazel targets and do not need `bazelize` at
-runtime. The generated `tools/bazel` wrapper also exposes them as
+`//:tool` is a generated Bazel target: what `list` answers is embedded when the
+workspace is generated, so asking never needs `bazelize` at run time. Only
+`plugin` does, because running a plugin is the part Bazel cannot do. The
+generated `tools/bazel` wrapper also takes them directly, as `bazel plugin` and
 `bazel list config|trait|language`.
 
 `App/` is generated, and is not checked in.
