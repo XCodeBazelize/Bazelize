@@ -10,6 +10,8 @@ on:
       - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
+      - 'fixture/iOS/**'
+      - 'mise.toml'
   pull_request:
     paths:
       - 'Sources/**'
@@ -17,6 +19,8 @@ on:
       - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
+      - 'fixture/iOS/**'
+      - 'mise.toml'
 
 concurrency: 
   group: ci
@@ -28,6 +32,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
+    - uses: jdx/mise-action@v3
+
+    - name: Generate iOS fixture
+      run: tuist generate --path fixture/iOS --no-open
 
     - name: Check Xcode Version
       run: |
@@ -81,6 +90,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: jdx/mise-action@v3
+
+      - name: Generate Xcode project
+        run: tuist generate --path fixture/iOS --no-open
+
       # Every `bazel` in this job reads these: the disk cache holds what the
       # build produced, the repository cache what it downloaded. Without the
       # second one a runner fetches rules_apple and the rest again every time.
@@ -116,7 +130,7 @@ jobs:
       - name: Bazel Generation
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --project Example.xcodeproj --output App | tee bazelize.log
+          ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
@@ -302,7 +316,7 @@ jobs:
 
       - name: Bazel Generation
         run: |
-          ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+          ./bazelize --input "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
@@ -435,7 +449,7 @@ jobs:
           NOTES: ${{ matrix.notes }}
         run: |
           chmod +x bazelize
-          ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App" | tee bazelize.log
+          ./bazelize --input "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App" | tee bazelize.log
 
           if [ -n "$NOTES" ]; then
             if ! grep -qE "$NOTES" bazelize.log; then
