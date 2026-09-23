@@ -64,7 +64,12 @@ public final class Kit {
 
 //        try await loadPlugins(mainfest)
         try generate()
+        /// Which package a product belongs to is the resolved graph's answer,
+        /// so the rules that name one are written once the packages have been
+        /// resolved — everything those rules need besides that is already in
+        /// the project.
         try await generateSwiftPackages()
+        try generateTargetBuild()
     }
 
     public final func dump() throws {
@@ -124,9 +129,37 @@ extension Kit {
             deployment: deployment)
         try await generator.generate(locals: locals)
         packageTips = generator.notes
+        packageDirectoryByProduct(of: workspace)
 
         let count = workspace.packages.count
         Log.codeGenerate.info("Generate \(count, privacy: .public) Swift packages")
+    }
+
+    /// Which package directory declares each product, for the target rules
+    /// that have to name one.
+    ///
+    /// A product name is the package's own, so two packages can ship one of
+    /// the same name; such a name answers for neither, because nothing in an
+    /// Xcode target says which package it meant.
+    private final func packageDirectoryByProduct(of workspace: SwiftPM.Workspace) {
+        var directories: [String: String] = [:]
+        var ambiguous: Set<String> = []
+
+        for package in workspace.packages {
+            for product in package.manifest.products {
+                if let existing = directories[product.name], existing != package.directory {
+                    ambiguous.insert(product.name)
+                    continue
+                }
+                directories[product.name] = package.directory
+            }
+        }
+
+        for name in ambiguous {
+            directories[name] = nil
+        }
+
+        pluginSPM.packageDirectoryByProduct = directories
     }
 
     /// The versions a package's targets end up compiled at: the lowest deployment
@@ -183,7 +216,6 @@ extension Kit {
         try generateBuild()
         try generateConfig()
         try generatePrebuiltBuild()
-        try generateTargetBuild()
         try generatePluginExtraFile()
     }
 

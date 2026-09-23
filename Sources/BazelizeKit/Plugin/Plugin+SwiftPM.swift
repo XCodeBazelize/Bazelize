@@ -20,6 +20,13 @@ final class PluginSwiftPM: PluginBuiltin {
     let locals: [LocalPackage]
     private var projectPath: Path?
 
+    /// Which package directory declares a product, answered by the resolved
+    /// graph rather than guessed from a repository's name.
+    ///
+    /// Empty until the packages have been resolved, which is why the target
+    /// rules that use it are written after that.
+    var packageDirectoryByProduct: [String: String] = [:]
+
     func loadPackageNames(projPath: Path) async throws {
         projectPath = projPath
     }
@@ -39,6 +46,13 @@ final class PluginSwiftPM: PluginBuiltin {
     /// NIO, from a remote package.
     private func remoteProduct(_ product: PackageProductDependency) -> FacadeProduct? {
         let name = product.productName
+
+        /// What the resolved graph says: a product belongs to the package that
+        /// declares it, whatever that package's repository is called.
+        if let directory = packageDirectoryByProduct[name] {
+            return .init(package: directory, product: name)
+        }
+
         guard let url = product.package ?? remoteURL(forProduct: name) else { return nil }
 
         return .init(package: Self.packageDirectoryName(url: url), product: name)
