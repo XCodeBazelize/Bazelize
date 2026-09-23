@@ -27,7 +27,12 @@ extension SwiftPM {
 
         /// Adds the package and every target in it, and answers which id the
         /// target being asked about has.
-        mutating func add(package: Package, asking target: PackageTarget) throws -> Int {
+        ///
+        /// `nil` is a command plugin, which is asked about the package rather
+        /// than one target of it: every target's files are listed, because
+        /// which ones it reads is its own business.
+        @discardableResult
+        mutating func add(package: Package, asking target: PackageTarget?) throws -> Int {
             let directoryId = add(path: package.root.absolute().string)
 
             var targetIds: [Int] = []
@@ -37,7 +42,7 @@ extension SwiftPM {
             }
 
             targets = try package.manifest.targets.map { candidate in
-                try wire(candidate, in: package, sources: candidate.name == target.name)
+                try wire(candidate, in: package, sources: target == nil || candidate.name == target?.name)
             }
 
             products = package.manifest.products.map { product in
@@ -62,6 +67,7 @@ extension SwiftPM {
                     targetIds: targetIds),
             ]
 
+            guard let target else { return 0 }
             guard let id = indexByTarget[target.name] else {
                 throw PluginError.undecodable("the target asked about is not in its own package")
             }

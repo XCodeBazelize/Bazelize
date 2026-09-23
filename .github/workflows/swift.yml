@@ -496,6 +496,17 @@ jobs:
           ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
           ! unzip -Z1 "$bundle" | grep -q "de.lproj"
 
+      # A command plugin is not run by a build: it is a verb someone types, and
+      # running it is the only proof it is there. `swift package hello alpha
+      # --beta` above and this answer the same, arguments included.
+      - name: Run Command Plugin
+        if: matrix.name == 'CommandPlugin'
+        working-directory: spm/CommandPlugin/App
+        run: |
+          bazel run //Packages/CommandPlugin:hello -- alpha --beta > command.log
+          grep -q "Hello from CommandPlugin" command.log
+          grep -q "Arguments: alpha --beta" command.log
+
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...

@@ -173,14 +173,19 @@ extension SwiftPM {
 
             /// A plugin of a package this project owns is built by Bazel, so
             /// `//:plugins` can run it without SwiftPM having to load — let
-            /// alone build — the package it lives in.
+            /// alone build — the package it lives in. A command plugin is built
+            /// too, with the target that runs it: nothing builds it, someone
+            /// asks for it.
             if package.isRoot || package.isLocal {
                 let used = usedPluginNames(in: package)
-                for target in package.manifest.targets
-                    where target.type == "plugin" && used.contains(target.name)
-                {
+                for target in package.manifest.targets where target.type == "plugin" {
                     guard let prefix = try materialize(target, in: package, at: root) else { continue }
-                    buildPlugin(target, in: package, prefix: prefix, builder: builder)
+
+                    if target.pluginCapability?.isCommand == true {
+                        try buildCommandPlugin(target, in: package, prefix: prefix, root: root, builder: builder)
+                    } else if used.contains(target.name) {
+                        buildPlugin(target, in: package, prefix: prefix, builder: builder)
+                    }
                 }
             }
 

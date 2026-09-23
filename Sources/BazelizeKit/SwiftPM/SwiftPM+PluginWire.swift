@@ -260,6 +260,34 @@ extension SwiftPM {
                 }
             }
         }
+
+        /// `performCommand`, what a command plugin is asked.
+        ///
+        /// The arguments are whatever the user typed after the verb, which the
+        /// host fills in when it runs: the request is written once, at
+        /// generation, and a command is run with different arguments every
+        /// time.
+        struct CommandRequest: Encodable {
+            let context: InputContext
+            let rootPackageId: Int
+
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: AnyKey.self)
+                try container.encode(Body(self), forKey: AnyKey("performCommand"))
+            }
+
+            private struct Body: Encodable {
+                let context: InputContext
+                let rootPackageId: Int
+                let arguments: [String]
+
+                init(_ request: CommandRequest) {
+                    context = request.context
+                    rootPackageId = request.rootPackageId
+                    arguments = []
+                }
+            }
+        }
     }
 }
 

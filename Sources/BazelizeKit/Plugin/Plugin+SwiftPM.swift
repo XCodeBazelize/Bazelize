@@ -204,7 +204,10 @@ final class PluginSwiftPM: PluginBuiltin {
             Rules.Swift.Call.swift_binary(
                 name: "_plugin_host",
                 srcs: ["plugin-host.swift"],
-                tags: ["manual"]))
+                tags: ["manual"],
+                /// A command plugin's own target runs it too, and that target
+                /// belongs to the package the plugin came from.
+                visibility: .public))
         builder.call(
             Rules.Shell.Call.sh_binary(
                 name: "plugins",

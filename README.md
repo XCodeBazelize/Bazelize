@@ -33,6 +33,18 @@ Bazel builds the plugins and their tools, so generation needs `bazel` on `PATH`
 for that step. Run the same command again whenever a plugin or its input
 changes.
 
+A command plugin becomes a target named after its verb, so `swift package
+hello` is:
+
+```sh
+bazel run //Packages/YourPackage:hello -- <arguments>
+```
+
+Everything after `--` reaches the plugin the way everything after the verb
+reaches it under SwiftPM. There is no sandbox to widen, so what the plugin
+declared it wants to do is printed rather than refused — running the target is
+the permission.
+
 ---
 
 ## Bazel

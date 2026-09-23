@@ -24,6 +24,12 @@ extension SwiftPM.Generator {
         let request: String
     }
 
+    private struct CommandInvocation: Decodable {
+        let plugin: String
+        let executable: String
+        let request: String
+    }
+
     private struct ProcessResult {
         let status: Int32
         let output: Data
@@ -46,12 +52,28 @@ extension SwiftPM.Generator {
         }
 
         private static func run() throws {
-            guard CommandLine.arguments.count == 3 else {
+            var arguments = Array(CommandLine.arguments.dropFirst())
+
+            if arguments.first == "--command" {
+                arguments.removeFirst()
+                guard arguments.count >= 2 else {
+                    throw RunnerError(description: "expected --command REQUEST RUNFILES [arguments...]")
+                }
+                let request = URL(fileURLWithPath: arguments[0])
+                let runfiles = arguments[1]
+                try perform(
+                    try JSONDecoder().decode(CommandInvocation.self, from: Data(contentsOf: request)),
+                    runfiles: runfiles,
+                    arguments: Array(arguments.dropFirst(2)))
+                return
+            }
+
+            guard arguments.count == 2 else {
                 throw RunnerError(description: "expected PLAN RUNFILES")
             }
 
-            let plan = URL(fileURLWithPath: CommandLine.arguments[1])
-            let runfiles = CommandLine.arguments[2]
+            let plan = URL(fileURLWithPath: arguments[0])
+            let runfiles = arguments[1]
             let invocations = try JSONDecoder().decode([Invocation].self, from: Data(contentsOf: plan))
 
             for invocation in invocations {
@@ -62,6 +84,72 @@ extension SwiftPM.Generator {
                     let reason = "did not run the \(invocation.plugin) plugin: \(error)."
                     print("\(subject) \(reason) Whatever that plugin generates is missing from the target.")
                 }
+            }
+        }
+
+        /// One command plugin, with what the user typed after `--`.
+        ///
+        /// A command plugin writes wherever it was allowed to — here, wherever
+        /// `bazel run` left the process, which is the workspace the user ran it
+        /// from. What it prints is its own output, so it goes straight through.
+        private static func perform(
+            _ invocation: CommandInvocation,
+            runfiles: String,
+            arguments: [String]) throws
+        {
+            guard let encoded = Data(base64Encoded: invocation.request) else {
+                throw RunnerError(description: "the generated request is not base64")
+            }
+
+            let decoded = try JSONSerialization.jsonObject(with: encoded)
+            let replaced = replacingRunfiles(in: decoded, with: runfiles)
+            guard
+                var request = replaced as? [String: Any],
+                var body = request["performCommand"] as? [String: Any]
+            else {
+                throw RunnerError(description: "the generated request is not a command")
+            }
+            body["arguments"] = arguments
+            request["performCommand"] = body
+            let payload = try JSONSerialization.data(withJSONObject: request)
+
+            var length = UInt64(payload.count).littleEndian
+            var input = withUnsafeBytes(of: &length) { Data($0) }
+            input.append(payload)
+
+            let executable = URL(fileURLWithPath: runfiles).appendingPathComponent(invocation.executable).path
+            let result = try process(executable: executable, input: input)
+            /// What the plugin printed. `PackagePlugin` keeps the wire protocol
+            /// on standard output and sends the plugin's own printing to
+            /// standard error; `swift package <verb>` shows it on standard
+            /// output, so it arrives there here too.
+            if !result.error.isEmpty {
+                FileHandle.standardOutput.write(Data(result.error.utf8))
+            }
+
+            for message in try messages(in: result.output) {
+                if let diagnostic = message["emitDiagnostic"] as? [String: Any] {
+                    let severity = diagnostic["severity"] as? String ?? "warning"
+                    let text = diagnostic["message"] as? String ?? ""
+                    FileHandle.standardError.write(Data("\(invocation.plugin) \(severity): \(text)\n".utf8))
+                    continue
+                }
+
+                /// What a command plugin may ask the host to do for it, which
+                /// this host does not: a build here is Bazel's, and its
+                /// arguments are not the ones SwiftPM would answer with.
+                for request in ["buildOperationRequest", "testOperationRequest", "symbolGraphRequest"]
+                    where message[request] != nil
+                {
+                    throw RunnerError(description: """
+                    the \(invocation.plugin) plugin asked the host for \(request), which this host does not answer: \
+                    build and test the workspace with bazel instead
+                    """)
+                }
+            }
+
+            guard result.status == 0 else {
+                throw RunnerError(description: errors(result.error))
             }
         }
 

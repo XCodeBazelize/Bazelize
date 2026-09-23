@@ -125,6 +125,8 @@ extension SwiftPM {
         let pkgConfig: String?
         /// What installs the library this target wraps, by package manager.
         let providers: [Provider]
+        /// What kind of plugin this is, for a `plugin` target.
+        let pluginCapability: PluginCapability?
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -142,6 +144,95 @@ extension SwiftPM {
             checksum = container.value(String.self, "checksum")
             pkgConfig = container.value(String.self, "pkgConfig")
             providers = container.list(Provider.self, "providers")
+            pluginCapability = container.value(PluginCapability.self, "pluginCapability")
+        }
+    }
+
+    /// `{"buildTool": null}`, or a command's verb and what it asks to be
+    /// allowed to do:
+    /// `{"command": [{"custom": {"verb": "hello", "description": "…"}},
+    ///               [{"writeToPackageDirectory": {"reason": "…"}}]]}`
+    struct PluginCapability: Decodable {
+        /// The word a command plugin is run by — `swift package hello`. A build
+        /// tool plugin has none: it is run by the build.
+        let verb: String?
+        let description: String?
+        /// What the plugin asks for before SwiftPM widens its sandbox, and the
+        /// reason it gives. Nothing here grants anything.
+        let permissions: [Permission]
+
+        var isCommand: Bool { verb != nil }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+            guard var command = try? container.nestedUnkeyedContainer(forKey: AnyKey("command")) else {
+                verb = nil
+                description = nil
+                permissions = []
+                return
+            }
+
+            let intent = try command.decode(Intent.self)
+            verb = intent.verb
+            description = intent.description
+            permissions = (try? command.decode([Permission].self)) ?? []
+        }
+
+        /// `{"custom": {"verb": "hello", "description": "…"}}`, or one of the
+        /// intents SwiftPM names itself, each of which has a verb of its own.
+        struct Intent: Decodable {
+            let verb: String?
+            let description: String?
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: AnyKey.self)
+                guard let key = container.allKeys.first else {
+                    verb = nil
+                    description = nil
+                    return
+                }
+
+                if key.stringValue == "custom" {
+                    let custom = try container.decode(Custom.self, forKey: key)
+                    verb = custom.verb
+                    description = custom.description
+                    return
+                }
+
+                let known = [
+                    "documentationGeneration": "generate-documentation",
+                    "sourceCodeFormatting": "format-source-code",
+                ]
+                verb = known[key.stringValue] ?? key.stringValue
+                description = nil
+            }
+
+            private struct Custom: Decodable {
+                let verb: String?
+                let description: String?
+            }
+        }
+
+        /// `{"writeToPackageDirectory": {"reason": "…"}}`
+        struct Permission: Decodable {
+            let name: String
+            let reason: String?
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: AnyKey.self)
+                guard let key = container.allKeys.first else {
+                    name = ""
+                    reason = nil
+                    return
+                }
+
+                name = key.stringValue
+                reason = (try? container.decode(Body.self, forKey: key))?.reason
+            }
+
+            private struct Body: Decodable {
+                let reason: String?
+            }
         }
     }
 

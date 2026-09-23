@@ -23,6 +23,7 @@ extension SwiftPM.Generator {
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
+        named name: String? = nil,
         builder: CodeBuilder)
     {
         guard let api = SwiftPM.PluginHost.pluginAPIPath else { return }
@@ -30,7 +31,7 @@ extension SwiftPM.Generator {
         builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.call(
             Rules.Swift.Call.swift_binary(
-                name: ruleName(of: target.name, in: package),
+                name: name ?? ruleName(of: target.name, in: package),
                 copts: [
                     "-I", api,
                     /// Which `PackagePlugin` the plugin was written against; its
@@ -46,6 +47,102 @@ extension SwiftPM.Generator {
                 srcs: Starlark.glob(["\(prefix)/**/*.swift"]),
                 tags: Self.manual,
                 visibility: .public))
+    }
+
+    /// A command plugin as something to run: `bazel run //Packages/X:verb`,
+    /// which is `swift package verb` with a different prefix.
+    ///
+    /// Everything after `--` is handed to the plugin the way SwiftPM hands over
+    /// everything after the verb. What the plugin asked to be allowed to do is
+    /// printed rather than enforced: `bazel run` has no sandbox to widen, and a
+    /// flag that stops nothing would say otherwise.
+    func buildCommandPlugin(
+        _ target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        prefix: String,
+        root: Path,
+        builder: CodeBuilder) throws
+    {
+        guard
+            let capability = target.pluginCapability,
+            let verb = capability.verb,
+            SwiftPM.PluginHost.pluginAPIPath != nil
+        else {
+            return
+        }
+
+        /// The verb is the name a user types, and on a case-insensitive file
+        /// system `hello` and `Hello` are one file: the program the wrapper
+        /// runs is named apart from the target that runs it.
+        let rule = "\(ruleName(of: target.name, in: package))_plugin"
+        buildPlugin(target, in: package, prefix: prefix, named: rule, builder: builder)
+
+        let request = "Generated/\(target.name)Command.json"
+        try (root + "Generated").mkpath()
+        try (root + request).write(try commandRequest(for: target, in: package, executable: rule))
+
+        let script = "Generated/\(verb).sh"
+        let announcements = capability.permissions.map { permission in
+            let reason = permission.reason.map { " \($0)" } ?? ""
+            return """
+            echo '\(verb) asks for \(permission.name), and nothing here refuses it:\(reason)' >&2
+            """
+        }
+
+        let path = root + script
+        try path.write("""
+        #!/bin/bash
+        # Bazel supplies the host, the plugin and this request.
+        set -euo pipefail
+        runfiles="${RUNFILES_DIR:-$0.runfiles}/_main"
+        \(announcements.joined(separator: "\n"))
+        # Where the user ran `bazel run`, which is what the package directory
+        # means to a plugin that writes to it.
+        cd "${BUILD_WORKSPACE_DIRECTORY:-$PWD}"
+        exec "$runfiles/_plugin_host" --command \\
+            "$runfiles/\(PluginSwiftPM.packagesDirectory)/\(package.directory)/\(request)" \\
+            "$runfiles" "$@"
+
+        """)
+        /// `sh_binary` refuses a script that is not executable.
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path.string)
+
+        builder.load(loadableRule: Rules.Shell.sh_binary)
+        builder.call(
+            Rules.Shell.Call.sh_binary(
+                name: verb,
+                srcs: [script],
+                data: [
+                    ":\(rule)",
+                    request,
+                    "//:_plugin_host",
+                ]))
+    }
+
+    /// The `performCommand` request, with the package the command is run on.
+    private func commandRequest(
+        for target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        executable rule: String) throws -> String
+    {
+        var builder = SwiftPM.PluginContextBuilder(package: package, generator: self)
+        try builder.add(package: package, asking: nil)
+        let workDirectoryId = builder.add(path: pluginWorkDirectory(of: target, in: package).absolute().string)
+
+        let request = SwiftPM.PluginWire.CommandRequest(
+            context: builder.context(workDirectoryId: workDirectoryId, tools: [:]),
+            rootPackageId: 0)
+
+        let plan: [String: Any] = [
+            "plugin": target.name,
+            "executable": "\(PluginSwiftPM.packagesDirectory)/\(package.directory)/\(rule)",
+            "request": try JSONEncoder().encode(request).base64EncodedString(),
+        ]
+
+        let data = try JSONSerialization.data(
+            withJSONObject: plan,
+            options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        return String(decoding: data, as: UTF8.self) + "\n"
     }
 
     /// Where a target's plugins write: beside the rules of the package that
