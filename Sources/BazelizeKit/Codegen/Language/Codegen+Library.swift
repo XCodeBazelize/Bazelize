@@ -66,12 +66,12 @@ extension Target {
         builder.call(
             Rules.Swift.Call.mixed_language_library(
                 name: "\(name)_mixed",
-                clang_copts: [
+                clang_copts: ([
                     "-fblocks",
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + clangDialectCopts + forceIncludeFlags,
+                ] + clangDialectCopts + forceIncludeFlags).starlark,
                 clang_srcs: .build {
                     srcs_c
                     srcs_cpp
@@ -96,11 +96,11 @@ extension Target {
                     bridgingHeader
                 },
                 includes: headerIncludes(project: project),
-                linkopts: sdkLinkopts,
+                linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: sdkFrameworks(project: project),
-                swift_copts: moduleSwiftCopts(project: project),
+                swift_copts: moduleSwiftCopts(project: project)?.starlark,
                 swift_defines: defines(project: project),
                 swift_srcs: .build {
                     srcs_swift

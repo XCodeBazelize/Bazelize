@@ -177,6 +177,7 @@ reports/
 lefthook.yml
 
 .swiftpm/*
+**/.swiftpm/
 .vscode/*
 
 cache/

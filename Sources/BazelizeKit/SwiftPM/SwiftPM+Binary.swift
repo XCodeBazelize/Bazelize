@@ -11,19 +11,65 @@ import Foundation
 import Starlark
 import Util
 
+extension SwiftPM {
+    /// What a binary target ships.
+    struct BinaryArtifact {
+        enum Kind {
+            /// A framework to link against.
+            case xcframework
+            /// A program to run, one build per platform.
+            case artifactBundle
+
+            init?(extension: String?) {
+                switch `extension` {
+                case "xcframework":
+                    self = .xcframework
+                case "artifactbundle":
+                    self = .artifactBundle
+                default:
+                    return nil
+                }
+            }
+        }
+
+        let path: Path
+        let kind: Kind
+    }
+
+    /// `info.json`: what an artifact bundle says it holds.
+    struct ArtifactBundleInfo: Decodable {
+        struct Artifact: Decodable {
+            struct Variant: Decodable {
+                /// Where the program is, inside the bundle.
+                let path: String
+                /// The triples it was built for; absent means anywhere.
+                let supportedTriples: [String]?
+            }
+
+            /// `executable`, the only kind a bundle can hold today.
+            let type: String
+            let variants: [Variant]
+        }
+
+        let artifacts: [String: Artifact]
+    }
+}
+
 extension SwiftPM.Generator {
-    /// A binary target is an `.xcframework` SwiftPM already fetched, imported the
-    /// way a project-owned one is.
+    /// A binary target is what SwiftPM already fetched: an `.xcframework`,
+    /// imported the way a project-owned one is, or an `.artifactbundle`, whose
+    /// executable is run rather than linked.
     ///
-    /// Whether it links statically or dynamically is not in the manifest, so the
-    /// binary itself is read: an archive is static, a Mach-O dylib is not.
+    /// Whether an XCFramework links statically or dynamically is not in the
+    /// manifest, so the binary itself is read: an archive is static, a Mach-O
+    /// dylib is not.
     func buildBinary(
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         root: Path,
         builder: CodeBuilder) throws -> Bool
     {
-        guard let xcframework = try artifact(of: target, in: package) else {
+        guard let artifact = artifact(of: target, in: package) else {
             Log.codeGenerate.warning("""
             Skip \(package.directory, privacy: .public)/\(target.name, privacy: .public): \
             no artifact for the binary target
@@ -31,34 +77,55 @@ extension SwiftPM.Generator {
             return false
         }
 
-        /// The link keeps the `.xcframework` name: the import rule reads the
-        /// bundle name out of the path.
+        /// The link keeps the artifact's name: the import rule reads the bundle
+        /// name out of the path, and an artifact bundle names its executable
+        /// relative to its own root.
         let directory = root + Self.artifactsRoot + target.name
-        let link = directory + xcframework.lastComponent
+        let link = directory + artifact.path.lastComponent
         try directory.mkpath()
         if link.isSymlink || link.exists {
             try? link.delete()
         }
-        try link.symlink(xcframework)
+        try link.symlink(artifact.path)
 
-        let imports = Starlark.glob([
-            "\(Self.artifactsRoot)/\(target.name)/**",
-        ])
+        let contents = "\(Self.artifactsRoot)/\(target.name)/**"
+        let rule = ruleName(of: target.name, in: package)
 
-        if isStatic(xcframework) {
+        switch artifact.kind {
+        case .artifactBundle:
+            guard let executable = Self.executable(inArtifactBundle: artifact.path) else {
+                Log.codeGenerate.warning("""
+                Skip \(package.directory, privacy: .public)/\(target.name, privacy: .public): \
+                the artifact bundle has no executable this machine can run
+                """)
+                return false
+            }
+
+            builder.load(loadableRule: Rules.Native.native_binary)
+            builder.call(
+                Rules.Native.Call.native_binary(
+                    name: rule,
+                    src: "\(Self.artifactsRoot)/\(target.name)/\(artifact.path.lastComponent)/\(executable)",
+                    out: rule,
+                    data: Starlark.glob([contents]),
+                    tags: Self.manual,
+                    visibility: .public))
+
+        case .xcframework where isStatic(artifact.path):
             builder.load(.apple_static_xcframework_import)
             builder.call(
                 Rules.Apple.General.Call.apple_static_xcframework_import(
-                    name: ruleName(of: target.name, in: package),
-                    xcframework_imports: imports,
+                    name: rule,
+                    xcframework_imports: Starlark.glob([contents]),
                     tags: Self.manual,
                     visibility: .public))
-        } else {
+
+        case .xcframework:
             builder.load(.apple_dynamic_xcframework_import)
             builder.call(
                 Rules.Apple.General.Call.apple_dynamic_xcframework_import(
-                    name: ruleName(of: target.name, in: package),
-                    xcframework_imports: imports,
+                    name: rule,
+                    xcframework_imports: Starlark.glob([contents]),
                     tags: Self.manual,
                     visibility: .public))
         }
@@ -68,9 +135,10 @@ extension SwiftPM.Generator {
 
     static let artifactsRoot = "Artifacts"
 
-    /// Where the artifact ended up: a remote one was downloaded and unpacked into
-    /// the workspace's artifact directory, a local one is a path in the package.
-    private func artifact(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) throws -> Path? {
+    /// What a binary target ships, and where it ended up: a remote artifact was
+    /// downloaded and unpacked into the workspace's artifact directory, a local
+    /// one is a path in the package.
+    func artifact(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> SwiftPM.BinaryArtifact? {
         var roots: [Path] = [workspace.artifacts + package.identity + target.name]
 
         if let path = target.path {
@@ -78,16 +146,55 @@ extension SwiftPM.Generator {
         }
 
         for root in roots {
-            if root.extension == "xcframework", root.exists { return root }
+            if let kind = SwiftPM.BinaryArtifact.Kind(extension: root.extension), root.exists {
+                return .init(path: root, kind: kind)
+            }
             guard root.isDirectory else { continue }
 
             let children = (try? root.children()) ?? []
-            if let xcframework = children.first(where: { $0.extension == "xcframework" }) {
-                return xcframework
+            for child in children.sorted(by: { $0.lastComponent < $1.lastComponent }) {
+                guard let kind = SwiftPM.BinaryArtifact.Kind(extension: child.extension) else { continue }
+                return .init(path: child, kind: kind)
             }
         }
 
         return nil
+    }
+
+    /// The executable of an artifact bundle, as a path inside the bundle.
+    ///
+    /// A bundle ships one variant per platform and names the triples each was
+    /// built for, so the one this machine can run is the one whose triples name
+    /// its architecture; a bundle that names none is taken at its word.
+    static func executable(inArtifactBundle bundle: Path) -> String? {
+        guard
+            let data = try? Data(contentsOf: (bundle + "info.json").url),
+            let info = try? JSONDecoder().decode(SwiftPM.ArtifactBundleInfo.self, from: data)
+        else {
+            return nil
+        }
+
+        var variants: [SwiftPM.ArtifactBundleInfo.Artifact.Variant] = []
+        for name in info.artifacts.keys.sorted() {
+            guard let artifact = info.artifacts[name], artifact.type == "executable" else { continue }
+            variants += artifact.variants
+        }
+
+        let host = Self.hostTriple
+        return variants.first { variant in
+            guard let triples = variant.supportedTriples else { return true }
+            return triples.contains { $0.hasPrefix(host) }
+        }?.path
+    }
+
+    /// `<arch>-apple-macos`, which is how an artifact bundle spells the machine
+    /// this runs on — `macosx` and a version both start with it.
+    private static var hostTriple: String {
+        #if arch(arm64)
+        "arm64-apple-macos"
+        #else
+        "x86_64-apple-macos"
+        #endif
     }
 
     /// Whether the framework in the slice links statically, read from the binary

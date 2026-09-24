@@ -261,90 +261,31 @@ extension SwiftPM {
             }
         }
 
-        /// What a plugin says back. A build tool plugin sends commands and
-        /// diagnostics; the rest belongs to a command plugin asking the host to
-        /// build or test something, which this host does not do.
-        enum Response: Decodable {
-            case diagnostic(severity: String, message: String)
-            case progress(String)
-            case build(Command)
-            case prebuild(Command, outputDirectory: String)
-            case unsupported(String)
+        /// `performCommand`, what a command plugin is asked.
+        ///
+        /// The arguments are whatever the user typed after the verb, which the
+        /// host fills in when it runs: the request is written once, at
+        /// generation, and a command is run with different arguments every
+        /// time.
+        struct CommandRequest: Encodable {
+            let context: InputContext
+            let rootPackageId: Int
 
-            init(from decoder: Decoder) throws {
-                let container = try decoder.container(keyedBy: AnyKey.self)
-                guard let key = container.allKeys.first else {
-                    throw PluginError.undecodable("a message with no case")
-                }
-
-                switch key.stringValue {
-                case "emitDiagnostic":
-                    let body = try container.decode(Diagnostic.self, forKey: key)
-                    self = .diagnostic(severity: body.severity, message: body.message)
-                case "emitProgress":
-                    let body = try container.decode(Progress.self, forKey: key)
-                    self = .progress(body.message)
-                case "defineBuildCommand":
-                    let body = try container.decode(BuildCommand.self, forKey: key)
-                    self = .build(.init(body.configuration, inputs: body.inputFiles, outputs: body.outputFiles))
-                case "definePrebuildCommand":
-                    let body = try container.decode(PrebuildCommand.self, forKey: key)
-                    self = .prebuild(
-                        .init(body.configuration, inputs: [], outputs: []),
-                        outputDirectory: body.outputFilesDirectory)
-                default:
-                    self = .unsupported(key.stringValue)
-                }
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: AnyKey.self)
+                try container.encode(Body(self), forKey: AnyKey("performCommand"))
             }
 
-            private struct Diagnostic: Decodable {
-                let severity: String
-                let message: String
-            }
-
-            private struct Progress: Decodable {
-                let message: String
-            }
-
-            private struct BuildCommand: Decodable {
-                let configuration: Command.Configuration
-                let inputFiles: [String]
-                let outputFiles: [String]
-            }
-
-            private struct PrebuildCommand: Decodable {
-                let configuration: Command.Configuration
-                let outputFilesDirectory: String
-            }
-        }
-
-        /// A program the plugin asks to have run, with what it says it reads and
-        /// writes.
-        struct Command {
-            let displayName: String?
-            let executable: String
-            let arguments: [String]
-            let environment: [String: String]
-            let workingDirectory: String?
-            let inputs: [String]
-            let outputs: [String]
-
-            init(_ configuration: Configuration, inputs: [String], outputs: [String]) {
-                displayName = configuration.displayName
-                executable = configuration.executable
-                arguments = configuration.arguments
-                environment = configuration.environment
-                workingDirectory = configuration.workingDirectory
-                self.inputs = inputs
-                self.outputs = outputs
-            }
-
-            struct Configuration: Decodable {
-                let displayName: String?
-                let executable: String
+            private struct Body: Encodable {
+                let context: InputContext
+                let rootPackageId: Int
                 let arguments: [String]
-                let environment: [String: String]
-                let workingDirectory: String?
+
+                init(_ request: CommandRequest) {
+                    context = request.context
+                    rootPackageId = request.rootPackageId
+                    arguments = []
+                }
             }
         }
     }
@@ -356,17 +297,14 @@ extension SwiftPM {
     enum PluginError: Error, CustomStringConvertible {
         /// The toolchain's protocol is not the one mirrored here.
         case undecodable(String)
-        case compileFailed(String)
-        case noToolchain
+        case runFailed(String)
 
         var description: String {
             switch self {
             case .undecodable(let reason):
                 return "the plugin protocol of this toolchain is not the one bazelize speaks: \(reason)"
-            case .compileFailed(let reason):
-                return "the plugin itself does not compile: \(reason)"
-            case .noToolchain:
-                return "no toolchain to compile a plugin with"
+            case .runFailed(let reason):
+                return "\(reason)"
             }
         }
     }

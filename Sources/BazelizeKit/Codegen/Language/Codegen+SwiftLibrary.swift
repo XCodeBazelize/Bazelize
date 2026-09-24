@@ -24,7 +24,7 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
-                copts: swiftCopts(project: project),
+                copts: swiftCopts(project: project)?.starlark,
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
@@ -45,7 +45,7 @@ extension Target {
                     copiedResourceGroups(project: project)
                 },
                 defines: defines(project: project),
-                linkopts: sdkLinkopts,
+                linkopts: sdkLinkopts?.starlark,
                 swiftc_inputs: .build {
                     bridgingHeader
                     definesHeader

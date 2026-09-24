@@ -80,6 +80,7 @@ struct RulesConfigTests {
     func testBuiltinConfigSettingCall() {
         let call = Rules.Builtin.Call.config_setting(
             name: "Debug",
+            values: ["compilation_mode": "dbg"],
             flag_values: [":mode": "Debug"])
 
         #expect(
@@ -87,6 +88,9 @@ struct RulesConfigTests {
                 == """
                 config_setting(
                     name = "Debug",
+                    values = {
+                        "compilation_mode": "dbg"
+                    },
                     flag_values = {
                         ":mode": "Debug"
                     },

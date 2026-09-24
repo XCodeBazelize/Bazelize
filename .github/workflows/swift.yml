@@ -7,14 +7,20 @@ on:
     paths:
       - 'Sources/**'
       - 'Tests/**'
+      - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
+      - 'fixture/iOS/**'
+      - 'mise.toml'
   pull_request:
     paths:
       - 'Sources/**'
       - 'Tests/**'
+      - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
+      - 'fixture/iOS/**'
+      - 'mise.toml'
 
 concurrency: 
   group: ci
@@ -26,6 +32,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
+    - uses: jdx/mise-action@v3
+
+    - name: Generate iOS fixture
+      run: tuist generate --path fixture/iOS --no-open
 
     - name: Check Xcode Version
       run: |
@@ -79,6 +90,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: jdx/mise-action@v3
+
+      - name: Generate Xcode project
+        run: tuist generate --path fixture/iOS --no-open
+
       # Every `bazel` in this job reads these: the disk cache holds what the
       # build produced, the repository cache what it downloaded. Without the
       # second one a runner fetches rules_apple and the rest again every time.
@@ -114,7 +130,7 @@ jobs:
       - name: Bazel Generation
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --project Example.xcodeproj --output App | tee bazelize.log
+          ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
@@ -199,6 +215,7 @@ jobs:
   # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
   # lane clones what it measures at the revision it was measured against.
   IntegrateApp:
+    name: IntegrateApp (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
     timeout-minutes: 120
@@ -299,7 +316,7 @@ jobs:
 
       - name: Bazel Generation
         run: |
-          ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+          ./bazelize --input "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
@@ -309,6 +326,7 @@ jobs:
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
+    name: IntegratePackage (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
     timeout-minutes: 60
@@ -316,15 +334,54 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: ArtifactBundle
+            # A package rule carries `manual`, so a wildcard build never picks
+            # one up: a program a package builds is named to be run.
+            programs: |
+              //Packages/ArtifactBundle:GreetTool -- /tmp/artifact-bundle.swift
+          - name: BinaryTarget
           - name: BuildToolPlugin
-            plugins: true
+          - name: Clang
           - name: CommandPlugin
+          - name: ConfigurationCondition
+          - name: DependencyCondition
+            # A trait is a flag, so the build that turns one on is a build to
+            # test as well: the dependency behind it is linked only then.
+            config: DependencyCondition.Extras
+          - name: DependencyShape
           - name: Macro
-          - name: Trait
-          - name: TargetSources
-          - name: TargetPath
+          - name: Platform
+          - name: PluginDependency
+          - name: PrebuildPlugin
+          - name: ProductShapes
+            programs: |
+              //Packages/Products:renamed-tool
+              //Packages/Products:ProductSnippet
+          - name: RemoteArtifactBundle
+          - name: RemoteXCFramework
+          - name: SwiftSettings
+          - name: SystemLibrary
+          # Which build system SwiftPM runs by default moves with the
+          # toolchain, and the two do not implement the same resource rules, so
+          # a lane about a resource rule names the one that implements it
+          # rather than inheriting whichever the runner ships.
+          - name: TargetEmbed
+            # `swiftbuild` generated nothing for `.embedInCode` on the toolchain
+            # this lane was written against — Xcode 27 does — and `native` has
+            # generated it all along.
+            swiftpm: --build-system native
           - name: TargetExclude
+          - name: TargetPath
           - name: TargetResource
+            # `native` copies a platform resource rather than compiling it: no
+            # `momc`, no `actool`, no `ibtool`, so the model this package is
+            # about arrives as the `.xcdatamodeld` that was written.
+            swiftpm: --build-system swiftbuild
+          - name: TargetSources
+          - name: Trait
+            traits: Fast,Slow
+          - name: TraitGraph
+            traits: Alternative,Leaf,Middle,Top
     steps:
       - uses: actions/checkout@v6
 
@@ -348,19 +405,159 @@ jobs:
         with:
           name: bazelize
 
+      # What the fixture holds bazelize to is what SwiftPM does, so what
+      # SwiftPM does is run too: a fixture whose two sides disagree is a
+      # fixture that proves nothing.
+      #
+      # Every package of the fixture, not only the one bazelize is pointed at:
+      # the packages beside it are dependencies with sources of their own, and
+      # one that stopped building would be found here rather than in whatever
+      # it broke. A package with no tests is built and not run — there is
+      # nothing to run — and `App/` is generated, not a package of the fixture.
+      # A package that is only a plugin has nothing to build either: SwiftPM
+      # refuses the build rather than doing nothing, so it is skipped by what
+      # its manifest declares.
+      - name: SwiftPM Build And Test
+        working-directory: spm/${{ matrix.name }}
+        env:
+          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
+          ARGS: ${{ matrix.swiftpm }}
+        run: |
+          status=0
+          while read -r manifest; do
+            package=$(dirname "$manifest")
+            echo "::group::$package"
+            if ! (cd "$package" && swift package dump-package |
+                    jq -e '[.targets[] | select(.type != "plugin")] | length > 0' > /dev/null); then
+              echo "only plugins here, nothing to build"
+            elif ! (cd "$package" && swift build $ARGS); then
+              echo "::error::swift build failed for $package"
+              status=1
+            elif [ -d "$package/Tests" ] && ! (cd "$package" && swift test $ARGS); then
+              echo "::error::swift test failed for $package"
+              status=1
+            fi
+            echo "::endgroup::"
+          done < <(find . -name Package.swift -not -path "*/App/*" -not -path "*/.build/*" | sort)
+          exit $status
+
+      # A package that wraps a system library is found through `pkg-config`,
+      # and a fixture that ships its own `.pc` is only found when that file's
+      # directory is on the path.
+      #
+      # A note is the generator saying the build differs from what the package
+      # asked for — a plugin that did not run, a program whose resources
+      # nothing can bundle, a library pkg-config has never heard of. Every one
+      # of those builds and tests green and is wrong at run time, so no fixture
+      # may produce one silently: a lane expecting a note names it in `notes`,
+      # and anything else said is a failure.
       - name: Bazel Generation
+        env:
+          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
+          NOTES: ${{ matrix.notes }}
         run: |
           chmod +x bazelize
-          ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App"
+          ./bazelize --input "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App" | tee bazelize.log
 
-      # A build tool plugin is a program: Bazel builds it and bazelize runs it,
-      # which is what puts the sources it generates where the rules glob for
-      # them. Only the packages that have one need the step.
-      - name: Run Plugins
-        if: matrix.plugins
+          if [ -n "$NOTES" ]; then
+            if ! grep -qE "$NOTES" bazelize.log; then
+              echo "::error::the note this fixture is here for was not said: $NOTES"
+              exit 1
+            fi
+          elif [ -s bazelize.log ]; then
+            echo "::error::the generator said something no fixture expects"
+            exit 1
+          fi
+
+      # Nothing runs the plugins here: generation ends with `bazel run
+      # //:plugins`, so a target whose sources a plugin generates compiles in
+      # `Test Package` below, or the generator failed to run them and said so.
+
+      # The workspace's own commands, which answer whatever the package is:
+      # a package with no trait, no configuration and no localization answers
+      # that.
+      - name: List Workspace
         working-directory: spm/${{ matrix.name }}/App
-        run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
+        run: |
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list config
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list trait
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list language
+
+      # A build that names a localization bundles that one and `Base`, and
+      # nothing else. What is in the bundle is the only proof of that.
+      - name: Filter Localizations
+        if: matrix.name == 'TargetResource'
+        working-directory: spm/TargetResource/App
+        run: |
+          bazel build //Packages/TargetResource:TargetResourceTests --config=lang.en
+          bundle=$(find -L bazel-bin/Packages/TargetResource -name TargetResourceTests.zip | head -1)
+          unzip -Z1 "$bundle" | grep -q "en.lproj"
+          unzip -Z1 "$bundle" | grep -q "Base.lproj"
+          ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
+          ! unzip -Z1 "$bundle" | grep -q "de.lproj"
+
+      # A command plugin is not run by a build: it is a verb someone types, and
+      # running it is the only proof it is there. `swift package hello alpha
+      # --beta` above and this answer the same, arguments included.
+      - name: Run Command Plugin
+        if: matrix.name == 'CommandPlugin'
+        working-directory: spm/CommandPlugin/App
+        run: |
+          bazel run //Packages/CommandPlugin:hello -- alpha --beta > command.log
+          grep -q "Hello from CommandPlugin" command.log
+          grep -q "Arguments: alpha --beta" command.log
 
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...
+
+      # A program is not a test: the rules that build one carry `manual`, so
+      # `//...` never builds it. Running it is what says it links and works.
+      - name: Run Package Programs
+        if: matrix.programs
+        working-directory: spm/${{ matrix.name }}/App
+        env:
+          PROGRAMS: ${{ matrix.programs }}
+        run: |
+          while read -r program; do
+            [ -n "$program" ] || continue
+            bazel run $program
+          done <<< "$PROGRAMS"
+
+      # Both ways round, and not only that both pass: a trait is a compilation
+      # condition named after itself, so the flag reaching swiftc is the thing
+      # to see.
+      - name: Test Package With Trait
+        if: matrix.config
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test //... --config=${{ matrix.config }}
+          trait="${{ matrix.config }}"
+          ! bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
+          bazel aquery --config=${{ matrix.config }} 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
+
+      # Select each declared trait on its own, through the `--config` the
+      # workspace generated for it. That is what `swift test --traits <trait>`
+      # does: the selection replaces the package's defaults, and carries
+      # whatever that trait enables.
+      - name: Test Each Package Trait
+        if: matrix.traits
+        working-directory: spm/${{ matrix.name }}/App
+        env:
+          PACKAGE: ${{ matrix.name }}
+          TRAITS: ${{ matrix.traits }}
+        run: |
+          IFS=',' read -ra traits <<< "$TRAITS"
+          for trait in "${traits[@]}"; do
+            bazel test //... "--config=${PACKAGE}.${trait}"
+          done
+
+      # What each selection resolves to, exactly: the closure of the trait
+      # asked for, and nothing of the defaults it replaced.
+      - name: Probe Trait Selections
+        if: matrix.name == 'TraitGraph'
+        working-directory: spm/TraitGraph/App
+        run: |
+          bazel run //Packages/TraitGraph:TraitProbe -- Leaf Middle Top
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Middle -- Leaf Middle
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Alternative -- Alternative

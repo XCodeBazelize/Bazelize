@@ -27,11 +27,9 @@ extension SwiftPM.Generator {
         builder.call(
             Rules.Swift.Call.swift_binary(
                 name: ruleName(of: target.name, in: package),
-                copts: copts(of: target).nonEmpty,
-                deps: deps(of: target, in: package).nonEmpty.map { labels in
-                    .build { labels }
-                },
-                linkopts: linkopts(of: target).nonEmpty,
+                copts: copts(of: target, in: package),
+                deps: deps(of: target, in: package),
+                linkopts: linkopts(of: target, in: package),
                 module_name: Self.moduleName(target.name),
                 srcs: Starlark.glob(
                     matching(
@@ -43,6 +41,56 @@ extension SwiftPM.Generator {
                     allowEmpty: true),
                 tags: Self.manual,
                 visibility: .public))
+    }
+
+    /// A file under `Snippets/` is an implicit executable target: SwiftPM
+    /// builds one program per file, with every library target of the package
+    /// available to it. The manifest never mentions them, so they are found on
+    /// disk.
+    ///
+    /// The link is called `main.swift` because that is what the file is: a
+    /// snippet is top-level code, which only the entry point may hold.
+    func buildSnippets(
+        in package: SwiftPM.Package,
+        root: Path,
+        emitted: [String: TargetKind],
+        builder: CodeBuilder) throws
+    {
+        let directory = package.root + "Snippets"
+        guard directory.isDirectory else { return }
+
+        let dependencies = emitted.compactMap { name, kind -> String? in
+            switch kind {
+            case .swift, .clang, .binary, .system:
+                return ":\(ruleName(of: name, in: package))"
+            case .macro, .executable, .test, .unsupported:
+                return nil
+            }
+        }.sorted()
+
+        for source in ((try? directory.children()) ?? [])
+            .filter({ $0.extension == "swift" })
+            .sorted(by: { $0.lastComponent < $1.lastComponent })
+        {
+            let name = source.lastComponentWithoutExtension
+            let prefix = "\(Self.sourcesRoot)/\(name)"
+            let destination = root + prefix
+            try destination.mkpath()
+            let link = destination + "main.swift"
+            if link.isSymlink || link.exists { try? link.delete() }
+            try link.symlink(source)
+
+            builder.load(loadableRule: Rules.Swift.swift_binary)
+            builder.call(
+                Rules.Swift.Call.swift_binary(
+                    name: name,
+                    copts: ["-DSWIFT_PACKAGE", "-Xcc", "-DSWIFT_PACKAGE"],
+                    deps: .build { dependencies.map { Starlark.Label.named($0) } },
+                    module_name: Self.moduleName(name),
+                    srcs: Starlark.glob(["\(prefix)/main.swift"]),
+                    tags: Self.manual,
+                    visibility: .public))
+        }
     }
 
     /// An executable product is the tool under the name a consumer writes, so it

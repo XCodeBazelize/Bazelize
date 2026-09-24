@@ -101,7 +101,7 @@ extension Rules.Swift {
         ///   The Bazel target name.
         /// - `alwayslink: Bool`
         ///   Forces the library to be linked even when the linker would otherwise discard it. Defaults to `true`.
-        /// - `copts: [String]?`
+        /// - `copts: Starlark.Value?`
         ///   C or Clang compilation flags forwarded through the target graph.
         /// - `module_name: String?`
         ///   Overrides the emitted Swift module name.
@@ -117,7 +117,7 @@ extension Rules.Swift {
         ///   Customizes the generated Objective-C compatibility header name.
         /// - `generates_header: Bool?`
         ///   Enables emitting the generated Objective-C compatibility header.
-        /// - `linkopts: [String]?`
+        /// - `linkopts: Starlark.Value?`
         ///   Linker flags passed through when linking downstream binaries or tests.
         /// - `linkstatic: Bool?`
         ///   Prefers static rather than dynamic linkage when supported.
@@ -133,7 +133,7 @@ extension Rules.Swift {
             name: String,
             alwayslink: Bool = true,
             always_include_developer_search_paths: Bool? = nil,
-            copts: [String]? = nil,
+            copts: Starlark.Value? = nil,
             module_name: String? = nil,
             package_name: String? = nil,
             plugins: Starlark.Value? = nil,
@@ -143,7 +143,7 @@ extension Rules.Swift {
             defines: Starlark.Value? = nil,
             generated_header_name: String? = nil,
             generates_header: Bool? = nil,
-            linkopts: [String]? = nil,
+            linkopts: Starlark.Value? = nil,
             linkstatic: Bool? = nil,
             private_deps: Starlark.Value? = nil,
             swiftc_inputs: Starlark.Value? = nil,
@@ -221,11 +221,11 @@ extension Rules.Swift {
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
-        /// - `copts: [String]?`
+        /// - `copts: Starlark.Value?`
         ///   C or Clang compilation flags forwarded through the target graph.
         /// - `deps: Starlark.Value?`
         ///   Dependencies linked into the executable.
-        /// - `linkopts: [String]?`
+        /// - `linkopts: Starlark.Value?`
         ///   Linker flags passed when linking the executable.
         /// - `module_name: String?`
         ///   Overrides the emitted Swift module name.
@@ -241,9 +241,9 @@ extension Rules.Swift {
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func swift_binary(
             name: String,
-            copts: [String]? = nil,
+            copts: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
-            linkopts: [String]? = nil,
+            linkopts: Starlark.Value? = nil,
             module_name: String? = nil,
             srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
@@ -300,7 +300,7 @@ extension Rules.Swift {
         ///   The Bazel target name.
         /// - `args: [String]?`
         ///   Command-line arguments passed when running the test.
-        /// - `copts: [String]?`
+        /// - `copts: Starlark.Value?`
         ///   C or Clang compilation flags forwarded through the target graph.
         /// - `data: Starlark.Value?`
         ///   Runtime data made available to the test.
@@ -308,7 +308,7 @@ extension Rules.Swift {
         ///   Dependencies linked into the test bundle.
         /// - `env: [String: String]?`
         ///   Environment variables set when the test runs.
-        /// - `linkopts: [String]?`
+        /// - `linkopts: Starlark.Value?`
         ///   Linker flags passed when linking the test bundle.
         /// - `module_name: String?`
         ///   Overrides the emitted Swift module name.
@@ -323,11 +323,11 @@ extension Rules.Swift {
         public static func swift_test(
             name: String,
             args: [String]? = nil,
-            copts: [String]? = nil,
+            copts: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
-            linkopts: [String]? = nil,
+            linkopts: Starlark.Value? = nil,
             module_name: String? = nil,
             srcs: Starlark.Value? = nil,
             stamp: Int? = nil,
@@ -564,7 +564,7 @@ extension Rules.Swift {
         public static func swift_compiler_plugin(
             name: String,
             srcs: Starlark.Value? = nil,
-            copts: [String]? = nil,
+            copts: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
             module_name: String? = nil,
             tags: [String]? = nil,
@@ -635,7 +635,7 @@ extension Rules.Swift {
         ///   Public C-family headers published by this mixed-language target.
         /// - `includes: [String]?`
         ///   Header search paths exported by the target.
-        /// - `linkopts: [String]?`
+        /// - `linkopts: Starlark.Value?`
         ///   Linker options passed through to dependents.
         /// - `module_map: Starlark.Label?`
         ///   Explicit Clang module map.
@@ -676,7 +676,7 @@ extension Rules.Swift {
             additional_objc_compiler_inputs: Starlark.Value? = nil,
             always_include_developer_search_paths: Bool? = nil,
             alwayslink: Bool? = nil,
-            clang_copts: [String]? = nil,
+            clang_copts: Starlark.Value? = nil,
             clang_defines: Starlark.Value? = nil,
             clang_deps: Starlark.Value? = nil,
             clang_srcs: Starlark.Value? = nil,
@@ -684,7 +684,7 @@ extension Rules.Swift {
             enable_modules: Bool? = nil,
             hdrs: Starlark.Value? = nil,
             includes: [String]? = nil,
-            linkopts: [String]? = nil,
+            linkopts: Starlark.Value? = nil,
             module_map: Starlark.Label? = nil,
             module_name: String? = nil,
             non_arc_srcs: Starlark.Value? = nil,
@@ -692,7 +692,7 @@ extension Rules.Swift {
             private_deps: Starlark.Value? = nil,
             sdk_dylibs: [String]? = nil,
             sdk_frameworks: [String]? = nil,
-            swift_copts: [String]? = nil,
+            swift_copts: Starlark.Value? = nil,
             swift_defines: Starlark.Value? = nil,
             swift_plugins: Starlark.Value? = nil,
             swift_srcs: Starlark.Value? = nil,

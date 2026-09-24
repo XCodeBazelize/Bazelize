@@ -24,58 +24,93 @@ extension SwiftPM {
 
         let deployment: Deployment
 
-        /// What this project's own packages' build tool plugins wrote, which the
-        /// generator runs itself before it writes any rule.
-        private(set) var pluginOutputs = PluginOutputs()
+        /// The packages whose targets use a build tool plugin, which are written
+        /// again once `bazel run //:plugins` has produced what those plugins
+        /// generate.
+        private var pluginPackages: [String] = []
 
         private var kinds: [String: [String: TargetKind]] = [:]
+
+        /// The `config_setting_group` a condition on several traits asked for,
+        /// by name, written with the flags once every rule is generated.
+        var traitGroups: [String: [String]] = [:]
+
+        /// Conditions that require both a trait expression and a build
+        /// configuration, emitted after every package has registered its use.
+        var conditionGroups: [String: [String]] = [:]
+
+        /// SwiftPM build configurations used by conditional settings.
+        var configurationConditions: Set<String> = []
+
+        /// What a consumer calls another package's module: the aliases asked
+        /// for, by the package that owns the module and the target inside it.
+        /// Collected before anything is written, because the rule that carries
+        /// an alias belongs to the package being aliased.
+        var moduleAliases: [String: [String: Set<String>]] = [:]
 
         /// What a caller tells the user about: where the build differs from what
         /// the package asked for, and why.
         private(set) var notes: [String] = []
 
-        /// The plugins and tools Bazel already built, by target name. Empty
-        /// while a workspace is being generated — nothing has been built yet —
-        /// and filled by `//:plugins`, which has Bazel build them first.
-        let built: BuiltPrograms
+        /// Something a caller has to be told: it is logged where a run is
+        /// watched, and carried back for the report at the end of one.
+        func note(_ message: String) {
+            Log.codeGenerate.warning("\(message, privacy: .public)")
+            notes.append(message)
+        }
 
-        init(
-            output: Path,
-            workspace: Workspace,
-            deployment: Deployment,
-            built: BuiltPrograms = .init())
-        {
+        init(output: Path, workspace: Workspace, deployment: Deployment) {
             self.output = output
             self.workspace = workspace
             self.deployment = deployment
-            self.built = built
-        }
-
-        struct BuiltPrograms {
-            let plugins: [String: Path]
-            let tools: [String: Path]
-
-            init(plugins: [String: Path] = [:], tools: [String: Path] = [:]) {
-                self.plugins = plugins
-                self.tools = tools
-            }
         }
 
         func generate(locals: [Path] = []) async throws {
-            pluginOutputs = await runPlugins()
-            notes.append(contentsOf: pluginOutputs.notes)
-
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
                 report(deploymentOf: package)
                 report(pluginsOf: package)
             }
 
+            collectModuleAliases()
+
+            pluginPackages = workspace.packages
+                .filter { package in
+                    (package.isRoot || package.isLocal)
+                        && package.manifest.targets.contains { !$0.pluginUsages.isEmpty }
+                }
+                .map(\.directory)
+
             for package in workspace.packages {
                 try generate(package)
             }
 
-            try writePluginRunner(locals: locals)
+            try writePluginRunner()
+            /// Written whether or not there is a trait to switch: the root
+            /// `.bazelrc` imports it, and an import of a file that is not
+            /// there is a workspace that does not load.
+            try writeTraitConfigs()
+            try writeLanguageConfigs()
+            try writeListingCommands()
+        }
+
+        /// Whether anything is there for `bazel run //:plugins` to run.
+        var hasBuildToolPlugins: Bool {
+            !pluginPackages.isEmpty
+        }
+
+        /// Writes the rules of the packages whose plugins have now run.
+        ///
+        /// What a plugin writes is the plugin's business: the rules name the
+        /// directory and the kinds of file in it, and a kind that is neither a
+        /// source nor a header of the target — a resource, or a file with no
+        /// extension at all — is only known from what landed there. The rules
+        /// are written once more with that in hand, so the first run of a
+        /// workspace says the same thing every later one does.
+        func refreshPluginPackages() throws {
+            for package in workspace.packages where pluginPackages.contains(package.directory) {
+                try generate(package)
+            }
         }
 
         /// A package that declares a platform version the project does not reach is
@@ -97,11 +132,11 @@ extension SwiftPM {
 
         /// A dependency's build tool plugin is not run.
         ///
-        /// The plugins of a package in the project's own repository are run while
-        /// the workspace is generated; a dependency's are not, because running one
-        /// costs a SwiftPM build of its package. Every plugin in the corpus is a
-        /// linter, which produces no source: a build without it is the same build.
-        /// One that generates source would leave a target missing the files it
+        /// `//:plugins` runs the plugins of the packages in the project's own
+        /// repository; a dependency's are left alone, because a dependency is
+        /// built as it was resolved. Every plugin in the corpus is a linter,
+        /// which produces no source: a build without it is the same build. One
+        /// that generates source would leave a target missing the files it
         /// expects, and that compile error says nothing about a plugin, so the
         /// plugin is named here instead.
         private func report(pluginsOf package: Package) {
@@ -138,14 +173,19 @@ extension SwiftPM {
 
             /// A plugin of a package this project owns is built by Bazel, so
             /// `//:plugins` can run it without SwiftPM having to load — let
-            /// alone build — the package it lives in.
+            /// alone build — the package it lives in. A command plugin is built
+            /// too, with the target that runs it: nothing builds it, someone
+            /// asks for it.
             if package.isRoot || package.isLocal {
-                let used = Set(package.manifest.targets.flatMap(\.pluginUsages).map(\.name))
-                for target in package.manifest.targets
-                    where target.type == "plugin" && used.contains(target.name)
-                {
+                let used = usedPluginNames(in: package)
+                for target in package.manifest.targets where target.type == "plugin" {
                     guard let prefix = try materialize(target, in: package, at: root) else { continue }
-                    buildPlugin(target, in: package, prefix: prefix, builder: builder)
+
+                    if target.pluginCapability?.isCommand == true {
+                        try buildCommandPlugin(target, in: package, prefix: prefix, root: root, builder: builder)
+                    } else if used.contains(target.name) {
+                        buildPlugin(target, in: package, prefix: prefix, builder: builder)
+                    }
                 }
             }
 
@@ -234,6 +274,12 @@ extension SwiftPM {
                     continue
                 }
             }
+            try buildSnippets(
+                in: package,
+                root: root,
+                emitted: emitted,
+                builder: builder)
+
 
             for product in package.manifest.products {
                 build(product, emitted: Set(emitted.keys), package: package, builder: builder)
@@ -311,15 +357,14 @@ extension SwiftPM {
         /// What a plugin wrote for a target, split the way the target's own rule
         /// takes it, as patterns rather than names.
         ///
-        /// The files are already where they belong: the host gave the plugin
-        /// this directory to write into, so nothing is moved or linked here —
-        /// they are real files of the package's `Generated/`, and the output
-        /// stands without the package's `.build`.
+        /// The files are read where they belong: `bazel run //:plugins` wrote
+        /// them into the package's `Generated/`, so nothing is moved or linked
+        /// here and the output stands without the package's `.build`.
         ///
         /// What they are called is the plugin's business and changes when the
         /// plugin does, so the rules name the directory and the kinds of file in
-        /// it, never a file. `bazel run //:plugins` writes a new set into the
-        /// same place and the rules still hold.
+        /// it, never a file. A later `bazel run //:plugins` writes a new set
+        /// into the same place and the rules still hold.
         func materialize(
             pluginOutputsOf target: PackageTarget,
             in package: Package,
@@ -351,12 +396,17 @@ extension SwiftPM {
             var resources: Set<String> = []
             var named: [String] = []
 
-            let output = pluginOutputs.output(of: target.name, in: package)
-            let base = output?.root.normalize().string ?? ""
-            for file in output?.files ?? [] {
-                let relative = file.normalize().string
-                    .delete(prefix: base)
+            let outputRoot = root + directory
+            let base = outputRoot.normalize().string
+            for file in Self.walk(outputRoot) {
+                let path = file.normalize().string
+                /// A file the plugin wrote somewhere else is not this target's
+                /// to name.
+                guard let relative = path.delete(prefix: base)?
                     .trimmingCharacters(in: ["/"])
+                else {
+                    continue
+                }
                 guard !relative.isEmpty else { continue }
 
                 /// A file with no extension is the one thing a pattern cannot
@@ -710,8 +760,36 @@ extension SwiftPM {
                 if directory.exists { return directory }
             }
 
-            let flat = package.root + target.name
-            return flat.exists ? flat : nil
+            /// `Sources` itself, with the files in it and no directory of the
+            /// target's own: SwiftPM allows that when nothing else could claim
+            /// them, which is a package with one target of that kind.
+            guard Self.isOnlyTarget(target, in: package) else { return nil }
+
+            for candidate in candidates {
+                let directory = package.root + candidate
+                if directory.isDirectory { return directory }
+            }
+
+            return nil
+        }
+
+        /// Whether the package has no other target that a bare source
+        /// directory could belong to: a test target does not take `Tests` from
+        /// another test target, and a library does not take `Sources` from
+        /// another library.
+        private static func isOnlyTarget(_ target: PackageTarget, in package: Package) -> Bool {
+            let sameKind = package.manifest.targets.filter { other in
+                switch (other.type, target.type) {
+                case ("test", "test"), ("plugin", "plugin"):
+                    return true
+                case ("test", _), (_, "test"), ("plugin", _), (_, "plugin"):
+                    return false
+                default:
+                    return true
+                }
+            }
+
+            return sameKind.count == 1
         }
 
         private func build(
@@ -722,42 +800,60 @@ extension SwiftPM {
             resources: ResourceBundle?,
             builder: CodeBuilder)
         {
-            builder.load(loadableRule: Rules.Swift.swift_library)
-            builder.call(
-                Rules.Swift.Call.swift_library(
-                    name: ruleName(of: target.name, in: package),
-                    /// SwiftPM compiles every package target with the developer
-                    /// search paths, which is how a test-support library finds
-                    /// XCTest.
-                    always_include_developer_search_paths: true,
-                    copts: copts(of: target).nonEmpty,
-                    module_name: Self.moduleName(target.name),
-                    /// Which targets `package` visibility reaches: every target of
-                    /// the same package, which is what the name identifies.
-                    package_name: package.manifest.name,
-                    plugins: plugins(of: target, in: package).nonEmpty.map { macros in
-                        .build { macros }
-                    },
-                    srcs: Starlark.glob(
-                        matching(
-                            sources(of: target, prefix: prefix, extensions: ["swift"]),
-                            relativeFiles(of: target, in: package, prefix: prefix))
-                            + generated
-                            + (resources?.accessors ?? []),
-                        exclude: excluded(target, prefix: prefix),
-                        /// The plugin's directory is globbed before anything has
-                        /// written into it: `bazel run //:plugins` does that, and
-                        /// a package that cannot load cannot run it.
-                        allowEmpty: true),
-                    deps: deps(of: target, in: package).nonEmpty.map { labels in
-                        .build { labels }
-                    },
-                    data: resources?.label.map { label in
-                        .build { [Starlark.Label.named(label)] }
-                    },
-                    linkopts: linkopts(of: target).nonEmpty,
-                    tags: Self.manual,
-                    visibility: .public))
+            /// The module under its own name, and once more under each name a
+            /// consumer aliased it to: aliasing is that consumer's view of the
+            /// module, and a module is named when it is compiled.
+            for module in [target.name] + aliases(of: target.name, in: package) {
+                let isAlias = module != target.name
+
+                builder.load(loadableRule: Rules.Swift.swift_library)
+                builder.call(
+                    Rules.Swift.Call.swift_library(
+                        name: isAlias
+                            ? Self.aliasRuleName(of: target.name, as: module)
+                            : ruleName(of: target.name, in: package),
+                        /// SwiftPM compiles every package target with the developer
+                        /// search paths, which is how a test-support library finds
+                        /// XCTest.
+                        always_include_developer_search_paths: true,
+                        copts: copts(of: target, in: package),
+                        module_name: Self.moduleName(module),
+                        /// Which targets `package` visibility reaches: every target of
+                        /// the same package, which is what the name identifies.
+                        package_name: package.manifest.name,
+                        plugins: plugins(of: target, in: package).nonEmpty.map { macros in
+                            .build { macros }
+                        },
+                        srcs: Starlark.glob(
+                            matching(
+                                sources(of: target, prefix: prefix, extensions: ["swift"]),
+                                relativeFiles(of: target, in: package, prefix: prefix))
+                                + generated
+                                + (resources?.accessors ?? []),
+                            exclude: excluded(target, prefix: prefix),
+                            /// The plugin's directory is globbed before anything has
+                            /// written into it: `bazel run //:plugins` does that, and
+                            /// a package that cannot load cannot run it.
+                            allowEmpty: true),
+                        deps: deps(of: target, in: package),
+                        data: resources?.label.map { label in
+                            .build { [Starlark.Label.named(label)] }
+                        },
+                        linkopts: linkopts(of: target, in: package),
+                        tags: Self.manual,
+                        visibility: .public))
+            }
+        }
+
+        /// What consumers call this package's module instead of its own name.
+        private func aliases(of target: String, in package: Package) -> [String] {
+            (moduleAliases[package.directory]?[target] ?? []).sorted()
+        }
+
+        /// The rule that compiles a target under an alias: a name of its own,
+        /// because the alias is often what a product is already called.
+        static func aliasRuleName(of target: String, as alias: String) -> String {
+            "\(target)_as_\(alias)"
         }
 
         /// An explicit `sources` list names files or directories; without one the
@@ -814,30 +910,61 @@ extension SwiftPM {
             }
         }
 
-        func deps(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
+        /// What the target links, with whatever a trait decides in a `select`
+        /// on that trait's flag.
+        func deps(of target: PackageTarget, in package: Package) -> Starlark.Value? {
             let localTargets = Set(package.manifest.targets.map(\.name))
             let localProducts = Dictionary(
                 package.manifest.products.map { ($0.name, $0) },
                 uniquingKeysWith: { first, _ in first })
 
-            let labels: [String] = target.dependencies.compactMap { dependency in
+            func dependencyLabels(_ dependency: SwiftPM.TargetDependency) -> [String] {
                 switch dependency.kind {
                 case .target(let name):
-                    guard localTargets.contains(name), !isMacro(name, in: package) else { return nil }
-                    return ":\(ruleName(of: name, in: package))"
+                    guard localTargets.contains(name), !isMacro(name, in: package) else { return [] }
+                    return [":\(ruleName(of: name, in: package))"]
                 case .byName(let name):
                     if localTargets.contains(name) {
-                        guard !isMacro(name, in: package) else { return nil }
-                        return ":\(ruleName(of: name, in: package))"
+                        guard !isMacro(name, in: package) else { return [] }
+                        return [":\(ruleName(of: name, in: package))"]
                     }
-                    if localProducts[name] != nil { return ":\(name)" }
-                    return label(product: name, package: nil, from: package)
+                    if localProducts[name] != nil { return [":\(name)"] }
+                    return label(product: name, package: nil, from: package).map { [$0] } ?? []
                 case .product(let name, let packageName):
-                    return label(product: name, package: packageName, from: package)
+                    /// An aliased module is compiled under the name this package
+                    /// calls it, so what is linked is that rule rather than the
+                    /// product the module is part of.
+                    if !dependency.moduleAliases.isEmpty {
+                        return aliasLabels(
+                            of: dependency.moduleAliases,
+                            product: name,
+                            package: packageName,
+                            from: package)
+                    }
+                    return label(product: name, package: packageName, from: package).map { [$0] } ?? []
                 }
             }
 
-            return Array(Set(labels)).sorted().map(Starlark.Label.named)
+            var always: Set<String> = []
+            var conditions: [String] = []
+            var byCondition: [String: Set<String>] = [:]
+
+            for dependency in target.dependencies {
+                let labels = dependencyLabels(dependency)
+                guard !labels.isEmpty else { continue }
+
+                guard let condition = traitCondition(dependency.traits, in: package) else {
+                    always.formUnion(labels)
+                    continue
+                }
+
+                if byCondition[condition] == nil { conditions.append(condition) }
+                byCondition[condition, default: []].formUnion(labels)
+            }
+
+            return traitValue(
+                always.sorted(),
+                conditional: conditions.map { ($0, (byCondition[$0] ?? []).sorted()) })
         }
 
         private func isMacro(_ target: String, in package: Package) -> Bool {
@@ -857,6 +984,57 @@ extension SwiftPM {
             }
 
             return "//\(PluginSwiftPM.packagesDirectory)/\(owner.directory):\(product)"
+        }
+
+        /// What an aliasing consumer links: the aliased module of every target
+        /// the product holds, plus each target it did not rename.
+        private func aliasLabels(
+            of aliases: [String: String],
+            product: String,
+            package name: String?,
+            from package: Package) -> [String]
+        {
+            guard let owner = self.package(ofProduct: product, package: name, from: package) else {
+                Log.codeGenerate.warning("""
+                No package for product \(product, privacy: .public) \
+                required by \(package.directory, privacy: .public)
+                """)
+                return []
+            }
+
+            let directory = "//\(PluginSwiftPM.packagesDirectory)/\(owner.directory)"
+            let targets = owner.manifest.products
+                .first { $0.name == product }?
+                .targets ?? []
+
+            return targets.map { target in
+                guard let alias = aliases[target] else {
+                    return "\(directory):\(ruleName(of: target, in: owner))"
+                }
+                return "\(directory):\(Self.aliasRuleName(of: target, as: alias))"
+            }
+        }
+
+        /// Every alias any package asks for, filed under the package that owns
+        /// the module: that package's `BUILD` is where the aliased rule goes.
+        private func collectModuleAliases() {
+            for package in workspace.packages {
+                for target in package.manifest.targets {
+                    for dependency in target.dependencies {
+                        guard
+                            !dependency.moduleAliases.isEmpty,
+                            case .product(let product, let owner) = dependency.kind,
+                            let source = self.package(ofProduct: product, package: owner, from: package)
+                        else {
+                            continue
+                        }
+
+                        for (module, alias) in dependency.moduleAliases {
+                            moduleAliases[source.directory, default: [:]][module, default: []].insert(alias)
+                        }
+                    }
+                }
+            }
         }
 
         /// Which package declares a product: the one the dependency names, or the

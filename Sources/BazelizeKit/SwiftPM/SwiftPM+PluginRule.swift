@@ -23,6 +23,7 @@ extension SwiftPM.Generator {
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
+        named name: String? = nil,
         builder: CodeBuilder)
     {
         guard let api = SwiftPM.PluginHost.pluginAPIPath else { return }
@@ -30,67 +31,168 @@ extension SwiftPM.Generator {
         builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.call(
             Rules.Swift.Call.swift_binary(
-                name: ruleName(of: target.name, in: package),
+                name: name ?? ruleName(of: target.name, in: package),
                 copts: [
                     "-I", api,
                     /// Which `PackagePlugin` the plugin was written against; its
                     /// availability is stated in terms of the tools version.
                     "-package-description-version", package.manifest.toolsVersion,
-                ],
+                ].starlark,
                 linkopts: [
                     "-L", api,
                     "-lPackagePlugin",
                     "-Xlinker", "-rpath", "-Xlinker", api,
-                ],
+                ].starlark,
                 module_name: Self.moduleName(target.name),
                 srcs: Starlark.glob(["\(prefix)/**/*.swift"]),
                 tags: Self.manual,
                 visibility: .public))
     }
 
+    /// A command plugin as something to run: `bazel run //Packages/X:verb`,
+    /// which is `swift package verb` with a different prefix.
+    ///
+    /// Everything after `--` is handed to the plugin the way SwiftPM hands over
+    /// everything after the verb. What the plugin asked to be allowed to do is
+    /// printed rather than enforced: `bazel run` has no sandbox to widen, and a
+    /// flag that stops nothing would say otherwise.
+    func buildCommandPlugin(
+        _ target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        prefix: String,
+        root: Path,
+        builder: CodeBuilder) throws
+    {
+        guard
+            let capability = target.pluginCapability,
+            let verb = capability.verb,
+            SwiftPM.PluginHost.pluginAPIPath != nil
+        else {
+            return
+        }
+
+        /// The verb is the name a user types, and on a case-insensitive file
+        /// system `hello` and `Hello` are one file: the program the wrapper
+        /// runs is named apart from the target that runs it.
+        let rule = "\(ruleName(of: target.name, in: package))_plugin"
+        buildPlugin(target, in: package, prefix: prefix, named: rule, builder: builder)
+
+        let request = "Generated/\(target.name)Command.json"
+        try (root + "Generated").mkpath()
+        try (root + request).write(try commandRequest(for: target, in: package, executable: rule))
+
+        let script = "Generated/\(verb).sh"
+        let announcements = capability.permissions.map { permission in
+            let reason = permission.reason.map { " \($0)" } ?? ""
+            return """
+            echo '\(verb) asks for \(permission.name), and nothing here refuses it:\(reason)' >&2
+            """
+        }
+
+        let path = root + script
+        try path.write("""
+        #!/bin/bash
+        # Bazel supplies the host, the plugin and this request.
+        set -euo pipefail
+        runfiles="${RUNFILES_DIR:-$0.runfiles}/_main"
+        \(announcements.joined(separator: "\n"))
+        # Where the user ran `bazel run`, which is what the package directory
+        # means to a plugin that writes to it.
+        cd "${BUILD_WORKSPACE_DIRECTORY:-$PWD}"
+        exec "$runfiles/_plugin_host" --command \\
+            "$runfiles/\(PluginSwiftPM.packagesDirectory)/\(package.directory)/\(request)" \\
+            "$runfiles" "$@"
+
+        """)
+        /// `sh_binary` refuses a script that is not executable.
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path.string)
+
+        builder.load(loadableRule: Rules.Shell.sh_binary)
+        builder.call(
+            Rules.Shell.Call.sh_binary(
+                name: verb,
+                srcs: [script],
+                data: [
+                    ":\(rule)",
+                    request,
+                    "//:_plugin_host",
+                ]))
+    }
+
+    /// The `performCommand` request, with the package the command is run on.
+    private func commandRequest(
+        for target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        executable rule: String) throws -> String
+    {
+        var builder = SwiftPM.PluginContextBuilder(package: package, generator: self)
+        try builder.add(package: package, asking: nil)
+        let workDirectoryId = builder.add(path: pluginWorkDirectory(of: target, in: package).absolute().string)
+
+        let request = SwiftPM.PluginWire.CommandRequest(
+            context: builder.context(workDirectoryId: workDirectoryId, tools: [:]),
+            rootPackageId: 0)
+
+        let plan: [String: Any] = [
+            "plugin": target.name,
+            "executable": "\(PluginSwiftPM.packagesDirectory)/\(package.directory)/\(rule)",
+            "request": try JSONEncoder().encode(request).base64EncodedString(),
+        ]
+
+        let data = try JSONSerialization.data(
+            withJSONObject: plan,
+            options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        return String(decoding: data, as: UTF8.self) + "\n"
+    }
+
+    /// Where a target's plugins write: beside the rules of the package that
+    /// declares it, which is where every other generated file of that package
+    /// already is.
+    func pluginWorkDirectory(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Path {
+        output + PluginSwiftPM.packagesDirectory + package.directory + "Generated/\(target.name)Plugin"
+    }
+
     /// `bazel run //:plugins`, and everything it needs built first.
     ///
-    /// The plugins and the tools they run are `data` of the script, so running
-    /// it builds them: a script that called `bazel build` itself would be a
-    /// second Bazel inside the first one's lock.
-    func writePluginRunner(locals: [Path]) throws {
+    /// Bazel builds the host, plugins and tools. The generated plan contains
+    /// each SwiftPM plugin request, so running this target never needs an
+    /// installed `bazelize` executable.
+    func writePluginRunner() throws {
         /// The root `BUILD` declares `//:plugins` for any project with packages,
         /// because whether one of them has a plugin is not known when that file
-        /// is written. So both of the things it names are written for any such
-        /// project: a package with nothing to run is a command that does
-        /// nothing, and a label that does not resolve is a workspace that does
-        /// not load.
+        /// is written. So all of its inputs exist even when the plan is empty.
         guard (output + "Package.swift").exists else { return }
 
-        let binaries = pluginBinaries
+        let executions = pluginExecutions
+        let binaries = executions
+            .flatMap(binaries)
+            .reduce(into: [String: PluginBinary]()) { result, binary in
+                result[binary.label] = binary
+            }
+            .values
+            .sorted { $0.label < $1.label }
 
         try packagesRoot.mkpath()
         let group = CodeBuilder()
         group.call(
             Rules.Builtin.Call.filegroup(
                 name: "plugins",
-                srcs: .build { binaries.map(\.label).sorted().map { Starlark.Label.named($0) } },
+                srcs: .build { binaries.map { Starlark.Label.named($0.label) } },
                 visibility: .public))
+        /// The flags every trait is switched with, in the package the
+        /// generator owns.
+        buildTraitRules(group)
         try (packagesRoot + "BUILD").write(group.build())
 
-        let arguments = ["--output", "."]
-            + locals.flatMap { local in ["--local", local.absolute().string.quoted] }
-            + binaries.flatMap { binary in
-                [binary.isPlugin ? "--plugin" : "--tool", "\(binary.name)=$runfiles/\(binary.path)"]
-            }
-
+        try writePluginPlan(executions)
+        try (output + "plugin-host.swift").write(Self.pluginRunnerSource)
         let script = output + "plugins.sh"
         try script.write("""
         #!/bin/bash
-        # Runs this workspace's build tool plugins, writing what they generate
-        # back into `Packages/*/Generated/*Plugin`.
-        #
-        # The plugins and their tools are built by Bazel: they are `data` of this
-        # script, so they are in its runfiles by the time it runs.
+        # Bazel supplies this host, its plan, every plugin and every tool.
         set -euo pipefail
         runfiles="${RUNFILES_DIR:-$0.runfiles}/_main"
-        cd "${BUILD_WORKSPACE_DIRECTORY:-$(dirname "$0")}"
-        exec bazelize plugins \(arguments.joined(separator: " "))
+        exec "$runfiles/_plugin_host" "$runfiles/plugin-plan.json" "$runfiles"
 
         """)
 
@@ -98,68 +200,243 @@ extension SwiftPM.Generator {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
     }
 
-    /// What a plugin needs built: the plugin itself, and the tools it runs.
-    private var pluginBinaries: [PluginBinary] {
-        var binaries: [PluginBinary] = []
+    private func writePluginPlan(_ executions: [PluginExecution]) throws {
+        let plan = try executions.enumerated().map { index, execution in
+            let workDirectory = pluginWorkDirectory(of: execution.target, in: execution.package)
+            let request = try pluginRequest(for: execution, workDirectory: workDirectory)
+            let payload = try JSONEncoder().encode(request)
+            let firstForTarget = index == 0
+                || executions[index - 1].package.directory != execution.package.directory
+                || executions[index - 1].target.name != execution.target.name
 
-        for package in workspace.packages where package.isRoot || package.isLocal {
-            let used = Set(package.manifest.targets.flatMap(\.pluginUsages).map(\.name))
-            guard !used.isEmpty else { continue }
-
-            for target in package.manifest.targets where used.contains(target.name) {
-                guard target.type == "plugin" else { continue }
-                binaries.append(binary(of: target, in: package, isPlugin: true))
-
-                for dependency in target.dependencies {
-                    guard case .target(let name) = dependency.kind else {
-                        guard case .byName(let name) = dependency.kind else { continue }
-                        if let tool = tool(named: name, in: package) { binaries.append(tool) }
-                        continue
-                    }
-                    if let tool = tool(named: name, in: package) { binaries.append(tool) }
-                }
-            }
+            return [
+                "package": execution.package.directory,
+                "target": execution.target.name,
+                "plugin": execution.usage.name,
+                "executable": binary(
+                    of: execution.plugin,
+                    in: execution.pluginPackage).path,
+                "output": workDirectory.absolute().string,
+                "resetOutput": firstForTarget,
+                "request": payload.base64EncodedString()
+            ] as [String: Any]
         }
-
-        return binaries
+        var data = try JSONSerialization.data(
+            withJSONObject: plan,
+            options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
+        data.append(0x0A)
+        try data.write(to: (output + "plugin-plan.json").url)
     }
 
-    private func tool(named name: String, in package: SwiftPM.Package) -> PluginBinary? {
+    /// Bazel-native commands that describe the generated workspace.
+    ///
+    /// The answers are embedded in executable targets, so using them never
+    /// depends on whichever `bazelize` executable happens to be on `PATH`.
+    /// Bazel itself has no extension point for custom commands; `tools/bazel`
+    /// keeps `bazel list config|trait|language` as aliases for the `bazel run`
+    /// targets and forwards every other command unchanged.
+    func writeListingCommands() throws {
+        let directory = output + "tools"
+        try directory.mkpath()
+
+        let listings = [
+            ("config", try Listing.config(output: output)),
+            ("trait", Listing.traits(workspace: workspace)),
+            ("language", Listing.languages(localizations)),
+        ]
+        let builder = CodeBuilder()
+        builder.load(loadableRule: Rules.Shell.sh_binary)
+
+        for (topic, contents) in listings {
+            let name = "list-\(topic)"
+            let script = directory + "\(name).sh"
+            try script.write("""
+            #!/bin/bash
+            cat <<'BAZELIZE_LIST'
+            \(contents)
+            BAZELIZE_LIST
+
+            """)
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: script.string)
+            builder.call(
+                Rules.Shell.Call.sh_binary(
+                    name: name,
+                    srcs: ["\(name).sh"]))
+        }
+
+        try (directory + "BUILD").write(builder.build())
+
+        try writeBazelWrapper(to: directory + "bazel")
+    }
+
+    private func writeBazelWrapper(to wrapper: Path) throws {
+        try wrapper.write("""
+        #!/bin/bash
+        # Bazelisk runs this workspace wrapper and exposes Bazel as BAZEL_REAL.
+        set -euo pipefail
+
+        if [[ -z "${BAZEL_REAL:-}" ]]; then
+            echo "tools/bazel ran without BAZEL_REAL: run Bazel through Bazelisk." >&2
+            exit 1
+        fi
+
+        if [[ "${1:-}" == "list" ]]; then
+            case "${2:-}" in
+                config|trait|language)
+                    exec "$BAZEL_REAL" run "//tools:list-${2}"
+                    ;;
+                *)
+                    echo "Usage: bazel list config|trait|language" >&2
+                    exit 2
+                    ;;
+            esac
+        fi
+
+        exec "$BAZEL_REAL" "$@"
+
+        """)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755],
+            ofItemAtPath: wrapper.string)
+    }
+
+    /// One plugin attached to one target.
+    private struct PluginExecution {
+        let package: SwiftPM.Package
+        let target: SwiftPM.PackageTarget
+        let usage: SwiftPM.PluginUsage
+        let plugin: SwiftPM.PackageTarget
+        let pluginPackage: SwiftPM.Package
+    }
+
+    /// Plugins of this package that a project-owned target actually uses.
+    func usedPluginNames(in package: SwiftPM.Package) -> Set<String> {
+        Set(pluginExecutions.lazy
+            .filter { $0.pluginPackage.directory == package.directory }
+            .map(\.plugin.name))
+    }
+
+    private var pluginExecutions: [PluginExecution] {
+        workspace.packages
+            .filter { $0.isRoot || $0.isLocal }
+            .flatMap { package in
+                package.manifest.targets.flatMap { target in
+                    target.pluginUsages.compactMap { usage in
+                        guard let (plugin, pluginPackage) = resolvedPlugin(usage, from: package) else {
+                            return nil
+                        }
+                        return .init(
+                            package: package,
+                            target: target,
+                            usage: usage,
+                            plugin: plugin,
+                            pluginPackage: pluginPackage)
+                    }
+                }
+            }
+    }
+
+    private func resolvedPlugin(
+        _ usage: SwiftPM.PluginUsage,
+        from package: SwiftPM.Package) -> (SwiftPM.PackageTarget, SwiftPM.Package)?
+    {
+        let packages: [SwiftPM.Package]
+        if let name = usage.package {
+            let directory = workspace.directoryByIdentity[name.lowercased()]
+            packages = workspace.packages.filter { $0.directory == directory }
+        } else {
+            packages = [package] + workspace.packages.filter { $0.directory != package.directory }
+        }
+
+        for candidate in packages {
+            if let target = candidate.manifest.targets.first(where: {
+                $0.name == usage.name && $0.type == "plugin"
+            }) {
+                return (target, candidate)
+            }
+        }
+        return nil
+    }
+
+    private func binaries(_ execution: PluginExecution) -> [PluginBinary] {
+        [binary(of: execution.plugin, in: execution.pluginPackage)]
+            + execution.plugin.dependencies.compactMap { dependency in
+                switch dependency.kind {
+                case .target(let name), .byName(let name):
+                    return toolBinary(named: name, in: execution.pluginPackage)
+                case .product:
+                    return nil
+                }
+            }
+    }
+
+    private func pluginRequest(
+        for execution: PluginExecution,
+        workDirectory: Path) throws -> SwiftPM.PluginWire.Request
+    {
+        var builder = SwiftPM.PluginContextBuilder(package: execution.package, generator: self)
+        let targetId = try builder.add(package: execution.package, asking: execution.target)
+        let workDirectoryId = builder.add(path: workDirectory.absolute().string)
+
+        var tools: [String: SwiftPM.PluginWire.Tool] = [:]
+        for dependency in execution.plugin.dependencies {
+            let name: String
+            switch dependency.kind {
+            case .target(let value), .byName(let value):
+                name = value
+            case .product:
+                continue
+            }
+            guard let binary = toolBinary(named: name, in: execution.pluginPackage) else { continue }
+            tools[name] = .init(path: builder.add(path: "$RUNFILES/\(binary.path)"), triples: nil)
+        }
+
+        return .init(
+            context: builder.context(workDirectoryId: workDirectoryId, tools: tools),
+            rootPackageId: 0,
+            targetId: targetId,
+            pluginGeneratedSources: [],
+            pluginGeneratedResources: [])
+    }
+
+    private func toolBinary(named name: String, in package: SwiftPM.Package) -> PluginBinary? {
+        guard let target = package.manifest.targets.first(where: { $0.name == name }) else {
+            return nil
+        }
+        if target.type == "executable" {
+            return binary(of: target, in: package)
+        }
         guard
-            let target = package.manifest.targets.first(where: {
-                $0.name == name && $0.type == "executable"
-            })
+            target.type == "binary",
+            let artifact = artifact(of: target, in: package),
+            case .artifactBundle = artifact.kind,
+            Self.executable(inArtifactBundle: artifact.path) != nil
         else {
             return nil
         }
-
-        return binary(of: target, in: package, isPlugin: false)
+        return binary(of: target, in: package)
     }
 
     private func binary(
         of target: SwiftPM.PackageTarget,
-        in package: SwiftPM.Package,
-        isPlugin: Bool) -> PluginBinary
+        in package: SwiftPM.Package) -> PluginBinary
     {
         let rule = ruleName(of: target.name, in: package)
         let directory = "\(PluginSwiftPM.packagesDirectory)/\(package.directory)"
 
         return .init(
-            name: target.name,
             label: "//\(directory):\(rule)",
-            path: "\(directory)/\(rule)",
-            isPlugin: isPlugin)
+            path: "\(directory)/\(rule)")
     }
 }
 
 extension SwiftPM.Generator {
     /// A program `//:plugins` has Bazel build before it runs.
     struct PluginBinary {
-        let name: String
         let label: String
         /// Where it sits in the runner's runfiles.
         let path: String
-        let isPlugin: Bool
     }
 }
-

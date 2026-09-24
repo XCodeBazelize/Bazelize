@@ -1,0 +1,5 @@
+module CSecurity [system] {
+    header "shim.h"
+    link framework "Security"
+    export *
+}

@@ -1,5 +1,3 @@
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
-
 extension Target {
     func generateFrameworkCode(_ builder: CodeBuilder, _ kit: Kit) {
         switch platformSDK {

@@ -17,7 +17,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(projectPath, nil, outputPath: output)
-        try await kit.run(projectPath)
+        try await kit.run()
 
         #expect((output + "BUILD").exists)
         #expect((output + "MODULE.bazel").exists)
@@ -77,6 +77,24 @@ struct RoadmapTreeBuilderTests {
         #expect(static2Build.contains("objc_library("))
         #expect(static2Build.contains("name = \"Static2_objc\""))
 
+        /// A static framework has no bundle to load: its label is the library, and
+        /// whatever links it gets the objects.
+        let staticFrameworkBuild = try String(contentsOfFile: (output + "Targets/StaticFramework1/BUILD").string)
+        #expect(staticFrameworkBuild.contains("swift_library("))
+        #expect(staticFrameworkBuild.contains("alias("))
+        #expect(staticFrameworkBuild.contains("name = \"StaticFramework1\""))
+        #expect(staticFrameworkBuild.contains("actual = \"StaticFramework1_library\""))
+        #expect(!staticFrameworkBuild.contains("ios_framework("))
+        #expect(exampleBuild.contains("//Targets/StaticFramework1:StaticFramework1_library"))
+
+        /// Every label `xcodeproj` names has to exist, and the project it writes is
+        /// the one that was read.
+        let rootBuild = try String(contentsOfFile: (output + "BUILD").string)
+        #expect(rootBuild.contains("xcodeproj("))
+        #expect(rootBuild.contains("project_name = \"Example\""))
+        #expect(rootBuild.contains("//Targets/Example:Example"))
+        #expect(!rootBuild.contains("top_level_target("))
+
         let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string)
         #expect(prebuiltBuild.contains("apple_dynamic_xcframework_import("))
         #expect(prebuiltBuild.contains("name = \"SVProgressHUD\""))
@@ -126,7 +144,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(projectPath, nil, outputPath: output)
-        try await kit.run(projectPath)
+        try await kit.run()
 
         let appBuild = try String(contentsOfFile: (output + "Targets/IceCubesApp/BUILD").string)
         #expect(appBuild.contains("ios_application("))
@@ -153,7 +171,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(projectPath, "Release", outputPath: output)
-        try await kit.run(projectPath)
+        try await kit.run()
 
         let cliBuild = try String(contentsOfFile: (output + "Targets/iina-cli/BUILD").string)
         #expect(cliBuild.contains("module_name = \"iina_cli\""))
@@ -194,7 +212,7 @@ struct RoadmapTreeBuilderTests {
         defer { try? nightlyOutput.delete() }
 
         let nightlyKit = try await Kit(projectPath, "Nightly", outputPath: nightlyOutput)
-        try await nightlyKit.run(projectPath)
+        try await nightlyKit.run()
 
         let nightlyBuild = try String(contentsOfFile: (nightlyOutput + "Targets/iina/BUILD").string)
         #expect(nightlyBuild.contains("Sources/iina/Assets.xcassets/AppIconNightly.appiconset/**"))

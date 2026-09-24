@@ -2,10 +2,12 @@
 
 import PackageDescription
 
-/// The three things a target can do with a resource: copy it as it is, let the
-/// platform process it, or compile it into the binary.
+/// What a target can do with a resource: copy it as it is, let the platform
+/// process it, or compile it into the binary — plus the localized and
+/// platform-compiled kinds, and the directories SwiftPM ignores.
 let package = Package(
     name: "TargetResource",
+    defaultLocalization: "en",
     products: [
         .library(name: "TargetResource", targets: ["TargetResource"]),
     ],
@@ -14,10 +16,33 @@ let package = Package(
             name: "TargetResource",
             resources: [
                 .copy("Copied"),
+                /// A single file rather than a directory: it lands at the
+                /// bundle's root under its own name.
+                .copy("single.txt"),
                 .process("Processed"),
-                .embedInCode("Embedded/greeting.txt"),
+                .process("Localized", localization: .default),
+                /// The localization a resource falls back to, which is a
+                /// directory rather than a language.
+                .process("Base.lproj"),
+                /// A localization copied as it is: what is inside is not
+                /// compiled, and the directory keeps its name.
+                .copy("de.lproj"),
+                /// A privacy manifest is a file a package ships as it is.
+                .copy("PrivacyInfo.xcprivacy"),
+                /// Kinds the platform compiles rather than copies.
+                .process("Assets.xcassets"),
+                .process("Panel.xib"),
+                .process("Shader.metal"),
+                .process("Catalog.xcstrings"),
+                .process("Main.storyboard"),
+                .process("Model.xcdatamodeld"),
             ]),
+        /// A test target has resources the same way any other target does, and
+        /// its own bundle to reach them through.
         .testTarget(
             name: "TargetResourceTests",
-            dependencies: ["TargetResource"]),
+            dependencies: ["TargetResource"],
+            resources: [
+                .process("Fixtures"),
+            ]),
     ])

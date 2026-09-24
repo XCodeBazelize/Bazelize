@@ -43,6 +43,10 @@ extension SwiftPM {
         /// Which directory a package identity or manifest name resolves to, so a
         /// product dependency can be turned into a label.
         let directoryByIdentity: [String: String]
+
+        /// Which traits each package is built with unless the build says
+        /// otherwise, by identity.
+        let traits: [String: Set<String>]
     }
 }
 
@@ -70,12 +74,13 @@ extension SwiftPM {
             return .init(
                 packages: [],
                 artifacts: output + ".build/artifacts",
-                directoryByIdentity: [:])
+                directoryByIdentity: [:],
+                traits: [:])
         }
 
         try await resolve(output: output)
 
-        let checkouts = output + ".build/checkouts"
+        let scratch = output + ".build"
         var manifests: [(root: Root, manifest: Manifest)] = []
         var directoryByIdentity: [String: String] = [:]
 
@@ -83,7 +88,7 @@ extension SwiftPM {
         /// `path:` dependencies of its own, and those are not in
         /// `.build/checkouts` either — the manifest that declares one is the
         /// only thing that knows where it is.
-        var pending = try roots(checkouts: checkouts, locals: locals)
+        var pending = try roots(scratch: scratch, locals: locals)
         var seen: Set<String> = []
 
         while !pending.isEmpty {
@@ -92,7 +97,7 @@ extension SwiftPM {
             guard let manifest = try await manifest(at: root.path) else { continue }
             manifests.append((root, manifest))
 
-            for identity in [manifest.name, root.directory, root.path.lastComponent] {
+            for identity in [manifest.name] + root.identities {
                 directoryByIdentity[identity.lowercased()] = root.directory
             }
 
@@ -106,8 +111,8 @@ extension SwiftPM {
         manifests.sort { $0.root.directory < $1.root.directory }
 
         /// Which traits are on is a property of the graph, not of one manifest,
-        /// so it is answered once every manifest is read — and then the
-        /// conditions are resolved away.
+        /// so it is answered once every manifest is read. It is what the flag
+        /// of each trait defaults to, not something resolved away here.
         let traits = enabledTraits(
             of: manifests.map { (identity: $0.root.directory.lowercased(), manifest: $0.manifest) },
             directoryByIdentity: directoryByIdentity)
@@ -115,9 +120,7 @@ extension SwiftPM {
             Package(
                 directory: entry.root.directory,
                 root: entry.root.path,
-                manifest: entry.manifest.resolving(
-                    traits: traits[entry.root.directory.lowercased()] ?? [],
-                    platforms: platforms),
+                manifest: entry.manifest.resolving(platforms: platforms),
                 isLocal: entry.root.isLocal,
                 /// Both sides are made absolute: the output can be a relative path,
                 /// and the package handed in is named however the caller named it.
@@ -127,15 +130,16 @@ extension SwiftPM {
         return .init(
             packages: packages,
             artifacts: output + ".build/artifacts",
-            directoryByIdentity: directoryByIdentity)
+            directoryByIdentity: directoryByIdentity,
+            traits: traits)
     }
 
     /// The traits each package is built with, by identity.
     ///
     /// A package gets its own default traits unless something that depends on it
-    /// names traits instead — naming them replaces the defaults, which is why a
-    /// manifest that wants both says so. A trait can enable further traits, so
-    /// the set is closed over that.
+    /// names a selection instead. An explicit empty selection disables defaults;
+    /// `.defaults` is encoded as the trait named `default`. A trait can enable
+    /// further traits, so the set is closed over that.
     static func enabledTraits(
         of manifests: [(identity: String, manifest: Manifest)],
         directoryByIdentity: [String: String]) -> [String: Set<String>]
@@ -148,8 +152,9 @@ extension SwiftPM {
 
         var requested: [String: Set<String>] = [:]
         for entry in manifests {
-            for dependency in entry.manifest.dependencies where !dependency.traits.isEmpty {
-                requested[identity(of: dependency), default: []].formUnion(dependency.traits)
+            for dependency in entry.manifest.dependencies {
+                let dependencyIdentity = identity(of: dependency)
+                requested[dependencyIdentity, default: []].formUnion(dependency.traits)
             }
         }
 
@@ -180,13 +185,72 @@ extension SwiftPM {
         return enabled
     }
 
-    // MARK: Private
+    // MARK: Internal
 
-    private struct Root {
+    struct Root {
         let directory: String
         let path: Path
         let isLocal: Bool
+        /// What a dependency can call this package, beside its manifest's own
+        /// name: the directory it is filed under, and — for one downloaded from
+        /// a registry — the name inside its scope.
+        let identities: [String]
+
+        init(directory: String, path: Path, isLocal: Bool, identities: [String]? = nil) {
+            self.directory = directory
+            self.path = path
+            self.isLocal = isLocal
+            self.identities = identities ?? [directory, path.lastComponent]
+        }
     }
+
+    /// Where the packages of a resolved workspace are.
+    ///
+    /// A package from source control is a checkout, a local one is read in
+    /// place, and one from a registry is an archive SwiftPM unpacked under
+    /// `registry/downloads/<scope>/<name>/<version>` — the version is the
+    /// directory, so what names the package is the two above it.
+    static func roots(scratch: Path, locals: [Path]) throws -> [Root] {
+        var roots: [Root] = []
+
+        let checkouts = scratch + "checkouts"
+        if checkouts.exists {
+            for child in try checkouts.children() where child.isDirectory {
+                roots.append(.init(directory: child.lastComponent, path: child, isLocal: false))
+            }
+        }
+
+        let downloads = scratch + "registry/downloads"
+        if downloads.exists {
+            for scope in try downloads.children() where scope.isDirectory {
+                for package in try scope.children() where package.isDirectory {
+                    /// One version is resolved, and a stale one is left behind:
+                    /// the one with a manifest is the one that was unpacked.
+                    let versions = try package.children()
+                        .filter { ($0 + "Package.swift").exists }
+                        .sorted { $0.lastComponent < $1.lastComponent }
+                    guard let version = versions.last else { continue }
+
+                    let identity = "\(scope.lastComponent).\(package.lastComponent)"
+                    roots.append(.init(
+                        directory: identity,
+                        path: version,
+                        isLocal: false,
+                        identities: [identity, package.lastComponent]))
+                }
+            }
+        }
+
+        for path in locals {
+            let root = path.absolute().normalize()
+            guard root.exists else { continue }
+            roots.append(.init(directory: root.lastComponent, path: root, isLocal: true))
+        }
+
+        return roots.sorted { $0.directory < $1.directory }
+    }
+
+    // MARK: Private
 
     /// `swift package resolve` fetches what `Package.resolved` pins; without it
     /// there are no checkouts to read.
@@ -203,26 +267,6 @@ extension SwiftPM {
         guard result.terminationStatus.isSuccess else {
             throw SwiftPMError.resolveFailed(status: "\(result.terminationStatus)")
         }
-    }
-
-    /// Remote packages live in `.build/checkouts`; a local one is wherever its
-    /// manifest is, and is read in place.
-    private static func roots(checkouts: Path, locals: [Path]) throws -> [Root] {
-        var roots: [Root] = []
-
-        if checkouts.exists {
-            for child in try checkouts.children() where child.isDirectory {
-                roots.append(.init(directory: child.lastComponent, path: child, isLocal: false))
-            }
-        }
-
-        for path in locals {
-            let root = path.absolute().normalize()
-            guard root.exists else { continue }
-            roots.append(.init(directory: root.lastComponent, path: root, isLocal: true))
-        }
-
-        return roots.sorted { $0.directory < $1.directory }
     }
 
     private static func manifest(at root: Path) async throws -> Manifest? {

@@ -177,6 +177,10 @@ extension Xcode.BuildSettings {
     public var testHost: String? { self["TEST_HOST"] }
     public var bundleLoader: String? { self["BUNDLE_LOADER"] }
     public var enableModules: Bool { self["CLANG_ENABLE_MODULES"] == "YES" }
+
+    /// `MACH_O_TYPE`: how a target's objects are linked — `staticlib` makes a
+    /// framework target a static one, which has no bundle to load at runtime.
+    public var machOType: String? { self["MACH_O_TYPE"] }
 }
 
 extension StringProtocol {
