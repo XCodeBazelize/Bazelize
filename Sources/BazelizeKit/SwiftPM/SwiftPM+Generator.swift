@@ -304,10 +304,10 @@ extension SwiftPM {
                 case .swift, .clang, .binary, .system, .macro, .executable, .test:
                     supported[target.name] = kind
                 case .unsupported(let reason):
-                    Log.codeGenerate.warning("""
-                    Skip \(package.directory, privacy: .public)/\(target.name, privacy: .public): \
-                    \(reason, privacy: .public)
-                    """)
+                    /// A target nothing is generated for is a target whatever
+                    /// links it will not find, and the error that follows names
+                    /// the module rather than the reason it is missing.
+                    note("\(package.directory)/\(target.name) is not generated: \(reason).")
                 }
             }
 
@@ -329,9 +329,9 @@ extension SwiftPM {
 
                     supported[target.name] = nil
                     changed = true
-                    Log.codeGenerate.warning("""
-                    Skip \(package.directory, privacy: .public)/\(target.name, privacy: .public): \
-                    depends on \(first, privacy: .public), which is not generated
+                    note("""
+                    \(package.directory)/\(target.name) is not generated: it depends on \(first), \
+                    which is not generated either.
                     """)
                 }
             }

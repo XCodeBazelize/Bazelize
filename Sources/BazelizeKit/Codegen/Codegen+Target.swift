@@ -30,9 +30,9 @@ extension Target {
         let name = name
 
         guard hasSources else {
-            Log.codeGenerate.warning("""
-            Name: \(name, privacy: .public)
-            Type: \(productType ?? "") has no sources
+            kit.note("""
+            \(name) is not generated: a \(productType ?? "target") with no sources of its own \
+            has no library for a rule to bundle.
             """)
             return builder.build()
         }
@@ -69,9 +69,9 @@ extension Target {
             generateCopiedFiles(builder, kit)
             generateExtension(builder, kit)
         default:
-            Log.codeGenerate.warning("""
-            Name: \(name, privacy: .public)
-            Type: \(productType ?? "") not gen
+            kit.note("""
+            \(name) is not generated: \(productType ?? "its product type") is a product type \
+            bazelize has no rule for.
             """)
         }
         return builder.build()

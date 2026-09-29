@@ -58,6 +58,19 @@ public final class Kit {
     /// generated.
     private var packageTips: [String] = []
 
+    /// Notes about the project's own targets, collected while their rules were
+    /// written.
+    private var projectTips: [String] = []
+
+    /// Something a caller has to be told: where the generated build differs
+    /// from what the project asked for, and why. It is logged where a run is
+    /// watched, and printed at the end of one — a target that is not generated
+    /// is found here rather than in whatever fails to link it.
+    final func note(_ message: String) {
+        Log.codeGenerate.warning("\(message, privacy: .public)")
+        projectTips.append(message)
+    }
+
     /// The generator that wrote the package rules, kept for the step that runs
     /// their build tool plugins once the workspace is complete.
     private var packageGenerator: SwiftPM.Generator?
@@ -89,6 +102,13 @@ extension Kit {
     private final func tips() {
         builtinPlugins.compactMap(\.tip).forEach { tip in
             print(tip)
+        }
+
+        if !projectTips.isEmpty {
+            print("# Targets")
+            projectTips.forEach { tip in
+                print(tip)
+            }
         }
 
         if !packageTips.isEmpty {
