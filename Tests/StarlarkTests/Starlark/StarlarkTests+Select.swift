@@ -10,7 +10,7 @@ extension StarlarkTests {
 
     @Test
     func testSelectVarious() {
-        let code = Starlark.Select.various([
+        let code = Starlark.Select.exhaustive([
             .config("Release"): "r",
             .config("Debug"): "d",
         ]).starlark
@@ -26,7 +26,7 @@ extension StarlarkTests {
     @Test
     func testSelectWithDefaultLabel() {
         let code: Starlark.Value = .select(
-            .various([
+            .exhaustive([
                 .config("Debug"): "d",
                 .default: "fallback",
             ]))

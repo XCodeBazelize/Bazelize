@@ -138,7 +138,7 @@ struct RulesSwiftTests {
             name: "Core",
             srcs: ["A.swift"],
             defines: .select(
-                .various([
+                .exhaustive([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
                 ])))
@@ -215,7 +215,7 @@ struct RulesSwiftTests {
             clang_srcs: ["B.m"],
             sdk_dylibs: ["libz"],
             swift_defines: .select(
-                .various([
+                .exhaustive([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
                 ])),

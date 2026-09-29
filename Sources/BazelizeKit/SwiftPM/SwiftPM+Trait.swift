@@ -145,17 +145,14 @@ extension SwiftPM.Generator {
     {
         guard !conditional.isEmpty else { return always.starlark }
 
-        let parts = [Starlark.Value.array(always.map { .label(.init($0)) }).text]
-            + conditional.map { entry in
-                """
-                select({
-                    "\(entry.condition)": \(Starlark.Value.array(entry.values.map { .label(.init($0)) }).text),
-                    "//conditions:default": [],
-                })
-                """
-            }
+        let selects = conditional.map { entry in
+            Starlark.Value.select(
+                .conditional(
+                    [.named(entry.condition): .array(entry.values.map(Starlark.Value.string))],
+                    fallback: .array([])))
+        }
 
-        return .custom(parts.joined(separator: " + "))
+        return .concat([.array(always.map(Starlark.Value.string))] + selects)
     }
 
     /// The flags, configuration settings, and groups a condition asked for.

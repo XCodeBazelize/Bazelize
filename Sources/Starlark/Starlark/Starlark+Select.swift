@@ -10,16 +10,30 @@ import Foundation
 // MARK: - Starlark.Select
 
 extension Starlark {
+    /// What an attribute is, per condition.
+    ///
+    /// The two shapes are not the same question. A configuration select names
+    /// every value its flag can take, so nothing can fail to match and
+    /// `//conditions:default` would be a branch no build reaches. A condition —
+    /// a trait, a bool flag — is on or off, and what stands when it is off has
+    /// to be said, or the build fails analysis the first time someone turns it
+    /// off.
     public enum Select<T: Sendable>: Sendable {
         case same(T)
-        case various([Label: T])
+        /// Keys cover the flag's whole domain: no fallback, because nothing
+        /// falls through.
+        case exhaustive([Label: T])
+        /// A condition, and what the attribute is when it does not hold.
+        case conditional([Label: T], fallback: T)
 
         public func map<U>(_ transform: (T) throws -> U) rethrows -> Select<U> {
             switch self {
             case .same(let value):
                 return try .same(transform(value))
-            case .various(let value):
-                return try .various(value.mapValues(transform))
+            case .exhaustive(let value):
+                return try .exhaustive(value.mapValues(transform))
+            case .conditional(let value, let fallback):
+                return try .conditional(value.mapValues(transform), fallback: transform(fallback))
             }
         }
     }
@@ -73,14 +87,20 @@ extension Starlark.Select: Text where T == Starlark.Value {
         switch self {
         case .same(let value):
             return value.text
-        case .various(let value):
-            let pair = value.map { key, value in
-                (key.value, value)
-            }
-            let newValue = Starlark.Value.dictionary(Dictionary(uniqueKeysWithValues: pair))
-            return """
-            select(\(newValue.text))
-            """
+        case .exhaustive(let value):
+            return Self.select(value)
+        case .conditional(let value, let fallback):
+            return Self.select(value.merging([.default: fallback]) { branch, _ in branch })
         }
+    }
+
+    private static func select(_ branches: [Starlark.Label: Starlark.Value]) -> String {
+        let pairs = branches.map { key, value in
+            (key.value, value)
+        }
+        let dictionary = Starlark.Value.dictionary(Dictionary(uniqueKeysWithValues: pairs))
+        return """
+        select(\(dictionary.text))
+        """
     }
 }

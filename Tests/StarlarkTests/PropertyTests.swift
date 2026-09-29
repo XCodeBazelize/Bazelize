@@ -137,7 +137,7 @@ extension PropertyTests {
 
     @Test
     func testSelectValue() {
-        let property = "value" => Starlark.Select<String>.various([
+        let property = "value" => Starlark.Select<String>.exhaustive([
             .config("Debug"): "debug",
             .default: "release",
         ])

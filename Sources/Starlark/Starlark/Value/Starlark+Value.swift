@@ -25,6 +25,9 @@ extension Starlark {
         case dictionary([String: Value])
         case select(Starlark.Select<Value>)
         case glob([String], exclude: [String], allowEmpty: Bool)
+        /// `[":a"] + select({…})`: an attribute that is partly unconditional
+        /// and partly not.
+        case concat([Value])
         case custom(String)
         case none
 
@@ -82,8 +85,10 @@ extension Starlark {
             case .int(let value):
                 return "\(value)"
             case .array(let value):
+                /// An empty list is a list: an attribute given one says so with
+                /// `None` instead, which the argument it belongs to decides.
                 let items = value.filter { !$0.isEmptyValue }
-                guard !items.isEmpty else { return Value.none.text }
+                guard !items.isEmpty else { return "[]" }
 
                 return """
                 [
@@ -91,7 +96,7 @@ extension Starlark {
                 ]
                 """
             case .dictionary(let value):
-                guard !value.isEmpty else { return Value.none.text }
+                guard !value.isEmpty else { return "{}" }
 
                 let pair = value.map { key, value in
                     """
@@ -114,6 +119,11 @@ extension Starlark {
                     arguments.append("allow_empty = True")
                 }
                 return "glob(\(arguments.joined(separator: ", ")))"
+            case .concat(let value):
+                let parts = value.filter { !$0.isEmptyValue }
+                guard let first = parts.first else { return Value.none.text }
+                guard parts.count > 1 else { return first.text }
+                return parts.map(\.text).joined(separator: " + ")
             case .custom(let value):
                 return value
             case .none:
@@ -130,6 +140,8 @@ extension Starlark {
             case .none:
                 return true
             case .array(let value):
+                return value.allSatisfy(\.isEmptyValue)
+            case .concat(let value):
                 return value.allSatisfy(\.isEmptyValue)
             case .dictionary(let value):
                 return value.isEmpty

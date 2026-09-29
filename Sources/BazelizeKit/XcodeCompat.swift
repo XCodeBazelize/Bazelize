@@ -21,10 +21,12 @@ extension Dictionary where Key == String, Value == BuildSettings {
             return .same(first)
         }
 
+        /// Every configuration of the target is a key, and `//:mode` takes no
+        /// value that is not one of them, so nothing falls through.
         let result: [Starlark.Label: T] = reduce(into: [:]) { partialResult, entry in
             partialResult[.config(entry.key)] = entry.value[keyPath: keypath]
         }
-        return .various(result)
+        return .exhaustive(result)
     }
 }
 
