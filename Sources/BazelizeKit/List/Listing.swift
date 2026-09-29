@@ -85,7 +85,15 @@ enum Listing {
         something that depends on that package asks for it by name. Anything \
         else is asked for by the `--config` beside it, which defines the \
         trait's own name for that package's sources and pulls in whatever is \
-        behind it. `bazel run //tools:list-config` lists them with everything else.
+        behind it.
+
+        A selection replaces a package's defaults, so each package also has \
+        `<Package>.none` for no trait at all, `<Package>.all` for every one of \
+        them, and `<Package>.default` for the ones a build that asks for \
+        nothing gets — what `swift build` spells `--disable-default-traits`, \
+        `--enable-all-traits` and `--traits default`.
+
+        `bazel run //tools:list-config` lists them with everything else.
         """)
         return lines.joined(separator: "\n")
     }

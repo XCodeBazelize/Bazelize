@@ -219,13 +219,24 @@ extension SwiftPM.Generator {
         }
     }
 
-    /// `--config=<Package>.<Trait>` for every trait a package declares.
+    /// `--config=<Package>.<Trait>` for every trait a package declares, and the
+    /// three selections SwiftPM names rather than lists.
     ///
     /// SwiftPM treats an explicit trait selection as a replacement for that
     /// package's defaults. Each configuration therefore writes every flag for
-    /// the package, turning on only the selected trait and its transitive
-    /// `enabledTraits`. Multiple selections remain available through the
-    /// underlying boolean flags.
+    /// the package, turning on only what the selection covers — a trait and its
+    /// transitive `enabledTraits`, everything for `--enable-all-traits`,
+    /// nothing for `--disable-default-traits`.
+    ///
+    ///     swift build                          # nothing to pass
+    ///     --disable-default-traits             --config=<Package>.none
+    ///     --enable-all-traits                  --config=<Package>.all
+    ///     --traits default                     --config=<Package>.default
+    ///     --traits Leaf                        --config=<Package>.Leaf
+    ///
+    /// `--traits Leaf,Alternative` selects several at once, which one
+    /// configuration cannot be: the flags are public, so a build that wants a
+    /// combination sets them.
     ///
     /// The file is always written, because a `.bazelrc` that imports a file
     /// that is not there does not load.
@@ -242,6 +253,26 @@ extension SwiftPM.Generator {
             lines.append("# No package in this workspace declares a trait.")
         }
 
+        /// The selections SwiftPM has a name for rather than a list.
+        var packages: [String] = []
+        for flag in flags where !packages.contains(flag.package) {
+            packages.append(flag.package)
+        }
+
+        for package in packages {
+            let owned = flags.filter { $0.package == package }
+
+            for named in NamedSelection.allCases {
+                lines.append("")
+                lines.append("# \(package): \(named.comment)")
+                for flag in owned {
+                    lines.append(
+                        "build:\(package).\(named.rawValue) --//\(PluginSwiftPM.packagesDirectory):\(flag.name)="
+                            + (named.covers(flag) ? "true" : "false"))
+                }
+            }
+        }
+
         for selected in flags {
             lines.append("")
             lines.append("# \(selected.package): \(selected.trait)\(selected.isDefault ? ", on by default" : "")")
@@ -253,5 +284,35 @@ extension SwiftPM.Generator {
         }
 
         try (output + "traits.bazelrc").write(lines.joined(separator: "\n") + "\n")
+    }
+
+    /// `--disable-default-traits`, `--enable-all-traits` and `--traits default`,
+    /// which name a selection instead of listing it.
+    enum NamedSelection: String, CaseIterable {
+        case none
+        case all
+        case `default`
+
+        var comment: String {
+            switch self {
+            case .none:
+                return "no trait at all, which is `--disable-default-traits`"
+            case .all:
+                return "every trait, which is `--enable-all-traits`"
+            case .default:
+                return "the traits a build that asks for nothing gets"
+            }
+        }
+
+        func covers(_ flag: TraitFlag) -> Bool {
+            switch self {
+            case .none:
+                return false
+            case .all:
+                return true
+            case .default:
+                return flag.isDefault
+            }
+        }
     }
 }

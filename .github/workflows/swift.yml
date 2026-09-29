@@ -553,7 +553,9 @@ jobs:
           done
 
       # What each selection resolves to, exactly: the closure of the trait
-      # asked for, and nothing of the defaults it replaced.
+      # asked for, and nothing of the defaults it replaced. The three SwiftPM
+      # names rather than lists — `--disable-default-traits`,
+      # `--enable-all-traits`, `--traits default` — answer the same here.
       - name: Probe Trait Selections
         if: matrix.name == 'TraitGraph'
         working-directory: spm/TraitGraph/App
@@ -561,3 +563,6 @@ jobs:
           bazel run //Packages/TraitGraph:TraitProbe -- Leaf Middle Top
           bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Middle -- Leaf Middle
           bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Alternative -- Alternative
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.none
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.all -- Alternative Leaf Middle Top
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.default -- Leaf Middle Top
