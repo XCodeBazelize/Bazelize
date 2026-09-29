@@ -265,7 +265,7 @@ extension SwiftPM.Generator {
         /// SwiftPM force-includes the accessor, so a source reaches its bundle
         /// without importing anything.
         if let header = resources?.header {
-            always.append("-include$(location \(header))")
+            always.append("-include$(execpath \(header))")
         }
 
         always += standards(of: target, in: package, compiled: compiled)

@@ -77,7 +77,7 @@ extension Target {
 
     var bridgingHeaderCopts: [String]? {
         guard let bridgingHeader else { return nil }
-        return ["-import-objc-header", "$(location \(bridgingHeader))"]
+        return ["-import-objc-header", "$(execpath \(bridgingHeader))"]
     }
 
     /// Swift compiles a file named `main.swift` as top-level code and emits a `main`
