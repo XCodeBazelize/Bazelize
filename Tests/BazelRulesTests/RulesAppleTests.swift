@@ -632,4 +632,146 @@ struct RulesAppleTests {
                 )
                 """)
     }
+
+    @Test
+    func testMacOSDylibTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_dylib(
+            name: "libHelper",
+            bundle_id: "com.example.helper",
+            deps: [":Helper_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_dylib(
+                    name = "libHelper",
+                    bundle_id = "com.example.helper",
+                    deps = [
+                        ":Helper_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSDynamicFrameworkTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_dynamic_framework(
+            name: "Shared",
+            bundle_id: "com.example.shared",
+            deps: [":Shared_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_dynamic_framework(
+                    name = "Shared",
+                    bundle_id = "com.example.shared",
+                    deps = [
+                        ":Shared_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSStaticFrameworkTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_static_framework(
+            name: "Core",
+            avoid_deps: [":Logging"],
+            deps: [":Core_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_static_framework(
+                    name = "Core",
+                    avoid_deps = [
+                        ":Logging",
+                    ],
+                    deps = [
+                        ":Core_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testAppleStaticXCFrameworkTypedCall() {
+        let call = Rules.Apple.General.Call.apple_static_xcframework(
+            name: "CoreKit",
+            deps: [":Core_library"],
+            minimum_os_versions: ["ios": "16.0"],
+            public_hdrs: ["include/Core.h"])
+
+        #expect(
+            call.text
+                == """
+                apple_static_xcframework(
+                    name = "CoreKit",
+                    deps = [
+                        ":Core_library",
+                    ],
+                    minimum_os_versions = {
+                        "ios": "16.0"
+                    },
+                    public_hdrs = [
+                        "include/Core.h",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testLocalProvisioningProfileTypedCall() {
+        let call = Rules.Apple.General.Call.local_provisioning_profile(
+            name: "development",
+            profile_name: "iOS Team Provisioning Profile: com.example.app",
+            teamid: "A1B2C3D4E5")
+
+        #expect(
+            call.text
+                == """
+                local_provisioning_profile(
+                    name = "development",
+                    profile_name = "iOS Team Provisioning Profile: com.example.app",
+                    teamid = "A1B2C3D4E5",
+                )
+                """)
+    }
+
+    @Test
+    func testProvisioningProfileRepositoryTypedCall() {
+        let call = Rules.Apple.General.Call.provisioning_profile_repository(
+            name: "local_provisioning_profiles",
+            fallback_profiles: "//profiles:fallback")
+
+        #expect(
+            call.text
+                == """
+                provisioning_profile_repository(
+                    name = "local_provisioning_profiles",
+                    fallback_profiles = "//profiles:fallback",
+                )
+                """)
+    }
+
+    @Test
+    func testProvisioningProfileRepositoryExtensionTypedCall() {
+        let call = Rules.Apple.General.Call.provisioning_profile_repository_extension(
+            name: "local_provisioning_profiles")
+
+        #expect(
+            call.text
+                == """
+                provisioning_profile_repository_extension(
+                    name = "local_provisioning_profiles",
+                )
+                """)
+    }
 }
