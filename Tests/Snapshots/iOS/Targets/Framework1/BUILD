@@ -15,13 +15,12 @@ swift_library(
         "//Targets/Framework2:Framework2_library",
         "//Targets/Static:Static_library",
     ],
-    data = [
-    ],
+    # data = None,
     defines = select({
         "//:Debug": [
             "DEBUG",
         ],
-        "//:Release": None
+        "//:Release": None,
     }),
     linkopts = [
         "-L$$(DT_TOOLCHAIN_DIR)/usr/lib/swift/iphoneos",
@@ -80,8 +79,7 @@ ios_framework(
         ":plist_default",
     ],
     minimum_os_version = "16.2",
-    resources = [
-    ],
+    # resources = None,
     # strings = None,
     visibility = [
         "//visibility:public",

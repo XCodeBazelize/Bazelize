@@ -16,13 +16,13 @@ string_flag(
 config_setting(
     name = "Debug",
     flag_values = {
-        ":mode": "Debug"
+        ":mode": "Debug",
     },
 )
 config_setting(
     name = "Release",
     flag_values = {
-        ":mode": "Release"
+        ":mode": "Release",
     },
 )
 swift_binary(

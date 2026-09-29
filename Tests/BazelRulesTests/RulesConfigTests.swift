@@ -89,10 +89,10 @@ struct RulesConfigTests {
                 config_setting(
                     name = "Debug",
                     values = {
-                        "compilation_mode": "dbg"
+                        "compilation_mode": "dbg",
                     },
                     flag_values = {
-                        ":mode": "Debug"
+                        ":mode": "Debug",
                     },
                 )
                 """)

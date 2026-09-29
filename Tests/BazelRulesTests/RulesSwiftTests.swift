@@ -156,7 +156,7 @@ struct RulesSwiftTests {
                         "//:Debug": [
                             "DEBUG",
                         ],
-                        "//conditions:default": None
+                        "//conditions:default": None,
                     }),
                 )
                 """)
@@ -240,7 +240,7 @@ struct RulesSwiftTests {
                         "//:Debug": [
                             "DEBUG",
                         ],
-                        "//conditions:default": None
+                        "//conditions:default": None,
                     }),
                     swift_srcs = [
                         "A.swift",
@@ -284,7 +284,7 @@ struct RulesSwiftTests {
                         "//Lib:Core",
                     ],
                     env = {
-                        "FOO": "BAR"
+                        "FOO": "BAR",
                     },
                     linkopts = [
                         "-ObjC",

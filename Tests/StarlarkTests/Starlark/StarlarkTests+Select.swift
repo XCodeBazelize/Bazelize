@@ -18,7 +18,7 @@ extension StarlarkTests {
         #expect(code.text == """
         select({
             "//:Debug": "d",
-            "//:Release": "r"
+            "//:Release": "r",
         })
         """)
     }
@@ -34,7 +34,7 @@ extension StarlarkTests {
         #expect(code.text == """
         select({
             "//:Debug": "d",
-            "//conditions:default": "fallback"
+            "//conditions:default": "fallback",
         })
         """)
     }

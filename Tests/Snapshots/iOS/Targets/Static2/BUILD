@@ -11,10 +11,8 @@ objc_library(
     hdrs = [
         "Headers/Static2/Static2.h",
     ],
-    deps = [
-    ],
-    data = [
-    ],
+    # deps = None,
+    # data = None,
     copts = [
         "-fblocks",
         "-fobjc-arc",
@@ -34,7 +32,7 @@ objc_library(
         "-ObjC",
     ],
     module_name = "Static2",
-    sdk_dylibs = None,
+    # sdk_dylibs = None,
     sdk_frameworks = [
         "Foundation",
     ],
@@ -45,7 +43,7 @@ objc_library(
     visibility = [
         "//visibility:private",
     ],
-    weak_sdk_frameworks = None,
+    # weak_sdk_frameworks = None,
 )
 alias(
     name = "Static2_library",

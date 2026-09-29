@@ -534,7 +534,7 @@ struct RulesAppleTests {
                 macos_quick_look_plugin(
                     name = "Preview",
                     additional_contents = {
-                        "//Targets/Helper:Helper": "Helpers"
+                        "//Targets/Helper:Helper": "Helpers",
                     },
                     bundle_id = "com.example.preview",
                     deps = [
@@ -718,7 +718,7 @@ struct RulesAppleTests {
                         ":Core_library",
                     ],
                     minimum_os_versions = {
-                        "ios": "16.0"
+                        "ios": "16.0",
                     },
                     public_hdrs = [
                         "include/Core.h",

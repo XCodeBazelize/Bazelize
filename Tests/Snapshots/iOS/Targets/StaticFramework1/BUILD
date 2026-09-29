@@ -10,15 +10,13 @@ swift_library(
     srcs = [
         "Sources/StaticFramework1/Test.swift",
     ],
-    deps = [
-    ],
-    data = [
-    ],
+    # deps = None,
+    # data = None,
     defines = select({
         "//:Debug": [
             "DEBUG",
         ],
-        "//:Release": None
+        "//:Release": None,
     }),
     # swiftc_inputs = None,
     tags = [

@@ -51,7 +51,7 @@ swift_library(
         "//:Release": [
             "YDebug",
             "A",
-        ]
+        ],
     }),
     linkopts = [
         "-L$$(DT_TOOLCHAIN_DIR)/usr/lib/swift/iphoneos",
@@ -150,7 +150,7 @@ ios_application(
         "//Targets/Static2:Static2",
         "//Targets/StaticFramework1:StaticFramework1",
     ],
-    extensions = None,
+    # extensions = None,
     frameworks = [
         "//Targets/Framework1:Framework1",
         "//Targets/Framework2:Framework2",
@@ -167,7 +167,7 @@ ios_application(
     resources = [
         ":Assets",
     ],
-    sdk_frameworks = None,
+    # sdk_frameworks = None,
     strings = [
         ":Strings",
     ],
