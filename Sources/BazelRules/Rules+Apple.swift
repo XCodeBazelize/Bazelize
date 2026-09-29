@@ -332,6 +332,105 @@ extension Rules.Apple.IOS {
             }
         }
 
+        /// Builds an `ios_imessage_application` target.
+        ///
+        /// An iMessage app has no code of its own: what it ships is the
+        /// extension it carries, which is why `extensions` is what it takes
+        /// instead of `deps`.
+        public static func ios_imessage_application(
+            name: String,
+            app_icons: Starlark.Value? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            entitlements: Starlark.Label? = nil,
+            extensions: [Starlark.Label]? = nil,
+            families: [String]? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.IOS.ios_imessage_application.call {
+                "name" => name
+                if let app_icons { "app_icons" => app_icons }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let entitlements { "entitlements" => entitlements }
+                if let extensions, !extensions.isEmpty { "extensions" => extensions }
+                if let families { "families" => families }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `ios_imessage_extension` target.
+        public static func ios_imessage_extension(
+            name: String,
+            app_icons: Starlark.Value? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            families: [String]? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.IOS.ios_imessage_extension.call {
+                "name" => name
+                if let app_icons { "app_icons" => app_icons }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let families { "families" => families }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds an `ios_sticker_pack_extension` target.
+        ///
+        /// Stickers are art, not code: the rule takes the asset catalog that
+        /// holds them and nothing to compile.
+        public static func ios_sticker_pack_extension(
+            name: String,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            entitlements: Starlark.Label? = nil,
+            families: [String]? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            sticker_assets: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.IOS.ios_sticker_pack_extension.call {
+                "name" => name
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let entitlements { "entitlements" => entitlements }
+                if let families { "families" => families }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let sticker_assets { "sticker_assets" => sticker_assets }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
         /// Builds an `ios_unit_test` target.
         public static func ios_unit_test(
             name: String,
@@ -550,6 +649,143 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_xpc_service.call {
+                "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_bundle` target.
+        ///
+        /// The loadable bundle every other macOS plug-in shape is a special
+        /// case of: what it is a plug-in for decides the extension it carries.
+        public static func macos_bundle(
+            name: String,
+            additional_contents: [String: String]? = nil,
+            app_icons: Starlark.Value? = nil,
+            bundle_extension: String? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            infoplists: Starlark.Value? = nil,
+            linkopts: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.MacOS.macos_bundle.call {
+                "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
+                if let app_icons { "app_icons" => app_icons }
+                if let bundle_extension { "bundle_extension" => bundle_extension }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let infoplists { "infoplists" => infoplists }
+                if let linkopts { "linkopts" => linkopts }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_kernel_extension` target.
+        public static func macos_kernel_extension(
+            name: String,
+            additional_contents: [String: String]? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.MacOS.macos_kernel_extension.call {
+                "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_quick_look_plugin` target.
+        public static func macos_quick_look_plugin(
+            name: String,
+            additional_contents: [String: String]? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.MacOS.macos_quick_look_plugin.call {
+                "name" => name
+                if let additional_contents, !additional_contents.isEmpty {
+                    "additional_contents" => .init(additional_contents) ?? None
+                }
+                if let bundle_id { "bundle_id" => bundle_id }
+                if let bundle_name { "bundle_name" => bundle_name }
+                if let deps { "deps" => deps }
+                if let entitlements { "entitlements" => entitlements }
+                if let infoplists { "infoplists" => infoplists }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let resources { "resources" => resources }
+                if let strings { "strings" => strings }
+                if let visibility { visibility }
+            }
+        }
+
+        /// Builds a `macos_spotlight_importer` target.
+        public static func macos_spotlight_importer(
+            name: String,
+            additional_contents: [String: String]? = nil,
+            bundle_id: String? = nil,
+            bundle_name: String? = nil,
+            deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            infoplists: Starlark.Value? = nil,
+            minimum_os_version: String? = nil,
+            resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.MacOS.macos_spotlight_importer.call {
                 "name" => name
                 if let additional_contents, !additional_contents.isEmpty {
                     "additional_contents" => .init(additional_contents) ?? None

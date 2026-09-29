@@ -97,4 +97,92 @@ struct RulesConfigTests {
                 )
                 """)
     }
+
+    @Test
+    func testBoolSettingTypedCall() {
+        let call = Rules.Config.Call.bool_setting(
+            name: "strict",
+            build_setting_default: true)
+
+        #expect(
+            call.text
+                == """
+                bool_setting(
+                    name = "strict",
+                    build_setting_default = True,
+                )
+                """)
+    }
+
+    @Test
+    func testIntFlagTypedCall() {
+        let call = Rules.Config.Call.int_flag(
+            name: "jobs",
+            build_setting_default: 4)
+
+        #expect(
+            call.text
+                == """
+                int_flag(
+                    name = "jobs",
+                    build_setting_default = 4,
+                )
+                """)
+    }
+
+    @Test
+    func testIntSettingTypedCall() {
+        let call = Rules.Config.Call.int_setting(
+            name: "level",
+            build_setting_default: 2)
+
+        #expect(
+            call.text
+                == """
+                int_setting(
+                    name = "level",
+                    build_setting_default = 2,
+                )
+                """)
+    }
+
+    @Test
+    func testStringSettingTypedCall() {
+        let call = Rules.Config.Call.string_setting(
+            name: "mode",
+            build_setting_default: "Debug",
+            values: ["Debug", "Release"])
+
+        #expect(
+            call.text
+                == """
+                string_setting(
+                    name = "mode",
+                    build_setting_default = "Debug",
+                    values = [
+                        "Debug",
+                        "Release",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testStringListFlagTypedCall() {
+        let call = Rules.Config.Call.string_list_flag(
+            name: "traits",
+            build_setting_default: ["Fast", "Slow"])
+
+        #expect(
+            call.text
+                == """
+                string_list_flag(
+                    name = "traits",
+                    build_setting_default = [
+                        "Fast",
+                        "Slow",
+                    ],
+                )
+                """)
+    }
 }
