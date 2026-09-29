@@ -31,14 +31,13 @@ extension SwiftPM.Generator {
                 deps: deps(of: target, in: package),
                 linkopts: linkopts(of: target, in: package),
                 module_name: Self.moduleName(target.name),
-                srcs: Starlark.glob(
-                    matching(
+                srcs: sources(
+                    naming: resources?.accessors ?? [],
+                    globbing: matching(
                         sources(of: target, prefix: prefix, extensions: ["swift"]),
                         relativeFiles(of: target, in: package, prefix: prefix))
-                        + generated
-                        + (resources?.accessors ?? []),
-                    exclude: excluded(target, prefix: prefix),
-                    allowEmpty: true),
+                        + generated,
+                    excluding: excluded(target, prefix: prefix)),
                 tags: Self.manual,
                 visibility: .public))
     }

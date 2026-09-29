@@ -118,7 +118,7 @@ extension SwiftPM.Generator {
             builder.call(
                 Rules.Apple.Resources.Call.apple_resource_group(
                     name: group,
-                    resources: Starlark.glob(patterns, allowEmpty: true)))
+                    resources: paths(patterns, allowEmpty: true)))
         }
 
         for (index, prefixToStrip) in structured.keys.sorted().enumerated() {
@@ -132,7 +132,7 @@ extension SwiftPM.Generator {
                 Rules.Apple.Resources.Call.apple_resource_group(
                     name: group,
                     strip_structured_resources_prefixes: [prefixToStrip],
-                    structured_resources: Starlark.glob(patterns)))
+                    structured_resources: paths(patterns)))
         }
 
         builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
@@ -144,7 +144,7 @@ extension SwiftPM.Generator {
                 /// A glob and a group cannot be added together in one attribute, so
                 /// once there is a group everything is a group.
                 resources: groups.isEmpty
-                    ? resources.nonEmpty.map { Starlark.glob($0, allowEmpty: true) }
+                    ? resources.nonEmpty.map { paths($0, allowEmpty: true) }
                     : .build { groups.map { Starlark.Label.named(":\($0)") } },
                 tags: Self.manual))
 

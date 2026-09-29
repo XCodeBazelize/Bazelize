@@ -466,6 +466,64 @@ extension SwiftPM {
             return prefix
         }
 
+        /// The sources of a target: what this run wrote, named, plus what the
+        /// target's own directory has, globbed.
+        ///
+        /// The glob's `allow_empty` is there for a plugin's directory, which is
+        /// written by `bazel run //:plugins` after the rules are — and it would
+        /// cover a missing accessor just as quietly. A file this run wrote is a
+        /// file that is there, so it is named: absent, it is an error about the
+        /// file rather than a module that mysteriously has no `Bundle.module`.
+        func sources(
+            naming written: [String],
+            globbing patterns: [String],
+            excluding excluded: [String]) -> Starlark.Value
+        {
+            let named = written.filter { path in
+                !patterns.contains { Self.matches($0, path) }
+            }
+
+            return .concat([
+                .array(named.map(Starlark.Value.string)),
+                Starlark.glob(patterns, exclude: excluded, allowEmpty: true),
+            ])
+        }
+
+        /// Files as a value: a pattern that names one file is that file, and
+        /// only what has a wildcard in it is globbed.
+        ///
+        /// These come from matching a target's declarations against what is on
+        /// disk, so a pattern without a wildcard is a file that is there —
+        /// `glob(["a/b.png"])` is the same list with a way to be silently empty
+        /// instead.
+        ///
+        /// Named once, and only when nothing globs it already: two declarations
+        /// can cover the same file — a shader is a resource and part of the
+        /// header group it compiles with — and a glob answered with a set where
+        /// a list repeats the label, which no attribute takes twice.
+        func paths(_ patterns: [String], allowEmpty: Bool = false) -> Starlark.Value {
+            var seen: Set<String> = []
+            let unique = patterns.filter { seen.insert($0).inserted }
+            let wildcards = unique.filter { $0.contains(where: Self.isWildcard) }
+            let named = unique.filter { path in
+                !path.contains(where: Self.isWildcard)
+                    && !wildcards.contains { Self.matches($0, path) }
+            }
+
+            guard !wildcards.isEmpty else {
+                return .array(named.map(Starlark.Value.string))
+            }
+
+            return .concat([
+                .array(named.map(Starlark.Value.string)),
+                Starlark.glob(wildcards, allowEmpty: allowEmpty),
+            ])
+        }
+
+        private static func isWildcard(_ character: Character) -> Bool {
+            character == "*" || character == "?" || character == "["
+        }
+
         /// Whether anything under the directory links back into it.
         private static func hasCycle(_ directory: Path) -> Bool {
             let root = directory.url.resolvingSymlinksInPath().path
@@ -824,17 +882,13 @@ extension SwiftPM {
                         plugins: plugins(of: target, in: package).nonEmpty.map { macros in
                             .build { macros }
                         },
-                        srcs: Starlark.glob(
-                            matching(
+                        srcs: sources(
+                            naming: resources?.accessors ?? [],
+                            globbing: matching(
                                 sources(of: target, prefix: prefix, extensions: ["swift"]),
                                 relativeFiles(of: target, in: package, prefix: prefix))
-                                + generated
-                                + (resources?.accessors ?? []),
-                            exclude: excluded(target, prefix: prefix),
-                            /// The plugin's directory is globbed before anything has
-                            /// written into it: `bazel run //:plugins` does that, and
-                            /// a package that cannot load cannot run it.
-                            allowEmpty: true),
+                                + generated,
+                            excluding: excluded(target, prefix: prefix)),
                         deps: deps(of: target, in: package),
                         data: resources?.label.map { label in
                             .build { [Starlark.Label.named(label)] }

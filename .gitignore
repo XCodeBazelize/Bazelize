@@ -198,3 +198,7 @@ fixture/iOS/App/
 
 # running a local package's build tool plugins resolves that package
 fixture/iOS/Local1/Package.resolved
+
+# The recorded workspaces are this repository's: `Packages` above is about a
+# checkout, and these are what a run wrote.
+!Tests/Snapshots/**

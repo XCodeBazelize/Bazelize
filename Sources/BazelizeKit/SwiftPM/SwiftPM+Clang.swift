@@ -59,8 +59,9 @@ extension SwiftPM.Generator {
             Rules.Objc.Call.objc_library(
                 name: name,
                 aspect_hints: .build { [Starlark.Label.named(":\(hint)")] },
-                srcs: Starlark.glob(
-                    matching(
+                srcs: sources(
+                    naming: resources?.accessors ?? [],
+                    globbing: matching(
                         sources(of: target, prefix: prefix, extensions: compiled)
                             /// Private headers are compilation inputs wherever they
                             /// sit, so they are collected from the whole directory
@@ -74,11 +75,9 @@ extension SwiftPM.Generator {
                         /// private header is: the generated source includes it by
                         /// name, which is all SwiftPM offers either.
                         + generated.sources
-                        + generated.headers
-                        + (resources?.accessors ?? []),
-                    exclude: excludedClang(target, prefix: prefix)
-                        + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? []),
-                    allowEmpty: true),
+                        + generated.headers,
+                    excluding: excludedClang(target, prefix: prefix)
+                        + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
                 hdrs: interface
                     .map { path in
                         matching(

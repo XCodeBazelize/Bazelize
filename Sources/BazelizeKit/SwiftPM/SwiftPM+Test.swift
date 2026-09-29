@@ -42,14 +42,13 @@ extension SwiftPM.Generator {
                 copts: copts(of: target, in: package),
                 module_name: Self.moduleName(target.name),
                 package_name: package.manifest.name,
-                srcs: Starlark.glob(
-                    matching(
+                srcs: sources(
+                    naming: resources?.accessors ?? [],
+                    globbing: matching(
                         sources(of: target, prefix: prefix, extensions: ["swift"]),
                         relativeFiles(of: target, in: package, prefix: prefix))
-                        + generated
-                        + (resources?.accessors ?? []),
-                    exclude: excluded(target, prefix: prefix),
-                    allowEmpty: true),
+                        + generated,
+                    excluding: excluded(target, prefix: prefix)),
                 deps: deps(of: target, in: package),
                 data: resources?.label.map { label in
                     .build { [Starlark.Label.named(label)] }
