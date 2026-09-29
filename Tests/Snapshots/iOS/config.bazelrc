@@ -1,0 +1,6 @@
+# Generated using Bazelize 0.0.5 - https://github.com/XCodeBazelize/Bazelize
+
+build --define=apple.incompatible.objc_framework_propagate_modulemap=true
+build --ios_minimum_os=16.2
+build:Debug --//:mode=Debug
+build:Release --//:mode=Release
