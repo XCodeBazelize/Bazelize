@@ -32,6 +32,142 @@ func rendersDescendingAndDeduplicatedEnumCases() throws {
 }
 
 @Test
+func checksummedReleaseNeedsEveryConfiguredAssetDigest() throws {
+    let assets = RepoReleaseAssets(
+        darwinARM64: "buildifier-darwin-arm64",
+        darwinAMD64: "buildifier-darwin-amd64")
+    let arm64 = String(repeating: "a", count: 64)
+    let amd64 = String(repeating: "b", count: 64)
+
+    let complete = RepoChecksummedReleaseVersion(
+        release: .init(
+            tagName: "v10.1.0",
+            assetDigests: [
+                "buildifier-darwin-arm64": "sha256:\(arm64)",
+                "buildifier-darwin-amd64": "sha256:\(amd64)",
+            ]),
+        assets: assets)
+    #expect(complete?.darwinARM64SHA256 == arm64)
+    #expect(complete?.darwinAMD64SHA256 == amd64)
+
+    #expect(RepoChecksummedReleaseVersion(
+        release: .init(
+            tagName: "v10.1.0",
+            assetDigests: ["buildifier-darwin-arm64": "sha256:\(arm64)"]),
+        assets: assets) == nil)
+
+    /// A digest GitHub serves in another algorithm is not a SHA-256 the
+    /// generated code can pin.
+    #expect(RepoChecksummedReleaseVersion(
+        release: .init(
+            tagName: "v10.1.0",
+            assetDigests: [
+                "buildifier-darwin-arm64": "sha512:\(arm64)",
+                "buildifier-darwin-amd64": "sha256:\(amd64)",
+            ]),
+        assets: assets) == nil)
+}
+
+@Test
+func rendersChecksumsBesideEachReleaseVersion() throws {
+    let arm64 = String(repeating: "c", count: 64)
+    let amd64 = String(repeating: "d", count: 64)
+    let file = ChecksummedReleaseEnumFile(
+        source: .init(name: "Buildifier", url: "https://github.com/bazel-contrib/buildtools"),
+        releases: [
+            .init(
+                tag: try #require(RepoVersionTag(rawTag: "8.2.1")),
+                darwinARM64SHA256: amd64,
+                darwinAMD64SHA256: arm64),
+            .init(
+                tag: try #require(RepoVersionTag(rawTag: "v10.1.0")),
+                darwinARM64SHA256: arm64,
+                darwinAMD64SHA256: amd64),
+        ])
+
+    #expect(file.filename == "BazelDep+Buildifier.swift")
+    #expect(file.content.contains("static let latest: Buildifier = .v10_1_0"))
+    #expect(file.content.contains("""
+            var darwinARM64SHA256: String {
+                switch self {
+                case .v10_1_0:
+                    return "\(arm64)"
+                case .v8_2_1:
+                    return "\(amd64)"
+                }
+            }
+    """))
+    #expect(file.content.contains("""
+            var darwinAMD64SHA256: String {
+                switch self {
+                case .v10_1_0:
+                    return "\(amd64)"
+                case .v8_2_1:
+                    return "\(arm64)"
+                }
+            }
+    """))
+}
+
+@Test
+func generatedReleasesAreLimitedToRegistryPublishedVersions() async throws {
+    let arm64 = String(repeating: "e", count: 64)
+    let amd64 = String(repeating: "f", count: 64)
+    let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("repo-enum-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let config = directory.appendingPathComponent("RepoSources.yml")
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try """
+    - name: Buildifier
+      url: https://github.com/bazel-contrib/buildtools
+      module: buildifier_prebuilt
+      release_assets:
+        darwin_arm64: buildifier-darwin-arm64
+        darwin_amd64: buildifier-darwin-amd64
+    """.write(to: config, atomically: true, encoding: .utf8)
+
+    let digests = [
+        "buildifier-darwin-arm64": "sha256:\(arm64)",
+        "buildifier-darwin-amd64": "sha256:\(amd64)",
+    ]
+    let service = RepoEnumGeneratorService(
+        client: StubTagClient(),
+        releases: StubReleaseClient(releases: [
+            .init(tagName: "v11.0.0", assetDigests: digests),
+            .init(tagName: "v10.1.0", assetDigests: digests),
+        ]),
+        registry: StubRegistryClient(versions: ["10.1.0", "8.2.1"]))
+
+    try await service.generate(configFile: config, outputDirectory: directory)
+
+    let generated = try String(
+        contentsOf: directory.appendingPathComponent("BazelDep+Buildifier.swift"),
+        encoding: .utf8)
+    /// A GitHub release the registry does not serve cannot be a `bazel_dep`
+    /// version, so it is never generated — including as `latest`.
+    #expect(!generated.contains("v11_0_0"))
+    #expect(generated.contains("static let latest: Buildifier = .v10_1_0"))
+}
+
+private struct StubTagClient: GitHubTagFetching {
+    func tags(for _: String) async throws -> [String] { [] }
+}
+
+private struct StubReleaseClient: GitHubReleaseFetching {
+    let releases: [GitHubRelease]
+
+    func releases(for _: String) async throws -> [GitHubRelease] { releases }
+}
+
+private struct StubRegistryClient: ModuleVersionFetching {
+    let versions: [String]
+
+    func versions(forModule _: String) async throws -> [String] { versions }
+}
+
+@Test
 func githubErrorIsReadable() async {
     let config = URLSessionConfiguration.ephemeral
     config.protocolClasses = [MockURLProtocol.self]

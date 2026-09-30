@@ -47,6 +47,22 @@ generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
 - buildifier version MUST 存在於 Bazelize 的 release catalog；catalog 保存產生
   lint command 時所需的各平台 checksum。
 
+### Release catalog
+
+`BazelDep+Buildifier.swift` 由 `repo-enum` package plugin 依 `RepoSources.yml`
+產生，內含 GitHub release API 回報的各 asset SHA-256 digest。
+
+只有同時滿足以下兩點的 release 才會被產生：
+
+- 設定的每個 asset（目前是 `buildifier-darwin-arm64` 與
+  `buildifier-darwin-amd64`）在該 GitHub release 都有 SHA-256 digest；
+- Bazel Central Registry 有登錄 `RepoSources.yml` 指定 module 的該版本，
+  因此 `latest` 不可能是 `bazel_dep` 解析不到的版本。
+
+其他 dependency 版本本來就取自 registry `metadata.json`，並排除 yanked 版本。
+`Bazel` 是例外：它寫進 `.bazelversion` 而非以 module 形式請求，所以版本來自
+repository 的 release tags。
+
 ### 刻意不放入 v1 的項目
 
 - Xcode configuration 繼續由 `-c` command-line option 指定。

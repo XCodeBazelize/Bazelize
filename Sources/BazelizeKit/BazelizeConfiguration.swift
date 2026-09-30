@@ -5,29 +5,21 @@ import Yams
 public struct BazelizeConfiguration: Equatable, Sendable {
     public static let fileName = "bazelize.yaml"
 
+    /// The buildifier release a generated `//:lint` downloads, taken from the
+    /// generated catalog so a version and its checksums are never spelled by
+    /// hand.
     public struct Buildifier: Equatable, Sendable {
-        public let version: String
+        public var version: String { release.rawValue }
 
-        let darwinARM64SHA256: String
-        let darwinAMD64SHA256: String
+        var darwinARM64SHA256: String { release.darwinARM64SHA256 }
+        var darwinAMD64SHA256: String { release.darwinAMD64SHA256 }
 
-        fileprivate static let current = Buildifier(
-            version: "10.1.0",
-            darwinARM64SHA256: "e9804864c407f920f5ecbf03a5e056a8145e11a6ae6b90d2438a3fd106d34473",
-            darwinAMD64SHA256: "e9e10ff52ec8786fcabccd251c8109ebf31ef7be1f667e27c6e069b96dbdc1f6")
+        fileprivate static let current = Buildifier(release: .latest)
 
-        fileprivate static func release(version: String) -> Buildifier? {
-            switch version {
-            case current.version:
-                return current
-            case "8.2.1":
-                return Buildifier(
-                    version: version,
-                    darwinARM64SHA256: "cfab310ae22379e69a3b1810b433c4cd2fc2c8f4a324586dfe4cc199943b8d5a",
-                    darwinAMD64SHA256: "9f8cffceb82f4e6722a32a021cbc9a5344b386b77b9f79ee095c61d087aaea06")
-            default:
-                return nil
-            }
+        private let release: BazelDep.Buildifier
+
+        fileprivate init(release: BazelDep.Buildifier) {
+            self.release = release
         }
     }
 
@@ -89,9 +81,10 @@ public struct BazelizeConfiguration: Equatable, Sendable {
         do {
             let yaml = try String(contentsOfFile: path.string, encoding: .utf8)
             let document = try YAMLDecoder().decode(Document.self, from: yaml)
-            guard let buildifier = Buildifier.release(version: document.buildifier.version) else {
+            guard let release = BazelDep.Buildifier(rawValue: document.buildifier.version) else {
                 throw DocumentError.unsupportedBuildifier(document.buildifier.version)
             }
+            let buildifier = Buildifier(release: release)
             return BazelizeConfiguration(schema: document.schema, buildifier: buildifier)
         } catch {
             throw BazelizeConfigurationError.invalidFile(

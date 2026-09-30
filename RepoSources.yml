@@ -27,3 +27,9 @@
 - name: AppleSupport
   url: https://github.com/bazelbuild/apple_support
   module: apple_support
+- name: Buildifier
+  url: https://github.com/bazel-contrib/buildtools
+  module: buildifier_prebuilt
+  release_assets:
+    darwin_arm64: buildifier-darwin-arm64
+    darwin_amd64: buildifier-darwin-amd64
