@@ -22,6 +22,7 @@ struct Command: AsyncParsableCommand {
         version: version,
         subcommands: [
             GenerateCommand.self,
+            InitCommand.self,
             DumpCommand.self
         ],
         defaultSubcommand: GenerateCommand.self)
@@ -70,6 +71,22 @@ struct GenerateCommand: AsyncParsableCommand {
             configuration: configuration)
 
         try await kit.run()
+    }
+}
+
+// MARK: - InitCommand
+
+struct InitCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "init",
+        abstract: "Create a bazelize.yaml configuration file.")
+
+    @Argument(help: "Destination directory. Defaults to the current directory.")
+    var directory = "."
+
+    func run() throws {
+        let path = try BazelizeConfiguration.createExample(in: Path.current + directory)
+        print("Created \(path.string)")
     }
 }
 

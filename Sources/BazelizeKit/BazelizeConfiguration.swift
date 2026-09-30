@@ -35,12 +35,43 @@ public struct BazelizeConfiguration: Equatable, Sendable {
         schema: 1,
         buildifier: .current)
 
+    public static let example = """
+    schema: 1
+
+    buildifier:
+      version: "\(Buildifier.current.version)"
+    """ + "\n"
+
     public let schema: Int
     public let buildifier: Buildifier
 
     private init(schema: Int, buildifier: Buildifier) {
         self.schema = schema
         self.buildifier = buildifier
+    }
+
+    @discardableResult
+    public static func createExample(in directory: Path) throws -> Path {
+        let directory = directory.absolute().normalize()
+        if directory.exists, !directory.isDirectory {
+            throw BazelizeConfigurationError.destinationNotDirectory(directory.string)
+        }
+        try directory.mkpath()
+
+        let path = directory + fileName
+        guard !path.exists else {
+            throw BazelizeConfigurationError.fileAlreadyExists(path.string)
+        }
+
+        do {
+            try Data(example.utf8).write(to: path.url, options: .withoutOverwriting)
+        } catch {
+            guard !path.exists else {
+                throw BazelizeConfigurationError.fileAlreadyExists(path.string)
+            }
+            throw error
+        }
+        return path
     }
 
     public static func load(explicitPath: Path?, inputPath: Path) throws -> BazelizeConfiguration {
@@ -106,11 +137,17 @@ public struct BazelizeConfiguration: Equatable, Sendable {
 }
 
 public enum BazelizeConfigurationError: Error, LocalizedError {
+    case destinationNotDirectory(String)
+    case fileAlreadyExists(String)
     case fileNotFound(String)
     case invalidFile(String, String)
 
     public var errorDescription: String? {
         switch self {
+        case let .destinationNotDirectory(path):
+            return "Configuration destination is not a directory: \(path)"
+        case let .fileAlreadyExists(path):
+            return "Configuration file already exists: \(path)"
         case let .fileNotFound(path):
             return "Configuration file not found: \(path)"
         case let .invalidFile(path, reason):

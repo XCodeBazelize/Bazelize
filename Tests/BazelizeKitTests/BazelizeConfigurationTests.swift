@@ -133,6 +133,38 @@ struct BazelizeConfigurationTests {
         }
     }
 
+    @Test
+    func createsCanonicalExampleInDestinationDirectory() throws {
+        let root = try scratch()
+        defer { try? root.delete() }
+        let destination = root + "nested/project"
+
+        let path = try BazelizeConfiguration.createExample(in: destination)
+
+        #expect(path == destination + BazelizeConfiguration.fileName)
+        #expect(try path.read() == BazelizeConfiguration.example)
+        let configuration = try BazelizeConfiguration.load(
+            explicitPath: path,
+            inputPath: root)
+        #expect(configuration == .default)
+    }
+
+    @Test
+    func creatingExampleDoesNotOverwriteExistingConfiguration() throws {
+        let root = try scratch()
+        defer { try? root.delete() }
+        let existing = root + BazelizeConfiguration.fileName
+        try existing.write("keep me\n")
+
+        do {
+            _ = try BazelizeConfiguration.createExample(in: root)
+            Issue.record("Expected an existing configuration to be preserved.")
+        } catch {
+            #expect(error.localizedDescription.contains("Configuration file already exists"))
+        }
+        #expect(try existing.read() == "keep me\n")
+    }
+
     private func scratch() throws -> Path {
         let root = Path(NSTemporaryDirectory()) + "bazelize-config-\(UUID().uuidString)"
         try root.mkpath()

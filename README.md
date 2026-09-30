@@ -46,6 +46,16 @@ reported by buildifier but do not fail this command yet.
 
 ### Configuration
 
+Create the default file in the current directory, or in a specified directory:
+
+```sh
+bazelize init
+bazelize init path/to/project
+```
+
+The command creates the destination directory when needed and refuses to
+overwrite an existing `bazelize.yaml`.
+
 `bazelize generate` reads `bazelize.yaml` beside an input `.xcodeproj` or in a
 Swift package root:
 

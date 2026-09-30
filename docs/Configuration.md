@@ -17,6 +17,17 @@ buildifier:
   version: "10.1.0"
 ```
 
+With no argument, `init` writes to the current directory. An optional directory
+selects another destination:
+
+```sh
+bazelize init
+bazelize init path/to/project
+```
+
+Missing destination directories are created. An existing `bazelize.yaml` is an
+error and is never overwritten.
+
 Only the buildifier release is configurable in v1. Bazel and BCR dependency
 versions are generator-owned pins and MUST NOT be copied into
 `bazelize.yaml`.

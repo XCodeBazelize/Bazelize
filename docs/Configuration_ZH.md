@@ -16,6 +16,16 @@ buildifier:
   version: "10.1.0"
 ```
 
+`init` 不帶 argument 時會寫到目前目錄；也可以指定其他 destination directory：
+
+```sh
+bazelize init
+bazelize init path/to/project
+```
+
+不存在的 destination directory 會自動建立。既有的 `bazelize.yaml` 會造成錯誤，
+絕不覆寫。
+
 v1 只允許設定 buildifier release。Bazel 與 BCR dependencies 的版本屬於
 generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
 
