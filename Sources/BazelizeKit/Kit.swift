@@ -32,7 +32,7 @@ public final class Kit {
     private lazy var pluginSPM = PluginSwiftPM(self)
 
     lazy var builtinPlugins: [PluginBuiltin] = [
-        PluginHttpArchive(self),
+        PluginBuildifier(self),
         PluginGitRepository(self),
         pluginSPM,
         PluginApple(self),

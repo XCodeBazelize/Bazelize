@@ -25,6 +25,12 @@ config_setting(
         ":mode": "Release",
     },
 )
+sh_binary(
+    name = "lint",
+    srcs = [
+        "lint.sh",
+    ],
+)
 swift_binary(
     name = "_plugin_host",
     srcs = [

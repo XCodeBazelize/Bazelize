@@ -133,6 +133,10 @@ jobs:
           ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
+      - name: Check Generated Starlark
+        working-directory: fixture/iOS/App
+        run: bazel run //:lint
+
       - name: Build Application
         working-directory: fixture/iOS/App
         run: |
@@ -417,6 +421,7 @@ jobs:
       # A package that is only a plugin has nothing to build either: SwiftPM
       # refuses the build rather than doing nothing, so it is skipped by what
       # its manifest declares.
+
       - name: SwiftPM Build And Test
         working-directory: spm/${{ matrix.name }}
         env:
@@ -468,6 +473,10 @@ jobs:
             echo "::error::the generator said something no fixture expects"
             exit 1
           fi
+
+      - name: Check Generated Starlark
+        working-directory: spm/${{ matrix.name }}/App
+        run: bazel run //:lint
 
       # Nothing runs the plugins here: generation ends with `bazel run
       # //:plugins`, so a target whose sources a plugin generates compiles in

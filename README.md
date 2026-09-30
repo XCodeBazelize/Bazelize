@@ -33,6 +33,17 @@ Bazel builds the plugins and their tools, so generation needs `bazel` on `PATH`
 for that step. Run the same command again whenever a plugin or its input
 changes.
 
+Every generated workspace also owns its Starlark lint command:
+
+```sh
+bazel run //:lint
+```
+
+It downloads the pinned buildifier for the host architecture into the user
+cache, verifies its checksum, and checks the generated `BUILD`, `WORKSPACE`,
+`*.bzl`, and `*.bazel` files. Lint warnings fail; formatting differences are
+reported by buildifier but do not fail this command yet.
+
 A command plugin becomes a target named after its verb, so `swift package
 hello` is:
 

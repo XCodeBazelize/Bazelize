@@ -56,6 +56,7 @@ cd spm/<package>
 bazelize --input . --output App
 cd App
 bazel run //:plugins   # only the packages with a build tool plugin need this
+bazel run //:lint      # downloads buildifier and checks generated Starlark
 bazel test //...
 bazel run //tools:list-config   # what `--config=<name>` the workspace defines
 bazel run //tools:list-trait    # which traits its packages declare, and which are on
@@ -88,6 +89,10 @@ they generate into `Packages/<package>/Generated/`. It is a separate step
 because a plugin is a program. Bazel builds the generated host, the plugins and
 their tools, then runs all of them from runfiles; no `bazelize` executable is
 needed at runtime.
+
+`bazel run //:lint` downloads the pinned buildifier for the host architecture,
+verifies and caches it, then checks every generated Starlark file. Lint warnings
+fail; formatting differences remain advisory.
 
 `bazel build --config=lang.<code>` bundles that localization and `Base`, and
 nothing else; a build that names none bundles every one of them, which is what

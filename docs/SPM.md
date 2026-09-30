@@ -72,6 +72,7 @@ App/
 ├── Package.resolved          # kept: the only source of pins
 ├── config.bazelrc
 ├── BUILD
+├── lint.sh                   # downloads and runs the pinned buildifier
 ├── plugins.sh                # enters the Bazel-built SwiftPM plugin host
 ├── plugin-host.swift         # compiled by Bazel for `//:plugins`
 ├── plugin-plan.json          # plugin requests and runfile paths
@@ -93,13 +94,16 @@ App/
 | command | what it does |
 |---|---|
 | `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
+| `bazel run //:lint` | downloads the pinned buildifier for the host architecture, verifies it, and lints every generated Starlark file |
 | `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
 | `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
 
-The plugin and listing commands are generated targets. `//:plugins` builds its
-host, plugins and tools with Bazel, then runs entirely from their runfiles; it
-does not look up `bazelize` on `PATH`. The listing answers are embedded from the
-same resolved workspace and configuration files that generate the package
+The lint, plugin, and listing commands are generated targets. `//:lint` caches
+the pinned buildifier under the user's cache directory and fails on lint
+warnings, while formatting differences remain advisory. `//:plugins` builds
+its host, plugins and tools with Bazel, then runs entirely from their runfiles;
+it does not look up `bazelize` on `PATH`. The listing answers are embedded from
+the same resolved workspace and configuration files that generate the package
 rules. The generated `tools/bazel` wrapper keeps `bazel list config|trait` as
 shorter aliases and forwards every other command unchanged.
 
