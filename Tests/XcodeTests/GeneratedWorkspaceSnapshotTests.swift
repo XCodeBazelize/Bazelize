@@ -45,6 +45,38 @@ struct GeneratedWorkspaceSnapshotTests {
             ])
     }
 
+    @Test
+    func configuredBuildifierReleaseIsWrittenToLintCommand() async throws {
+        let scratch = Path(NSTemporaryDirectory()) + UUID().uuidString
+        defer { try? scratch.delete() }
+        try scratch.mkpath()
+        let configPath = scratch + "custom.yaml"
+        try configPath.write("""
+        schema: 1
+        buildifier:
+          version: "8.2.1"
+        """)
+        let input = root + "fixture/iOS/Example.xcodeproj"
+        let configuration = try BazelizeConfiguration.load(
+            explicitPath: configPath,
+            inputPath: input)
+        let output = scratch + "output"
+
+        let kit = try await Kit(
+            input,
+            nil,
+            outputPath: output,
+            configuration: configuration)
+        try await kit.run()
+
+        let script = try String(
+            contentsOfFile: (output + "lint.sh").string,
+            encoding: .utf8)
+        #expect(script.contains("version=\"8.2.1\""))
+        #expect(script.contains(
+            "sha256=\"cfab310ae22379e69a3b1810b433c4cd2fc2c8f4a324586dfe4cc199943b8d5a\""))
+    }
+
     // MARK: Private
 
     private var root: Path {

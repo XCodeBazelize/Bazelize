@@ -48,16 +48,26 @@ struct GenerateCommand: AsyncParsableCommand {
         help: "Directory where the Bazel workspace is written.")
     var output: String
 
+    @Option(
+        name: [.customLong("config-file", withSingleDash: false)],
+        help: "Path to bazelize.yaml. Overrides automatic discovery beside the input.")
+    var configFile: String?
+
     @Option(name: [.short], help: "Preferred Xcode build configuration.")
     var config = "Release"
 
     func run() async throws {
         let path = Path.current + input
         let outputPath = Path.current + output
+        let explicitConfigPath = configFile.map { Path.current + $0 }
+        let configuration = try BazelizeConfiguration.load(
+            explicitPath: explicitConfigPath,
+            inputPath: path)
         let kit = try await Kit(
             path,
             config,
-            outputPath: outputPath)
+            outputPath: outputPath,
+            configuration: configuration)
 
         try await kit.run()
     }

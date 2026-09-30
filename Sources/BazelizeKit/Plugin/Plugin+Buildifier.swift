@@ -17,22 +17,25 @@ final class PluginBuildifier: PluginBuiltin {
     }
 
     override var custom: [PluginBuiltin.Custom]? {
-        [.init(path: "lint.sh", content: Self.script)]
+        [.init(
+            path: "lint.sh",
+            content: Self.script(buildifier: kit.configuration.buildifier))]
     }
 
-    private static let script = #"""
+    private static func script(buildifier: BazelizeConfiguration.Buildifier) -> String {
+        #"""
     #!/bin/bash
     set -euo pipefail
 
-    version="10.1.0"
+    version="\#(buildifier.version)"
     case "$(uname -m)" in
         arm64)
             asset="buildifier-darwin-arm64"
-            sha256="e9804864c407f920f5ecbf03a5e056a8145e11a6ae6b90d2438a3fd106d34473"
+            sha256="\#(buildifier.darwinARM64SHA256)"
             ;;
         x86_64)
             asset="buildifier-darwin-amd64"
-            sha256="e9e10ff52ec8786fcabccd251c8109ebf31ef7be1f667e27c6e069b96dbdc1f6"
+            sha256="\#(buildifier.darwinAMD64SHA256)"
             ;;
         *)
             echo "unsupported buildifier architecture: $(uname -m)" >&2
@@ -96,4 +99,5 @@ final class PluginBuildifier: PluginBuiltin {
     fi
 
     """#
+    }
 }

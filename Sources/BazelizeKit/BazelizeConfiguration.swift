@@ -1,0 +1,197 @@
+import Foundation
+import PathKit
+import Yams
+
+public struct BazelizeConfiguration: Equatable, Sendable {
+    public static let fileName = "bazelize.yaml"
+
+    public struct Buildifier: Equatable, Sendable {
+        public let version: String
+
+        let darwinARM64SHA256: String
+        let darwinAMD64SHA256: String
+
+        fileprivate static let current = Buildifier(
+            version: "10.1.0",
+            darwinARM64SHA256: "e9804864c407f920f5ecbf03a5e056a8145e11a6ae6b90d2438a3fd106d34473",
+            darwinAMD64SHA256: "e9e10ff52ec8786fcabccd251c8109ebf31ef7be1f667e27c6e069b96dbdc1f6")
+
+        fileprivate static func release(version: String) -> Buildifier? {
+            switch version {
+            case current.version:
+                return current
+            case "8.2.1":
+                return Buildifier(
+                    version: version,
+                    darwinARM64SHA256: "cfab310ae22379e69a3b1810b433c4cd2fc2c8f4a324586dfe4cc199943b8d5a",
+                    darwinAMD64SHA256: "9f8cffceb82f4e6722a32a021cbc9a5344b386b77b9f79ee095c61d087aaea06")
+            default:
+                return nil
+            }
+        }
+    }
+
+    public static let `default` = BazelizeConfiguration(
+        schema: 1,
+        buildifier: .current)
+
+    public let schema: Int
+    public let buildifier: Buildifier
+
+    private init(schema: Int, buildifier: Buildifier) {
+        self.schema = schema
+        self.buildifier = buildifier
+    }
+
+    public static func load(explicitPath: Path?, inputPath: Path) throws -> BazelizeConfiguration {
+        let path: Path
+        if let explicitPath {
+            path = explicitPath.absolute().normalize()
+            guard path.exists else {
+                throw BazelizeConfigurationError.fileNotFound(path.string)
+            }
+        } else {
+            path = automaticPath(for: inputPath)
+            guard path.exists else { return .default }
+        }
+
+        do {
+            let yaml = try String(contentsOfFile: path.string, encoding: .utf8)
+            let document = try YAMLDecoder().decode(Document.self, from: yaml)
+            guard let buildifier = Buildifier.release(version: document.buildifier.version) else {
+                throw DocumentError.unsupportedBuildifier(document.buildifier.version)
+            }
+            return BazelizeConfiguration(schema: document.schema, buildifier: buildifier)
+        } catch {
+            throw BazelizeConfigurationError.invalidFile(
+                path.string,
+                Self.description(of: error))
+        }
+    }
+
+    private static func automaticPath(for inputPath: Path) -> Path {
+        let inputPath = inputPath.absolute().normalize()
+        if inputPath.lastComponent == "Package.swift" {
+            return inputPath.parent() + fileName
+        }
+        if inputPath.isDirectory, (inputPath + "Package.swift").exists {
+            return inputPath + fileName
+        }
+        return inputPath.parent() + fileName
+    }
+
+    private static func description(of error: Error) -> String {
+        let context: DecodingError.Context?
+        switch error {
+        case let DecodingError.dataCorrupted(value):
+            context = value
+        case let DecodingError.keyNotFound(_, value):
+            context = value
+        case let DecodingError.typeMismatch(_, value):
+            context = value
+        case let DecodingError.valueNotFound(_, value):
+            context = value
+        default:
+            context = nil
+        }
+
+        if let underlyingError = context?.underlyingError {
+            return description(of: underlyingError)
+        }
+        if let error = error as? LocalizedError, let description = error.errorDescription {
+            return description
+        }
+        return context?.debugDescription ?? String(describing: error)
+    }
+}
+
+public enum BazelizeConfigurationError: Error, LocalizedError {
+    case fileNotFound(String)
+    case invalidFile(String, String)
+
+    public var errorDescription: String? {
+        switch self {
+        case let .fileNotFound(path):
+            return "Configuration file not found: \(path)"
+        case let .invalidFile(path, reason):
+            return "Invalid configuration file at \(path): \(reason)"
+        }
+    }
+}
+
+private extension BazelizeConfiguration {
+    struct Document: Decodable {
+        let schema: Int
+        let buildifier: BuildifierDocument
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: ConfigurationKey.self)
+            try rejectUnknownKeys(in: container, allowed: ["schema", "buildifier"])
+
+            schema = try container.decode(Int.self, forKey: ConfigurationKey("schema"))
+            guard schema == 1 else { throw DocumentError.unsupportedSchema(schema) }
+            buildifier = try container.decode(
+                BuildifierDocument.self,
+                forKey: ConfigurationKey("buildifier"))
+        }
+    }
+
+    struct BuildifierDocument: Decodable {
+        let version: String
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: ConfigurationKey.self)
+            try rejectUnknownKeys(in: container, allowed: ["version"])
+            version = try container.decode(String.self, forKey: ConfigurationKey("version"))
+        }
+    }
+
+    static func rejectUnknownKeys(
+        in container: KeyedDecodingContainer<ConfigurationKey>,
+        allowed: Set<String>) throws {
+        guard let key = container.allKeys
+            .filter({ !allowed.contains($0.stringValue) })
+            .sorted(by: { $0.stringValue < $1.stringValue })
+            .first
+        else { return }
+
+        let path = (container.codingPath + [key])
+            .map(\.stringValue)
+            .joined(separator: ".")
+        throw DocumentError.unknownProperty(path)
+    }
+}
+
+private struct ConfigurationKey: CodingKey, Hashable {
+    let stringValue: String
+    let intValue: Int? = nil
+
+    init(_ stringValue: String) {
+        self.stringValue = stringValue
+    }
+
+    init?(stringValue: String) {
+        self.init(stringValue)
+    }
+
+    init?(intValue _: Int) {
+        return nil
+    }
+}
+
+private enum DocumentError: Error, LocalizedError {
+    case unknownProperty(String)
+    case unsupportedSchema(Int)
+    case unsupportedBuildifier(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .unknownProperty(path):
+            return "Unknown property '\(path)'."
+        case let .unsupportedSchema(schema):
+            return "Unsupported schema \(schema); expected 1."
+        case let .unsupportedBuildifier(version):
+            return "Unsupported buildifier version '\(version)'."
+        }
+    }
+}

@@ -14,6 +14,7 @@ import XcodeProj
 public final class Kit {
     let project: Project
     let outputRoot: Path
+    let configuration: BazelizeConfiguration
 
     private lazy var roadmap = Bazel.Roadmap(output: outputRoot, project: project)
     lazy var version = Bazel.Version(outputRoot)
@@ -44,7 +45,12 @@ public final class Kit {
 
     // MARK: Lifecycle
 
-    public init(_ projPath: Path, _ preferConfig: String?, outputPath: Path? = nil) async throws {
+    public init(
+        _ projPath: Path,
+        _ preferConfig: String?,
+        outputPath: Path? = nil,
+        configuration: BazelizeConfiguration = .default) async throws {
+        self.configuration = configuration
         project = try Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
         plugins = []

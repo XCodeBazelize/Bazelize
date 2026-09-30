@@ -73,6 +73,9 @@ let package = Package(
                 .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
+        .testTarget(
+            name: "BazelizeKitTests",
+            dependencies: ["BazelizeKit", "PathKit"]),
         .target(
             name: "RepoEnumCore",
             dependencies: [

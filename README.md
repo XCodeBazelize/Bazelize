@@ -44,6 +44,25 @@ cache, verifies its checksum, and checks the generated `BUILD`, `WORKSPACE`,
 `*.bzl`, and `*.bazel` files. Lint warnings fail; formatting differences are
 reported by buildifier but do not fail this command yet.
 
+### Configuration
+
+`bazelize generate` reads `bazelize.yaml` beside an input `.xcodeproj` or in a
+Swift package root:
+
+```yaml
+schema: 1
+
+buildifier:
+  version: "10.1.0"
+```
+
+Use `--config-file path/to/custom.yaml` to select another file. An explicit
+file takes precedence over automatic discovery; Bazelize does not merge them.
+The buildifier version must be in Bazelize's checksum catalog. Bazel and BCR
+dependency pins remain generator-owned and are not configuration properties.
+
+See [the configuration contract and v2 candidates](docs/Configuration.md).
+
 An Xcode target whose product type is `com.apple.product-type.bundle` is
 generated as a rules_apple `macos_bundle`.
 
