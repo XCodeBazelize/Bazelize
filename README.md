@@ -44,6 +44,9 @@ cache, verifies its checksum, and checks the generated `BUILD`, `WORKSPACE`,
 `*.bzl`, and `*.bazel` files. Lint warnings fail; formatting differences are
 reported by buildifier but do not fail this command yet.
 
+An Xcode target whose product type is `com.apple.product-type.bundle` is
+generated as a rules_apple `macos_bundle`.
+
 A command plugin becomes a target named after its verb, so `swift package
 hello` is:
 

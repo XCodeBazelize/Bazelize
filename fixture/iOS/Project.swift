@@ -50,6 +50,16 @@ let project = Project(
     ],
     settings: settings(),
     targets: [
+        .target(
+            name: "MacBundle",
+            destinations: .macOS,
+            product: .bundle,
+            bundleId: "com.bazel.MacBundle",
+            deploymentTargets: .macOS("13.0"),
+            infoPlist: .extendingDefault(with: [:]),
+            sources: ["MacBundle/**/*.swift"],
+            resources: [.folderReference(path: "MacBundle/Resources")],
+            settings: settings()),
         target(
             "Static",
             product: .staticLibrary,

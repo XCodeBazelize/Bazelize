@@ -62,6 +62,7 @@ extension Target {
         switch productType {
         case "com.apple.product-type.application",
              "com.apple.product-type.tool",
+             "com.apple.product-type.bundle",
              "com.apple.product-type.bundle.unit-test",
              "com.apple.product-type.bundle.ui-testing":
             return false

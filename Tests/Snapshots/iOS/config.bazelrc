@@ -2,5 +2,6 @@
 
 build --define=apple.incompatible.objc_framework_propagate_modulemap=true
 build --ios_minimum_os=16.2
+build --macos_minimum_os=13.0
 build:Debug --//:mode=Debug
 build:Release --//:mode=Release

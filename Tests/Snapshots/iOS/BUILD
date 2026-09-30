@@ -70,6 +70,7 @@ xcodeproj(
         "//Targets/Framework2Tests:Framework2Tests",
         "//Targets/Framework3:Framework3",
         "//Targets/Framework3Tests:Framework3Tests",
+        "//Targets/MacBundle:MacBundle",
         "//Targets/Static:Static",
         "//Targets/Static2:Static2",
         "//Targets/StaticFramework1:StaticFramework1",

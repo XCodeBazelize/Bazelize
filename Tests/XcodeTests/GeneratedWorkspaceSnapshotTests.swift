@@ -26,6 +26,7 @@ struct GeneratedWorkspaceSnapshotTests {
                 "config.bazelrc",
                 "Prebuilt/BUILD",
                 "Targets/Example/BUILD",
+                "Targets/MacBundle/BUILD",
                 "Targets/Framework1/BUILD",
                 "Targets/Static2/BUILD",
                 "Targets/StaticFramework1/BUILD",

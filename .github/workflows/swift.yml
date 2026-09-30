@@ -137,10 +137,9 @@ jobs:
         working-directory: fixture/iOS/App
         run: bazel run //:lint
 
-      - name: Build Application
+      - name: Build Products
         working-directory: fixture/iOS/App
-        run: |
-          bazel build //Targets/Example
+        run: bazel build //Targets/Example //Targets/MacBundle
 
       - name: Copy IPA
         working-directory: fixture/iOS/App
