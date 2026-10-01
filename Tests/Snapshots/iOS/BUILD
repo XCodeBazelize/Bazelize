@@ -31,6 +31,12 @@ sh_binary(
         "lint.sh",
     ],
 )
+sh_binary(
+    name = "format",
+    srcs = [
+        "format.sh",
+    ],
+)
 swift_binary(
     name = "_plugin_host",
     srcs = [

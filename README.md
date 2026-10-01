@@ -33,17 +33,20 @@ Bazel builds the plugins and their tools, so generation needs `bazel` on `PATH`
 for that step. Run the same command again whenever a plugin or its input
 changes.
 
-Every generated workspace also owns its Starlark lint command:
+Every generated workspace also owns its Starlark commands:
 
 ```sh
 bazel run //:lint
+bazel run //:format
 ```
 
-It picks the buildifier pinned for the host — `uname -s` and `uname -m`, so
-macOS and Linux on arm64 or x86_64 — downloads it into the user cache, verifies
-its checksum, and checks the generated `BUILD`, `WORKSPACE`, `*.bzl`, and
-`*.bazel` files. Lint warnings fail; formatting differences are reported by
-buildifier but do not fail this command yet.
+Both pick the buildifier pinned for the host — `uname -s` and `uname -m`, so
+macOS and Linux on arm64 or x86_64 — and download it into the user cache
+against its checksum. `//:lint` reports warnings and fails on them; `//:format`
+rewrites the generated `BUILD`, `WORKSPACE`, `*.bzl`, and `*.bazel` files the
+way buildifier formats them. Formatting is buildifier's job, so generation does
+not do it and `//:lint` reports a formatting difference rather than failing on
+it.
 
 ### Configuration
 

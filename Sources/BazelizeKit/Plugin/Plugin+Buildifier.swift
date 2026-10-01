@@ -4,25 +4,92 @@
 
 // MARK: - PluginBuildifier
 
-/// A generated workspace's own buildifier lint command.
+/// A generated workspace's own buildifier commands.
+///
+/// Formatting is buildifier's job rather than the generator's, so a workspace
+/// carries the tool to do it: `//:lint` says what is wrong, `//:format` fixes
+/// what is only formatting. Neither is run by generation.
 final class PluginBuildifier: PluginBuiltin {
     override var name: String { "Buildifier" }
 
     override func build(_ builder: CodeBuilder) {
         builder.load(loadableRule: Rules.Shell.sh_binary)
-        builder.call(
-            Rules.Shell.Call.sh_binary(
-                name: "lint",
-                srcs: ["lint.sh"]))
+        for command in Command.allCases {
+            builder.call(
+                Rules.Shell.Call.sh_binary(
+                    name: command.rawValue,
+                    srcs: [command.file]))
+        }
     }
 
     override var custom: [PluginBuiltin.Custom]? {
-        [.init(
-            path: "lint.sh",
-            content: Self.script(buildifier: kit.configuration.buildifier))]
+        Command.allCases.map { command in
+            .init(
+                path: command.file,
+                content: Self.script(
+                    buildifier: kit.configuration.buildifier,
+                    command: command))
+        }
     }
 
-    private static func script(buildifier: BazelizeConfiguration.Buildifier) -> String {
+    override var tip: String? {
+        "`bazel run //:format` formats the generated Starlark, `bazel run //:lint` checks it."
+    }
+
+    /// What a generated workspace can do to its own Starlark.
+    enum Command: String, CaseIterable {
+        /// Report warnings; formatting differences are reported but do not fail.
+        case lint
+        /// Rewrite the files the way buildifier formats them.
+        case format
+
+        var file: String { "\(rawValue).sh" }
+
+        /// What the command does once buildifier is on disk and the files are
+        /// collected.
+        var body: String {
+            switch self {
+            case .lint:
+                return """
+                set +e
+                output=$("$buildifier" --mode=check --lint=warn "${files[@]}" 2>&1)
+                result=$?
+                set -e
+
+                # Check mode returns 4 when formatting differs. Formatting is
+                # what `bazel run //:format` is for, so it is reported here
+                # rather than failed on.
+                if [[ "$result" -ne 0 && "$result" -ne 4 ]]; then
+                    printf '%s\\n' "$output" >&2
+                    exit "$result"
+                fi
+
+                reformat=$(printf '%s\\n' "$output" | grep ' # reformat$' || true)
+                if [[ -n "$reformat" ]]; then
+                    echo "run bazel run //:format to format:" >&2
+                    printf '%s\\n' "$reformat" >&2
+                fi
+
+                warnings=$(printf '%s\\n' "$output" | grep -v ' # reformat$' || true)
+                if [[ -n "$warnings" ]]; then
+                    echo "generated Starlark has buildifier warnings" >&2
+                    printf '%s\\n' "$warnings" >&2
+                    exit 1
+                fi
+                """
+            case .format:
+                return """
+                "$buildifier" --mode=fix "${files[@]}"
+                echo "formatted ${#files[@]} files"
+                """
+            }
+        }
+    }
+
+    private static func script(
+        buildifier: BazelizeConfiguration.Buildifier,
+        command: Command) -> String
+    {
         #"""
     #!/bin/bash
     set -euo pipefail
@@ -62,7 +129,7 @@ final class PluginBuildifier: PluginBuiltin {
         trap - EXIT
     fi
 
-    workspace=${BUILD_WORKSPACE_DIRECTORY:?run this command with bazel run //:lint}
+    workspace=${BUILD_WORKSPACE_DIRECTORY:?run this command with bazel run //:\#(command.rawValue)}
     cd "$workspace"
 
     files=()
@@ -81,24 +148,7 @@ final class PluginBuildifier: PluginBuiltin {
         exit 1
     fi
 
-    set +e
-    output=$("$buildifier" --mode=check --lint=warn "${files[@]}" 2>&1)
-    result=$?
-    set -e
-
-    # Check mode returns 4 when formatting differs. Formatting is deliberately
-    # not gated until generated files are formatted as part of generation.
-    if [[ "$result" -ne 0 && "$result" -ne 4 ]]; then
-        printf '%s\n' "$output" >&2
-        exit "$result"
-    fi
-
-    warnings=$(printf '%s\n' "$output" | grep -v ' # reformat$' || true)
-    if [[ -n "$warnings" ]]; then
-        echo "generated Starlark has buildifier warnings" >&2
-        printf '%s\n' "$warnings" >&2
-        exit 1
-    fi
+    \#(command.body)
 
     """#
     }
