@@ -7,9 +7,6 @@
 - name: XcodeProj
   url: https://github.com/MobileNativeFoundation/rules_xcodeproj
   module: rules_xcodeproj
-- name: SwiftPM
-  url: https://github.com/cgrindel/rules_swift_package_manager
-  module: rules_swift_package_manager
 - name: AppleLinker
   url: https://github.com/keith/rules_apple_linker
   module: rules_apple_linker
