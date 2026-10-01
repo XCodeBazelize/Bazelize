@@ -255,14 +255,21 @@ jobs:
             rev: 088351b0fc67e0b24b83e7954ad48314dda4ce04
             project: VirtualBuddy.xcodeproj
             target: //Targets/VirtualBuddy
-          # Not yet green on a runner, so not yet a lane. iina is the app the
-          # notes still list an open problem for, and MacPass needs its
-          # submodules and a Carthage bootstrap that nothing here has proven.
-          # - name: iina
-          #   repo: https://github.com/iina/iina
-          #   rev: c111221ea027466b79b40bfca054772d4851e06f
-          #   project: iina.xcodeproj
-          #   target: //Targets/iina
+          # iina links dylibs that are not in its repository, and the script it
+          # ships downloads whatever the feed serves today: at this revision
+          # 48 of the 71 libraries it names are no longer there, so the feed is
+          # pinned to the version whose file list this revision matches.
+          - name: iina
+            repo: https://github.com/iina/iina
+            rev: c111221ea027466b79b40bfca054772d4851e06f
+            project: iina.xcodeproj
+            target: //Targets/iina
+            setup: sed -i '' 's|dylibs/${ARCH}|dylibs/1.4.2/${ARCH}|' other/download_libs.sh && ./other/download_libs.sh --skip-plugins
+          # Not a lane: MacPass pins Carthage dependencies whose deployment
+          # targets (10.9 to 10.15) are below what Xcode 27 accepts, so
+          # `carthage bootstrap` fails on the first one and builds nothing.
+          # Nothing in the lane's configuration fixes that; it needs a revision
+          # whose Cartfile.resolved pins buildable dependencies.
           # - name: MacPass
           #   repo: https://github.com/MacPass/MacPass
           #   rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
