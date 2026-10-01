@@ -66,6 +66,7 @@ App/
 ├── config.bazelrc
 ├── BUILD
 ├── lint.sh                   # 下載並執行固定版本的 buildifier
+├── format.sh                 # 同一支 buildifier，改寫成它的格式
 ├── plugins.sh                # 進入 Bazel 建出的 SwiftPM plugin host
 ├── plugin-host.swift         # 由 Bazel 編成 `//:plugins` 的 host
 ├── plugin-plan.json          # plugin request 與 runfile 路徑
@@ -87,12 +88,14 @@ App/
 | 指令 | 做什麼 |
 |---|---|
 | `bazel run //:plugins` | 讓 Bazel 建這個 workspace 的 build tool plugin 與它們的工具、執行它們，把產生的檔案寫回 `Packages/*/Generated/` |
-| `bazel run //:lint` | 下載適合 host 架構的固定版本 buildifier、驗證 checksum，並 lint 全部產生出的 Starlark 檔案 |
+| `bazel run //:lint` | 下載該 host（`uname -s` 與 `uname -m`）對應的固定版本 buildifier、驗證 checksum，並 lint 全部產生出的 Starlark 檔案 |
+| `bazel run //:format` | 同一支 buildifier，把那些檔案改寫成它的格式 |
 | `bazel run //tools:list-config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
 | `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
 
-Lint、plugin 與清單指令都是產生出來的 target。`//:lint` 把固定版本的
-buildifier 快取在使用者的 cache 目錄；lint warning 會失敗，格式差異目前只回報。
+Lint、format、plugin 與清單指令都是產生出來的 target。`//:lint` 把固定版本的
+buildifier 快取在使用者的 cache 目錄；lint warning 會失敗，格式差異只回報，
+因為改寫格式是 `//:format` 的事。
 `//:plugins` 用 Bazel 建 host、plugin 與工具，接著完全從它們的 runfiles
 執行，不會再去 `PATH` 找 `bazelize`。清單答案來自產生 package rules 時使用的
 同一份 resolved workspace 與設定檔。產生的 `tools/bazel` wrapper 仍保留較短的

@@ -117,9 +117,10 @@ because a plugin is a program. Bazel builds the generated host, the plugins and
 their tools, then runs all of them from runfiles; no `bazelize` executable is
 needed at runtime.
 
-`bazel run //:lint` downloads the pinned buildifier for the host architecture,
-verifies and caches it, then checks every generated Starlark file. Lint warnings
-fail; formatting differences remain advisory.
+`bazel run //:lint` downloads the buildifier pinned for the host — `uname -s`
+and `uname -m`, so macOS and Linux on arm64 or x86_64 — verifies and caches it,
+then checks every generated Starlark file. Lint warnings fail; a formatting
+difference is reported, and `bazel run //:format` is what rewrites the files.
 
 `bazel build --config=lang.<code>` bundles that localization and `Base`, and
 nothing else; a build that names none bundles every one of them, which is what

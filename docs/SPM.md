@@ -94,13 +94,15 @@ App/
 | command | what it does |
 |---|---|
 | `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
-| `bazel run //:lint` | downloads the pinned buildifier for the host architecture, verifies it, and lints every generated Starlark file |
+| `bazel run //:lint` | downloads the buildifier pinned for the host — `uname -s` and `uname -m` — verifies it, and lints every generated Starlark file |
+| `bazel run //:format` | the same buildifier, rewriting those files the way it formats them |
 | `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
 | `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
 
-The lint, plugin, and listing commands are generated targets. `//:lint` caches
-the pinned buildifier under the user's cache directory and fails on lint
-warnings, while formatting differences remain advisory. `//:plugins` builds
+The lint, format, plugin, and listing commands are generated targets. `//:lint`
+caches the pinned buildifier under the user's cache directory and fails on lint
+warnings; formatting is `//:format`'s business, so a formatting difference is
+reported rather than failed on. `//:plugins` builds
 its host, plugins and tools with Bazel, then runs entirely from their runfiles;
 it does not look up `bazelize` on `PATH`. The listing answers are embedded from
 the same resolved workspace and configuration files that generate the package

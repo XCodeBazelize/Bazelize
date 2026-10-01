@@ -120,6 +120,13 @@ See [SwiftPM](SPM.md) for what the rules themselves look like.
 - `Prebuilt/` is global at the root level and stores prebuilt binaries
 - `Packages/` is global at the root level and stores the Swift packages' rules
 
-## Deferred
+## Missing files
 
-- missing-file behavior will be defined later
+A file the project names and the disk does not have is left out of the target
+and named at the end of the run. Xcode compiles what is there, so the generated
+build does too, and the run says which file went missing rather than leaving a
+compile error to say it indirectly.
+
+A path that is not the project's own is not reported: a built product of
+another target, an SDK framework, an absolute path, a header search path, and a
+path that still carries an unexpanded build setting.
