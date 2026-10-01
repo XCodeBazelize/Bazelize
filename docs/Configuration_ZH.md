@@ -54,10 +54,14 @@ generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
 
 只有同時滿足以下兩點的 release 才會被產生：
 
-- 設定的每個 asset（目前是 `buildifier-darwin-arm64` 與
-  `buildifier-darwin-amd64`）在該 GitHub release 都有 SHA-256 digest；
+- `release_assets` 列出的每個 host 在該 GitHub release 都有 SHA-256 digest，
+  產生出來的 lint command 才能在任一 host 上執行；
 - Bazel Central Registry 有登錄 `RepoSources.yml` 指定 module 的該版本，
   因此 `latest` 不可能是 `bazel_dep` 解析不到的版本。
+
+host 以 `uname` 的說法命名：`os` 是小寫的 `uname -s`，`machine` 是 `uname -m`。
+產生的 `lint.sh` 就是以此判斷，要支援新 host 只需在 `RepoSources.yml` 補上它的
+asset。
 
 其他 dependency 版本本來就取自 registry `metadata.json`，並排除 yanked 版本。
 `Bazel` 是例外：它寫進 `.bazelversion` 而非以 module 形式請求，所以版本來自

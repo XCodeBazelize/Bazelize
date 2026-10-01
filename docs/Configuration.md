@@ -59,11 +59,15 @@ release API reports them.
 
 A release is generated only when both hold:
 
-- every configured asset — currently `buildifier-darwin-arm64` and
-  `buildifier-darwin-amd64` — has a SHA-256 digest in the GitHub release;
+- every host in `release_assets` has a SHA-256 digest in the GitHub release,
+  so a generated lint command can run on any of them;
 - the Bazel Central Registry serves that version of the module named in
   `RepoSources.yml`, so `latest` can never be a version `bazel_dep` cannot
   resolve.
+
+A host is named the way `uname` names it: `os` is `uname -s` lowercased,
+`machine` is `uname -m`. That is what the generated `lint.sh` switches on, and
+adding a host is adding its asset to `RepoSources.yml`.
 
 Every other generated dependency version already comes from the registry's
 `metadata.json` with yanked versions removed. `Bazel` is the exception: it is

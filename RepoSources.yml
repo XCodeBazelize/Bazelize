@@ -31,5 +31,15 @@
   url: https://github.com/bazel-contrib/buildtools
   module: buildifier_prebuilt
   release_assets:
-    darwin_arm64: buildifier-darwin-arm64
-    darwin_amd64: buildifier-darwin-amd64
+    - os: darwin
+      machine: arm64
+      asset: buildifier-darwin-arm64
+    - os: darwin
+      machine: x86_64
+      asset: buildifier-darwin-amd64
+    - os: linux
+      machine: aarch64
+      asset: buildifier-linux-arm64
+    - os: linux
+      machine: x86_64
+      asset: buildifier-linux-amd64

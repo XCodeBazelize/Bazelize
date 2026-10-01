@@ -4,18 +4,24 @@ import FoundationNetworking
 #endif
 import Yams
 
-public struct RepoReleaseAssets: Codable, Sendable, Equatable {
-    public let darwinARM64: String
-    public let darwinAMD64: String
+/// A release asset for one host, named the way `uname` names that host.
+public struct RepoReleaseAsset: Codable, Sendable, Equatable {
+    /// `uname -s`, lowercased.
+    public let os: String
+    /// `uname -m`.
+    public let machine: String
+    /// The asset's file name in the GitHub release.
+    public let asset: String
 
-    public init(darwinARM64: String, darwinAMD64: String) {
-        self.darwinARM64 = darwinARM64
-        self.darwinAMD64 = darwinAMD64
+    public init(os: String, machine: String, asset: String) {
+        self.os = os
+        self.machine = machine
+        self.asset = asset
     }
 
-    enum CodingKeys: String, CodingKey {
-        case darwinARM64 = "darwin_arm64"
-        case darwinAMD64 = "darwin_amd64"
+    /// The Swift case this host is generated as.
+    public var caseName: String {
+        "\(os)_\(machine)"
     }
 }
 
@@ -31,13 +37,13 @@ public struct RepoSource: Codable, Sendable, Equatable {
     public let module: String?
     /// GitHub release assets whose API-provided SHA-256 digests are generated
     /// beside each release version.
-    public let releaseAssets: RepoReleaseAssets?
+    public let releaseAssets: [RepoReleaseAsset]?
 
     public init(
         name: String,
         url: String,
         module: String? = nil,
-        releaseAssets: RepoReleaseAssets? = nil)
+        releaseAssets: [RepoReleaseAsset]? = nil)
     {
         self.name = name
         self.url = url
@@ -188,36 +194,32 @@ public struct RepoEnumFile: Equatable {
     }
 }
 
+/// A release every configured host has a SHA-256 digest for.
 public struct RepoChecksummedReleaseVersion: Sendable, Equatable {
     public let tag: RepoVersionTag
-    public let darwinARM64SHA256: String
-    public let darwinAMD64SHA256: String
+    /// Digest by `RepoReleaseAsset.caseName`.
+    public let checksums: [String: String]
 
-    public init?(
-        release: GitHubRelease,
-        assets: RepoReleaseAssets)
-    {
-        guard
-            let tag = RepoVersionTag(rawTag: release.tagName),
-            let darwinARM64SHA256 = Self.checksum(
-                release.assetDigests[assets.darwinARM64]),
-            let darwinAMD64SHA256 = Self.checksum(
-                release.assetDigests[assets.darwinAMD64])
-        else { return nil }
+    public init?(release: GitHubRelease, assets: [RepoReleaseAsset]) {
+        guard let tag = RepoVersionTag(rawTag: release.tagName), !assets.isEmpty else {
+            return nil
+        }
+
+        var checksums: [String: String] = [:]
+        for asset in assets {
+            guard let checksum = Self.checksum(release.assetDigests[asset.asset]) else {
+                return nil
+            }
+            checksums[asset.caseName] = checksum
+        }
 
         self.tag = tag
-        self.darwinARM64SHA256 = darwinARM64SHA256
-        self.darwinAMD64SHA256 = darwinAMD64SHA256
+        self.checksums = checksums
     }
 
-    public init(
-        tag: RepoVersionTag,
-        darwinARM64SHA256: String,
-        darwinAMD64SHA256: String)
-    {
+    public init(tag: RepoVersionTag, checksums: [String: String]) {
         self.tag = tag
-        self.darwinARM64SHA256 = darwinARM64SHA256
-        self.darwinAMD64SHA256 = darwinAMD64SHA256
+        self.checksums = checksums
     }
 
     private static func checksum(_ digest: String?) -> String? {
@@ -232,15 +234,21 @@ public struct RepoChecksummedReleaseVersion: Sendable, Equatable {
 
 public struct ChecksummedReleaseEnumFile: Equatable {
     public let source: RepoSource
+    public let assets: [RepoReleaseAsset]
     public let releases: [RepoChecksummedReleaseVersion]
 
-    public init(source: RepoSource, releases: [RepoChecksummedReleaseVersion]) {
+    public init(
+        source: RepoSource,
+        assets: [RepoReleaseAsset],
+        releases: [RepoChecksummedReleaseVersion])
+    {
         var deduplicated: [String: RepoChecksummedReleaseVersion] = [:]
         for release in releases {
             deduplicated[release.tag.normalizedVersion] = release
         }
 
         self.source = source
+        self.assets = assets
         self.releases = deduplicated.values.sorted {
             RepoVersionTag.sortDescending($0.tag, $1.tag)
         }
@@ -264,15 +272,28 @@ public struct ChecksummedReleaseEnumFile: Equatable {
             enum \(source.name): String {
         \(latest)\(cases)
 
-                var darwinARM64SHA256: String {
-                    switch self {
-        \(checksumCases(\.darwinARM64SHA256))
+                /// A host as `uname` names it, and the asset built for it.
+                enum Host: String, CaseIterable {
+        \(hostCases)
+
+                    /// `uname -s`, lowercased.
+                    var os: String {
+                        switch self {
+        \(hostProperty(\.os))
+                        }
+                    }
+
+                    /// `uname -m`.
+                    var machine: String {
+                        switch self {
+        \(hostProperty(\.machine))
+                        }
                     }
                 }
 
-                var darwinAMD64SHA256: String {
+                func sha256(_ host: Host) -> String {
                     switch self {
-        \(checksumCases(\.darwinAMD64SHA256))
+        \(checksumCases)
                     }
                 }
             }
@@ -280,12 +301,32 @@ public struct ChecksummedReleaseEnumFile: Equatable {
         """
     }
 
-    private func checksumCases(
-        _ keyPath: KeyPath<RepoChecksummedReleaseVersion, String>) -> String
-    {
+    private var hostCases: String {
+        assets
+            .map { #"            case \#($0.caseName) = "\#($0.asset)""# }
+            .joined(separator: "\n")
+    }
+
+    private func hostProperty(_ keyPath: KeyPath<RepoReleaseAsset, String>) -> String {
+        assets.map { asset in
+            "                case .\(asset.caseName):\n"
+                + "                    return \"\(asset[keyPath: keyPath])\""
+        }
+        .joined(separator: "\n")
+    }
+
+    private var checksumCases: String {
         releases.map { release in
-            "            case .\(release.tag.caseName):\n"
-                + "                return \"\(release[keyPath: keyPath])\""
+            let hosts = assets.map { asset in
+                "                case .\(asset.caseName):\n"
+                    + "                    return \"\(release.checksums[asset.caseName] ?? "")\""
+            }
+            .joined(separator: "\n")
+
+            return "            case .\(release.tag.caseName):\n"
+                + "                switch host {\n"
+                + hosts + "\n"
+                + "                }"
         }
         .joined(separator: "\n")
     }
@@ -540,7 +581,7 @@ public struct RepoEnumGeneratorService {
     /// the Bazel Central Registry serves that version too.
     private func checksummedFile(
         for source: RepoSource,
-        assets: RepoReleaseAssets) async throws -> (String, String)
+        assets: [RepoReleaseAsset]) async throws -> (String, String)
     {
         let published: Set<String>? = if let module = source.module {
             Set(try await registry.versions(forModule: module)
@@ -557,7 +598,10 @@ public struct RepoEnumGeneratorService {
             throw RepoEnumGeneratorError.noChecksummedReleases(source.name)
         }
 
-        let file = ChecksummedReleaseEnumFile(source: source, releases: versions)
+        let file = ChecksummedReleaseEnumFile(
+            source: source,
+            assets: assets,
+            releases: versions)
         return (file.filename, file.content)
     }
 }

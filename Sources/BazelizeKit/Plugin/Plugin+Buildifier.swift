@@ -28,25 +28,27 @@ final class PluginBuildifier: PluginBuiltin {
     set -euo pipefail
 
     version="\#(buildifier.version)"
-    case "$(uname -m)" in
-        arm64)
-            asset="buildifier-darwin-arm64"
-            sha256="\#(buildifier.darwinARM64SHA256)"
-            ;;
-        x86_64)
-            asset="buildifier-darwin-amd64"
-            sha256="\#(buildifier.darwinAMD64SHA256)"
-            ;;
+    host="$(uname -s | tr '[:upper:]' '[:lower:]')/$(uname -m)"
+    case "$host" in
+    \#(buildifier.hostCases)
         *)
-            echo "unsupported buildifier architecture: $(uname -m)" >&2
+            echo "no buildifier $version is pinned for $host" >&2
             exit 1
             ;;
     esac
 
+    # macOS ships `shasum`, Linux distributions ship `sha256sum`: whichever is
+    # there is what verifies the download.
+    if command -v shasum >/dev/null 2>&1; then
+        verify() { printf '%s  %s\n' "$1" "$2" | shasum -a 256 -c -; }
+    else
+        verify() { printf '%s  %s\n' "$1" "$2" | sha256sum -c -; }
+    fi
+
     cache="${XDG_CACHE_HOME:-$HOME/.cache}/bazelize/buildifier/$version"
     buildifier="$cache/$asset"
     if [[ ! -x "$buildifier" ]] || \
-        ! printf '%s  %s\n' "$sha256" "$buildifier" | shasum -a 256 -c - >/dev/null 2>&1
+        ! verify "$sha256" "$buildifier" >/dev/null 2>&1
     then
         mkdir -p "$cache"
         temporary=$(mktemp "$cache/.download.XXXXXX")
@@ -54,7 +56,7 @@ final class PluginBuildifier: PluginBuiltin {
         curl -fsSL --retry 3 \
             "https://github.com/bazel-contrib/buildtools/releases/download/v$version/$asset" \
             -o "$temporary"
-        printf '%s  %s\n' "$sha256" "$temporary" | shasum -a 256 -c - >/dev/null
+        verify "$sha256" "$temporary" >/dev/null
         chmod +x "$temporary"
         mv "$temporary" "$buildifier"
         trap - EXIT

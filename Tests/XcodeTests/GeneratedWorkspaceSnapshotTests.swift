@@ -73,8 +73,20 @@ struct GeneratedWorkspaceSnapshotTests {
             contentsOfFile: (output + "lint.sh").string,
             encoding: .utf8)
         #expect(script.contains("version=\"8.2.1\""))
-        #expect(script.contains(
-            "sha256=\"cfab310ae22379e69a3b1810b433c4cd2fc2c8f4a324586dfe4cc199943b8d5a\""))
+        /// The host a workspace is linted on is whatever runs it, so every host
+        /// the catalog pins is an arm of the same script.
+        #expect(script.contains("""
+            darwin/arm64)
+                asset="buildifier-darwin-arm64"
+                sha256="cfab310ae22379e69a3b1810b433c4cd2fc2c8f4a324586dfe4cc199943b8d5a"
+                ;;
+        """))
+        #expect(script.contains("""
+            linux/x86_64)
+                asset="buildifier-linux-amd64"
+                sha256="6ceb7b0ab7cf66fceccc56a027d21d9cc557a7f34af37d2101edb56b92fcfa1a"
+                ;;
+        """))
     }
 
     // MARK: Private

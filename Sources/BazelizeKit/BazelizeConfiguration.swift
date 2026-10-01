@@ -11,8 +11,19 @@ public struct BazelizeConfiguration: Equatable, Sendable {
     public struct Buildifier: Equatable, Sendable {
         public var version: String { release.rawValue }
 
-        var darwinARM64SHA256: String { release.darwinARM64SHA256 }
-        var darwinAMD64SHA256: String { release.darwinAMD64SHA256 }
+        /// The shell `case` arms a generated lint command picks its download
+        /// with: one per host the catalog has a checksum for.
+        var hostCases: String {
+            BazelDep.Buildifier.Host.allCases.map { host in
+                """
+                    \(host.os)/\(host.machine))
+                        asset="\(host.rawValue)"
+                        sha256="\(release.sha256(host))"
+                        ;;
+                """
+            }
+            .joined(separator: "\n")
+        }
 
         fileprivate static let current = Buildifier(release: .latest)
 

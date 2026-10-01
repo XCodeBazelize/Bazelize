@@ -39,10 +39,11 @@ Every generated workspace also owns its Starlark lint command:
 bazel run //:lint
 ```
 
-It downloads the pinned buildifier for the host architecture into the user
-cache, verifies its checksum, and checks the generated `BUILD`, `WORKSPACE`,
-`*.bzl`, and `*.bazel` files. Lint warnings fail; formatting differences are
-reported by buildifier but do not fail this command yet.
+It picks the buildifier pinned for the host — `uname -s` and `uname -m`, so
+macOS and Linux on arm64 or x86_64 — downloads it into the user cache, verifies
+its checksum, and checks the generated `BUILD`, `WORKSPACE`, `*.bzl`, and
+`*.bazel` files. Lint warnings fail; formatting differences are reported by
+buildifier but do not fail this command yet.
 
 ### Configuration
 
