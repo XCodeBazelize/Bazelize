@@ -275,6 +275,68 @@ jobs:
             rev: 9efcb16e720f337a401cf61c8e300dd043368282
             project: IceCubesApp.xcodeproj
             target: //Targets/IceCubesApp
+
+          # Apps measured for the corpus and kept out of it, with the reason
+          # each one was kept out. `xcodebuild` is the control: an app Xcode
+          # cannot build at the revision measured is not a lane, and nothing
+          # about the generated build is to blame. Measured against Xcode 27.0
+          # (SDK 27.0) — a newer revision of any of these may well be green,
+          # which is the point of writing down which one was tried.
+
+          # Carthage dependencies whose deployment targets are 10.9 to 10.15,
+          # below the 12.0 Xcode 27 accepts: `carthage bootstrap` fails on the
+          # first one and `Carthage/Build` is never written, so the app links
+          # nothing. No lane configuration fixes that.
+          # - name: MacPass
+          #   repo: https://github.com/MacPass/MacPass
+          #   rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
+          #   project: MacPass.xcodeproj
+          #   target: //Targets/MacPass
+          #   submodules: true
+          #   setup: carthage bootstrap --platform macOS --cache-builds
+
+          # `LanguageServerRowView.swift:40: 'self' used before all stored
+          # properties are initialized` — Swift 6.3 rejects what an older
+          # compiler accepted. xcodebuild fails the same way.
+          # - name: CodeEdit
+          #   repo: https://github.com/CodeEditApp/CodeEdit
+          #   rev: 05704cb7d2b19892ffcb9742b0ab3cc6116af165
+          #   project: CodeEdit.xcodeproj
+          #   target: //Targets/CodeEdit
+
+          # `MACOSX_DEPLOYMENT_TARGET is set to 11.3, but the range of
+          # supported deployment target versions is 12.0 to 27.0.x` for all
+          # five macOS targets. Its sysroot is built by `scripts/build_dependencies.sh`
+          # (QEMU, ANGLE, virglrenderer, MoltenVK from source) or downloaded
+          # from a logged-in GitHub Actions run, neither of which a lane can do.
+          # - name: UTM
+          #   repo: https://github.com/utmapp/UTM
+          #   rev: b6f7475be54f9cb542c46b131319454b83489ced
+          #   project: UTM.xcodeproj
+          #   target: //Targets/macOS
+
+          # No `Package.resolved` is committed, so every dependency floats to
+          # whatever is newest: resolution itself fails today on a manifest
+          # using `visionOS` against an older `PackageDescription`. A pinned
+          # revision would still resolve differently on every run, and its
+          # Carthage bootstrap is the mechanism MacPass was removed over.
+          # - name: PlayCover
+          #   repo: https://github.com/PlayCover/PlayCover
+          #   rev: a103786e03b7f6257b6b489dfc49ca6712423a2e
+          #   project: PlayCover.xcodeproj
+          #   target: //Targets/PlayCover
+
+          # The one kept out by us rather than by the toolchain: Xcode builds
+          # it in 64s, and the generated build does not. Access levels across
+          # the app target and its local packages (`property 'inlineDelimiters'
+          # must be declared public because it matches a requirement in public
+          # protocol`) and an expression the compiler gives up type-checking.
+          # Worth revisiting — it is a bug report, not a dead end.
+          # - name: CotEditor
+          #   repo: https://github.com/coteditor/CotEditor
+          #   rev: 545031e89383b7a20b1b2be4a846fca02dbf9c0f
+          #   project: CotEditor.xcodeproj
+          #   target: //Targets/CotEditor
     steps:
       # The disk cache holds what a build produced, the repository cache what it
       # downloaded, and `.build` what SwiftPM resolved for the app's packages:
