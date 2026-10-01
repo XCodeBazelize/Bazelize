@@ -5,6 +5,44 @@ import Testing
 @testable import Xcode
 
 struct RoadmapTreeBuilderTests {
+    /// A project that names a file the disk does not have still generates:
+    /// Xcode compiles what is there, so the rules are written without it and
+    /// the run says which file went missing.
+    @Test
+    func aFileTheProjectNamesAndTheDiskLacksIsReportedAndSkipped() async throws {
+        let current = Path(#filePath)
+            .parent()
+            .parent()
+            .parent()
+
+        let scratch = Path(NSTemporaryDirectory()) + UUID().uuidString
+        defer { try? scratch.delete() }
+        try scratch.mkpath()
+        let project = scratch + "iOS"
+        try (current + "fixture/iOS").copy(project)
+        try (project + "Example/Test.swift").delete()
+
+        let output = scratch + "App"
+        let kit = try await Kit(project + "Example.xcodeproj", nil, outputPath: output)
+        try await kit.run()
+
+        #expect(kit.projectTips.contains { tip in
+            tip.contains("Example names Test.swift, which is not on disk")
+        })
+        /// A framework another target builds is not on disk either, and saying
+        /// so about one would make the report useless.
+        #expect(!kit.projectTips.contains { tip in
+            tip.contains("Framework1.framework")
+        })
+        #expect(!(output + "Targets/Example/Sources/Example/Test.swift").exists)
+        /// The target is still generated, with the sources that are there.
+        let build = try String(
+            contentsOfFile: (output + "Targets/Example/BUILD").string,
+            encoding: .utf8)
+        #expect(build.contains("Sources/Example/ExampleApp.swift"))
+        #expect(!build.contains("Sources/Example/Test.swift"))
+    }
+
     @Test
     func buildCreatesTargetTreeAndSymlinks() async throws {
         let current = Path(#filePath)

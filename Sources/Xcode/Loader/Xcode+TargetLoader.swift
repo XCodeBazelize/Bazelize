@@ -139,14 +139,18 @@ struct TargetLoader {
                 return nil
             }
 
-            if
-                let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
-                label.hasPrefix("//Prebuilt:")
+            /// A framework the disk does not have is nothing a rule can link:
+            /// whatever bootstraps it — Carthage, CocoaPods, a script — has not
+            /// run. The target is generated without it, and the run says which
+            /// file went missing, rather than emitting a dependency Bazel
+            /// cannot resolve.
+            if wrapped.sourceTree != PBXSourceTree.buildProductsDir.description, !wrapped.existsOnDisk {
+                return nil
+            }
+
+            if let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
+               label.hasPrefix("//Prebuilt:")
             {
-                /// A framework that only exists after a Carthage/CocoaPods/script
-                /// bootstrap cannot be imported, and referencing it anyway leaves the
-                /// generated workspace unloadable.
-                guard wrapped.existsOnDisk else { return nil }
                 return label
             }
 

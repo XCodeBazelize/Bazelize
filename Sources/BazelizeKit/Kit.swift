@@ -66,7 +66,7 @@ public final class Kit {
 
     /// Notes about the project's own targets, collected while their rules were
     /// written.
-    private var projectTips: [String] = []
+    public private(set) var projectTips: [String] = []
 
     /// Something a caller has to be told: where the generated build differs
     /// from what the project asked for, and why. It is logged where a run is
@@ -272,7 +272,7 @@ extension Kit {
     }
 
     private func generateRoadmap() throws {
-        try roadmap.prepare()
+        try roadmap.prepare().forEach(note)
     }
 
     private func generateVersion() throws {
