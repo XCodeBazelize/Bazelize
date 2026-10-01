@@ -140,7 +140,10 @@ extension SwiftPM {
         /// expects, and that compile error says nothing about a plugin, so the
         /// plugin is named here instead.
         private func report(pluginsOf package: Package) {
-            guard !package.isRoot, !package.isLocal else { return }
+            guard !package.isRoot, !package.isLocal else {
+                reportForeignPlugins(of: package)
+                return
+            }
 
             let used = package.manifest.targets
                 .filter { $0.type != "test" }
@@ -151,6 +154,33 @@ extension SwiftPM {
                 let message = """
                 \(package.directory) asks for the \(plugin) plugin, which is not run: \
                 a linter changes nothing, a plugin that generates source does.
+                """
+
+                Log.codeGenerate.warning("\(message, privacy: .public)")
+                notes.append(message)
+            }
+        }
+
+        /// A plugin a generated package asks for and another package owns.
+        ///
+        /// Rules are written for the packages of the project's own repository,
+        /// so a plugin living anywhere else has no target to build and is not
+        /// run — naming it in `//:plugins` would leave that target unloadable
+        /// and stop every other plugin with it.
+        private func reportForeignPlugins(of package: Package) {
+            let foreign = package.manifest.targets
+                .filter { $0.type != "test" }
+                .flatMap(\.pluginUsages)
+                .filter { usage in
+                    guard let owner = pluginOwner(of: usage, from: package) else { return false }
+                    return !owner.isRoot && !owner.isLocal
+                }
+                .map(\.name)
+
+            for plugin in Set(foreign).sorted() {
+                let message = """
+                \(package.directory) asks for the \(plugin) plugin, which another \
+                package owns and this workspace does not build: it is not run.
                 """
 
                 Log.codeGenerate.warning("\(message, privacy: .public)")

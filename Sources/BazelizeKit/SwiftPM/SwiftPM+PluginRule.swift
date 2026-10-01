@@ -318,6 +318,11 @@ extension SwiftPM.Generator {
             .map(\.plugin.name))
     }
 
+    /// The plugin runs this workspace has rules for.
+    ///
+    /// A plugin another package owns is not built here, so naming its binary
+    /// in `//:plugins` would leave that target unloadable and stop every
+    /// plugin that does exist. The run says which one went unrun.
     private var pluginExecutions: [PluginExecution] {
         workspace.packages
             .filter { $0.isRoot || $0.isLocal }
@@ -327,6 +332,7 @@ extension SwiftPM.Generator {
                         guard let (plugin, pluginPackage) = resolvedPlugin(usage, from: package) else {
                             return nil
                         }
+                        guard pluginPackage.isRoot || pluginPackage.isLocal else { return nil }
                         return .init(
                             package: package,
                             target: target,
@@ -336,6 +342,15 @@ extension SwiftPM.Generator {
                     }
                 }
             }
+    }
+
+    /// Which package declares the plugin a usage names, whether or not this
+    /// workspace builds it.
+    func pluginOwner(
+        of usage: SwiftPM.PluginUsage,
+        from package: SwiftPM.Package) -> SwiftPM.Package?
+    {
+        resolvedPlugin(usage, from: package)?.1
     }
 
     private func resolvedPlugin(
