@@ -265,6 +265,16 @@ jobs:
             project: iina.xcodeproj
             target: //Targets/iina
             setup: sed -i '' 's|dylibs/${ARCH}|dylibs/1.4.2/${ARCH}|' other/download_libs.sh && ./other/download_libs.sh --skip-plugins
+          # The one iOS app of the corpus, and the one that embeds several
+          # extensions in a product: a widget, a notification service, a share
+          # sheet and an action. Thirteen packages of its own repository, too.
+          # It needs no setup: the xcconfig its README has you copy is read by
+          # Xcode, not by what bazelize generates.
+          - name: IceCubesApp
+            repo: https://github.com/Dimillian/IceCubesApp
+            rev: 9efcb16e720f337a401cf61c8e300dd043368282
+            project: IceCubesApp.xcodeproj
+            target: //Targets/IceCubesApp
     steps:
       # The disk cache holds what a build produced, the repository cache what it
       # downloaded, and `.build` what SwiftPM resolved for the app's packages:
