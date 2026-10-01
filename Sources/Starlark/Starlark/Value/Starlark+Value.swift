@@ -16,6 +16,34 @@ extension Starlark {
         .glob(files, exclude: exclude, allowEmpty: allowEmpty)
     }
 
+    /// Patterns as a value: only a pattern with a wildcard in it is globbed.
+    ///
+    /// `glob(["a/b.xib"])` is that one file with a way to be silently empty
+    /// instead, which is what buildifier's `constant-glob` says out loud. A
+    /// pattern that names a file is that file.
+    public static func paths(_ patterns: [String], exclude: [String] = [], allowEmpty: Bool = false) -> Value {
+        var seen: Set<String> = []
+        let unique = patterns.filter { seen.insert($0).inserted }
+        let wildcards = unique.filter { $0.contains(where: isWildcard) }
+        let named = unique.filter { !$0.contains(where: isWildcard) }
+
+        guard !wildcards.isEmpty else {
+            return .array(named.map(Value.string))
+        }
+        guard !named.isEmpty else {
+            return .glob(wildcards, exclude: exclude, allowEmpty: allowEmpty)
+        }
+
+        return .concat([
+            .array(named.map(Value.string)),
+            .glob(wildcards, exclude: exclude, allowEmpty: allowEmpty),
+        ])
+    }
+
+    private static func isWildcard(_ character: Character) -> Bool {
+        character == "*" || character == "?" || character == "["
+    }
+
     public indirect enum Value: Sendable, Text {
         case label(Label)
         case string(String)

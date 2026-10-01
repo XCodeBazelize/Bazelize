@@ -483,41 +483,39 @@ extension SwiftPM {
                 !patterns.contains { Self.matches($0, path) }
             }
 
-            return .concat([
-                .array(named.map(Starlark.Value.string)),
-                Starlark.glob(patterns, exclude: excluded, allowEmpty: true),
-            ])
+            return files(
+                naming: named,
+                matching: patterns,
+                excluding: excluded,
+                allowEmpty: true)
         }
 
-        /// Files as a value: a pattern that names one file is that file, and
-        /// only what has a wildcard in it is globbed.
+        /// Patterns as an attribute value: a pattern with no wildcard in it is
+        /// a file, and `glob(["a/b.swift"])` is that file with a way to be
+        /// silently empty instead — which buildifier's `constant-glob` says out
+        /// loud.
         ///
-        /// These come from matching a target's declarations against what is on
-        /// disk, so a pattern without a wildcard is a file that is there —
-        /// `glob(["a/b.png"])` is the same list with a way to be silently empty
-        /// instead.
-        ///
-        /// Named once, and only when nothing globs it already: two declarations
-        /// can cover the same file — a shader is a resource and part of the
-        /// header group it compiles with — and a glob answered with a set where
-        /// a list repeats the label, which no attribute takes twice.
-        func paths(_ patterns: [String], allowEmpty: Bool = false) -> Starlark.Value {
-            var seen: Set<String> = []
-            let unique = patterns.filter { seen.insert($0).inserted }
-            let wildcards = unique.filter { $0.contains(where: Self.isWildcard) }
-            let named = unique.filter { path in
-                !path.contains(where: Self.isWildcard)
-                    && !wildcards.contains { Self.matches($0, path) }
+        /// These patterns are matched against what is on disk before they get
+        /// here, so naming one cannot name a file that is not there.
+        func files(
+            naming written: [String] = [],
+            matching patterns: [String],
+            excluding excluded: [String] = [],
+            allowEmpty: Bool = false) -> Starlark.Value
+        {
+            let wildcards = patterns.filter { $0.contains(where: Self.isWildcard) }
+            /// A file a wildcard already covers would be named twice, and a
+            /// file the glob excludes is not part of the target at all.
+            let constants = patterns.filter { pattern in
+                !pattern.contains(where: Self.isWildcard)
+                    && !wildcards.contains { Self.matches($0, pattern) }
+                    && !excluded.contains { Self.matches($0, pattern) }
             }
 
-            guard !wildcards.isEmpty else {
-                return .array(named.map(Starlark.Value.string))
-            }
-
-            return .concat([
-                .array(named.map(Starlark.Value.string)),
-                Starlark.glob(wildcards, allowEmpty: allowEmpty),
-            ])
+            return Starlark.paths(
+                written + constants + wildcards,
+                exclude: excluded,
+                allowEmpty: allowEmpty)
         }
 
         private static func isWildcard(_ character: Character) -> Bool {

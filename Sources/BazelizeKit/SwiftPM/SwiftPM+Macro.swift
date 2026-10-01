@@ -29,12 +29,12 @@ extension SwiftPM.Generator {
         builder.call(
             Rules.Swift.Call.swift_compiler_plugin(
                 name: ruleName(of: target.name, in: package),
-                srcs: Starlark.glob(
-                    matching(
+                srcs: files(
+                    matching: matching(
                         sources(of: target, prefix: prefix, extensions: ["swift"]),
                         relativeFiles(of: target, in: package, prefix: prefix))
                         + generated,
-                    exclude: excluded(target, prefix: prefix),
+                    excluding: excluded(target, prefix: prefix),
                     allowEmpty: true),
                 copts: copts(of: target, in: package),
                 deps: deps(of: target, in: package),

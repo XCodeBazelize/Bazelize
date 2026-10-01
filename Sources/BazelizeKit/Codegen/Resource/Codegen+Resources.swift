@@ -22,7 +22,7 @@ extension Target {
         builder.call(
             Rules.Builtin.Call.filegroup(
                 name: Self.resourceGroupName,
-                srcs: Starlark.glob(patterns),
+                srcs: Starlark.paths(patterns),
                 visibility: .private))
     }
 

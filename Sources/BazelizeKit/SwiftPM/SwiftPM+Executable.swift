@@ -86,7 +86,7 @@ extension SwiftPM.Generator {
                     copts: ["-DSWIFT_PACKAGE", "-Xcc", "-DSWIFT_PACKAGE"],
                     deps: .build { dependencies.map { Starlark.Label.named($0) } },
                     module_name: Self.moduleName(name),
-                    srcs: Starlark.glob(["\(prefix)/main.swift"]),
+                    srcs: .array([.string("\(prefix)/main.swift")]),
                     tags: Self.manual,
                     visibility: .public))
         }
