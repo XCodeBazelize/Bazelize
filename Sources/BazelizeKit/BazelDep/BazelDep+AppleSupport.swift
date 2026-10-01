@@ -1,8 +1,12 @@
 extension BazelDep {
     /// https://github.com/bazelbuild/apple_support
     enum AppleSupport: String {
-        static let latest: AppleSupport = .v2_8_2
+        static let latest: AppleSupport = .v2_9_1
 
+        case v2_9_1 = "2.9.1"
+        case v2_9_0 = "2.9.0"
+        case v2_8_4 = "2.8.4"
+        case v2_8_3 = "2.8.3"
         case v2_8_2 = "2.8.2"
         case v2_8_1 = "2.8.1"
         case v2_8_0 = "2.8.0"

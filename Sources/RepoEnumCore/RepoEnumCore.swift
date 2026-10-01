@@ -560,7 +560,9 @@ public struct RepoEnumGeneratorService {
                 try await versionFile(for: source)
             }
             let fileURL = outputDirectory.appendingPathComponent(filename)
-            try content.write(to: fileURL, atomically: true, encoding: .utf8)
+            /// A Swift file ends in a newline, here as everywhere else in the
+            /// package.
+            try (content + "\n").write(to: fileURL, atomically: true, encoding: .utf8)
         }
     }
 

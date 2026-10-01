@@ -1,8 +1,11 @@
 extension BazelDep {
     /// https://github.com/bazelbuild/rules_swift
     enum Swift: String {
-        static let latest: Swift = .v4_0_1
+        static let latest: Swift = .v4_1_2
 
+        case v4_1_2 = "4.1.2"
+        case v4_1_1 = "4.1.1"
+        case v4_1_0 = "4.1.0"
         case v4_0_1 = "4.0.1"
         case v3_6_1 = "3.6.1"
         case v3_6_0 = "3.6.0"

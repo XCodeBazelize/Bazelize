@@ -1,8 +1,11 @@
 extension BazelDep {
     /// https://github.com/bazelbuild/rules_apple
     enum Apple: String {
-        static let latest: Apple = .v5_0_0
+        static let latest: Apple = .v5_2_0
 
+        case v5_2_0 = "5.2.0"
+        case v5_1_0 = "5.1.0"
+        case v5_0_1 = "5.0.1"
         case v5_0_0 = "5.0.0"
         case v4_5_3 = "4.5.3"
         case v4_5_2 = "4.5.2"

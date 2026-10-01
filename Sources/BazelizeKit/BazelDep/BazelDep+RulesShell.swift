@@ -13,6 +13,7 @@ extension BazelDep {
         case v0_4_0 = "0.4.0"
         case v0_3_0 = "0.3.0"
         case v0_2_0 = "0.2.0"
-        case v0_1_0 = "0.1.0"
+        case v0_1_2 = "0.1.2"
+        case v0_1_1 = "0.1.1"
     }
 }

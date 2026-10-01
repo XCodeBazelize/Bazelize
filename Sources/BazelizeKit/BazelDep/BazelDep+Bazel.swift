@@ -9,6 +9,7 @@ extension BazelDep {
         case v9_0_2 = "9.0.2"
         case v9_0_1 = "9.0.1"
         case v9_0_0 = "9.0.0"
+        case v8_8_1 = "8.8.1"
         case v8_8_0 = "8.8.0"
         case v8_7_0 = "8.7.0"
         case v8_6_0 = "8.6.0"

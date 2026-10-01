@@ -1,8 +1,9 @@
 extension BazelDep {
     /// https://github.com/keith/rules_apple_linker
     enum AppleLinker: String {
-        static let latest: AppleLinker = .v0_7_0
+        static let latest: AppleLinker = .v0_8_0
 
+        case v0_8_0 = "0.8.0"
         case v0_7_0 = "0.7.0"
         case v0_6_3 = "0.6.3"
         case v0_6_2 = "0.6.2"
