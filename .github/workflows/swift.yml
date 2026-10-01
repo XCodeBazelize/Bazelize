@@ -270,9 +270,14 @@ jobs:
           # sheet and an action. Thirteen packages of its own repository, too.
           # It needs no setup: the xcconfig its README has you copy is read by
           # Xcode, not by what bazelize generates.
+          #
+          # The revision is pinned behind the app's head on purpose: the runner
+          # ships Xcode 26.6, and the app adopted iOS 27 API (`defaultTabBarPlacement`)
+          # in the commit after this one. This is the newest revision that
+          # builds against the SDK this lane has.
           - name: IceCubesApp
             repo: https://github.com/Dimillian/IceCubesApp
-            rev: 9efcb16e720f337a401cf61c8e300dd043368282
+            rev: b2db3033fbf67a97b54d25d6dac2df8a029b26b1
             project: IceCubesApp.xcodeproj
             target: //Targets/IceCubesApp
 
