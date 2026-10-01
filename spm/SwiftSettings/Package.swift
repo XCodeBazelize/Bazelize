@@ -24,6 +24,12 @@ let package = Package(
                 .strictMemorySafety(),
                 .defaultIsolation(MainActor.self),
                 .unsafeFlags(["-DUNSAFE_DEFINE"]),
+                /// Every warning is an error, except the one group named here:
+                /// a build that lost the first compiles code it should have
+                /// rejected, and one that lost the second fails on the
+                /// deprecation `Deprecated.swift` is there to raise.
+                .treatAllWarnings(as: .error),
+                .treatWarning("DeprecatedDeclaration", as: .warning),
             ],
             linkerSettings: [
                 /// `crc32` is in libz and nowhere else, so the call only links

@@ -136,6 +136,16 @@ extension SwiftPM.Generator {
             return ["-cxx-interoperability-mode=default"]
         case "unsafeFlags":
             return setting.values
+        /// `treatAllWarnings(as:)` and `treatWarning(_:as:)`: the first decides
+        /// what every warning is, the second overrides one diagnostic group by
+        /// the name the compiler prints in brackets.
+        case "treatAllWarnings":
+            guard let level = setting.values.first else { return [] }
+            return level == "error" ? ["-warnings-as-errors"] : ["-no-warnings-as-errors"]
+        case "treatWarning":
+            guard setting.values.count == 2 else { return [] }
+            let group = setting.values[0]
+            return setting.values[1] == "error" ? ["-Werror", group] : ["-Wwarning", group]
         default:
             return []
         }

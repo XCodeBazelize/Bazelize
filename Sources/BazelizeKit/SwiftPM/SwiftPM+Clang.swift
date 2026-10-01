@@ -287,6 +287,16 @@ extension SwiftPM.Generator {
             return setting.values.nonEmpty.map { ["-D\($0.joined(separator: "="))"] } ?? []
         case "unsafeFlags":
             return setting.values
+        /// `treatAllWarnings(as:)` and `treatWarning(_:as:)`, which clang spells
+        /// as `-Werror` over everything and `-W{error,no-error}=<name>` over one
+        /// warning.
+        case "treatAllWarnings":
+            guard let level = setting.values.first else { return [] }
+            return level == "error" ? ["-Werror"] : ["-Wno-error"]
+        case "treatWarning":
+            guard setting.values.count == 2 else { return [] }
+            let group = setting.values[0]
+            return setting.values[1] == "error" ? ["-Werror=\(group)"] : ["-Wno-error=\(group)"]
         default:
             return []
         }
