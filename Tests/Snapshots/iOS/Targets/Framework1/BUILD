@@ -7,6 +7,11 @@ load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 swift_library(
     name = "Framework1_swift",
     alwayslink = True,
+    copts = [
+        "-swift-version",
+        "5",
+        "-enable-bare-slash-regex",
+    ],
     module_name = "Framework1",
     srcs = [
         "Sources/Framework1/Test.swift",

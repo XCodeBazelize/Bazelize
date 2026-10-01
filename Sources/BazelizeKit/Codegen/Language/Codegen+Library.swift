@@ -106,6 +106,7 @@ extension Target {
                     srcs_swift
                     intentSources
                     assetSymbolSources
+                    stringSymbolSources
                 },
                 tags: manual,
                 weak_sdk_frameworks: weakFrameworksSDK,

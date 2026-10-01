@@ -19,6 +19,7 @@ extension Target {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
         generateAssetSymbols(builder, kit)
+        generateStringSymbols(builder, kit)
         generateCopiedResourceGroup(builder, kit)
         generateLibrary(builder, kit)
 

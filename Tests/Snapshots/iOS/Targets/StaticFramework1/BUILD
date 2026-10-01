@@ -6,6 +6,11 @@ load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 swift_library(
     name = "StaticFramework1_swift",
     alwayslink = True,
+    copts = [
+        "-swift-version",
+        "5",
+        "-enable-bare-slash-regex",
+    ],
     module_name = "StaticFramework1",
     srcs = [
         "Sources/StaticFramework1/Test.swift",

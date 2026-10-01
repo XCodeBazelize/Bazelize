@@ -20,6 +20,11 @@ filegroup(
 swift_library(
     name = "Example_swift",
     alwayslink = True,
+    copts = [
+        "-swift-version",
+        "5",
+        "-enable-bare-slash-regex",
+    ],
     module_name = "Example",
     srcs = [
         "Sources/Derived/Sources/TuistAssets+Example.swift",

@@ -16,6 +16,11 @@ filegroup(
 swift_library(
     name = "MacBundle_swift",
     alwayslink = True,
+    copts = [
+        "-swift-version",
+        "5",
+        "-enable-bare-slash-regex",
+    ],
     module_name = "MacBundle",
     srcs = [
         "Sources/Derived/Sources/TuistBundle+MacBundle.swift",

@@ -30,6 +30,7 @@ extension Target {
                     srcs_swift
                     intentSources
                     assetSymbolSources
+                    stringSymbolSources
                 },
                 deps: .build {
                     extraDeps
@@ -105,8 +106,13 @@ extension Target {
         return ["-default-isolation", isolation]
     }
 
+    /// The language mode and the features Xcode compiles the target with.
+    var languageCopts: [String] {
+        prefer(\.swift.copts) ?? []
+    }
+
     func swiftCopts(project: Project) -> [String]? {
-        var copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts + defaultIsolationCopts
+        var copts = languageCopts + (bridgingHeaderCopts ?? []) + parseAsLibraryCopts + defaultIsolationCopts
         if bridgingHeader != nil {
             copts += swiftIncludeCopts(project: project) + forceIncludeCopts()
         }
@@ -117,7 +123,7 @@ extension Target {
     /// declarations through its own clang module instead. The module's headers can
     /// still reach for the target's include paths, so `swiftc` needs them too.
     func moduleSwiftCopts(project: Project) -> [String]? {
-        let copts = parseAsLibraryCopts + defaultIsolationCopts
+        let copts = languageCopts + parseAsLibraryCopts + defaultIsolationCopts
             + swiftIncludeCopts(project: project) + forceIncludeCopts()
         return copts.isEmpty ? nil : copts
     }
