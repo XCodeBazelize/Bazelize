@@ -325,6 +325,29 @@ jobs:
         working-directory: ${{ matrix.name }}/App
         run: bazel build ${{ matrix.target }}
 
+      # What the lane built, kept: a bundle that can be downloaded and opened
+      # is the only way to see what a generated build actually produces.
+      # rules_apple packages a macOS application as a `.zip` and an iOS one as
+      # an `.ipa`, and a lane that builds `//...` produces more than one.
+      - name: Collect ${{ matrix.name }}
+        working-directory: ${{ matrix.name }}/App
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          bazel cquery ${{ matrix.target }} --output=files \
+            | grep -E '\.(ipa|zip)$' \
+            | grep -v '__internal__' \
+            | while read -r file; do
+                [ -f "$file" ] && cp "$file" "$GITHUB_WORKSPACE/artifacts/"
+              done
+          ls -l "$GITHUB_WORKSPACE/artifacts"
+
+      - name: Upload ${{ matrix.name }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.name }}
+          path: artifacts
+          if-no-files-found: warn
+
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:

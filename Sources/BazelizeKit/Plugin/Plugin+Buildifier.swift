@@ -32,10 +32,6 @@ final class PluginBuildifier: PluginBuiltin {
         }
     }
 
-    override var tip: String? {
-        "`bazel run //:format` formats the generated Starlark, `bazel run //:lint` checks it."
-    }
-
     /// What a generated workspace can do to its own Starlark.
     enum Command: String, CaseIterable {
         /// Report warnings; formatting differences are reported but do not fail.
