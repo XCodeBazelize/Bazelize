@@ -436,9 +436,14 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡
 每個 app 用自製產生器的結果都不比 rspm 差。
 
-## 不做的事
+## Registry package
 
-- **registry package（`.package(id:)`）**：目前的階段都不實作。語料裡沒有任何一個，
-  而 SwiftPM 自己會把它解析進 checkouts，所以要做的時候是「多認一種 dependency 種類」，
-  不是改產出的形狀。撞到的時候：該 package 的 target 會被當成解不到而略過並具名回報，
-  這和其他不支援的種類一樣。
+- **registry package（`.package(id:)`）**：和其他 dependency 一樣會產生規則。
+  SwiftPM 把它解析成解壓在 `.build/registry/downloads/<scope>/<name>/<version>`
+  的 archive，規則指向的就是磁碟上的那個目錄；package 目錄名用它的 identity
+  `scope.name`，dependency 用該 identity 或裸名稱都解得到。
+  resolve 本身是 SwiftPM 的事，需要該 scope 設定好 registry；resolve 失敗時
+  會以已解壓的內容繼續產生，並在結尾具名回報，而不是安靜地少一個 dependency。
+  fixture 是 `spm/RegistryPackage`，但不是 CI lane：這個 repository 連不到任何
+  registry，所以 fixture 自帶 registry 會提供的內容，由測試放到 SwiftPM 會放的
+  位置。fetch、checksum 驗證與版本選擇因此不在覆蓋範圍內。

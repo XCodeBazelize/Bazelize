@@ -30,6 +30,7 @@ would not tell us anything.
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
 | `TargetEmbed` | `.embedInCode`, the one rule with no bundle at all: the file's bytes are a generated source |
 | `TargetResource` | every other resource rule: `.copy` of a directory and of a single file, `.process`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model with two versions, a shader that includes a header, a string catalogue, a privacy manifest, a test target's own resources, and the `.docc` SwiftPM ignores |
+| `RegistryPackage` | a dependency named by registry identity (`.package(id:)`), unpacked where SwiftPM unpacks a registry download — see below, it is not a CI lane |
 
 Every package of a fixture builds and — where it has tests — passes them, the
 package beside the one bazelize is pointed at included: those are dependencies
@@ -43,6 +44,32 @@ particular to bazelize either: it is globbed and grouped exactly as
 `.xcdatamodeld` is, which is built and asserted, and what would compile it is
 rules_apple's own action. The versioned model covers what migration is built
 on: both versions in the bundle, with a mapping derivable between them.
+
+## The registry fixture
+
+`RegistryPackage` is the one fixture no lane runs, because no registry is
+reachable from this repository. A registry dependency reaches a build as an
+archive SwiftPM unpacked under
+`App/.build/registry/downloads/<scope>/<name>/<version>`, and that directory is
+all generation reads, so the fixture carries what a registry would have served
+under `Registry/` and whoever runs it puts that where SwiftPM would have:
+
+```sh
+cd spm/RegistryPackage
+mkdir -p App/.build/registry/downloads
+cp -R Registry/. App/.build/registry/downloads/
+bazelize --input . --output App
+cd App && bazel test //...
+```
+
+`swift build` on this package does not work without a registry configured for
+the `bazelize` scope, and neither does `swift package resolve` — generation
+says so and carries on with what is unpacked. `Tests/XcodeTests/RegistryPackageTests.swift`
+is the same thing as a test.
+
+What that leaves uncovered is resolution itself: fetching, checksum
+verification and version selection are SwiftPM's, happen before anything here
+runs, and need a real registry to exercise.
 
 A package that must not compile a file says so in the file: it is a
 `#error(…)`, so a generator that globs too much fails loudly instead of

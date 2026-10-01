@@ -483,11 +483,20 @@ Stage 4 removed the alternative rather than keeping a flag: two paths would
 mean two dependency graphs, and the generated one is at least as good on every
 app in the corpus.
 
-## Not done
+## Registry packages
 
-- **Registry packages (`.package(id:)`)**: no stage implements them. Nothing in
-  the corpus uses one, and SwiftPM resolves them into checkouts itself, so the
-  work is recognising one more kind of dependency rather than changing the shape
-  of the output. Until then a registry package's targets are skipped as
-  unresolvable and named at the end of the run, like every other unsupported
-  kind.
+A dependency named by registry identity (`.package(id:)`) is generated like any
+other. SwiftPM resolves one into an archive it unpacks under
+`.build/registry/downloads/<scope>/<name>/<version>`, so what the rules point at
+is a directory on disk; the identity it is filed under — `scope.name` — is what
+the package directory is called, and a dependency naming either that or the bare
+name resolves to it.
+
+Resolution is SwiftPM's and needs a registry configured for the scope. A run
+that cannot resolve carries on with whatever is already unpacked and says so at
+the end, rather than losing a dependency quietly.
+
+`spm/RegistryPackage` is the fixture. It is not a CI lane: no registry is
+reachable from this repository, so the fixture carries what one would have
+served and the test puts it where SwiftPM would have. Fetching, checksum
+verification and version selection are therefore not covered here.

@@ -62,7 +62,11 @@ public final class Kit {
 
     /// Notes the run has for the user, collected while the package rules were
     /// generated.
-    private var packageTips: [String] = []
+    public private(set) var packageTips: [String] = []
+
+    /// Notes about reading the package graph itself, kept apart so the notes
+    /// the rules produced can be replaced without losing them.
+    private var workspaceTips: [String] = []
 
     /// Notes about the project's own targets, collected while their rules were
     /// written.
@@ -153,7 +157,8 @@ extension Kit {
             deployment: deployment)
         try await generator.generate(locals: locals)
         packageGenerator = generator
-        packageTips = generator.notes
+        workspaceTips = workspace.notes
+        packageTips = workspaceTips + generator.notes
         packageDirectoryByProduct(of: workspace)
 
         let count = workspace.packages.count
@@ -184,7 +189,7 @@ extension Kit {
             """)
         }
 
-        packageTips = generator.notes
+        packageTips = workspaceTips + generator.notes
     }
 
     /// Which package directory declares each product, for the target rules

@@ -47,6 +47,9 @@ extension SwiftPM {
         /// Which traits each package is built with unless the build says
         /// otherwise, by identity.
         let traits: [String: Set<String>]
+
+        /// What the run has to say about reading this graph, if anything.
+        let notes: [String]
     }
 }
 
@@ -75,10 +78,25 @@ extension SwiftPM {
                 packages: [],
                 artifacts: output + ".build/artifacts",
                 directoryByIdentity: [:],
-                traits: [:])
+                traits: [:],
+                notes: [])
         }
 
-        try await resolve(output: output)
+        /// Resolution is what fetches a package nothing has fetched yet, and a
+        /// run that cannot resolve still has whatever is already on disk — a
+        /// registry dependency SwiftPM unpacked earlier, say, on a machine
+        /// whose registry this one is not configured for. What it could not
+        /// resolve shows up as a package nothing generated, named at the end
+        /// of the run.
+        var notes: [String] = []
+        do {
+            try await resolve(output: output)
+        } catch {
+            notes.append("""
+            swift package resolve failed (\(error)): the packages it had not \
+            already fetched are not generated.
+            """)
+        }
 
         let scratch = output + ".build"
         var manifests: [(root: Root, manifest: Manifest)] = []
@@ -131,7 +149,8 @@ extension SwiftPM {
             packages: packages,
             artifacts: output + ".build/artifacts",
             directoryByIdentity: directoryByIdentity,
-            traits: traits)
+            traits: traits,
+            notes: notes)
     }
 
     /// The traits each package is built with, by identity.
