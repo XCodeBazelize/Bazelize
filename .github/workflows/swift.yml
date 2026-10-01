@@ -112,6 +112,9 @@ jobs:
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
           echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          # A release download that answers 500 is GitHub having a moment, not
+          # a broken build: it is retried rather than failing a lane.
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -361,6 +364,7 @@ jobs:
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
           echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -501,6 +505,7 @@ jobs:
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
           echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
