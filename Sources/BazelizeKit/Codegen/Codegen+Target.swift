@@ -19,6 +19,7 @@ extension Target {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
         generateAssetSymbols(builder, kit)
+        generateStringSymbols(builder, kit)
         generateCopiedResourceGroup(builder, kit)
         generateLibrary(builder, kit)
 
@@ -30,9 +31,9 @@ extension Target {
         let name = name
 
         guard hasSources else {
-            Log.codeGenerate.warning("""
-            Name: \(name, privacy: .public)
-            Type: \(productType ?? "") has no sources
+            kit.note("""
+            \(name) is not generated: a \(productType ?? "target") with no sources of its own \
+            has no library for a rule to bundle.
             """)
             return builder.build()
         }
@@ -43,31 +44,24 @@ extension Target {
             generateCopiedProducts(builder, kit)
             generateCopiedFiles(builder, kit)
             generateApplicationCode(builder, kit)
+        case "com.apple.product-type.bundle",
+             "com.apple.product-type.xpc-service",
+             "com.apple.product-type.app-extension":
+            generateBundleProduct(builder, kit)
         case "com.apple.product-type.tool":
             generateCommandLineApplicationCode(builder, kit)
-        case "com.apple.product-type.framework":
-            generateStrings(builder, kit)
-            generateFrameworkCode(builder, kit)
+        case "com.apple.product-type.framework", "com.apple.product-type.framework.static":
+            generateFrameworkProduct(builder, kit)
         case "com.apple.product-type.library.static":
             generateStaticLibrary(builder, kit)
         case "com.apple.product-type.bundle.unit-test":
             generateUnitTest(builder, kit)
         case "com.apple.product-type.bundle.ui-testing":
             generateUITest(builder, kit)
-        case "com.apple.product-type.xpc-service":
-            generateStrings(builder, kit)
-            generateCopiedProducts(builder, kit)
-            generateCopiedFiles(builder, kit)
-            generateXPCService(builder, kit)
-        case "com.apple.product-type.app-extension":
-            generateStrings(builder, kit)
-            generateCopiedProducts(builder, kit)
-            generateCopiedFiles(builder, kit)
-            generateExtension(builder, kit)
         default:
-            Log.codeGenerate.warning("""
-            Name: \(name, privacy: .public)
-            Type: \(productType ?? "") not gen
+            kit.note("""
+            \(name) is not generated: \(productType ?? "its product type") is a product type \
+            bazelize has no rule for.
             """)
         }
         return builder.build()

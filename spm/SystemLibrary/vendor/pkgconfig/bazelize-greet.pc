@@ -1,0 +1,7 @@
+prefix=${pcfiledir}/..
+includedir=${prefix}/include
+
+Name: bazelize-greet
+Description: A header the fixture ships, which nothing but this file says where to find.
+Version: 1.0.0
+Cflags: -I${includedir}

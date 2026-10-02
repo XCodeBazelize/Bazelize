@@ -7,17 +7,6 @@
 
 import Foundation
 
-// MARK: - PluginHttpArchive
-
-final class PluginHttpArchive: PluginBuiltin {
-    override var name: String { "Bazel HTTP Archive" }
-    override func module(_ builder: CodeBuilder) {
-        builder.custom("""
-        http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-        """)
-    }
-}
-
 // MARK: - PluginGitRepository
 
 final class PluginGitRepository: PluginBuiltin {

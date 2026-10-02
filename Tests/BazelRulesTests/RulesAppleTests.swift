@@ -402,4 +402,376 @@ struct RulesAppleTests {
                 )
                 """)
     }
+
+    @Test
+    func testIOSIMessageApplicationTypedCall() {
+        let call = Rules.Apple.IOS.Call.ios_imessage_application(
+            name: "Stickers",
+            bundle_id: "com.example.stickers",
+            extensions: ["//Targets/StickerPack:StickerPack"],
+            families: ["iphone"],
+            minimum_os_version: "18.0")
+
+        #expect(
+            call.text
+                == """
+                ios_imessage_application(
+                    name = "Stickers",
+                    bundle_id = "com.example.stickers",
+                    extensions = [
+                        "//Targets/StickerPack:StickerPack",
+                    ],
+                    families = [
+                        "iphone",
+                    ],
+                    minimum_os_version = "18.0",
+                )
+                """)
+    }
+
+    @Test
+    func testIOSIMessageExtensionTypedCall() {
+        let call = Rules.Apple.IOS.Call.ios_imessage_extension(
+            name: "StickerExt",
+            bundle_id: "com.example.stickers.ext",
+            deps: [":StickerExt_library"],
+            minimum_os_version: "18.0")
+
+        #expect(
+            call.text
+                == """
+                ios_imessage_extension(
+                    name = "StickerExt",
+                    bundle_id = "com.example.stickers.ext",
+                    deps = [
+                        ":StickerExt_library",
+                    ],
+                    minimum_os_version = "18.0",
+                )
+                """)
+    }
+
+    @Test
+    func testIOSStickerPackExtensionTypedCall() {
+        let call = Rules.Apple.IOS.Call.ios_sticker_pack_extension(
+            name: "Pack",
+            bundle_id: "com.example.stickers.pack",
+            minimum_os_version: "18.0",
+            sticker_assets: ["Sources/Pack/Stickers.xcassets"])
+
+        #expect(
+            call.text
+                == """
+                ios_sticker_pack_extension(
+                    name = "Pack",
+                    bundle_id = "com.example.stickers.pack",
+                    minimum_os_version = "18.0",
+                    sticker_assets = [
+                        "Sources/Pack/Stickers.xcassets",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSBundleTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_bundle(
+            name: "Plugin",
+            bundle_extension: "prefPane",
+            bundle_id: "com.example.plugin",
+            deps: [":Plugin_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_bundle(
+                    name = "Plugin",
+                    bundle_extension = "prefPane",
+                    bundle_id = "com.example.plugin",
+                    deps = [
+                        ":Plugin_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSKernelExtensionTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_kernel_extension(
+            name: "Driver",
+            bundle_id: "com.example.driver",
+            deps: [":Driver_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_kernel_extension(
+                    name = "Driver",
+                    bundle_id = "com.example.driver",
+                    deps = [
+                        ":Driver_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSQuickLookPluginTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_quick_look_plugin(
+            name: "Preview",
+            additional_contents: ["//Targets/Helper:Helper": "Helpers"],
+            bundle_id: "com.example.preview",
+            deps: [":Preview_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_quick_look_plugin(
+                    name = "Preview",
+                    additional_contents = {
+                        "//Targets/Helper:Helper": "Helpers",
+                    },
+                    bundle_id = "com.example.preview",
+                    deps = [
+                        ":Preview_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSSpotlightImporterTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_spotlight_importer(
+            name: "Importer",
+            bundle_id: "com.example.importer",
+            deps: [":Importer_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_spotlight_importer(
+                    name = "Importer",
+                    bundle_id = "com.example.importer",
+                    deps = [
+                        ":Importer_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testIOSAppClipTypedCall() {
+        let call = Rules.Apple.IOS.Call.ios_app_clip(
+            name: "Clip",
+            bundle_id: "com.example.app.Clip",
+            deps: [":Clip_library"],
+            minimum_os_version: "18.0")
+
+        #expect(
+            call.text
+                == """
+                ios_app_clip(
+                    name = "Clip",
+                    bundle_id = "com.example.app.Clip",
+                    deps = [
+                        ":Clip_library",
+                    ],
+                    minimum_os_version = "18.0",
+                )
+                """)
+    }
+
+    @Test
+    func testTVOSExtensionTypedCall() {
+        let call = Rules.Apple.TVOS.Call.tvos_extension(
+            name: "TopShelf",
+            bundle_id: "com.example.tv.TopShelf",
+            deps: [":TopShelf_library"],
+            minimum_os_version: "18.0")
+
+        #expect(
+            call.text
+                == """
+                tvos_extension(
+                    name = "TopShelf",
+                    bundle_id = "com.example.tv.TopShelf",
+                    deps = [
+                        ":TopShelf_library",
+                    ],
+                    minimum_os_version = "18.0",
+                )
+                """)
+    }
+
+    @Test
+    func testWatchOSExtensionTypedCall() {
+        let call = Rules.Apple.WatchOS.Call.watchos_extension(
+            name: "Complication",
+            bundle_id: "com.example.watch.Complication",
+            deps: [":Complication_library"],
+            minimum_os_version: "11.0")
+
+        #expect(
+            call.text
+                == """
+                watchos_extension(
+                    name = "Complication",
+                    bundle_id = "com.example.watch.Complication",
+                    deps = [
+                        ":Complication_library",
+                    ],
+                    minimum_os_version = "11.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSDylibTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_dylib(
+            name: "libHelper",
+            bundle_id: "com.example.helper",
+            deps: [":Helper_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_dylib(
+                    name = "libHelper",
+                    bundle_id = "com.example.helper",
+                    deps = [
+                        ":Helper_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSDynamicFrameworkTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_dynamic_framework(
+            name: "Shared",
+            bundle_id: "com.example.shared",
+            deps: [":Shared_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_dynamic_framework(
+                    name = "Shared",
+                    bundle_id = "com.example.shared",
+                    deps = [
+                        ":Shared_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testMacOSStaticFrameworkTypedCall() {
+        let call = Rules.Apple.MacOS.Call.macos_static_framework(
+            name: "Core",
+            avoid_deps: [":Logging"],
+            deps: [":Core_library"],
+            minimum_os_version: "15.0")
+
+        #expect(
+            call.text
+                == """
+                macos_static_framework(
+                    name = "Core",
+                    avoid_deps = [
+                        ":Logging",
+                    ],
+                    deps = [
+                        ":Core_library",
+                    ],
+                    minimum_os_version = "15.0",
+                )
+                """)
+    }
+
+    @Test
+    func testAppleStaticXCFrameworkTypedCall() {
+        let call = Rules.Apple.General.Call.apple_static_xcframework(
+            name: "CoreKit",
+            deps: [":Core_library"],
+            minimum_os_versions: ["ios": "16.0"],
+            public_hdrs: ["include/Core.h"])
+
+        #expect(
+            call.text
+                == """
+                apple_static_xcframework(
+                    name = "CoreKit",
+                    deps = [
+                        ":Core_library",
+                    ],
+                    minimum_os_versions = {
+                        "ios": "16.0",
+                    },
+                    public_hdrs = [
+                        "include/Core.h",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testLocalProvisioningProfileTypedCall() {
+        let call = Rules.Apple.General.Call.local_provisioning_profile(
+            name: "development",
+            profile_name: "iOS Team Provisioning Profile: com.example.app",
+            teamid: "A1B2C3D4E5")
+
+        #expect(
+            call.text
+                == """
+                local_provisioning_profile(
+                    name = "development",
+                    profile_name = "iOS Team Provisioning Profile: com.example.app",
+                    teamid = "A1B2C3D4E5",
+                )
+                """)
+    }
+
+    @Test
+    func testProvisioningProfileRepositoryTypedCall() {
+        let call = Rules.Apple.General.Call.provisioning_profile_repository(
+            name: "local_provisioning_profiles",
+            fallback_profiles: "//profiles:fallback")
+
+        #expect(
+            call.text
+                == """
+                provisioning_profile_repository(
+                    name = "local_provisioning_profiles",
+                    fallback_profiles = "//profiles:fallback",
+                )
+                """)
+    }
+
+    @Test
+    func testProvisioningProfileRepositoryExtensionTypedCall() {
+        let call = Rules.Apple.General.Call.provisioning_profile_repository_extension(
+            name: "local_provisioning_profiles")
+
+        #expect(
+            call.text
+                == """
+                provisioning_profile_repository_extension(
+                    name = "local_provisioning_profiles",
+                )
+                """)
+    }
 }

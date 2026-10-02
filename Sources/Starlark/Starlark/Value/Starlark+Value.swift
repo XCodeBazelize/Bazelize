@@ -16,6 +16,34 @@ extension Starlark {
         .glob(files, exclude: exclude, allowEmpty: allowEmpty)
     }
 
+    /// Patterns as a value: only a pattern with a wildcard in it is globbed.
+    ///
+    /// `glob(["a/b.xib"])` is that one file with a way to be silently empty
+    /// instead, which is what buildifier's `constant-glob` says out loud. A
+    /// pattern that names a file is that file.
+    public static func paths(_ patterns: [String], exclude: [String] = [], allowEmpty: Bool = false) -> Value {
+        var seen: Set<String> = []
+        let unique = patterns.filter { seen.insert($0).inserted }
+        let wildcards = unique.filter { $0.contains(where: isWildcard) }
+        let named = unique.filter { !$0.contains(where: isWildcard) }
+
+        guard !wildcards.isEmpty else {
+            return .array(named.map(Value.string))
+        }
+        guard !named.isEmpty else {
+            return .glob(wildcards, exclude: exclude, allowEmpty: allowEmpty)
+        }
+
+        return .concat([
+            .array(named.map(Value.string)),
+            .glob(wildcards, exclude: exclude, allowEmpty: allowEmpty),
+        ])
+    }
+
+    private static func isWildcard(_ character: Character) -> Bool {
+        character == "*" || character == "?" || character == "["
+    }
+
     public indirect enum Value: Sendable, Text {
         case label(Label)
         case string(String)
@@ -25,6 +53,9 @@ extension Starlark {
         case dictionary([String: Value])
         case select(Starlark.Select<Value>)
         case glob([String], exclude: [String], allowEmpty: Bool)
+        /// `[":a"] + select({…})`: an attribute that is partly unconditional
+        /// and partly not.
+        case concat([Value])
         case custom(String)
         case none
 
@@ -34,26 +65,28 @@ extension Starlark {
 
         // MARK: Lifecycle
 
+        /// A Swift value as the Starlark one it stands for.
+        ///
+        /// A `String` is a string, not a label: the two render the same until
+        /// the value carries a quote or a backslash, and then only a string
+        /// survives it. A label is a label because it was written as one.
         public init?(_ any: Any?) {
             switch any {
             case let any as String?:
                 guard let value = any else {
                     return nil
                 }
-                self = .label(.init(value))
+                self = .string(value)
             case let any as [String?]:
                 let result = any
                     .compactMap { $0 }
-                    .map { Value.label(.init($0)) }
+                    .map(Value.string)
                 self = Value(array: result)
             case let any as [String: String]:
-                let result = any.mapValues {
-                    Value.label(.init($0))
-                }
-                self = .dictionary(result)
+                self = .dictionary(any.mapValues(Value.string))
 
             case let any as String:
-                self = .label(.init(any))
+                self = .string(any)
             case let any as Label:
                 self = .label(any)
             case let any as [Value]:
@@ -76,32 +109,28 @@ extension Starlark {
             case .label(let value):
                 return value.text
             case .string(let value):
-                /// Values come from Xcode build settings and can carry quotes, e.g.
-                /// a preprocessor definition like `ID=@"com.example"`.
-                let escaped = value
-                    .replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "\"", with: "\\\"")
-                return """
-                "\(escaped)"
-                """
+                return Self.quoted(value)
             case .int(let value):
                 return "\(value)"
             case .array(let value):
-                if value.isEmpty {
-                    return Value.none.text
-                }
+                /// An empty list is a list: an attribute given one says so with
+                /// `None` instead, which the argument it belongs to decides.
+                let items = value.filter { !$0.isEmptyValue }
+                guard !items.isEmpty else { return "[]" }
 
                 return """
                 [
-                \(value.map(\.withComma).withNewLine.indent(1))
+                \(items.map(\.withComma).withNewLine.indent(1))
                 ]
                 """
             case .dictionary(let value):
+                guard !value.isEmpty else { return "{}" }
+
                 let pair = value.map { key, value in
                     """
-                    "\(key)": \(value.text)
+                    \(Self.quoted(key)): \(value.text),
                     """
-                }.sorted().joined(separator: ",\n").indent(1)
+                }.sorted().joined(separator: "\n").indent(1)
                 return ["{", pair, "}"].withNewLine
             case .bool(let value):
                 return value ? "True" : "False"
@@ -118,10 +147,34 @@ extension Starlark {
                     arguments.append("allow_empty = True")
                 }
                 return "glob(\(arguments.joined(separator: ", ")))"
+            case .concat(let value):
+                let parts = value.filter { !$0.isEmptyValue }
+                guard let first = parts.first else { return Value.none.text }
+                guard parts.count > 1 else { return first.text }
+                return parts.map(\.text).joined(separator: " + ")
             case .custom(let value):
                 return value
             case .none:
                 return "None"
+            }
+        }
+
+        /// Nothing for an attribute to take: `None`, an empty collection, or a
+        /// collection of those. An attribute that is given one is an attribute
+        /// that was not given anything, which is what `None` says in a
+        /// generated file.
+        public var isEmptyValue: Bool {
+            switch self {
+            case .none:
+                return true
+            case .array(let value):
+                return value.allSatisfy(\.isEmptyValue)
+            case .concat(let value):
+                return value.allSatisfy(\.isEmptyValue)
+            case .dictionary(let value):
+                return value.isEmpty
+            default:
+                return false
             }
         }
 
@@ -136,6 +189,21 @@ extension Starlark {
             default:
                 return text.withComma
             }
+        }
+
+        /// A Starlark string literal.
+        ///
+        /// Values come from Xcode build settings and from a package's own
+        /// manifest, so they carry whatever was written there — a preprocessor
+        /// definition like `ID=@"com.example"`, a path with a backslash. Both
+        /// have to survive into the file as what they were.
+        private static func quoted(_ value: String) -> String {
+            let escaped = value
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "\"", with: "\\\"")
+            return """
+            "\(escaped)"
+            """
         }
     }
 }
@@ -216,5 +284,13 @@ extension Starlark.Value: ExpressibleByDictionaryLiteral {
 extension Array where Element == Starlark.Value {
     public var starlark: Starlark.Value {
         .array(self)
+    }
+}
+
+extension Array where Element == String {
+    /// A list of flags as a value, so an attribute that takes one can also take
+    /// a `select`. `nil` rather than an empty attribute.
+    public var starlark: Starlark.Value? {
+        isEmpty ? nil : .array(map(Starlark.Value.string))
     }
 }

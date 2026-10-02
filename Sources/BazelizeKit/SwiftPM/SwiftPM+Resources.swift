@@ -118,7 +118,7 @@ extension SwiftPM.Generator {
             builder.call(
                 Rules.Apple.Resources.Call.apple_resource_group(
                     name: group,
-                    resources: Starlark.glob(patterns, allowEmpty: true)))
+                    resources: self.files(matching: patterns, allowEmpty: true)))
         }
 
         for (index, prefixToStrip) in structured.keys.sorted().enumerated() {
@@ -132,7 +132,7 @@ extension SwiftPM.Generator {
                 Rules.Apple.Resources.Call.apple_resource_group(
                     name: group,
                     strip_structured_resources_prefixes: [prefixToStrip],
-                    structured_resources: Starlark.glob(patterns)))
+                    structured_resources: self.files(matching: patterns)))
         }
 
         builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
@@ -144,12 +144,24 @@ extension SwiftPM.Generator {
                 /// A glob and a group cannot be added together in one attribute, so
                 /// once there is a group everything is a group.
                 resources: groups.isEmpty
-                    ? resources.nonEmpty.map { Starlark.glob($0, allowEmpty: true) }
+                    ? resources.nonEmpty.map { self.files(matching: $0, allowEmpty: true) }
                     : .build { groups.map { Starlark.Label.named(":\($0)") } },
                 tags: Self.manual))
 
         switch kind {
-        case .swift, .executable, .test:
+        case .executable:
+            /// A resource bundle is built by whatever bundles it — an app or a
+            /// test — and a program is neither: the rule produces the bundle
+            /// for nothing to put anywhere, so `Bundle.module` finds nothing at
+            /// run time. SwiftPM writes the bundle beside the program, so the
+            /// difference is said out loud rather than discovered by a crash.
+            note("""
+            \(package.directory)/\(target.name) is a program with resources, which \
+            Bazel has nothing to bundle into: it is built, but `Bundle.module` finds \
+            nothing when it runs.
+            """)
+            fallthrough
+        case .swift, .test:
             let accessor = "Generated/\(target.name)ResourceBundleAccessor.swift"
             try (root + accessor).write(Self.swiftAccessor(bundle: bundle))
             return ResourceBundle(
@@ -349,9 +361,14 @@ extension SwiftPM.Generator {
         @end
 
         NSBundle *\(module)_SWIFTPM_MODULE_BUNDLE(void) {
-            NSArray *candidates = @[
+            /// The same candidates the Swift accessor tries, in the same
+            /// order: on macOS a bundle's resources are under `Resources`, and
+            /// only a flat bundle has them beside the binary.
+            NSArray<NSURL *> *candidates = @[
+                [[NSBundle mainBundle] resourceURL] ?: [[NSBundle mainBundle] bundleURL],
+                [[NSBundle bundleForClass:[\(module)_BundleFinder class]] resourceURL]
+                    ?: [[NSBundle bundleForClass:[\(module)_BundleFinder class]] bundleURL],
                 [[NSBundle mainBundle] bundleURL],
-                [[NSBundle bundleForClass:[\(module)_BundleFinder class]] bundleURL],
             ];
 
             for (NSURL *base in candidates) {

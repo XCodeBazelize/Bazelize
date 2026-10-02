@@ -8,13 +8,13 @@
 import PluginLoader
 import Util
 import XcodeProj
-import Yams
 
 // MARK: - Kit
 
 public final class Kit {
     let project: Project
     let outputRoot: Path
+    let configuration: BazelizeConfiguration
 
     private lazy var roadmap = Bazel.Roadmap(output: outputRoot, project: project)
     lazy var version = Bazel.Version(outputRoot)
@@ -33,7 +33,7 @@ public final class Kit {
     private lazy var pluginSPM = PluginSwiftPM(self)
 
     lazy var builtinPlugins: [PluginBuiltin] = [
-        PluginHttpArchive(self),
+        PluginBuildifier(self),
         PluginGitRepository(self),
         pluginSPM,
         PluginApple(self),
@@ -45,7 +45,12 @@ public final class Kit {
 
     // MARK: Lifecycle
 
-    public init(_ projPath: Path, _ preferConfig: String?, outputPath: Path? = nil) async throws {
+    public init(
+        _ projPath: Path,
+        _ preferConfig: String?,
+        outputPath: Path? = nil,
+        configuration: BazelizeConfiguration = .default) async throws {
+        self.configuration = configuration
         project = try Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
         plugins = []
@@ -57,23 +62,44 @@ public final class Kit {
 
     /// Notes the run has for the user, collected while the package rules were
     /// generated.
-    private var packageTips: [String] = []
+    public private(set) var packageTips: [String] = []
 
-    public final func run(_: Path) async throws {
+    /// Notes about reading the package graph itself, kept apart so the notes
+    /// the rules produced can be replaced without losing them.
+    private var workspaceTips: [String] = []
+
+    /// Notes about the project's own targets, collected while their rules were
+    /// written.
+    public private(set) var projectTips: [String] = []
+
+    /// Something a caller has to be told: where the generated build differs
+    /// from what the project asked for, and why. It is logged where a run is
+    /// watched, and printed at the end of one — a target that is not generated
+    /// is found here rather than in whatever fails to link it.
+    final func note(_ message: String) {
+        Log.codeGenerate.warning("\(message, privacy: .public)")
+        projectTips.append(message)
+    }
+
+    /// The generator that wrote the package rules, kept for the step that runs
+    /// their build tool plugins once the workspace is complete.
+    private var packageGenerator: SwiftPM.Generator?
+
+    public final func run() async throws {
         defer { tips() }
 
-//        try await loadPlugins(mainfest)
         try generate()
+        /// Which package a product belongs to is the resolved graph's answer,
+        /// so the rules that name one are written once the packages have been
+        /// resolved — everything those rules need besides that is already in
+        /// the project.
         try await generateSwiftPackages()
-    }
-
-    public final func dump() throws {
-        let encoder = YAMLEncoder()
-        let yaml = try encoder.encode(project)
-        print(yaml)
+        try generateTargetBuild()
+        /// The workspace is complete here, which is what `//:plugins` needs to
+        /// build the host, the plugins and their tools.
+        try await runBuildToolPlugins()
     }
 }
-
 
 extension Kit {
 //    private final func loadPlugins(_ mainfest: Path) async throws {
@@ -86,6 +112,13 @@ extension Kit {
     private final func tips() {
         builtinPlugins.compactMap(\.tip).forEach { tip in
             print(tip)
+        }
+
+        if !projectTips.isEmpty {
+            print("# Targets")
+            projectTips.forEach { tip in
+                print(tip)
+            }
         }
 
         if !packageTips.isEmpty {
@@ -123,10 +156,67 @@ extension Kit {
             workspace: workspace,
             deployment: deployment)
         try await generator.generate(locals: locals)
-        packageTips = generator.notes
+        packageGenerator = generator
+        workspaceTips = workspace.notes
+        packageTips = workspaceTips + generator.notes
+        packageDirectoryByProduct(of: workspace)
 
         let count = workspace.packages.count
         Log.codeGenerate.info("Generate \(count, privacy: .public) Swift packages")
+    }
+
+    /// Runs the build tool plugins of the packages this project owns, the way
+    /// the workspace runs them: `bazel run //:plugins`.
+    ///
+    /// A target compiles what its plugin generates, so a workspace whose
+    /// plugins have never run is a workspace that does not build. Bazel builds
+    /// the host, the plugins and their tools from the rules just written, so
+    /// nothing here is a second implementation of running one — it is the
+    /// first use of the only one.
+    ///
+    /// What landed decides how the rules name it, so the packages that have a
+    /// plugin are written once more afterwards.
+    private final func runBuildToolPlugins() async throws {
+        guard let generator = packageGenerator, generator.hasBuildToolPlugins else { return }
+
+        do {
+            try await SwiftPM.PluginHost.runPlugins(in: outputRoot)
+            try generator.refreshPluginPackages()
+        } catch {
+            generator.note("""
+            `bazel run //:plugins` did not run the build tool plugins: \(error). \
+            Whatever they generate is missing from the targets that use them.
+            """)
+        }
+
+        packageTips = workspaceTips + generator.notes
+    }
+
+    /// Which package directory declares each product, for the target rules
+    /// that have to name one.
+    ///
+    /// A product name is the package's own, so two packages can ship one of
+    /// the same name; such a name answers for neither, because nothing in an
+    /// Xcode target says which package it meant.
+    private final func packageDirectoryByProduct(of workspace: SwiftPM.Workspace) {
+        var directories: [String: String] = [:]
+        var ambiguous: Set<String> = []
+
+        for package in workspace.packages {
+            for product in package.manifest.products {
+                if let existing = directories[product.name], existing != package.directory {
+                    ambiguous.insert(product.name)
+                    continue
+                }
+                directories[product.name] = package.directory
+            }
+        }
+
+        for name in ambiguous {
+            directories[name] = nil
+        }
+
+        pluginSPM.packageDirectoryByProduct = directories
     }
 
     /// The versions a package's targets end up compiled at: the lowest deployment
@@ -183,12 +273,11 @@ extension Kit {
         try generateBuild()
         try generateConfig()
         try generatePrebuiltBuild()
-        try generateTargetBuild()
         try generatePluginExtraFile()
     }
 
     private func generateRoadmap() throws {
-        try roadmap.prepare()
+        try roadmap.prepare().forEach(note)
     }
 
     private func generateVersion() throws {
@@ -209,8 +298,6 @@ extension Kit {
     /// {WORKSPACE}/BUILD
     private final func generateBuild() throws {
         build.setup(config: project.config)
-
-//        build.exportUncategorizedFiles(self)
         for plugin in builtinPlugins {
             plugin.build(build.builder)
         }
@@ -273,59 +360,10 @@ extension Kit {
             try plugin.generateFile(outputRoot)
         }
     }
-}
-
-
-// MARK: - clear
-extension Kit {
-    // MARK: Public
-
-    public final func clear() {
-        clearModule()
-        clearBuild()
-        clearConfig()
-        clearPrebuiltBuild()
-        clearTargetBuild()
-        clearPluginExtraFile()
-    }
-
-    // MARK: Private
-
-    /// {WORKSPACE}/MODULE.bazel
-    private func clearModule() {
-        try? module.clear()
-    }
-
-    /// {WORKSPACE}/BUILD
-    private final func clearBuild() {
-        try? build.clear()
-    }
-
-    /// {WORKSPACE}/config.bazelrc
-    private final func clearConfig() {
-        try? config.clear()
-    }
-
-    private final func clearPrebuiltBuild() {
-        try? prebuilt.clear()
-    }
-
-    /// {WORKSPACE}/Target/BUILD
-    private final func clearTargetBuild() {
-        for build in targetsBuild {
-            try? build.clear()
-        }
-    }
-
-    private final func clearPluginExtraFile() {
-        builtinPlugins.compactMap(\.custom).flatMap { $0 }.forEach { custom in
-            let path = resolvedOutputPath(custom.path)
-            try? path.delete()
-        }
-    }
 
     private func resolvedOutputPath(_ path: String) -> Path {
         let custom = Path(path)
         return custom.isAbsolute ? custom : outputRoot + custom
     }
 }
+

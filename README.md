@@ -1,6 +1,6 @@
 # Bazelize
 
-A cli tool turn your xcode project or Swift package to bazel.
+Bazelize generates Bazel workspaces from Xcode projects and Swift packages.
 
 ---
 
@@ -13,14 +13,84 @@ mint install XCodeBazelize/Bazelize
 ## Usage
 
 ```sh
-bazelize --project YOUR.xcodeproj
+bazelize --input YOUR.xcodeproj --output App
 ```
 
 Or a Swift package — the `Package.swift`, or the directory holding one:
 
 ```sh
-bazelize --project path/to/Package.swift
+bazelize --input path/to/Package.swift --output App
 ```
+
+A package whose targets use a build tool plugin has its plugins run at the end
+of generation, with the `//:plugins` target the run writes:
+
+```sh
+bazel run //:plugins
+```
+
+Bazel builds the plugins and their tools, so generation needs `bazel` on `PATH`
+for that step. Run the same command again whenever a plugin or its input
+changes.
+
+Every generated workspace also owns its Starlark commands:
+
+```sh
+bazel run //:lint
+bazel run //:format
+```
+
+Both pick the buildifier pinned for the host — `uname -s` and `uname -m`, so
+macOS and Linux on arm64 or x86_64 — and download it into the user cache
+against its checksum. `//:lint` reports warnings and fails on them; `//:format`
+rewrites the generated `BUILD`, `WORKSPACE`, `*.bzl`, and `*.bazel` files the
+way buildifier formats them. Formatting is buildifier's job, so generation does
+not do it and `//:lint` reports a formatting difference rather than failing on
+it.
+
+### Configuration
+
+Create the default file in the current directory, or in a specified directory:
+
+```sh
+bazelize init
+bazelize init path/to/project
+```
+
+The command creates the destination directory when needed and refuses to
+overwrite an existing `bazelize.yaml`.
+
+`bazelize generate` reads `bazelize.yaml` beside an input `.xcodeproj` or in a
+Swift package root:
+
+```yaml
+schema: 1
+
+buildifier:
+  version: "10.1.0"
+```
+
+Use `--config-file path/to/custom.yaml` to select another file. An explicit
+file takes precedence over automatic discovery; Bazelize does not merge them.
+The buildifier version must be in Bazelize's checksum catalog. Bazel and BCR
+dependency pins remain generator-owned and are not configuration properties.
+
+See [the configuration contract and v2 candidates](docs/Configuration.md).
+
+An Xcode target whose product type is `com.apple.product-type.bundle` is
+generated as a rules_apple `macos_bundle`.
+
+A command plugin becomes a target named after its verb, so `swift package
+hello` is:
+
+```sh
+bazel run //Packages/YourPackage:hello -- <arguments>
+```
+
+Everything after `--` reaches the plugin the way everything after the verb
+reaches it under SwiftPM. There is no sandbox to widen, so what the plugin
+declared it wants to do is printed rather than refused — running the target is
+the permission.
 
 ---
 

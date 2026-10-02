@@ -28,8 +28,15 @@ extension String {
 }
 
 extension String {
-    public func delete(prefix: String) -> String {
-        guard hasPrefix(prefix) else { return self }
+    /// What is left of the string after the prefix, or `nil` when it does not
+    /// start with one.
+    ///
+    /// Not the string itself when the prefix is absent: a caller that wants
+    /// that says so — `path.delete(prefix: root) ?? path` — and one that wants
+    /// something else can have it, which is what a non-optional answer took
+    /// away.
+    public func delete(prefix: String) -> String? {
+        guard hasPrefix(prefix) else { return nil }
         return String(dropFirst(prefix.count))
     }
 }

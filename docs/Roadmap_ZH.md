@@ -119,6 +119,11 @@ Packages/
 - `Prebuilt/` 是 root-level global directory，用來放 prebuilt binaries
 - `Packages/` 是 root-level global directory，用來放 Swift package 的規則
 
-## Deferred
+## 缺檔
 
-- 缺檔時的處理行為之後再定義
+專案提到、但磁碟上沒有的檔案會被排除在 target 之外，並在執行結束時具名回報。
+Xcode 編得了什麼，產生出來的 build 就編什麼；缺了哪個檔案由執行過程說出來，
+而不是留給之後的編譯錯誤間接表達。
+
+不屬於專案自身的路徑不會回報：其他 target 的產物、SDK framework、絕對路徑、
+header search path，以及仍帶著未展開 build setting 的路徑。

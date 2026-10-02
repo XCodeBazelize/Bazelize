@@ -1,4 +1,5 @@
 BAZELIZE = ../../.build/debug/bazelize
+TUIST = tuist
 OUTPUT = App
 
 # The simulator rules_apple runs unit tests on; override for other Xcode versions.
@@ -12,9 +13,13 @@ TESTS = \
 	//Targets/Framework2Tests \
 	//Targets/Framework3Tests
 
+.PHONY: project
+project:
+	@$(TUIST) generate --no-open
+
 .PHONY: bazelize
-bazelize:
-	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT)
+bazelize: project
+	@$(BAZELIZE) --input Example.xcodeproj --output $(OUTPUT)
 
 .PHONY: build
 build: bazelize
@@ -38,5 +43,4 @@ uitest:
 
 .PHONY: clear
 clear:
-	@$(BAZELIZE) --project Example.xcodeproj --output $(OUTPUT) --clear
 	-rm -rf $(OUTPUT)

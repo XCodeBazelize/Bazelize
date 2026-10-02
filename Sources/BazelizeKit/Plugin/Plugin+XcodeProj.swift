@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import XcodeProj
+import Starlark
 
 // MARK: - PluginXcodeProj
 
@@ -19,40 +19,33 @@ final class PluginXcodeProj: PluginBuiltin {
             version: dep.rawValue)
     }
 
-    // TODO:
-    /// top target
-    /// custom project_name
-    /// not support swift_library -> static library
-    /// target_environments `device` need provision_profile
+    /// Every target that generated a rule, under the project's own name.
+    ///
+    /// A label that names nothing fails analysis of the whole rule, so a target
+    /// without sources — which generates no rule — is left out. Each one is a
+    /// top level target at its default environment: building for a device needs a
+    /// provisioning profile, which no Xcode project hands over.
     override func build(_ builder: CodeBuilder) {
-        let targets = kit.project.targets
-        let other = targets
+        let labels = kit.project.targets
+            .filter(\.hasSources)
             .map(\.name)
             .sorted()
             .map { name in
-                """
-                "//Targets/\(name):\(name)",
-                """
-            }.withNewLine.indent(2)
+                Starlark.Label.named("//Targets/\(name):\(name)")
+            }
+
+        guard !labels.isEmpty else { return }
 
         builder.load(
             module: "@rules_xcodeproj//xcodeproj:defs.bzl",
-            symbols: ["top_level_target", "xcodeproj"])
+            symbols: ["xcodeproj"])
 
-        builder.custom("""
-        # Xcode
-        xcodeproj(
-            name = "xcodeproj",
-            # Custom Project Name
-            project_name = "App",
-            tags = ["manual"],
-            top_level_targets = [
-                # main target, maybe some `ios_application`
-                top_level_target(":App", target_environments = ["device", "simulator"]),
-                # all other target
-        \(other)
-            ],
-        )
-        """)
+        builder.call(
+            Starlark.Statement.Call("xcodeproj") {
+                "name" => "xcodeproj"
+                "project_name" => kit.project.name
+                "tags" => ["manual"]
+                "top_level_targets" => labels
+            })
     }
 }

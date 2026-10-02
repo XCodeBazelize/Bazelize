@@ -93,7 +93,7 @@ extension Target {
                         [rename.product]
                     },
                     outs: [rename.name],
-                    cmd: "cp $(location \(rename.product)) $@",
+                    cmd: "cp $(execpath \(rename.product)) $@",
                     visibility: .private))
         }
     }

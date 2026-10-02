@@ -9,10 +9,6 @@ protocol BazelFile {
 }
 
 extension BazelFile {
-    func clear() throws {
-        try path.delete()
-    }
-
     func write() throws {
         try path.write(generationHeader + "\n\n" + code)
     }

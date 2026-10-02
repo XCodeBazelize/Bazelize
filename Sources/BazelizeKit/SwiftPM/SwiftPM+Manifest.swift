@@ -28,6 +28,13 @@ extension SwiftPM {
         let traits: [Trait]
         let cLanguageStandard: String?
         let cxxLanguageStandard: String?
+        /// `swiftLanguageModes`, which the dump still calls by its old name:
+        /// the language modes the package's targets compile in unless one of
+        /// them says otherwise.
+        let swiftLanguageModes: [String]
+        /// The localization a package's resources fall back to, which is the
+        /// one a resource declared without a language is filed under.
+        let defaultLocalization: String?
         /// `{"_version": "6.0.0"}`: which `PackageDescription` the manifest was
         /// written against, which a plugin has to be compiled against too.
         let toolsVersion: String
@@ -42,20 +49,30 @@ extension SwiftPM {
             traits = container.list(Trait.self, "traits")
             cLanguageStandard = container.value(String.self, "cLanguageStandard")
             cxxLanguageStandard = container.value(String.self, "cxxLanguageStandard")
+            swiftLanguageModes = container.list(String.self, "swiftLanguageVersions")
+            defaultLocalization = container.value(String.self, "defaultLocalization")
             toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
         }
 
-        /// The manifest with every setting that does not apply removed, so
-        /// nothing downstream has to know a condition exists.
+        /// The manifest with everything the platform rules out removed.
+        ///
+        /// A trait's condition survives: which traits are on is a question the
+        /// build answers, through a flag per trait, so what is conditional on
+        /// one becomes a `select` rather than a decision taken here. A platform
+        /// cannot be that — a package rule is built through the transition of
+        /// whatever pulls it in — so it is decided now.
         ///
         /// `platforms` empty means the caller does not know which platforms are
-        /// built, and a platform condition is then left alone.
-        func resolving(traits: Set<String>, platforms: Set<String>) -> Manifest {
+        /// built, which still rules out the ones no Apple toolchain builds.
+        func resolving(platforms: Set<String>) -> Manifest {
             var resolved = self
             resolved.targets = targets.map { target in
                 var target = target
                 target.settings = target.settings.filter { setting in
-                    setting.applies(traits: traits, platforms: platforms)
+                    setting.condition?.applies(platforms: platforms) ?? true
+                }
+                target.dependencies = target.dependencies.filter { dependency in
+                    dependency.condition?.applies(platforms: platforms) ?? true
                 }
                 return target
             }
@@ -97,12 +114,19 @@ extension SwiftPM {
         let publicHeadersPath: String?
         var settings: [Setting]
         let resources: [Resource]
-        let dependencies: [TargetDependency]
+        var dependencies: [TargetDependency]
         /// The plugins the target asks to be run while it is built.
         let pluginUsages: [PluginUsage]
         /// A binary target's remote archive.
         let url: String?
         let checksum: String?
+        /// A system library target's `pkg-config` name, which is how the
+        /// machine is asked where that library is.
+        let pkgConfig: String?
+        /// What installs the library this target wraps, by package manager.
+        let providers: [Provider]
+        /// What kind of plugin this is, for a `plugin` target.
+        let pluginCapability: PluginCapability?
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
@@ -118,6 +142,117 @@ extension SwiftPM {
             pluginUsages = container.list(PluginUsage.self, "pluginUsages")
             url = container.value(String.self, "url")
             checksum = container.value(String.self, "checksum")
+            pkgConfig = container.value(String.self, "pkgConfig")
+            providers = container.list(Provider.self, "providers")
+            pluginCapability = container.value(PluginCapability.self, "pluginCapability")
+        }
+    }
+
+    /// `{"buildTool": null}`, or a command's verb and what it asks to be
+    /// allowed to do:
+    /// `{"command": [{"custom": {"verb": "hello", "description": "…"}},
+    ///               [{"writeToPackageDirectory": {"reason": "…"}}]]}`
+    struct PluginCapability: Decodable {
+        /// The word a command plugin is run by — `swift package hello`. A build
+        /// tool plugin has none: it is run by the build.
+        let verb: String?
+        let description: String?
+        /// What the plugin asks for before SwiftPM widens its sandbox, and the
+        /// reason it gives. Nothing here grants anything.
+        let permissions: [Permission]
+
+        var isCommand: Bool { verb != nil }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+            guard var command = try? container.nestedUnkeyedContainer(forKey: AnyKey("command")) else {
+                verb = nil
+                description = nil
+                permissions = []
+                return
+            }
+
+            let intent = try command.decode(Intent.self)
+            verb = intent.verb
+            description = intent.description
+            permissions = (try? command.decode([Permission].self)) ?? []
+        }
+
+        /// `{"custom": {"verb": "hello", "description": "…"}}`, or one of the
+        /// intents SwiftPM names itself, each of which has a verb of its own.
+        struct Intent: Decodable {
+            let verb: String?
+            let description: String?
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: AnyKey.self)
+                guard let key = container.allKeys.first else {
+                    verb = nil
+                    description = nil
+                    return
+                }
+
+                if key.stringValue == "custom" {
+                    let custom = try container.decode(Custom.self, forKey: key)
+                    verb = custom.verb
+                    description = custom.description
+                    return
+                }
+
+                let known = [
+                    "documentationGeneration": "generate-documentation",
+                    "sourceCodeFormatting": "format-source-code",
+                ]
+                verb = known[key.stringValue] ?? key.stringValue
+                description = nil
+            }
+
+            private struct Custom: Decodable {
+                let verb: String?
+                let description: String?
+            }
+        }
+
+        /// `{"writeToPackageDirectory": {"reason": "…"}}`
+        struct Permission: Decodable {
+            let name: String
+            let reason: String?
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: AnyKey.self)
+                guard let key = container.allKeys.first else {
+                    name = ""
+                    reason = nil
+                    return
+                }
+
+                name = key.stringValue
+                reason = (try? container.decode(Body.self, forKey: key))?.reason
+            }
+
+            private struct Body: Decodable {
+                let reason: String?
+            }
+        }
+    }
+
+    /// `{"brew": [["zlib"]]}`: a package manager, and what it installs.
+    struct Provider: Decodable {
+        let manager: String
+        let packages: [String]
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: AnyKey.self)
+
+            for key in container.allKeys {
+                guard let names = container.list([String].self, key.stringValue).first else { continue }
+                manager = key.stringValue
+                packages = names
+                return
+            }
+
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: decoder.codingPath, debugDescription: "Unknown provider"))
         }
     }
 
@@ -156,25 +291,10 @@ extension SwiftPM {
             kind.values.first?.values ?? []
         }
 
-        /// Whether the setting is one this build uses: a condition naming
-        /// traits needs one of them on, and a condition naming platforms needs
-        /// one of them built.
-        ///
-        /// A configuration is not one of these: which configuration a rule is
-        /// built in is decided when Bazel builds it, not when it is generated,
-        /// so a setting conditional on one is kept.
-        func applies(traits: Set<String>, platforms: Set<String>) -> Bool {
-            guard let condition else { return true }
-
-            if !condition.traits.isEmpty, condition.traits.allSatisfy({ !traits.contains($0) }) {
-                return false
-            }
-            if !condition.platformNames.isEmpty, !platforms.isEmpty,
-               condition.platformNames.allSatisfy({ !platforms.contains($0) })
-            {
-                return false
-            }
-            return true
+        /// The traits the setting is conditional on, of which one being on is
+        /// what puts it in the build. Empty means it is always in.
+        var traits: [String] {
+            condition?.traits ?? []
         }
     }
 
@@ -241,33 +361,86 @@ extension SwiftPM {
 
     struct TargetDependency: Decodable {
         let kind: TargetDependencyKind
+        /// The last element of the array a dependency is dumped as: the
+        /// platforms it is limited to, and the traits that have to be on.
+        let condition: SettingCondition?
+        /// `moduleAliases`: what the modules of that product are called here,
+        /// which is how two packages that both ship a `Core` are both used.
+        let moduleAliases: [String: String]
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
 
             for key in container.allKeys {
-                let values = container.list(AnyDecodable.self, key.stringValue)
-                let strings = values.compactMap { $0.value as? String }
+                let values = container.list(DependencyElement.self, key.stringValue)
+                let strings = values.compactMap(\.name)
                 guard let name = strings.first else { continue }
 
+                let kind: TargetDependencyKind
                 switch key.stringValue {
                 case "byName":
                     kind = .byName(name)
-                    return
                 case "target":
                     kind = .target(name)
-                    return
                 case "product":
                     kind = .product(name: name, package: strings.dropFirst().first)
-                    return
                 default:
                     continue
                 }
+
+                self.kind = kind
+                condition = values.compactMap(\.condition).last
+                moduleAliases = values.compactMap(\.aliases).reduce(into: [:]) { all, aliases in
+                    all.merge(aliases) { _, later in later }
+                }
+                return
             }
 
             throw DecodingError.dataCorrupted(
                 .init(codingPath: decoder.codingPath, debugDescription: "Unknown target dependency"))
         }
+
+        /// The traits the dependency is conditional on, of which one being on
+        /// is what links it. Empty means it is always linked.
+        var traits: [String] {
+            condition?.traits ?? []
+        }
+    }
+
+    /// One element of the array a target dependency is dumped as: a name,
+    /// `null`, the module aliases, or the condition.
+    struct DependencyElement: Decodable {
+        let name: String?
+        let condition: SettingCondition?
+        let aliases: [String: String]?
+
+        init(from decoder: Decoder) throws {
+            if let single = try? decoder.singleValueContainer(),
+               let name = try? single.decode(String.self)
+            {
+                self.name = name
+                condition = nil
+                aliases = nil
+                return
+            }
+
+            name = nil
+            /// Module aliases are a dictionary too, so a dictionary is only a
+            /// condition when it names one of a condition's keys.
+            guard
+                let container = try? decoder.container(keyedBy: AnyKey.self),
+                container.allKeys.contains(where: { Self.conditionKeys.contains($0.stringValue) })
+            else {
+                condition = nil
+                aliases = try? decoder.singleValueContainer().decode([String: String].self)
+                return
+            }
+
+            condition = try? SettingCondition(from: decoder)
+            aliases = nil
+        }
+
+        private static let conditionKeys: Set<String> = ["platformNames", "traits", "config"]
     }
 
     /// `{"fileSystem": [{...}]}` or `{"sourceControl": [{...}]}`
@@ -356,6 +529,30 @@ extension SwiftPM {
         init?(stringValue: String) { self.stringValue = stringValue }
         init?(intValue _: Int) { nil }
     }
+}
+
+extension SwiftPM.SettingCondition {
+    /// Whether the platform this condition names is one the project builds.
+    ///
+    /// `platforms` empty means the caller does not know which platforms the
+    /// project builds, which still rules out the platforms Bazelize never
+    /// builds for — Linux, Android, Windows and the rest are not what an Xcode
+    /// project or an Apple toolchain produces.
+    ///
+    /// Traits are not decided here, and neither is a configuration: both are
+    /// answered when Bazel builds, not when the rules are written.
+    func applies(platforms: Set<String>) -> Bool {
+        guard !platformNames.isEmpty else { return true }
+
+        let built = platforms.isEmpty ? Self.apple : platforms
+        return !platformNames.allSatisfy { !built.contains($0) }
+    }
+
+    /// The platforms an Apple toolchain builds, which is every platform that
+    /// can reach a generated rule.
+    private static let apple: Set<String> = [
+        "macos", "maccatalyst", "ios", "tvos", "watchos", "visionos", "driverkit",
+    ]
 }
 
 extension KeyedDecodingContainer where Key == SwiftPM.AnyKey {

@@ -59,8 +59,9 @@ extension SwiftPM.Generator {
             Rules.Objc.Call.objc_library(
                 name: name,
                 aspect_hints: .build { [Starlark.Label.named(":\(hint)")] },
-                srcs: Starlark.glob(
-                    matching(
+                srcs: sources(
+                    naming: resources?.accessors ?? [],
+                    globbing: matching(
                         sources(of: target, prefix: prefix, extensions: compiled)
                             /// Private headers are compilation inputs wherever they
                             /// sit, so they are collected from the whole directory
@@ -74,11 +75,9 @@ extension SwiftPM.Generator {
                         /// private header is: the generated source includes it by
                         /// name, which is all SwiftPM offers either.
                         + generated.sources
-                        + generated.headers
-                        + (resources?.accessors ?? []),
-                    exclude: excludedClang(target, prefix: prefix)
-                        + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? []),
-                    allowEmpty: true),
+                        + generated.headers,
+                    excluding: excludedClang(target, prefix: prefix)
+                        + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
                 hdrs: interface
                     .map { path in
                         matching(
@@ -87,9 +86,7 @@ extension SwiftPM.Generator {
                     }?
                     .nonEmpty
                     .map { Starlark.glob($0) },
-                deps: deps(of: target, in: package).nonEmpty.map { labels in
-                    .build { labels }
-                },
+                deps: deps(of: target, in: package),
                 data: resources?.label.map { label in
                     .build { [Starlark.Label.named(label)] }
                 },
@@ -98,13 +95,14 @@ extension SwiftPM.Generator {
                     of: target,
                     in: package,
                     module: module,
-                    resources: resources).nonEmpty,
+                    compiled: compiled,
+                    resources: resources),
                 enable_modules: true,
                 includes: includes(
                     of: target,
                     prefix: prefix,
                     interface: interface).nonEmpty,
-                linkopts: linkopts(of: target).nonEmpty,
+                linkopts: linkopts(of: target, in: package),
                 /// The module a dependent's `@import` names: the package target's
                 /// own name, not the one Bazel derives from the label.
                 module_name: module,
@@ -259,45 +257,89 @@ extension SwiftPM.Generator {
         of target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         module: String,
-        resources: ResourceBundle?) -> [String]
+        compiled: [String],
+        resources: ResourceBundle?) -> Starlark.Value?
     {
-        var copts = ["-fmodule-name=\(module)"] + clangDefines(of: target)
+        var always = ["-fmodule-name=\(module)", "-DSWIFT_PACKAGE"]
 
         /// SwiftPM force-includes the accessor, so a source reaches its bundle
         /// without importing anything.
         if let header = resources?.header {
-            copts.append("-include$(location \(header))")
+            always.append("-include$(execpath \(header))")
         }
 
-        if let standard = package.manifest.cLanguageStandard {
-            copts.append("-std=\(standard)")
-        }
-        if let standard = package.manifest.cxxLanguageStandard {
-            copts.append("-std=\(standard)")
-        }
+        always += standards(of: target, in: package, compiled: compiled)
 
-        for setting in target.settings where setting.tool == "c" || setting.tool == "cxx" {
-            guard setting.name == "unsafeFlags" else { continue }
-            copts.append(contentsOf: setting.values)
-        }
-
-        return copts
+        return grouped(target.settings, in: package, always: always, flags: Self.clangFlags)
     }
-}
 
-extension SwiftPM.Generator {
-    /// `c.define` and `cxx.define`, plus the `SWIFT_PACKAGE` every package target
-    /// compiles with.
+    /// The flags of one C-family setting.
     ///
-    /// Flags, not the `defines` attribute, for the same reason as a Swift target:
-    /// the attribute would propagate into everything downstream.
-    func clangDefines(of target: SwiftPM.PackageTarget) -> [String] {
-        let declared = target.settings.flatMap { setting -> [String] in
-            guard setting.name == "define" else { return [] }
-            guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
-            return setting.values
-        }
+    /// Flags, not the `defines` attribute, for the same reason as a Swift
+    /// target: the attribute would propagate into everything downstream.
+    private static func clangFlags(_ setting: SwiftPM.Setting) -> [String] {
+        guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
 
-        return (["SWIFT_PACKAGE"] + declared).map { "-D\($0)" }
+        switch setting.name {
+        case "define":
+            /// `.define("A", to: "1")` is dumped as two values, and is one
+            /// flag: `-DA=1`.
+            return setting.values.nonEmpty.map { ["-D\($0.joined(separator: "="))"] } ?? []
+        case "unsafeFlags":
+            return setting.values
+        /// `treatAllWarnings(as:)` and `treatWarning(_:as:)`, which clang spells
+        /// as `-Werror` over everything and `-W{error,no-error}=<name>` over one
+        /// warning.
+        case "treatAllWarnings":
+            guard let level = setting.values.first else { return [] }
+            return level == "error" ? ["-Werror"] : ["-Wno-error"]
+        case "treatWarning":
+            guard setting.values.count == 2 else { return [] }
+            let group = setting.values[0]
+            return setting.values[1] == "error" ? ["-Werror=\(group)"] : ["-Wno-error=\(group)"]
+        default:
+            return []
+        }
     }
+
+    /// `-std=`, for the language the target is actually written in.
+    ///
+    /// SwiftPM compiles each file with the standard of its own language; one
+    /// rule has one `copts`, and clang rejects a C standard for a C++ file as
+    /// firmly as the other way round. So the standard is the one that fits what
+    /// the target compiles, and a target that compiles both is named instead of
+    /// being given a flag that breaks half of it.
+    private func standards(
+        of target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        compiled: [String]) -> [String]
+    {
+        let extensions = Set(compiled)
+        let cxx = !extensions.isDisjoint(with: Self.cxxExtensions)
+        let c = !extensions.isDisjoint(with: Self.cExtensions)
+
+        switch (c, cxx) {
+        case (true, false):
+            return package.manifest.cLanguageStandard.map { ["-std=\($0)"] } ?? []
+        case (false, true):
+            return package.manifest.cxxLanguageStandard.map { ["-std=\($0)"] } ?? []
+        case (true, true):
+            guard package.manifest.cLanguageStandard != nil || package.manifest.cxxLanguageStandard != nil else {
+                return []
+            }
+
+            let message = """
+            \(package.directory)'s \(target.name) compiles C and C++ in one target, \
+            and one rule takes one `-std`: the language standards the package \
+            declares are left off.
+            """
+            note(message)
+            return []
+        case (false, false):
+            return []
+        }
+    }
+
+    private static let cExtensions: Set<String> = ["c", "m"]
+    private static let cxxExtensions: Set<String> = ["cc", "cpp", "cxx", "c++", "mm"]
 }

@@ -138,7 +138,7 @@ struct RulesSwiftTests {
             name: "Core",
             srcs: ["A.swift"],
             defines: .select(
-                .various([
+                .exhaustive([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
                 ])))
@@ -156,7 +156,7 @@ struct RulesSwiftTests {
                         "//:Debug": [
                             "DEBUG",
                         ],
-                        "//conditions:default": None
+                        "//conditions:default": None,
                     }),
                 )
                 """)
@@ -215,7 +215,7 @@ struct RulesSwiftTests {
             clang_srcs: ["B.m"],
             sdk_dylibs: ["libz"],
             swift_defines: .select(
-                .various([
+                .exhaustive([
                     .config("Debug"): ["DEBUG"],
                     .default: [],
                 ])),
@@ -240,7 +240,7 @@ struct RulesSwiftTests {
                         "//:Debug": [
                             "DEBUG",
                         ],
-                        "//conditions:default": None
+                        "//conditions:default": None,
                     }),
                     swift_srcs = [
                         "A.swift",
@@ -284,7 +284,7 @@ struct RulesSwiftTests {
                         "//Lib:Core",
                     ],
                     env = {
-                        "FOO": "BAR"
+                        "FOO": "BAR",
                     },
                     linkopts = [
                         "-ObjC",
@@ -320,6 +320,144 @@ struct RulesSwiftTests {
                     srcs = [
                         "A.swift",
                     ],
+                )
+                """)
+    }
+
+    @Test
+    func testSwiftImportTypedCall() {
+        let call = Rules.Swift.Call.swift_import(
+            name: "Prebuilt",
+            archives: ["libPrebuilt.a"],
+            module_name: "Prebuilt",
+            swiftmodule: "Prebuilt.swiftmodule")
+
+        #expect(
+            call.text
+                == """
+                swift_import(
+                    name = "Prebuilt",
+                    archives = [
+                        "libPrebuilt.a",
+                    ],
+                    module_name = "Prebuilt",
+                    swiftmodule = "Prebuilt.swiftmodule",
+                )
+                """)
+    }
+
+    @Test
+    func testSwiftOverlayTypedCall() {
+        let call = Rules.Swift.Call.swift_overlay(
+            name: "CGreetOverlay",
+            overlay_deps: [":CGreet"],
+            srcs: ["Overlay.swift"])
+
+        #expect(
+            call.text
+                == """
+                swift_overlay(
+                    name = "CGreetOverlay",
+                    overlay_deps = [
+                        ":CGreet",
+                    ],
+                    srcs = [
+                        "Overlay.swift",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testSwiftCModuleTypedCall() {
+        let call = Rules.Swift.Call.swift_c_module(
+            name: "CGreet",
+            deps: [":CGreet_lib"],
+            module_map: "module.modulemap")
+
+        #expect(
+            call.text
+                == """
+                swift_c_module(
+                    name = "CGreet",
+                    deps = [
+                        ":CGreet_lib",
+                    ],
+                    module_map = "module.modulemap",
+                )
+                """)
+    }
+
+    @Test
+    func testSwiftProtoLibraryTypedCall() {
+        let call = Rules.Swift.Call.swift_proto_library(
+            name: "ModelProto",
+            deps: [":model_proto"])
+
+        #expect(
+            call.text
+                == """
+                swift_proto_library(
+                    name = "ModelProto",
+                    deps = [
+                        ":model_proto",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testSwiftGRPCLibraryTypedCall() {
+        let call = Rules.Swift.Call.swift_grpc_library(
+            name: "ServiceGRPC",
+            deps: [":Service_proto"],
+            srcs: [":service_proto_srcs"])
+
+        #expect(
+            call.text
+                == """
+                swift_grpc_library(
+                    name = "ServiceGRPC",
+                    deps = [
+                        ":Service_proto",
+                    ],
+                    srcs = [
+                        ":service_proto_srcs",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testSwiftFeatureAllowlistTypedCall() {
+        let call = Rules.Swift.Call.swift_feature_allowlist(
+            name: "UnsafeFlags",
+            package_groups: ["//Packages:everyone"])
+
+        #expect(
+            call.text
+                == """
+                swift_feature_allowlist(
+                    name = "UnsafeFlags",
+                    package_groups = [
+                        "//Packages:everyone",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testUniversalSwiftCompilerPluginTypedCall() {
+        let call = Rules.Swift.Call.universal_swift_compiler_plugin(
+            name: "MacrosUniversal",
+            plugin: ":Macros")
+
+        #expect(
+            call.text
+                == """
+                universal_swift_compiler_plugin(
+                    name = "MacrosUniversal",
+                    plugin = ":Macros",
                 )
                 """)
     }

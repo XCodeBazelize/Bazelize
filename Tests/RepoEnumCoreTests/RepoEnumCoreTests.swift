@@ -32,6 +32,178 @@ func rendersDescendingAndDeduplicatedEnumCases() throws {
 }
 
 @Test
+func checksummedReleaseNeedsEveryConfiguredAssetDigest() throws {
+    let assets = [
+        RepoReleaseAsset(os: "darwin", machine: "arm64", asset: "buildifier-darwin-arm64"),
+        RepoReleaseAsset(os: "linux", machine: "x86_64", asset: "buildifier-linux-amd64"),
+    ]
+    let arm64 = String(repeating: "a", count: 64)
+    let amd64 = String(repeating: "b", count: 64)
+
+    let complete = RepoChecksummedReleaseVersion(
+        release: .init(
+            tagName: "v10.1.0",
+            assetDigests: [
+                "buildifier-darwin-arm64": "sha256:\(arm64)",
+                "buildifier-linux-amd64": "sha256:\(amd64)",
+            ]),
+        assets: assets)
+    #expect(complete?.checksums["darwin_arm64"] == arm64)
+    #expect(complete?.checksums["linux_x86_64"] == amd64)
+
+    /// A host without a digest is a host the generated code could not pin, so
+    /// the whole release is dropped rather than generated half-pinned.
+    #expect(RepoChecksummedReleaseVersion(
+        release: .init(
+            tagName: "v10.1.0",
+            assetDigests: ["buildifier-darwin-arm64": "sha256:\(arm64)"]),
+        assets: assets) == nil)
+
+    /// A digest GitHub serves in another algorithm is not a SHA-256.
+    #expect(RepoChecksummedReleaseVersion(
+        release: .init(
+            tagName: "v10.1.0",
+            assetDigests: [
+                "buildifier-darwin-arm64": "sha512:\(arm64)",
+                "buildifier-linux-amd64": "sha256:\(amd64)",
+            ]),
+        assets: assets) == nil)
+}
+
+@Test
+func rendersEveryHostBesideEachReleaseVersion() throws {
+    let first = String(repeating: "c", count: 64)
+    let second = String(repeating: "d", count: 64)
+    let file = ChecksummedReleaseEnumFile(
+        source: .init(name: "Buildifier", url: "https://github.com/bazel-contrib/buildtools"),
+        assets: [
+            .init(os: "darwin", machine: "arm64", asset: "buildifier-darwin-arm64"),
+            .init(os: "linux", machine: "aarch64", asset: "buildifier-linux-arm64"),
+        ],
+        releases: [
+            .init(
+                tag: try #require(RepoVersionTag(rawTag: "8.2.1")),
+                checksums: ["darwin_arm64": second, "linux_aarch64": first]),
+            .init(
+                tag: try #require(RepoVersionTag(rawTag: "v10.1.0")),
+                checksums: ["darwin_arm64": first, "linux_aarch64": second]),
+        ])
+
+    #expect(file.filename == "BazelDep+Buildifier.swift")
+    #expect(file.content == """
+    extension BazelDep {
+        /// https://github.com/bazel-contrib/buildtools
+        enum Buildifier: String {
+            static let latest: Buildifier = .v10_1_0
+
+            case v10_1_0 = "10.1.0"
+            case v8_2_1 = "8.2.1"
+
+            /// A host as `uname` names it, and the asset built for it.
+            enum Host: String, CaseIterable {
+                case darwin_arm64 = "buildifier-darwin-arm64"
+                case linux_aarch64 = "buildifier-linux-arm64"
+
+                /// `uname -s`, lowercased.
+                var os: String {
+                    switch self {
+                    case .darwin_arm64:
+                        return "darwin"
+                    case .linux_aarch64:
+                        return "linux"
+                    }
+                }
+
+                /// `uname -m`.
+                var machine: String {
+                    switch self {
+                    case .darwin_arm64:
+                        return "arm64"
+                    case .linux_aarch64:
+                        return "aarch64"
+                    }
+                }
+            }
+
+            func sha256(_ host: Host) -> String {
+                switch self {
+                case .v10_1_0:
+                    switch host {
+                    case .darwin_arm64:
+                        return "\(first)"
+                    case .linux_aarch64:
+                        return "\(second)"
+                    }
+                case .v8_2_1:
+                    switch host {
+                    case .darwin_arm64:
+                        return "\(second)"
+                    case .linux_aarch64:
+                        return "\(first)"
+                    }
+                }
+            }
+        }
+    }
+    """)
+}
+
+@Test
+func generatedReleasesAreLimitedToRegistryPublishedVersions() async throws {
+    let checksum = String(repeating: "e", count: 64)
+    let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("repo-enum-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+
+    let config = directory.appendingPathComponent("RepoSources.yml")
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    try """
+    - name: Buildifier
+      url: https://github.com/bazel-contrib/buildtools
+      module: buildifier_prebuilt
+      release_assets:
+        - os: darwin
+          machine: arm64
+          asset: buildifier-darwin-arm64
+    """.write(to: config, atomically: true, encoding: .utf8)
+
+    let digests = ["buildifier-darwin-arm64": "sha256:\(checksum)"]
+    let service = RepoEnumGeneratorService(
+        client: StubTagClient(),
+        releases: StubReleaseClient(releases: [
+            .init(tagName: "v11.0.0", assetDigests: digests),
+            .init(tagName: "v10.1.0", assetDigests: digests),
+        ]),
+        registry: StubRegistryClient(versions: ["10.1.0", "8.2.1"]))
+
+    try await service.generate(configFile: config, outputDirectory: directory)
+
+    let generated = try String(
+        contentsOf: directory.appendingPathComponent("BazelDep+Buildifier.swift"),
+        encoding: .utf8)
+    /// A GitHub release the registry does not serve cannot be a `bazel_dep`
+    /// version, so it is never generated — including as `latest`.
+    #expect(!generated.contains("v11_0_0"))
+    #expect(generated.contains("static let latest: Buildifier = .v10_1_0"))
+}
+
+private struct StubTagClient: GitHubTagFetching {
+    func tags(for _: String) async throws -> [String] { [] }
+}
+
+private struct StubReleaseClient: GitHubReleaseFetching {
+    let releases: [GitHubRelease]
+
+    func releases(for _: String) async throws -> [GitHubRelease] { releases }
+}
+
+private struct StubRegistryClient: ModuleVersionFetching {
+    let versions: [String]
+
+    func versions(forModule _: String) async throws -> [String] { versions }
+}
+
+@Test
 func githubErrorIsReadable() async {
     let config = URLSessionConfiguration.ephemeral
     config.protocolClasses = [MockURLProtocol.self]

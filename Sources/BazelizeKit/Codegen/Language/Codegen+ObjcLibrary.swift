@@ -9,8 +9,6 @@ import BazelRules
 import Foundation
 import Starlark
 
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/7
-
 extension Target {
     func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, aliasPublic: Bool = true) {
         let project = kit.project
@@ -40,15 +38,15 @@ extension Target {
                     }
                     copiedResourceGroups(project: project)
                 },
-                copts: [
+                copts: ([
                     "-fblocks",
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + forceIncludeFlags,
+                ] + forceIncludeFlags).starlark,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
-                linkopts: sdkLinkopts,
+                linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: sdkFrameworks(project: project),

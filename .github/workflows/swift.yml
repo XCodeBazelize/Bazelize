@@ -7,14 +7,20 @@ on:
     paths:
       - 'Sources/**'
       - 'Tests/**'
+      - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
+      - 'fixture/iOS/**'
+      - 'mise.toml'
   pull_request:
     paths:
       - 'Sources/**'
       - 'Tests/**'
+      - 'spm/**'
       - '.github/workflows/**'
       - 'Package.swift'
+      - 'fixture/iOS/**'
+      - 'mise.toml'
 
 concurrency: 
   group: ci
@@ -26,6 +32,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+
+    - uses: jdx/mise-action@v4
+
+    - name: Generate iOS fixture
+      run: tuist generate --path fixture/iOS --no-open
 
     - name: Check Xcode Version
       run: |
@@ -79,6 +90,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: jdx/mise-action@v4
+
+      - name: Generate Xcode project
+        run: tuist generate --path fixture/iOS --no-open
+
       # Every `bazel` in this job reads these: the disk cache holds what the
       # build produced, the repository cache what it downloaded. Without the
       # second one a runner fetches rules_apple and the rest again every time.
@@ -96,6 +112,9 @@ jobs:
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
           echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          # A release download that answers 500 is GitHub having a moment, not
+          # a broken build: it is retried rather than failing a lane.
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -114,13 +133,20 @@ jobs:
       - name: Bazel Generation
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --project Example.xcodeproj --output App | tee bazelize.log
+          ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
-      - name: Build Application
+      # What buildifier says about the generated Starlark, reported rather than
+      # gated: formatting is `bazel run //:format`'s business, and a warning is
+      # read here instead of stopping a lane that otherwise builds and runs.
+      - name: Check Generated Starlark
+        continue-on-error: true
         working-directory: fixture/iOS/App
-        run: |
-          bazel build //Targets/Example
+        run: bazel run //:lint
+
+      - name: Build Products
+        working-directory: fixture/iOS/App
+        run: bazel build //Targets/Example //Targets/MacBundle
 
       - name: Copy IPA
         working-directory: fixture/iOS/App
@@ -199,6 +225,7 @@ jobs:
   # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
   # lane clones what it measures at the revision it was measured against.
   IntegrateApp:
+    name: IntegrateApp (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
     timeout-minutes: 120
@@ -231,14 +258,43 @@ jobs:
             rev: 088351b0fc67e0b24b83e7954ad48314dda4ce04
             project: VirtualBuddy.xcodeproj
             target: //Targets/VirtualBuddy
-          # Not yet green on a runner, so not yet a lane. iina is the app the
-          # notes still list an open problem for, and MacPass needs its
-          # submodules and a Carthage bootstrap that nothing here has proven.
-          # - name: iina
-          #   repo: https://github.com/iina/iina
-          #   rev: c111221ea027466b79b40bfca054772d4851e06f
-          #   project: iina.xcodeproj
-          #   target: //Targets/iina
+          # iina links dylibs that are not in its repository, and the script it
+          # ships downloads whatever the feed serves today: at this revision
+          # 48 of the 71 libraries it names are no longer there, so the feed is
+          # pinned to the version whose file list this revision matches.
+          - name: iina
+            repo: https://github.com/iina/iina
+            rev: c111221ea027466b79b40bfca054772d4851e06f
+            project: iina.xcodeproj
+            target: //Targets/iina
+            setup: sed -i '' 's|dylibs/${ARCH}|dylibs/1.4.2/${ARCH}|' other/download_libs.sh && ./other/download_libs.sh --skip-plugins
+          # The one iOS app of the corpus, and the one that embeds several
+          # extensions in a product: a widget, a notification service, a share
+          # sheet and an action. Thirteen packages of its own repository, too.
+          # It needs no setup: the xcconfig its README has you copy is read by
+          # Xcode, not by what bazelize generates.
+          #
+          # The revision is pinned behind the app's head on purpose: the runner
+          # ships Xcode 26.6, and the app adopted iOS 27 API (`defaultTabBarPlacement`)
+          # in the commit after this one. This is the newest revision that
+          # builds against the SDK this lane has.
+          - name: IceCubesApp
+            repo: https://github.com/Dimillian/IceCubesApp
+            rev: b2db3033fbf67a97b54d25d6dac2df8a029b26b1
+            project: IceCubesApp.xcodeproj
+            target: //Targets/IceCubesApp
+
+          # Apps measured for the corpus and kept out of it, with the reason
+          # each one was kept out. `xcodebuild` is the control: an app Xcode
+          # cannot build at the revision measured is not a lane, and nothing
+          # about the generated build is to blame. Measured against Xcode 27.0
+          # (SDK 27.0) — a newer revision of any of these may well be green,
+          # which is the point of writing down which one was tried.
+
+          # Carthage dependencies whose deployment targets are 10.9 to 10.15,
+          # below the 12.0 Xcode 27 accepts: `carthage bootstrap` fails on the
+          # first one and `Carthage/Build` is never written, so the app links
+          # nothing. No lane configuration fixes that.
           # - name: MacPass
           #   repo: https://github.com/MacPass/MacPass
           #   rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
@@ -246,6 +302,49 @@ jobs:
           #   target: //Targets/MacPass
           #   submodules: true
           #   setup: carthage bootstrap --platform macOS --cache-builds
+
+          # `LanguageServerRowView.swift:40: 'self' used before all stored
+          # properties are initialized` — Swift 6.3 rejects what an older
+          # compiler accepted. xcodebuild fails the same way.
+          # - name: CodeEdit
+          #   repo: https://github.com/CodeEditApp/CodeEdit
+          #   rev: 05704cb7d2b19892ffcb9742b0ab3cc6116af165
+          #   project: CodeEdit.xcodeproj
+          #   target: //Targets/CodeEdit
+
+          # `MACOSX_DEPLOYMENT_TARGET is set to 11.3, but the range of
+          # supported deployment target versions is 12.0 to 27.0.x` for all
+          # five macOS targets. Its sysroot is built by `scripts/build_dependencies.sh`
+          # (QEMU, ANGLE, virglrenderer, MoltenVK from source) or downloaded
+          # from a logged-in GitHub Actions run, neither of which a lane can do.
+          # - name: UTM
+          #   repo: https://github.com/utmapp/UTM
+          #   rev: b6f7475be54f9cb542c46b131319454b83489ced
+          #   project: UTM.xcodeproj
+          #   target: //Targets/macOS
+
+          # No `Package.resolved` is committed, so every dependency floats to
+          # whatever is newest: resolution itself fails today on a manifest
+          # using `visionOS` against an older `PackageDescription`. A pinned
+          # revision would still resolve differently on every run, and its
+          # Carthage bootstrap is the mechanism MacPass was removed over.
+          # - name: PlayCover
+          #   repo: https://github.com/PlayCover/PlayCover
+          #   rev: a103786e03b7f6257b6b489dfc49ca6712423a2e
+          #   project: PlayCover.xcodeproj
+          #   target: //Targets/PlayCover
+
+          # The one kept out by us rather than by the toolchain: Xcode builds
+          # it in 64s, and the generated build does not. Access levels across
+          # the app target and its local packages (`property 'inlineDelimiters'
+          # must be declared public because it matches a requirement in public
+          # protocol`) and an expression the compiler gives up type-checking.
+          # Worth revisiting — it is a bug report, not a dead end.
+          # - name: CotEditor
+          #   repo: https://github.com/coteditor/CotEditor
+          #   rev: 545031e89383b7a20b1b2be4a846fca02dbf9c0f
+          #   project: CotEditor.xcodeproj
+          #   target: //Targets/CotEditor
     steps:
       # The disk cache holds what a build produced, the repository cache what it
       # downloaded, and `.build` what SwiftPM resolved for the app's packages:
@@ -265,6 +364,7 @@ jobs:
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
           echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -299,16 +399,40 @@ jobs:
 
       - name: Bazel Generation
         run: |
-          ./bazelize --project "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+          ./bazelize --input "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
       - name: Build Application
         working-directory: ${{ matrix.name }}/App
         run: bazel build ${{ matrix.target }}
 
+      # What the lane built, kept: a bundle that can be downloaded and opened
+      # is the only way to see what a generated build actually produces.
+      # rules_apple packages a macOS application as a `.zip` and an iOS one as
+      # an `.ipa`, and a lane that builds `//...` produces more than one.
+      - name: Collect ${{ matrix.name }}
+        working-directory: ${{ matrix.name }}/App
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          bazel cquery ${{ matrix.target }} --output=files \
+            | grep -E '\.(ipa|zip)$' \
+            | grep -v '__internal__' \
+            | while read -r file; do
+                [ -f "$file" ] && cp "$file" "$GITHUB_WORKSPACE/artifacts/"
+              done
+          ls -l "$GITHUB_WORKSPACE/artifacts"
+
+      - name: Upload ${{ matrix.name }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.name }}
+          path: artifacts
+          if-no-files-found: warn
+
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
+    name: IntegratePackage (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
     timeout-minutes: 60
@@ -316,15 +440,54 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: ArtifactBundle
+            # A package rule carries `manual`, so a wildcard build never picks
+            # one up: a program a package builds is named to be run.
+            programs: |
+              //Packages/ArtifactBundle:GreetTool -- /tmp/artifact-bundle.swift
+          - name: BinaryTarget
           - name: BuildToolPlugin
-            plugins: true
+          - name: Clang
           - name: CommandPlugin
+          - name: ConfigurationCondition
+          - name: DependencyCondition
+            # A trait is a flag, so the build that turns one on is a build to
+            # test as well: the dependency behind it is linked only then.
+            config: DependencyCondition.Extras
+          - name: DependencyShape
           - name: Macro
-          - name: Trait
-          - name: TargetSources
-          - name: TargetPath
+          - name: Platform
+          - name: PluginDependency
+          - name: PrebuildPlugin
+          - name: ProductShapes
+            programs: |
+              //Packages/Products:renamed-tool
+              //Packages/Products:ProductSnippet
+          - name: RemoteArtifactBundle
+          - name: RemoteXCFramework
+          - name: SwiftSettings
+          - name: SystemLibrary
+          # Which build system SwiftPM runs by default moves with the
+          # toolchain, and the two do not implement the same resource rules, so
+          # a lane about a resource rule names the one that implements it
+          # rather than inheriting whichever the runner ships.
+          - name: TargetEmbed
+            # `swiftbuild` generated nothing for `.embedInCode` on the toolchain
+            # this lane was written against — Xcode 27 does — and `native` has
+            # generated it all along.
+            swiftpm: --build-system native
           - name: TargetExclude
+          - name: TargetPath
           - name: TargetResource
+            # `native` copies a platform resource rather than compiling it: no
+            # `momc`, no `actool`, no `ibtool`, so the model this package is
+            # about arrives as the `.xcdatamodeld` that was written.
+            swiftpm: --build-system swiftbuild
+          - name: TargetSources
+          - name: Trait
+            traits: Fast,Slow
+          - name: TraitGraph
+            traits: Alternative,Leaf,Middle,Top
     steps:
       - uses: actions/checkout@v6
 
@@ -342,25 +505,177 @@ jobs:
         run: |
           echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
           echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
         with:
           name: bazelize
 
+      # What the fixture holds bazelize to is what SwiftPM does, so what
+      # SwiftPM does is run too: a fixture whose two sides disagree is a
+      # fixture that proves nothing.
+      #
+      # Every package of the fixture, not only the one bazelize is pointed at:
+      # the packages beside it are dependencies with sources of their own, and
+      # one that stopped building would be found here rather than in whatever
+      # it broke. A package with no tests is built and not run — there is
+      # nothing to run — and `App/` is generated, not a package of the fixture.
+      # A package that is only a plugin has nothing to build either: SwiftPM
+      # refuses the build rather than doing nothing, so it is skipped by what
+      # its manifest declares.
+
+      - name: SwiftPM Build And Test
+        working-directory: spm/${{ matrix.name }}
+        env:
+          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
+          ARGS: ${{ matrix.swiftpm }}
+        run: |
+          status=0
+          while read -r manifest; do
+            package=$(dirname "$manifest")
+            echo "::group::$package"
+            if ! (cd "$package" && swift package dump-package |
+                    jq -e '[.targets[] | select(.type != "plugin")] | length > 0' > /dev/null); then
+              echo "only plugins here, nothing to build"
+            elif ! (cd "$package" && swift build $ARGS); then
+              echo "::error::swift build failed for $package"
+              status=1
+            elif [ -d "$package/Tests" ] && ! (cd "$package" && swift test $ARGS); then
+              echo "::error::swift test failed for $package"
+              status=1
+            fi
+            echo "::endgroup::"
+          done < <(find . -name Package.swift -not -path "*/App/*" -not -path "*/.build/*" | sort)
+          exit $status
+
+      # A package that wraps a system library is found through `pkg-config`,
+      # and a fixture that ships its own `.pc` is only found when that file's
+      # directory is on the path.
+      #
+      # A note is the generator saying the build differs from what the package
+      # asked for — a plugin that did not run, a program whose resources
+      # nothing can bundle, a library pkg-config has never heard of. Every one
+      # of those builds and tests green and is wrong at run time, so no fixture
+      # may produce one silently: a lane expecting a note names it in `notes`,
+      # and anything else said is a failure.
       - name: Bazel Generation
+        env:
+          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
+          NOTES: ${{ matrix.notes }}
         run: |
           chmod +x bazelize
-          ./bazelize --project "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App"
+          ./bazelize --input "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App" | tee bazelize.log
 
-      # A build tool plugin is a program: Bazel builds it and bazelize runs it,
-      # which is what puts the sources it generates where the rules glob for
-      # them. Only the packages that have one need the step.
-      - name: Run Plugins
-        if: matrix.plugins
+          if [ -n "$NOTES" ]; then
+            if ! grep -qE "$NOTES" bazelize.log; then
+              echo "::error::the note this fixture is here for was not said: $NOTES"
+              exit 1
+            fi
+          elif [ -s bazelize.log ]; then
+            echo "::error::the generator said something no fixture expects"
+            exit 1
+          fi
+
+      - name: Check Generated Starlark
+        continue-on-error: true
         working-directory: spm/${{ matrix.name }}/App
-        run: PATH="$GITHUB_WORKSPACE:$PATH" bazel run //:plugins
+        run: bazel run //:lint
+
+      # Nothing runs the plugins here: generation ends with `bazel run
+      # //:plugins`, so a target whose sources a plugin generates compiles in
+      # `Test Package` below, or the generator failed to run them and said so.
+
+      # The workspace's own commands, which answer whatever the package is:
+      # a package with no trait, no configuration and no localization answers
+      # that.
+      - name: List Workspace
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list config
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list trait
+          PATH="$GITHUB_WORKSPACE:$PATH" bazel list language
+
+      # A build that names a localization bundles that one and `Base`, and
+      # nothing else. What is in the bundle is the only proof of that.
+      - name: Filter Localizations
+        if: matrix.name == 'TargetResource'
+        working-directory: spm/TargetResource/App
+        run: |
+          bazel build //Packages/TargetResource:TargetResourceTests --config=lang.en
+          bundle=$(find -L bazel-bin/Packages/TargetResource -name TargetResourceTests.zip | head -1)
+          unzip -Z1 "$bundle" | grep -q "en.lproj"
+          unzip -Z1 "$bundle" | grep -q "Base.lproj"
+          ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
+          ! unzip -Z1 "$bundle" | grep -q "de.lproj"
+
+      # A command plugin is not run by a build: it is a verb someone types, and
+      # running it is the only proof it is there. `swift package hello alpha
+      # --beta` above and this answer the same, arguments included.
+      - name: Run Command Plugin
+        if: matrix.name == 'CommandPlugin'
+        working-directory: spm/CommandPlugin/App
+        run: |
+          bazel run //Packages/CommandPlugin:hello -- alpha --beta > command.log
+          grep -q "Hello from CommandPlugin" command.log
+          grep -q "Arguments: alpha --beta" command.log
 
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...
+
+      # A program is not a test: the rules that build one carry `manual`, so
+      # `//...` never builds it. Running it is what says it links and works.
+      - name: Run Package Programs
+        if: matrix.programs
+        working-directory: spm/${{ matrix.name }}/App
+        env:
+          PROGRAMS: ${{ matrix.programs }}
+        run: |
+          while read -r program; do
+            [ -n "$program" ] || continue
+            bazel run $program
+          done <<< "$PROGRAMS"
+
+      # Both ways round, and not only that both pass: a trait is a compilation
+      # condition named after itself, so the flag reaching swiftc is the thing
+      # to see.
+      - name: Test Package With Trait
+        if: matrix.config
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test //... --config=${{ matrix.config }}
+          trait="${{ matrix.config }}"
+          ! bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
+          bazel aquery --config=${{ matrix.config }} 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
+
+      # Select each declared trait on its own, through the `--config` the
+      # workspace generated for it. That is what `swift test --traits <trait>`
+      # does: the selection replaces the package's defaults, and carries
+      # whatever that trait enables.
+      - name: Test Each Package Trait
+        if: matrix.traits
+        working-directory: spm/${{ matrix.name }}/App
+        env:
+          PACKAGE: ${{ matrix.name }}
+          TRAITS: ${{ matrix.traits }}
+        run: |
+          IFS=',' read -ra traits <<< "$TRAITS"
+          for trait in "${traits[@]}"; do
+            bazel test //... "--config=${PACKAGE}.${trait}"
+          done
+
+      # What each selection resolves to, exactly: the closure of the trait
+      # asked for, and nothing of the defaults it replaced. The three SwiftPM
+      # names rather than lists — `--disable-default-traits`,
+      # `--enable-all-traits`, `--traits default` — answer the same here.
+      - name: Probe Trait Selections
+        if: matrix.name == 'TraitGraph'
+        working-directory: spm/TraitGraph/App
+        run: |
+          bazel run //Packages/TraitGraph:TraitProbe -- Leaf Middle Top
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Middle -- Leaf Middle
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Alternative -- Alternative
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.none
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.all -- Alternative Leaf Middle Top
+          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.default -- Leaf Middle Top

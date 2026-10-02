@@ -1,6 +1,13 @@
-// TODO: https://github.com/XCodeBazelize/Bazelize/issues/8 framework(static/dynamic)
-
 extension Target {
+    func generateFrameworkProduct(_ builder: CodeBuilder, _ kit: Kit) {
+        if isStaticFramework {
+            generateStaticFrameworkCode(builder, kit)
+        } else {
+            generateStrings(builder, kit)
+            generateFrameworkCode(builder, kit)
+        }
+    }
+
     func generateFrameworkCode(_ builder: CodeBuilder, _ kit: Kit) {
         switch platformSDK {
         case .macOS: buildMacFramework(builder, kit)

@@ -7,9 +7,6 @@
 - name: XcodeProj
   url: https://github.com/MobileNativeFoundation/rules_xcodeproj
   module: rules_xcodeproj
-- name: SwiftPM
-  url: https://github.com/cgrindel/rules_swift_package_manager
-  module: rules_swift_package_manager
 - name: AppleLinker
   url: https://github.com/keith/rules_apple_linker
   module: rules_apple_linker
@@ -27,3 +24,19 @@
 - name: AppleSupport
   url: https://github.com/bazelbuild/apple_support
   module: apple_support
+- name: Buildifier
+  url: https://github.com/bazel-contrib/buildtools
+  module: buildifier_prebuilt
+  release_assets:
+    - os: darwin
+      machine: arm64
+      asset: buildifier-darwin-arm64
+    - os: darwin
+      machine: x86_64
+      asset: buildifier-darwin-amd64
+    - os: linux
+      machine: aarch64
+      asset: buildifier-linux-arm64
+    - os: linux
+      machine: x86_64
+      asset: buildifier-linux-amd64

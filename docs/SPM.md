@@ -43,6 +43,7 @@ App/
 ├── Package.swift             # synthesized manifest, read by rspm
 ├── Package.resolved          # seeded from Xcode's Package.resolved
 ├── config.bazelrc
+├── traits.bazelrc            # one `--config` per trait of the packages
 ├── BUILD
 ├── Prebuilt/                 # project-owned .framework/.a/.dylib (symlinks)
 └── Targets/<XcodeTarget>/
@@ -71,6 +72,11 @@ App/
 ├── Package.resolved          # kept: the only source of pins
 ├── config.bazelrc
 ├── BUILD
+├── lint.sh                   # downloads and runs the pinned buildifier
+├── plugins.sh                # enters the Bazel-built SwiftPM plugin host
+├── plugin-host.swift         # compiled by Bazel for `//:plugins`
+├── plugin-plan.json          # plugin requests and runfile paths
+├── tools/                    # Bazel-native workspace inspection commands
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # unchanged
 └── Packages/                 # ★ new
@@ -82,6 +88,26 @@ App/
 ```
 
 `Patches/` disappears entirely.
+
+### What the workspace can be asked and told
+
+| command | what it does |
+|---|---|
+| `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
+| `bazel run //:lint` | downloads the buildifier pinned for the host — `uname -s` and `uname -m` — verifies it, and lints every generated Starlark file |
+| `bazel run //:format` | the same buildifier, rewriting those files the way it formats them |
+| `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
+| `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
+
+The lint, format, plugin, and listing commands are generated targets. `//:lint`
+caches the pinned buildifier under the user's cache directory and fails on lint
+warnings; formatting is `//:format`'s business, so a formatting difference is
+reported rather than failed on. `//:plugins` builds
+its host, plugins and tools with Bazel, then runs entirely from their runfiles;
+it does not look up `bazelize` on `PATH`. The listing answers are embedded from
+the same resolved workspace and configuration files that generate the package
+rules. The generated `tools/bazel` wrapper keeps `bazel list config|trait` as
+shorter aliases and forwards every other command unchanged.
 
 ### How a package's sources get in
 
@@ -182,21 +208,23 @@ No test pins how a package's rules are produced either.
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`: the bytes as `PackageResources`, and nothing in a bundle |
 | auto-discovered resources (xib/xcassets/metal/xcstrings/`.lproj`) | as above; a `.metal` file takes the target's headers into the resource group, because the bundler compiles them as Metal headers |
-| `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent |
+| `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent; `.define("A", to: "1")` is one flag, `-DA=1` |
 | `headerSearchPath` | `includes`, and the headers there stay inputs even when `exclude` drops the directory |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
 | `swiftLanguageMode` | `-swift-version` |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
 | `defaultIsolation` | `-default-isolation <value>` |
-| `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
+| `interoperabilityMode` | `-cxx-interoperability-mode=default` for `.Cxx`, nothing for `.C`, which is what the compiler does anyway |
+| `cLanguageStandard` / `cxxLanguageStandard` | `-std=`, for the language the target is written in; a target that compiles both is named instead, because one rule takes one `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin, own package | built by Bazel, run by bazelize (`bazel run //:plugins`); what it writes is globbed into the target that asked for it |
+| build tool plugin, own package | host, plugin and tools all built and run by Bazel (`bazel run //:plugins`); what it writes is globbed into the target that asked for it |
 | build tool plugin, dependency | not run; the plugin is named at the end of the run |
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
-| traits (SE-0450) | resolved: a package gets its defaults unless a dependent names traits instead, and a setting conditional on a trait that is off is dropped |
-| `.when(platforms:)` on a setting | dropped unless the project builds one of those platforms |
+| traits (SE-0450) | a `bool_flag` each, defaulting to what the manifests resolve to, with a `--config=<Package>.<Trait>` that turns one on; a trait that is on defines its own name for that package's Swift sources, the way SwiftPM compiles it |
+| `.when(platforms:)` on a setting or a dependency | dropped unless the project builds one of those platforms; a platform no Apple toolchain builds is always dropped |
+| `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag, so the build decides it — a condition naming several traits is a `config_setting_group` |
 | `.when(configuration:)` on a setting | kept: which configuration a rule is built in is Bazel's answer, not the generator's |
 
 Two SwiftPM behaviours are matched on every generated `swift_library`:
@@ -457,11 +485,20 @@ Stage 4 removed the alternative rather than keeping a flag: two paths would
 mean two dependency graphs, and the generated one is at least as good on every
 app in the corpus.
 
-## Not done
+## Registry packages
 
-- **Registry packages (`.package(id:)`)**: no stage implements them. Nothing in
-  the corpus uses one, and SwiftPM resolves them into checkouts itself, so the
-  work is recognising one more kind of dependency rather than changing the shape
-  of the output. Until then a registry package's targets are skipped as
-  unresolvable and named at the end of the run, like every other unsupported
-  kind.
+A dependency named by registry identity (`.package(id:)`) is generated like any
+other. SwiftPM resolves one into an archive it unpacks under
+`.build/registry/downloads/<scope>/<name>/<version>`, so what the rules point at
+is a directory on disk; the identity it is filed under — `scope.name` — is what
+the package directory is called, and a dependency naming either that or the bare
+name resolves to it.
+
+Resolution is SwiftPM's and needs a registry configured for the scope. A run
+that cannot resolve carries on with whatever is already unpacked and says so at
+the end, rather than losing a dependency quietly.
+
+`spm/RegistryPackage` is the fixture. It is not a CI lane: no registry is
+reachable from this repository, so the fixture carries what one would have
+served and the test puts it where SwiftPM would have. Fetching, checksum
+verification and version selection are therefore not covered here.

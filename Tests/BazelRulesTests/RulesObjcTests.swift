@@ -87,4 +87,46 @@ struct RulesObjcTests {
                 )
                 """)
     }
+
+    @Test
+    func testXcodeConfigTypedCall() {
+        let call = Rules.Objc.Call.xcode_config(
+            name: "versions",
+            default: ":xcode_16",
+            versions: [":xcode_16"])
+
+        #expect(
+            call.text
+                == """
+                xcode_config(
+                    name = "versions",
+                    default = ":xcode_16",
+                    versions = [
+                        ":xcode_16",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testJ2ObjCLibraryTypedCall() {
+        let call = Rules.Objc.Call.j2objc_library(
+            name: "ModelJava",
+            deps: ["//java/model:model"],
+            entry_classes: ["com.example.Model"])
+
+        #expect(
+            call.text
+                == """
+                j2objc_library(
+                    name = "ModelJava",
+                    deps = [
+                        "//java/model:model",
+                    ],
+                    entry_classes = [
+                        "com.example.Model",
+                    ],
+                )
+                """)
+    }
 }

@@ -5,6 +5,7 @@
 //  Created by Yume on 2023/1/30.
 //
 
+import BazelRules
 import Foundation
 import PathKit
 import Starlark
@@ -32,10 +33,10 @@ extension Bazel {
         }
 
         private func setup() {
-            builder.add("module") {
-                "name" => "example"
-                "version" => "0.0.1"
-            }
+            builder.call(
+                Rules.Builtin.Call.module(
+                    name: "example",
+                    version: "0.0.1"))
             builder.bazel_dep(
                 name: "bazel_skylib",
                 version: skylib.rawValue)

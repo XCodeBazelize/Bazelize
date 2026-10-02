@@ -105,7 +105,7 @@ struct RuleTests {
         ios_framework(
             data = {
                 "a": "a",
-                "b": "b"
+                "b": "b",
             },
         )
         """
@@ -148,10 +148,11 @@ struct RuleTests {
             "data" => [:]
         }.text
 
+        /// An attribute given an empty dictionary was given nothing, and says
+        /// so the way every other empty attribute does.
         let target = """
         ios_framework(
-            data = {
-            },
+            # data = None,
         )
         """
         #expect(result == target)

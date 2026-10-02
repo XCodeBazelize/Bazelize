@@ -24,12 +24,13 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
-                copts: swiftCopts(project: project),
+                copts: swiftCopts(project: project)?.starlark,
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
                     intentSources
                     assetSymbolSources
+                    stringSymbolSources
                 },
                 deps: .build {
                     extraDeps
@@ -45,7 +46,7 @@ extension Target {
                     copiedResourceGroups(project: project)
                 },
                 defines: defines(project: project),
-                linkopts: sdkLinkopts,
+                linkopts: sdkLinkopts?.starlark,
                 swiftc_inputs: .build {
                     bridgingHeader
                     definesHeader
@@ -77,7 +78,7 @@ extension Target {
 
     var bridgingHeaderCopts: [String]? {
         guard let bridgingHeader else { return nil }
-        return ["-import-objc-header", "$(location \(bridgingHeader))"]
+        return ["-import-objc-header", "$(execpath \(bridgingHeader))"]
     }
 
     /// Swift compiles a file named `main.swift` as top-level code and emits a `main`
@@ -105,8 +106,13 @@ extension Target {
         return ["-default-isolation", isolation]
     }
 
+    /// The language mode and the features Xcode compiles the target with.
+    var languageCopts: [String] {
+        prefer(\.swift.copts) ?? []
+    }
+
     func swiftCopts(project: Project) -> [String]? {
-        var copts = (bridgingHeaderCopts ?? []) + parseAsLibraryCopts + defaultIsolationCopts
+        var copts = languageCopts + (bridgingHeaderCopts ?? []) + parseAsLibraryCopts + defaultIsolationCopts
         if bridgingHeader != nil {
             copts += swiftIncludeCopts(project: project) + forceIncludeCopts()
         }
@@ -117,7 +123,7 @@ extension Target {
     /// declarations through its own clang module instead. The module's headers can
     /// still reach for the target's include paths, so `swiftc` needs them too.
     func moduleSwiftCopts(project: Project) -> [String]? {
-        let copts = parseAsLibraryCopts + defaultIsolationCopts
+        let copts = languageCopts + parseAsLibraryCopts + defaultIsolationCopts
             + swiftIncludeCopts(project: project) + forceIncludeCopts()
         return copts.isEmpty ? nil : copts
     }

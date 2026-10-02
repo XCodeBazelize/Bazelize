@@ -37,6 +37,7 @@ App/
 ├── Package.swift             # 給 rspm 讀的合成 manifest
 ├── Package.resolved          # 由 Xcode 的 Package.resolved 播種
 ├── config.bazelrc
+├── traits.bazelrc            # 每個 package trait 一個 `--config`
 ├── BUILD
 ├── Prebuilt/                 # 專案自帶的 .framework/.a/.dylib（symlink）
 └── Targets/<XcodeTarget>/
@@ -64,6 +65,12 @@ App/
 ├── Package.resolved          # 保留：pin 的唯一來源
 ├── config.bazelrc
 ├── BUILD
+├── lint.sh                   # 下載並執行固定版本的 buildifier
+├── format.sh                 # 同一支 buildifier，改寫成它的格式
+├── plugins.sh                # 進入 Bazel 建出的 SwiftPM plugin host
+├── plugin-host.swift         # 由 Bazel 編成 `//:plugins` 的 host
+├── plugin-plan.json          # plugin request 與 runfile 路徑
+├── tools/                    # Bazel 原生的 workspace 查詢指令
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # 完全不變
 └── Packages/                 # ★ 新增
@@ -75,6 +82,24 @@ App/
 ```
 
 `Patches/` 整組消失。
+
+### 這個 workspace 可以被問什麼
+
+| 指令 | 做什麼 |
+|---|---|
+| `bazel run //:plugins` | 讓 Bazel 建這個 workspace 的 build tool plugin 與它們的工具、執行它們，把產生的檔案寫回 `Packages/*/Generated/` |
+| `bazel run //:lint` | 下載該 host（`uname -s` 與 `uname -m`）對應的固定版本 buildifier、驗證 checksum，並 lint 全部產生出的 Starlark 檔案 |
+| `bazel run //:format` | 同一支 buildifier，把那些檔案改寫成它的格式 |
+| `bazel run //tools:list-config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
+| `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
+
+Lint、format、plugin 與清單指令都是產生出來的 target。`//:lint` 把固定版本的
+buildifier 快取在使用者的 cache 目錄；lint warning 會失敗，格式差異只回報，
+因為改寫格式是 `//:format` 的事。
+`//:plugins` 用 Bazel 建 host、plugin 與工具，接著完全從它們的 runfiles
+執行，不會再去 `PATH` 找 `bazelize`。清單答案來自產生 package rules 時使用的
+同一份 resolved workspace 與設定檔。產生的 `tools/bazel` wrapper 仍保留較短的
+`bazel list config|trait` alias，其他指令則原封不動往下傳。
 
 ### package 的原始碼怎麼進來
 
@@ -164,21 +189,23 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`：把 bytes 變成 `PackageResources`，bundle 裡什麼都不放 |
 | auto-discovered resources（xib／xcassets／metal／xcstrings／`.lproj`） | 同上；有 `.metal` 時該 target 的 header 也一起進 resource group，因為 bundler 會把它們當 Metal header 編 |
-| `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳 |
+| `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳；`.define("A", to: "1")` 是一個 flag：`-DA=1` |
 | `headerSearchPath` | `includes`，而且該目錄被 `exclude` 丟掉時 header 仍然留作輸入 |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
 | `swiftLanguageMode` | `-swift-version` |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
 | `defaultIsolation` | `-default-isolation <value>` |
-| `interoperabilityMode` | `-cxx-interoperability-mode=<value>` |
+| `interoperabilityMode` | `.Cxx` 給 `-cxx-interoperability-mode=default`；`.C` 什麼都不給，那本來就是編譯器的行為 |
+| `cLanguageStandard` / `cxxLanguageStandard` | `-std=`，看 target 實際寫的是哪種語言；同時編 C 與 C++ 的 target 兩個都不給，並具名回報——一條規則只有一個 `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
-| build tool plugin（自己的 package） | Bazel 建、bazelize 跑（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
+| build tool plugin（自己的 package） | host、plugin 與工具都由 Bazel 建置並執行（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
 | build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
-| traits（SE-0450） | 會解析：沒人指名就用 package 自己的預設 traits，有人指名就用指名的；條件在「沒開的 trait」上的 setting 直接丟掉 |
-| setting 上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉 |
+| traits（SE-0450） | 一個 trait 一個 `bool_flag`，預設值就是 manifest 解析出來的結果，旁邊配一個會把它打開的 `--config=<Package>.<Trait>`；開著的 trait 會為該 package 的 Swift 原始碼定義同名條件，跟 SwiftPM 一樣 |
+| setting 或依賴上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉；Apple toolchain 根本不建的平台一律丟掉 |
+| setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`，由 build 當下決定；條件寫了多個 trait 就產生 `config_setting_group` |
 | setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
@@ -406,15 +433,20 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 | 0.5 ✅ | `//Packages` facade（alias 指向 rspm） | 所有 app，label 形狀定案 |
 | 1 ✅ | 純 Swift library target、`swiftLanguageMode`／`define`／upcoming・experimental feature／`strictMemorySafety`／`defaultIsolation`／`interoperabilityMode`／`unsafeFlags`；不支援的種類連同它的下游一起略過並警告；由一個 flag 切換，預設仍 rspm | 58 個 package 能單獨建起來 |
 | 2 ✅ | clang target（`headerSearchPath`／`publicHeadersPath`／明列 `sources`／`exclude`／module map）、resources + `Bundle.module` accessor、binary target（遠端 xcframework 與本地 archive）、system library | 7 個綠燈 app 建得起來也跑得起來；另外五個的 package 全部建得起來 |
-| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin，Bazel 建、bazelize 跑 | `spm/BuildToolPlugin` 的測試靠 plugin 產生的原始碼通過 |
+| 3 ✅ | macro target；逐 target 的平台版本（不需要做——SwiftPM 自己就會拒絕這種圖，所以回報就是答案）；build tool plugin 與 host 都由 Bazel 建置執行 | `spm/BuildToolPlugin` 的測試靠 plugin 產生的原始碼通過 |
 | 4 ✅ | rspm 依賴、`Patches/`、版本守門與模式 flag 全部移除 | 7 個綠燈 app 建得起來也跑得起來 |
 
 階段 4 是把另一條路整個移除，而不是留一個 flag：兩條路就是兩張依賴圖，而語料裡
 每個 app 用自製產生器的結果都不比 rspm 差。
 
-## 不做的事
+## Registry package
 
-- **registry package（`.package(id:)`）**：目前的階段都不實作。語料裡沒有任何一個，
-  而 SwiftPM 自己會把它解析進 checkouts，所以要做的時候是「多認一種 dependency 種類」，
-  不是改產出的形狀。撞到的時候：該 package 的 target 會被當成解不到而略過並具名回報，
-  這和其他不支援的種類一樣。
+- **registry package（`.package(id:)`）**：和其他 dependency 一樣會產生規則。
+  SwiftPM 把它解析成解壓在 `.build/registry/downloads/<scope>/<name>/<version>`
+  的 archive，規則指向的就是磁碟上的那個目錄；package 目錄名用它的 identity
+  `scope.name`，dependency 用該 identity 或裸名稱都解得到。
+  resolve 本身是 SwiftPM 的事，需要該 scope 設定好 registry；resolve 失敗時
+  會以已解壓的內容繼續產生，並在結尾具名回報，而不是安靜地少一個 dependency。
+  fixture 是 `spm/RegistryPackage`，但不是 CI lane：這個 repository 連不到任何
+  registry，所以 fixture 自帶 registry 會提供的內容，由測試放到 SwiftPM 會放的
+  位置。fetch、checksum 驗證與版本選擇因此不在覆蓋範圍內。

@@ -163,6 +163,25 @@ extension Xcode.Target {
         strings + stringsdict
     }
 
+    /// Every `.xcstrings` table the target owns.
+    ///
+    /// A synchronized root group has no resources build phase to list them in, so
+    /// the catalogs arrive as files of no particular kind; a project that still
+    /// keeps a resources phase has them there.
+    ///
+    /// A catalog inside an `.lproj` directory is left out: that one is a
+    /// localization of the storyboard or nib it is named after rather than a table
+    /// of its own, and Xcode generates no symbols for it.
+    public var stringCatalogs: [String] {
+        var seen = Set<String>()
+        return (filePaths(files.resources) + filePaths(files.others))
+            .filter { path in
+                path.hasSuffix(".xcstrings")
+                    && !path.split(separator: "/").dropLast().contains { $0.hasSuffix(".lproj") }
+                    && seen.insert(path).inserted
+            }
+    }
+
     public var importFrameworks: [String] {
         files.frameworks.compactMap(\.path)
     }

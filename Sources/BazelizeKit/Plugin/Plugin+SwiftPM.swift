@@ -20,6 +20,13 @@ final class PluginSwiftPM: PluginBuiltin {
     let locals: [LocalPackage]
     private var projectPath: Path?
 
+    /// Which package directory declares a product, answered by the resolved
+    /// graph rather than guessed from a repository's name.
+    ///
+    /// Empty until the packages have been resolved, which is why the target
+    /// rules that use it are written after that.
+    var packageDirectoryByProduct: [String: String] = [:]
+
     func loadPackageNames(projPath: Path) async throws {
         projectPath = projPath
     }
@@ -39,6 +46,13 @@ final class PluginSwiftPM: PluginBuiltin {
     /// NIO, from a remote package.
     private func remoteProduct(_ product: PackageProductDependency) -> FacadeProduct? {
         let name = product.productName
+
+        /// What the resolved graph says: a product belongs to the package that
+        /// declares it, whatever that package's repository is called.
+        if let directory = packageDirectoryByProduct[name] {
+            return .init(package: directory, product: name)
+        }
+
         guard let url = product.package ?? remoteURL(forProduct: name) else { return nil }
 
         return .init(package: Self.packageDirectoryName(url: url), product: name)
@@ -178,19 +192,31 @@ final class PluginSwiftPM: PluginBuiltin {
     /// is the workspace's own way to run them, the way `bazel mod tidy` is the
     /// workspace's way to fix its module file.
     ///
-    /// The plugins and the tools they run are `data`, so running this builds
-    /// them: the script speaks to programs Bazel made, not to SwiftPM. The
-    /// script itself is written by the package generator, which is what knows
-    /// which programs those are.
+    /// The plugin host, plugins and tools are all Bazel-built `data` of the
+    /// runner. Nothing is looked up through `PATH`; the generated workspace is
+    /// sufficient to run its plugins.
     override func build(_ builder: CodeBuilder) {
         guard hasPackages else { return }
 
+        builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.load(loadableRule: Rules.Shell.sh_binary)
+        builder.call(
+            Rules.Swift.Call.swift_binary(
+                name: "_plugin_host",
+                srcs: ["plugin-host.swift"],
+                tags: ["manual"],
+                /// A command plugin's own target runs it too, and that target
+                /// belongs to the package the plugin came from.
+                visibility: .public))
         builder.call(
             Rules.Shell.Call.sh_binary(
                 name: "plugins",
                 srcs: ["plugins.sh"],
-                data: ["//\(Self.packagesDirectory):plugins"]))
+                data: [
+                    ":_plugin_host",
+                    "plugin-plan.json",
+                    "//\(Self.packagesDirectory):plugins",
+                ]))
     }
 
     override var custom: [PluginBuiltin.Custom]? {

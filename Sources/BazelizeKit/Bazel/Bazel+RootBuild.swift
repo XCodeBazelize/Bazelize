@@ -81,34 +81,5 @@ extension Bazel {
                         flag_values: [":mode": config]))
             }
         }
-
-        /// ~~export files not in~~
-        /// [Bazel Package](https://bazel.build/concepts/build-ref)
-        ///
-        /// don't need to export files
-        func exportUncategorizedFiles(_: Kit) {
-//            let all = kit.project.all
-//                .filter(\.isFile)
-//                .compactMap(\.label)
-//                .filter { label in
-//                    label.hasPrefix("//:")
-//                }
-//                .map { label in
-//                    // TODO: remove //:
-//                """
-//                "\(label.delete(prefix: "//:"))"
-//                """
-//                }
-//
-//            guard all.count != 0 else { return }
-//
-//            builder.custom("")
-//            builder.custom("""
-//            # export files not in [Bazel Package](https://bazel.build/concepts/build-ref)
-//            exports_files([
-//            \(all.map(\.withComma).withNewLine.indent(1))
-//            ])
-//            """)
-        }
     }
 }

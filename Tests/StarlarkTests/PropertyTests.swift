@@ -129,7 +129,7 @@ extension PropertyTests {
         let property = "env" => Starlark.Value.dictionary(["FOO": .string("BAR")])
         let result = """
         env = {
-            "FOO": "BAR"
+            "FOO": "BAR",
         },
         """
         #expect(property.text == result)
@@ -137,14 +137,14 @@ extension PropertyTests {
 
     @Test
     func testSelectValue() {
-        let property = "value" => Starlark.Select<String>.various([
+        let property = "value" => Starlark.Select<String>.exhaustive([
             .config("Debug"): "debug",
             .default: "release",
         ])
         let result = """
         value = select({
             "//:Debug": "debug",
-            "//conditions:default": "release"
+            "//conditions:default": "release",
         }),
         """
         #expect(property.text == result)

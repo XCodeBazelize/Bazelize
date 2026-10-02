@@ -16,13 +16,15 @@ extension Bazel {
         }
 
         mutating func setup(_ kit: Kit) {
+            /// A binary that only exists after a bootstrap script has run is
+            /// not importable, and declaring it leaves the workspace
+            /// unloadable — iina references dylibs it builds separately. The
+            /// roadmap is what says the file is missing; here it is simply left
+            /// out.
             let imported = kit.project.targets
                 .flatMap(\.files.frameworks)
                 .filter { file in
                     guard file.label?.hasPrefix("//Prebuilt:") == true else { return false }
-                    /// A binary that only exists after a bootstrap script has run is
-                    /// not importable, and declaring it leaves the workspace
-                    /// unloadable — iina references dylibs it builds separately.
                     guard let fullPath = file.fullPath else { return false }
                     return Path(fullPath).exists
                 }

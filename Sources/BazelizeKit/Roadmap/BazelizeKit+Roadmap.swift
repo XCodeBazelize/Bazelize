@@ -12,7 +12,10 @@ extension Bazel {
         /// Deleting the whole output root would take the project itself with it when
         /// no `--output` is given, and otherwise throw away the resolved SwiftPM and
         /// Bazel state that lives next to the generated files.
-        func prepare() throws {
+        ///
+        /// What it returns is what the run has to say about the tree: a file
+        /// the project names and the disk does not have.
+        func prepare() throws -> [String] {
             let targetsRoot = output + "Targets"
             let prebuiltRoot = output + "Prebuilt"
 
@@ -24,15 +27,20 @@ extension Bazel {
             try preparePrebuiltFiles(project: project)
             try targetsRoot.mkpath()
 
+            var notes: [String] = []
             for target in project.targets {
-                try prepare(target: target, project: project, targetsRoot: targetsRoot)
+                notes += try prepare(target: target, project: project, targetsRoot: targetsRoot)
             }
+            return notes
         }
 
+        /// A file the project declares and the disk does not have is left out
+        /// and named, never fatal: Xcode compiles what is there, and so does
+        /// the generated build.
         private func prepare(
             target: Target,
             project: Project,
-            targetsRoot: Path) throws
+            targetsRoot: Path) throws -> [String]
         {
             let targetRoot = targetsRoot + target.name
             let sourcesRoot = targetRoot + "Sources"
@@ -40,6 +48,25 @@ extension Bazel {
 
             try sourcesRoot.mkpath()
             try generatedRoot.mkpath()
+
+            let workspace = Path(project.workspacePath)
+            /// What the project says the target is made of, checked once:
+            /// whether a path is materialized below depends on what else was
+            /// materialized, and a file that is not there is reported either
+            /// way.
+            let notes = target.declaredRoadmapPaths
+                /// A path that still carries a build setting was never a path:
+                /// what it names depends on a variable nothing here expanded,
+                /// which is a different problem from a file going missing.
+                .filter { !$0.contains("$(") && !$0.contains("${") }
+                .filter { !(workspace + $0).exists }
+                .sorted()
+                .map { path in
+                    """
+                    \(target.name) names \(path), which is not on disk: \
+                    it is left out of the target.
+                    """
+                }
 
             var materializedDirectories = Set<String>()
             for relativePath in target.pathsForRoadmapTree(project: project) {
@@ -49,7 +76,7 @@ extension Bazel {
                 }
                 guard !hasMaterializedAncestor else { continue }
 
-                let source = Path(project.workspacePath) + relativePath
+                let source = workspace + relativePath
                 guard source.exists else { continue }
                 guard !source.isSelfReferentialSymlink else { continue }
 
@@ -65,6 +92,7 @@ extension Bazel {
             try prepareDefinesHeader(target: target, targetRoot: targetRoot)
             try prepareEntitlements(target: target, project: project, targetRoot: targetRoot)
             try prepareCopiedFiles(target: target, project: project, targetRoot: targetRoot)
+            return notes
         }
 
         /// Files a copy phase places in the bundle, staged under the destination the
@@ -221,6 +249,32 @@ extension Bazel {
 }
 
 extension Xcode.Target {
+    /// The paths the project says the target is made of.
+    ///
+    /// A header search path is not one of them: it names a directory a compiler
+    /// looks in, which a project is free to point at something no checkout has.
+    /// Neither is a file another target builds — an embedded framework sits in
+    /// the copy phase under `BUILT_PRODUCTS_DIR`, and no checkout has that
+    /// either. What is left is what Xcode would have compiled or bundled.
+    fileprivate var declaredRoadmapPaths: Set<String> {
+        let phases = files.sources + files.headers + files.resources
+            + files.copyFiles + files.frameworks
+        let declared = phases
+            /// A framework another target builds, and a framework the SDK
+            /// ships, are both outside the checkout by definition — and so is
+            /// anything a project names by absolute path, which a private
+            /// framework in `/System/Library/PrivateFrameworks` is.
+            .filter { file in
+                !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree)
+                    && file.path?.hasPrefix("/") != true
+            }
+            .compactMap(\.roadmapRelativePath)
+
+        return Set(
+            (declared + settingReferencedPaths)
+                .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "/")) })
+    }
+
     fileprivate func pathsForRoadmapTree(project: Project) -> [String] {
         let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
         let candidates = (allFiles.compactMap(\.roadmapRelativePath) + settingReferencedPaths + headerSearchPaths(project: project)).sorted {

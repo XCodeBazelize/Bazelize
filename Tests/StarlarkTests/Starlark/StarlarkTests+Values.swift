@@ -60,7 +60,7 @@ extension StarlarkTests {
         {
             "a": "aaa",
             "b": "bbb",
-            "c": "ccc"
+            "c": "ccc",
         }
         """
         #expect(code.text == result)
@@ -119,5 +119,53 @@ extension StarlarkTests {
             "3",
         ]
         """)
+    }
+
+    /// A value carrying a quote or a backslash is what Xcode hands over — a
+    /// preprocessor definition spells one `ID=@"com.example"` — and a file that
+    /// repeats it unescaped does not parse.
+    @Test
+    func testQuotingSurvivesEveryWayAValueIsMade() {
+        let quoted = #"ID=@"com.example""#
+        let escaped = #""ID=@\"com.example\"""#
+
+        #expect(Starlark.Value.string(quoted).text == escaped)
+        #expect(Starlark.Value(quoted)?.text == escaped)
+        #expect(Starlark.Value([quoted])?.text.contains(escaped) == true)
+        #expect([quoted].starlark?.text.contains(escaped) == true)
+        #expect(Starlark.Value(["key": quoted])?.text.contains(escaped) == true)
+    }
+
+    @Test
+    func testQuotingEscapesABackslashAndADictionaryKey() {
+        #expect(Starlark.Value.string(#"a\b"#).text == #""a\\b""#)
+        #expect(Starlark.Value([#"a"b"#: "c"])?.text.contains(#""a\"b": "c","#) == true)
+    }
+
+    /// An attribute given an empty list was given nothing: it reads as `None`
+    /// the way every other empty attribute does, rather than as an empty list
+    /// that someone decided on.
+    @Test
+    func testEmptyCollectionsAreNothing() {
+        #expect(Starlark.Value.array([]).isEmptyValue)
+        #expect(Starlark.Value.array([.none, .array([])]).isEmptyValue)
+        #expect(Starlark.Value.dictionary([:]).isEmptyValue)
+        #expect(!Starlark.Value.array([.string("a")]).isEmptyValue)
+
+        let call = Starlark.Statement.Call("rule") {
+            "deps" => [Starlark.Label]()
+            "srcs" => ["a.swift"]
+        }
+
+        #expect(
+            call.text
+                == """
+                rule(
+                    # deps = None,
+                    srcs = [
+                        "a.swift",
+                    ],
+                )
+                """)
     }
 }

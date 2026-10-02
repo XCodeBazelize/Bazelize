@@ -4,7 +4,7 @@ import CompilerPluginSupport
 import PackageDescription
 
 /// A macro: a target the compiler loads as a plugin while it compiles another
-/// target of the same package.
+/// target — one of the same package, and one a package away.
 let package = Package(
     name: "Macro",
     /// The host the macro is built for. Without it SwiftPM builds it for the
@@ -18,6 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.0"),
+        .package(path: "Provider"),
     ],
     targets: [
         .macro(
@@ -28,7 +29,11 @@ let package = Package(
             ]),
         .target(
             name: "Stringify",
-            dependencies: ["StringifyMacros"]),
+            dependencies: [
+                "StringifyMacros",
+                /// The macro of another package, reached through its product.
+                .product(name: "Provider", package: "Provider"),
+            ]),
         .testTarget(
             name: "StringifyTests",
             dependencies: ["Stringify"]),

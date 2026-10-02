@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "artifacts": {
+    "GreetTool": {
+      "version": "1.0.0",
+      "type": "executable",
+      "variants": [
+        {
+          "path": "GreetTool-1.0.0-macos/bin/GreetTool",
+          "supportedTriples": ["arm64-apple-macosx", "x86_64-apple-macosx"]
+        }
+      ]
+    }
+  }
+}

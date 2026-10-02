@@ -52,15 +52,13 @@ extension Starlark.Statement {
             case .comment(let comment):
                 return comment.text
             case .named(let name, let value):
-                let renderedValue: String
-                switch value {
-                case .none:
-                    renderedValue = "# \(name) = None,"
-                default:
-                    renderedValue = "\(name) = \(value.text),"
+                /// An attribute given nothing is an attribute that was not
+                /// given anything: an empty list says the same as `None` and
+                /// reads as a decision that was made.
+                guard !value.isEmptyValue else {
+                    return "# \(name) = None,"
                 }
-
-                return renderedValue
+                return "\(name) = \(value.text),"
             }
         }
     }
