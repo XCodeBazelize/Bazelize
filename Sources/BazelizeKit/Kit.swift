@@ -217,6 +217,9 @@ extension Kit {
         }
 
         pluginSPM.packageDirectoryByProduct = directories
+        /// Which packages this run actually wrote rules for: a product traced
+        /// to anything else is a label nothing declares.
+        pluginSPM.generatedPackageDirectories = Set(workspace.packages.map(\.directory))
     }
 
     /// The versions a package's targets end up compiled at: the lowest deployment
