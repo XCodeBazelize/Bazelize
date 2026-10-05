@@ -13,9 +13,9 @@
 上述三者當中，只有 `Carthage` 無法得知其相依套件與 `Target` 對應關係，因此我們先放棄 `Carthage` `deps` 的實作。
 
 
-`SwiftPM` 的 Bazel 規則由 bazelize 直接讀取套件的 manifest 後產生，不經由 [rules_spm][SPM] 或
-`rules_swift_package_manager` 之類的第三方規則；`Cocoapod` 目前尚未支援，下面的 [PodToBUILD][POD]
-與 `Cocoapod` 章節都只是研究筆記。
+`SwiftPM` 的 Bazel 規則由 bazelize 直接讀取套件的 manifest 後產生，不經由
+`rules_swift_package_manager` 之類的第三方規則。`Cocoapod` 沒有實作，當初的研究筆記
+已封存在 [docs/archive/](archive/)。
 
 ----
 
@@ -55,83 +55,6 @@ github "SVProgressHUD/SVProgressHUD" "2.2.5"
 
  * [x] 套件來源
  * [x] 套件版本
- * [ ] 對應關係
-
-----
-
-### 套件管理(Cocoapod)
-
-> 研究筆記，尚未實作。目前 bazelize 沒有任何 `Cocoapod` 的處理路徑。
-
-```ruby
-# Podfile
-target 'Target' do
-  inhibit_all_warnings!
-  pod 'SVProgressHUD'
-end
-```
-
-```yaml
-# Podfile.Lock
-PODS:
-  - SVProgressHUD (2.2.5)
-
-DEPENDENCIES:
-  - SVProgressHUD
-
-SPEC REPOS:
-  https://github.com/CocoaPods/Specs.git:
-    - SVProgressHUD
-
-SPEC CHECKSUMS:
-  SVProgressHUD: 1428aafac632c1f86f62aa4243ec12008d7a51d6
-
-PODFILE CHECKSUM: 59e0f0beb00fc64afe764xxxxxxxx
-
-COCOAPODS: 1.11.3
-```
-
-#### Podfile to json
-
-> `pod ipc podfile-json Podfile`
-
-```json
-{
-  "target_definitions": [
-    {
-      "name": "Pods",
-      "abstract": true,
-      "user_project_path": "xxx.xcodeproj",
-      "children": [
-        {
-          "name": "Target1",
-          "uses_frameworks": {
-            "linkage": "dynamic",
-            "packaging": "framework"
-          },
-          "dependencies": [
-            {
-              "SVProgressHUD": [
-                {
-                  "git": "https://github.com/SVProgressHUD/SVProgressHUD",
-                  "tag": "2.2.5"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### 套件管理(Cocoapod) 條件
-
- * [ ] 套件來源
-   * [ ] 大部分 Pod，會支援其 git 來源
-   * [ ] 少部分 Pod 並無提供來源
- * [ ] 套件版本
  * [ ] 對應關係
 
 ---
@@ -193,6 +116,3 @@ COCOAPODS: 1.11.3
  * [x] 套件版本
  * [x] 對應關係
 
-<!-- 以下僅為參考資料，bazelize 並未使用 -->
-[POD]: https://github.com/pinterest/PodToBUILD
-[SPM]: https://github.com/cgrindel/rules_spm
