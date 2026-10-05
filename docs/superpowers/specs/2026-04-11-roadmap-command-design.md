@@ -1,5 +1,12 @@
 # Roadmap Command Design
 
+> Historical: a design for a CLI that no longer exists. There is no `bazelize
+> roadmap` command and no `Xcode.RoadmapTreeBuilder`; the work is done by
+> `generate` through `BazelizeKit`, and `fixture/iOS2` was never added — only
+> `fixture/iOS`. The empty-`BUILD`-placeholder decision was abandoned and the
+> deferred missing-file behaviour has since shipped. The text below is kept
+> unchanged.
+
 ## Goal
 
 Add a new CLI command that materializes the tree described in `docs/Roadmap.md` from an Xcode project into an output directory.

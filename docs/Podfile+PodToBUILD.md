@@ -1,5 +1,9 @@
 # Podfile
 
+> Historical: research notes on CocoaPods and PodToBUILD. Nothing here is
+> implemented — bazelize has no CocoaPods support in its sources. The text
+> below is kept unchanged.
+
 ---
 
 ## PodToBUILD Dependency

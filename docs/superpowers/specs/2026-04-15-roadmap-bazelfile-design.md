@@ -1,5 +1,12 @@
 # Roadmap Bazel File Design
 
+> Historical: a design for a layout that no longer exists. The
+> `rules_swift_package_manager` route — `use_repo` and `@swiftpkg_` labels —
+> was dropped; bazelize generates the package rules itself and a product is
+> `//Packages/<Package>:<Product>`. The package-shaped output
+> (`<output>/Example/BUILD`) was abandoned too: targets stay under
+> `Targets/<Target>/`. The text below is kept unchanged.
+
 ## Goal
 
 Extend the roadmap output so the generated workspace can move toward a real `bazel run //Example:Example` flow.

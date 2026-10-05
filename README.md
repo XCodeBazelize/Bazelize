@@ -116,14 +116,15 @@ generated workspace is self-contained — `MODULE.bazel`, not `WORKSPACE`:
 ```bash
 App/                        # --output
 ├── MODULE.bazel            # the bazel_dep pins this workspace needs
-├── BUILD                   # the `mode` flag, //:lint, //:format, //:plugins
+├── BUILD                   # the `mode` flag, //:lint, //:format, //:plugins, //:xcodeproj
 ├── .bazelrc                # imports the three generated rc files below
 ├── config.bazelrc          # --config=Debug|Release, deployment floors
-├── traits.bazelrc          # --config=<Package>.<Trait>, one per SwiftPM trait
+├── traits.bazelrc          # --config=<Package>.<Trait>, plus .none, .all, .default
 ├── languages.bazelrc       # --config=lang.<code>, one per localization
 ├── .bazelignore            # keeps SwiftPM's .build out of the workspace
 ├── lint.sh, format.sh      # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
+├── .bazelversion
 ├── tools/                  # `bazel list config|trait|language`
 ├── Prebuilt/               # project-owned .framework/.a/.xcframework
 ├── Targets/<XcodeTarget>/  # Xcode input only
@@ -133,7 +134,7 @@ App/                        # --output
 ├── Packages/
 │   ├── BUILD               # trait flags and the conditions rules select on
 │   └── <Package>/          # BUILD, Sources/ symlinks, Generated/
-├── Package.swift           # kept: the only way to rebuild .build/checkouts
+├── Package.swift           # generated: the manifest SwiftPM resolves checkouts from
 └── Package.resolved        # kept: the only source of pins
 ```
 

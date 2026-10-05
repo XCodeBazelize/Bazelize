@@ -13,7 +13,9 @@
 上述三者當中，只有 `Carthage` 無法得知其相依套件與 `Target` 對應關係，因此我們先放棄 `Carthage` `deps` 的實作。
 
 
-為了避免重複造輪子，我們使用 [PodToBUILD][POD] 以及 [rules_spm][SPM]。
+`SwiftPM` 的 Bazel 規則由 bazelize 直接讀取套件的 manifest 後產生，不經由 [rules_spm][SPM] 或
+`rules_swift_package_manager` 之類的第三方規則；`Cocoapod` 目前尚未支援，下面的 [PodToBUILD][POD]
+與 `Cocoapod` 章節都只是研究筆記。
 
 ----
 
@@ -58,6 +60,8 @@ github "SVProgressHUD/SVProgressHUD" "2.2.5"
 ----
 
 ### 套件管理(Cocoapod)
+
+> 研究筆記，尚未實作。目前 bazelize 沒有任何 `Cocoapod` 的處理路徑。
 
 ```ruby
 # Podfile
@@ -125,10 +129,10 @@ COCOAPODS: 1.11.3
 #### 套件管理(Cocoapod) 條件
 
  * [ ] 套件來源
-   * [X] 大部分 Pod，會支援其 git 來源
+   * [ ] 大部分 Pod，會支援其 git 來源
    * [ ] 少部分 Pod 並無提供來源
- * [x] 套件版本
- * [x] 對應關係
+ * [ ] 套件版本
+ * [ ] 對應關係
 
 ---
 
@@ -189,5 +193,6 @@ COCOAPODS: 1.11.3
  * [x] 套件版本
  * [x] 對應關係
 
+<!-- 以下僅為參考資料，bazelize 並未使用 -->
 [POD]: https://github.com/pinterest/PodToBUILD
 [SPM]: https://github.com/cgrindel/rules_spm

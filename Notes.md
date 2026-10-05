@@ -1,16 +1,9 @@
-
 iina:
 
-部分 dylib 是 source?
-```shell
-Targets/iina/Sources/iina/MPVController.swift:152:29: error: cannot find 'MPV_FORMAT_FLAG' in scope
- 150 |     MPVOption.Equalizer.saturation: MPV_FORMAT_INT64,
- 151 |     MPVOption.Window.fullscreen: MPV_FORMAT_FLAG,
- 152 |     MPVOption.Window.ontop: MPV_FORMAT_FLAG,
-     |                             `- error: cannot find 'MPV_FORMAT_FLAG' in scope
- 153 |     MPVOption.Window.windowScale: MPV_FORMAT_DOUBLE,
- 154 |     MPVProperty.mediaTitle: MPV_FORMAT_STRING,
-```
+部分 dylib 不在 repo 裡，是 `other/download_libs.sh` 從 feed 抓的，而 feed 只留最新一版：
+在那個 revision 上，它列的 71 個函式庫有 48 個已經不在，少掉的 symbol 會以
+`cannot find 'MPV_FORMAT_FLAG' in scope` 這種形式出現在 Swift 編譯錯誤裡。
+lane 把 feed 釘在檔案清單對得上該 revision 的版本（1.4.2），問題就消失了。
 
 plist 的 `$(xxx)`：專案自己宣告的（pbxproj／xcconfig）與 Xcode 從 toolchain 帶入的
 （`SDK_VERSION`、`XCODE_VERSION_*`、`SDK_NAME`、`PLATFORM_NAME`、`CONFIGURATION`）
@@ -19,8 +12,9 @@ plist 的 `$(xxx)`：專案自己宣告的（pbxproj／xcconfig）與 Xcode 從 
 
 CI（`.github/workflows/swift.yml`）目前沒跑的：
 
-- **iina**：matrix 裡註解掉，等上面那條 dylib 的問題解掉、在 runner 上綠過再打開。
-- **MacPass**：需要 submodule 加 `carthage bootstrap`，那一步沒在 runner 上驗證過。
+- **MacPass**：Carthage 依賴宣告的 deployment target 是 10.9–10.15，低於 Xcode 27
+  接受的 12.0，`carthage bootstrap` 在第一個套件就失敗、`Carthage/Build` 從來沒被
+  寫出來，app 因此什麼都連不到。lane 設定改不動這件事。
 
 runner 是 Xcode 26（Swift 6.3），本機是 27（6.4），兩者對 build tool plugin 的差別：
 

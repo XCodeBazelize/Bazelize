@@ -28,6 +28,7 @@ would not tell us anything.
 | `TraitGraph` | the whole trait graph: traits that enable traits, a condition naming several, and dependencies taking `.defaults`, nothing, or a named selection |
 | `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled, and a link back to the target's own directory that must not be walked |
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
+| `TargetExclude` | `exclude:` naming a directory and a single file, neither of which may be compiled — in a package that declares no products at all |
 | `TargetEmbed` | `.embedInCode`, the one rule with no bundle at all: the file's bytes are a generated source |
 | `TargetResource` | every other resource rule: `.copy` of a directory and of a single file, `.process`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model with two versions, a shader that includes a header, a string catalogue, a privacy manifest, a test target's own resources, and the `.docc` SwiftPM ignores |
 | `RegistryPackage` | a dependency named by registry identity (`.package(id:)`), unpacked where SwiftPM unpacks a registry download — see below, it is not a CI lane |
@@ -82,13 +83,15 @@ linked, so the package holding it still builds anywhere.
 cd spm/<package>
 bazelize --input . --output App
 cd App
-bazel run //:plugins   # only the packages with a build tool plugin need this
+bazel run //:plugins   # re-runs the build tool plugins; generation already ran them once
 bazel run //:lint      # downloads buildifier and checks generated Starlark
 bazel test //...
 bazel run //tools:list-config   # what `--config=<name>` the workspace defines
 bazel run //tools:list-trait    # which traits its packages declare, and which are on
 bazel run //tools:list-language # which localizations they ship
 bazel test //... --config=<Package>.<Trait>   # …with one of them turned on
+bazel test //... --config=<Package>.none      # …with the package's defaults off
+bazel test //... --config=<Package>.all       # …with every trait it declares on
 bazel build //... --config=lang.<code>        # …bundling that localization only
 ```
 
@@ -112,8 +115,10 @@ whatever the trait enables, which is what `swift test --traits <trait>` does.
 The flags underneath are there for a build that wants some other combination.
 
 `bazel run //:plugins` runs this workspace's build tool plugins and writes what
-they generate into `Packages/<package>/Generated/`. It is a separate step
-because a plugin is a program. Bazel builds the generated host, the plugins and
+they generate into `Packages/<package>/Generated/`. Generation ends with that
+command, so a freshly generated workspace already has what they write; running
+it again is how a plugin or an input of one is picked up, without generating
+the workspace a second time. Bazel builds the generated host, the plugins and
 their tools, then runs all of them from runfiles; no `bazelize` executable is
 needed at runtime.
 
@@ -133,8 +138,9 @@ runtime either. The generated `tools/bazel` wrapper also exposes them as
 
 `App/` is generated, and is not checked in.
 
-`TargetEmbed` needs `swift test --build-system native`: the default build
-system in this toolchain generates nothing for `.embedInCode`, which is
-SwiftPM's own gap rather than anything the package asks for — and the only
-reason that rule has a package of its own. Its Bazel side is built the same
-way as every other fixture.
+`TargetEmbed` is run with `swift test --build-system native`. On the toolchain
+that lane was written against, `swiftbuild` generated nothing for
+`.embedInCode` — Xcode 27's does — while `native` has generated it all along,
+so the lane names the build system that implements the rule rather than
+inheriting whichever the runner ships. Its Bazel side is built the same way as
+every other fixture.

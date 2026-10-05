@@ -119,11 +119,12 @@ plugin，隔壁套件那個之所以生效，是因為宣告該 macro 的 librar
 
 ### C1. 子套件沒有測試 —— 刻意如此
 
-fixture 底下有 11 個套件（`vendor-kit`、`Alt`、`Other`、`Stamping`、
-`Products`、`Trait/Dependency`、`TraitGraph/*Dependency`、
+fixture 底下有 13 個套件（`vendor-kit`、`Alt`、`Other`、`Stamping`、`Marking`、
+`Products`、`Macro/Provider`、`Trait/Dependency`、`TraitGraph/*Dependency`、
 `DependencyCondition/Extras`、`DependencyCondition/LinuxOnly`）是給人依賴用的，
-本身沒有東西好斷言。CI 對每一個都跑 `swift build`，只有存在 `Tests` 目錄的才跑
-`swift test` —— 不會為了讓指令回 0 而塞一堆證明不了任何事的測試。
+本身沒有東西好斷言。CI 對每一個都跑 `swift build` —— 只有 plugin 的那個除外，
+SwiftPM 根本拒絕建它 —— 而只有存在 `Tests` 目錄的才跑 `swift test`，不會為了讓
+指令回 0 而塞一堆證明不了任何事的測試。
 
 ### C2. lane 會因為沒人預期的 note 而失敗 —— 已完成
 
@@ -135,8 +136,9 @@ test 都是綠的、錯在執行期，而 package lane 以前直接把產生器�
 就是為那句話存在的。目前沒有任何 fixture 會說話，所以這道閘門是預設關著的：出現
 note 等於 lane 變紅，而不是多一行沒人看的字。
 
-### C3. `TargetEmbed` 需要 `--build-system native`
+### C3. `TargetEmbed` 用 `--build-system native` 跑
 
-在這個工具鏈上，預設 build system 完全不產 `.embedInCode` 需要的
-`PackageResources`，那是 SwiftPM 自己的缺口。它是唯一需要這個 flag 的 fixture
-—— 這也正是那條規則被拆成獨立套件的原因。
+在當初寫那條 lane 的工具鏈上，`swiftbuild` 完全不產 `.embedInCode` 需要的
+`PackageResources` —— Xcode 27 的會 —— 而 `native` 一直都會產。那條 lane 指名
+實作了這條規則的 build system，而不是繼承 runner 當下附的那個；這也正是那條規則
+被拆成獨立套件的原因。

@@ -134,12 +134,14 @@ asset symbols are not.
 
 ### C1. Sub-packages have no tests — by design
 
-Eleven packages under the fixtures (`vendor-kit`, `Alt`, `Other`, `Stamping`,
-`Products`, `Trait/Dependency`, `TraitGraph/*Dependency`,
-`DependencyCondition/Extras`, `DependencyCondition/LinuxOnly`) are dependencies
-with nothing of their own to assert. CI builds every one of them and runs
-`swift test` only where a `Tests` directory exists, rather than padding them
-with tests that prove nothing.
+Thirteen packages under the fixtures (`vendor-kit`, `Alt`, `Other`,
+`Stamping`, `Marking`, `Products`, `Macro/Provider`, `Trait/Dependency`,
+`TraitGraph/*Dependency`, `DependencyCondition/Extras`,
+`DependencyCondition/LinuxOnly`) are dependencies with nothing of their own to
+assert. CI builds each of them — except one that is nothing but a plugin,
+which SwiftPM refuses to build at all — and runs `swift test` only where a
+`Tests` directory exists, rather than padding them with tests that prove
+nothing.
 
 ### C2. A lane fails on a note no fixture expects — done
 
@@ -154,8 +156,10 @@ is there for in `notes`. No fixture says anything today, so the gate starts
 shut: a note that appears is a lane turning red, rather than a line nobody
 reads.
 
-### C3. `TargetEmbed` needs `--build-system native`
+### C3. `TargetEmbed` is run with `--build-system native`
 
-`.embedInCode` generates no `PackageResources` under the default build system
-in this toolchain, which is SwiftPM's own gap. It is the only fixture that
-needs the flag, which is why that rule has a package of its own.
+On the toolchain that lane was written against, `swiftbuild` generated no
+`PackageResources` for `.embedInCode` at all — Xcode 27's does — while `native`
+has generated it all along. The lane names the build system that implements the
+rule rather than inheriting whichever the runner ships, which is why that rule
+has a package of its own.

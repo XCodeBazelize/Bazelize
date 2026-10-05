@@ -1,5 +1,10 @@
 # Xcode2 Print Target Implementation Plan
 
+> Historical: a plan for a CLI that no longer exists. There is no `bazelize
+> xcode2` command and no `Sources/Xcode2` module; the feature now lives in
+> `bazelize dump --input … --print-target`, in the `Xcode` module, with tests
+> in `Tests/XcodeTests/`. The text below is kept unchanged.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a `--print-target <name>` option to `bazelize xcode2` that prints a human-readable summary for one target instead of the full project JSON dump.
