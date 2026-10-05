@@ -99,6 +99,35 @@ struct RulesConfigTests {
     }
 
     @Test
+    func testBuiltinConstraintCalls() {
+        let setting = Rules.Builtin.Call.constraint_setting(
+            name: "unsupported_platform")
+        let value = Rules.Builtin.Call.constraint_value(
+            name: "driverkit",
+            constraint_setting: ":unsupported_platform",
+            visibility: .public)
+
+        #expect(
+            setting.text
+                == """
+                constraint_setting(
+                    name = "unsupported_platform",
+                )
+                """)
+        #expect(
+            value.text
+                == """
+                constraint_value(
+                    name = "driverkit",
+                    constraint_setting = ":unsupported_platform",
+                    visibility = [
+                        "//visibility:public",
+                    ],
+                )
+                """)
+    }
+
+    @Test
     func testBoolSettingTypedCall() {
         let call = Rules.Config.Call.bool_setting(
             name: "strict",

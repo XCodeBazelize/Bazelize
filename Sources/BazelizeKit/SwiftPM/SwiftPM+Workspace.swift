@@ -68,8 +68,8 @@ extension SwiftPM {
     static func loadWorkspace(
         output: Path,
         root input: Path?,
-        locals: [Path],
-        platforms: Set<String> = []) async throws -> Workspace
+        locals: [Path]) async throws
+        -> Workspace
     {
         /// A project with no packages has no manifest written for it, and asking
         /// SwiftPM to resolve one is an error rather than an empty graph.
@@ -138,7 +138,7 @@ extension SwiftPM {
             Package(
                 directory: entry.root.directory,
                 root: entry.root.path,
-                manifest: entry.manifest.resolving(platforms: platforms),
+                manifest: entry.manifest,
                 isLocal: entry.root.isLocal,
                 /// Both sides are made absolute: the output can be a relative path,
                 /// and the package handed in is named however the caller named it.

@@ -1,25 +1,37 @@
 import Foundation
 
-/// Kept: macOS is a platform an Apple toolchain builds, and the one this is
-/// compiled for.
+/// The same generated rule is compiled for more than one platform. Each one
+/// gets only the settings and dependencies its configuration selects.
 #if !APPLE_PLATFORM
-#error("A setting conditional on an Apple platform must apply")
+#error("A setting conditional on either Apple platform must apply")
 #endif
 
+#if os(macOS)
 #if !MACOS_PLATFORM
 #error("A setting conditional on macOS must apply to a macOS build")
 #endif
+#if IOS_PLATFORM
+#error("A setting conditional on iOS must not apply to a macOS build")
+#endif
+#elseif os(iOS)
+#if MACOS_PLATFORM
+#error("A setting conditional on macOS must not apply to an iOS build")
+#endif
+#if !IOS_PLATFORM
+#error("A setting conditional on iOS must apply to an iOS build")
+#endif
+import IOSOnly
+#endif
 
-/// Dropped while the rules are written: nothing generated here is ever
-/// compiled for Linux or Windows, so a setting behind one is not a `select` —
-/// it is not there at all.
 #if LINUX_PLATFORM
-#error("A setting conditional on Linux must not apply")
+#error("A setting conditional on Linux must not apply to an Apple build")
 #endif
 
 #if WINDOWS_PLATFORM
-#error("A setting conditional on Windows must not apply")
+#error("A setting conditional on Windows must not apply to an Apple build")
 #endif
+
+// MARK: - Platform
 
 public enum Platform {
     /// What the package says it needs, which is what the rules have to compile

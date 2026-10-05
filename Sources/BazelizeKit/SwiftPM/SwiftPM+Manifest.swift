@@ -15,9 +15,9 @@ public enum SwiftPM { }
 extension SwiftPM {
     /// A package manifest, as `swift package dump-package` prints it.
     ///
-    /// The dump is the manifest after SwiftPM evaluated it, so conditionals and
-    /// defaults are already applied; reading it beats re-implementing
-    /// `Package.swift`.
+    /// SwiftPM evaluates the manifest code and applies API defaults; build
+    /// conditions remain explicit metadata for the generated rules. Reading
+    /// the dump beats re-implementing `Package.swift`.
     struct Manifest: Decodable {
         let name: String
         let platforms: [Platform]
@@ -52,31 +52,6 @@ extension SwiftPM {
             swiftLanguageModes = container.list(String.self, "swiftLanguageVersions")
             defaultLocalization = container.value(String.self, "defaultLocalization")
             toolsVersion = container.value([String: String].self, "toolsVersion")?["_version"] ?? "5.9.0"
-        }
-
-        /// The manifest with everything the platform rules out removed.
-        ///
-        /// A trait's condition survives: which traits are on is a question the
-        /// build answers, through a flag per trait, so what is conditional on
-        /// one becomes a `select` rather than a decision taken here. A platform
-        /// cannot be that — a package rule is built through the transition of
-        /// whatever pulls it in — so it is decided now.
-        ///
-        /// `platforms` empty means the caller does not know which platforms are
-        /// built, which still rules out the ones no Apple toolchain builds.
-        func resolving(platforms: Set<String>) -> Manifest {
-            var resolved = self
-            resolved.targets = targets.map { target in
-                var target = target
-                target.settings = target.settings.filter { setting in
-                    setting.condition?.applies(platforms: platforms) ?? true
-                }
-                target.dependencies = target.dependencies.filter { dependency in
-                    dependency.condition?.applies(platforms: platforms) ?? true
-                }
-                return target
-            }
-            return resolved
         }
     }
 
@@ -278,8 +253,8 @@ extension SwiftPM {
     struct Setting: Decodable {
         let tool: String
         let kind: [String: SettingValues]
-        /// When the setting applies: the platforms it is limited to, and the
-        /// traits that have to be on. Absent means always.
+        /// When the setting applies: its platform, traits and build
+        /// configuration. Absent means always.
         let condition: SettingCondition?
 
         /// `define`, `headerSearchPath`, `defaultIsolation`…
@@ -289,12 +264,6 @@ extension SwiftPM {
 
         var values: [String] {
             kind.values.first?.values ?? []
-        }
-
-        /// The traits the setting is conditional on, of which one being on is
-        /// what puts it in the build. Empty means it is always in.
-        var traits: [String] {
-            condition?.traits ?? []
         }
     }
 
@@ -361,8 +330,8 @@ extension SwiftPM {
 
     struct TargetDependency: Decodable {
         let kind: TargetDependencyKind
-        /// The last element of the array a dependency is dumped as: the
-        /// platforms it is limited to, and the traits that have to be on.
+        /// The last element of the array a dependency is dumped as: its
+        /// platform, traits and build configuration.
         let condition: SettingCondition?
         /// `moduleAliases`: what the modules of that product are called here,
         /// which is how two packages that both ship a `Core` are both used.
@@ -398,12 +367,6 @@ extension SwiftPM {
 
             throw DecodingError.dataCorrupted(
                 .init(codingPath: decoder.codingPath, debugDescription: "Unknown target dependency"))
-        }
-
-        /// The traits the dependency is conditional on, of which one being on
-        /// is what links it. Empty means it is always linked.
-        var traits: [String] {
-            condition?.traits ?? []
         }
     }
 
@@ -531,29 +494,6 @@ extension SwiftPM {
     }
 }
 
-extension SwiftPM.SettingCondition {
-    /// Whether the platform this condition names is one the project builds.
-    ///
-    /// `platforms` empty means the caller does not know which platforms the
-    /// project builds, which still rules out the platforms Bazelize never
-    /// builds for — Linux, Android, Windows and the rest are not what an Xcode
-    /// project or an Apple toolchain produces.
-    ///
-    /// Traits are not decided here, and neither is a configuration: both are
-    /// answered when Bazel builds, not when the rules are written.
-    func applies(platforms: Set<String>) -> Bool {
-        guard !platformNames.isEmpty else { return true }
-
-        let built = platforms.isEmpty ? Self.apple : platforms
-        return !platformNames.allSatisfy { !built.contains($0) }
-    }
-
-    /// The platforms an Apple toolchain builds, which is every platform that
-    /// can reach a generated rule.
-    private static let apple: Set<String> = [
-        "macos", "maccatalyst", "ios", "tvos", "watchos", "visionos", "driverkit",
-    ]
-}
 
 extension KeyedDecodingContainer where Key == SwiftPM.AnyKey {
     /// Absent, null and malformed all mean "not there": a manifest dump spans every

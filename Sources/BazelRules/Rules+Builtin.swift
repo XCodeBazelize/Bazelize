@@ -31,6 +31,34 @@ extension Rules.Builtin.Call {
         }
     }
 
+    public static func constraint_setting(
+        name: String,
+        visibility: Starlark.Statement.Argument.Visibility? = nil)
+        -> Starlark.Statement.Call
+    {
+        .init("constraint_setting") {
+            "name" => name
+            if let visibility {
+                visibility.argument
+            }
+        }
+    }
+
+    public static func constraint_value(
+        name: String,
+        constraint_setting: String,
+        visibility: Starlark.Statement.Argument.Visibility? = nil)
+        -> Starlark.Statement.Call
+    {
+        .init("constraint_value") {
+            "name" => name
+            "constraint_setting" => Starlark.Label.named(constraint_setting)
+            if let visibility {
+                visibility.argument
+            }
+        }
+    }
+
     /// The `module(...)` directive every `MODULE.bazel` opens with.
     public static func module(
         name: String,

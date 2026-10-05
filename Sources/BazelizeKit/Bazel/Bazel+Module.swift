@@ -18,6 +18,7 @@ extension Bazel {
         private let skylib: BazelDep.BazelSkylib = .latest
         private let cc: BazelDep.RulesCC = .latest
         private let appleSupport: BazelDep.AppleSupport = .latest
+        private let platforms: BazelDep.Platforms = .latest
         /// What `//:plugins` is a `sh_binary` of: Bazel itself no longer has
         /// that rule.
         private let shell: BazelDep.RulesShell = .latest
@@ -43,6 +44,9 @@ extension Bazel {
             builder.bazel_dep(
                 name: "apple_support",
                 version: appleSupport.rawValue)
+            builder.bazel_dep(
+                name: "platforms",
+                version: platforms.rawValue)
             builder.bazel_dep(
                 name: "rules_cc",
                 version: cc.rawValue)

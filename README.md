@@ -33,6 +33,11 @@ Bazel builds the plugins and their tools, so generation needs `bazel` on `PATH`
 for that step. Run the same command again whenever a plugin or its input
 changes.
 
+SwiftPM platform conditions stay in the generated rules. Settings, ordinary
+dependencies, and macro dependencies use Bazel `select` expressions keyed by
+the target platform, so generating once does not bake in the generator's host
+or the Xcode project's platform.
+
 Every generated workspace also owns its Starlark commands:
 
 ```sh

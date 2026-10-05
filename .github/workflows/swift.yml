@@ -624,6 +624,34 @@ jobs:
         working-directory: spm/${{ matrix.name }}/App
         run: bazel test //...
 
+      # One generated library is compiled through two platform configurations:
+      # each gets its own settings and only iOS gets the conditional target.
+      # Optimized iOS keeps the platform condition but drops the debug half of
+      # a combined condition.
+      - name: Test Platform Conditions
+        if: matrix.name == 'Platform'
+        working-directory: spm/Platform/App
+        run: |
+          bazel build //Packages/Platform:Platform --platforms=@apple_support//platforms:ios_sim_arm64
+
+          mac=$(bazel aquery 'mnemonic("SwiftCompile", deps(//Packages/Platform:Platform))')
+          ios=$(bazel aquery --platforms=@apple_support//platforms:ios_sim_arm64 \
+            'mnemonic("SwiftCompile", deps(//Packages/Platform:Platform))')
+          ios_opt=$(bazel aquery -c opt --platforms=@apple_support//platforms:ios_sim_arm64 \
+            'mnemonic("SwiftCompile", deps(//Packages/Platform:Platform))')
+
+          printf '%s' "$mac" | grep -q -- '-DMACOS_PLATFORM'
+          ! printf '%s' "$mac" | grep -q -- '-DIOS_PLATFORM'
+          ! printf '%s' "$mac" | grep -q 'Sources/IOSOnly/IOSOnly.swift'
+
+          printf '%s' "$ios" | grep -q -- '-DIOS_PLATFORM'
+          printf '%s' "$ios" | grep -q -- '-DIOS_DEBUG'
+          ! printf '%s' "$ios" | grep -q -- '-DMACOS_PLATFORM'
+          printf '%s' "$ios" | grep -q 'Sources/IOSOnly/IOSOnly.swift'
+
+          printf '%s' "$ios_opt" | grep -q -- '-DIOS_PLATFORM'
+          ! printf '%s' "$ios_opt" | grep -q -- '-DIOS_DEBUG'
+
       # A program is not a test: the rules that build one carry `manual`, so
       # `//...` never builds it. Running it is what says it links and works.
       - name: Run Package Programs

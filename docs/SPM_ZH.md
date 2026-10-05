@@ -204,9 +204,15 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 一個 trait 一個 `bool_flag`，預設值就是 manifest 解析出來的結果，旁邊配一個會把它打開的 `--config=<Package>.<Trait>`；開著的 trait 會為該 package 的 Swift 原始碼定義同名條件，跟 SwiftPM 一樣 |
-| setting 或依賴上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉；Apple toolchain 根本不建的平台一律丟掉 |
-| setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`，由 build 當下決定；條件寫了多個 trait 就產生 `config_setting_group` |
-| setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |
+| setting 或依賴上的 `.when(platforms:)` | 變成掛在 `@platforms//os` 上的 `select`，由 build 當下的 target platform 決定；多個 platform 產生 `config_setting_group`，Mac Catalyst 另外比對 Apple support 的 Catalyst constraint |
+| setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`；條件寫了多個 trait 就產生 `config_setting_group` |
+| setting 上的 `.when(configuration:)` | 變成掛在 Bazel compilation mode 上的 `select` |
+
+同一個 `.when` 裡的不同維度會產生 `match_all` 的
+`config_setting_group`：例如 iOS debug setting 必須同時符合 iOS constraint 與
+debug compilation mode。沒有對應 Bazel constraint 的 platform 名稱，會保留在一個
+任何產生出的 target platform 都不會帶的條件後面；產生時會回報這個限制，而不是把
+該值誤當成無條件套用。
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
 一律整份連結 package library；還有 `always_include_developer_search_paths`，
