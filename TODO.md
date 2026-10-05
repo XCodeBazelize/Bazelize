@@ -57,12 +57,15 @@ and assembling the bundle ourselves, which is not worth it.
 
 ## B. Coverage
 
-### B1. Nothing in `spm/` is built for iOS
+### B1. Nothing in `spm/` is *tested* on iOS
 
-Every fixture is macOS. `spm/Platform` declares `.iOS(.v16)` but its tests run
-on macOS, so the iOS bundle shape, `minimum_os_version` on an iOS rule and the
-platform transition a package rule is built through are covered only by
-`fixture/iOS`, which is the Xcode side. This is the largest hole.
+`spm/Platform` is now built for iOS: its lane compiles the package rule through
+`--platforms=@apple_support//platforms:ios_sim_arm64` and asserts which
+settings and dependencies that configuration selects. What is still macOS-only
+is everything that needs a bundle to exist — the iOS bundle shape and
+`minimum_os_version` on an iOS rule — because a package's tests are a
+`macos_unit_test`. Running a fixture's tests on a simulator is the remaining
+hole.
 
 ### B2. `.xcmappingmodel` — not planned
 

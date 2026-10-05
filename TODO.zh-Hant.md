@@ -53,12 +53,14 @@ macOS 上 SwiftPM 產的是 `Bundle.bundle/Contents/Resources/…`；rules_apple
 
 ## B. 覆蓋率
 
-### B1. `spm/` 裡沒有任何東西是為 iOS 建的
+### B1. `spm/` 裡沒有任何東西在 iOS 上**測**
 
-所有 fixture 都是 macOS。`spm/Platform` 有宣告 `.iOS(.v16)`，但測試仍在 macOS
-上跑，所以 iOS 的 bundle 形狀、iOS 規則上的 `minimum_os_version`、以及 package
-規則被建立時所經過的 platform transition，都只有 `fixture/iOS`（Xcode 那側）
-間接覆蓋。**這是最大的一個洞。**
+`spm/Platform` 現在會為 iOS 建：它那條 lane 用
+`--platforms=@apple_support//platforms:ios_sim_arm64` 建 package 規則，並斷言那個
+configuration 選到哪些 setting 與 dependency。還是只有 macOS 的，是所有「需要真的
+有一個 bundle」的東西 —— iOS 的 bundle 形狀、iOS 規則上的 `minimum_os_version`
+—— 因為套件的測試是 `macos_unit_test`。把 fixture 的測試跑在模擬器上，是剩下的
+那個洞。
 
 ### B2. `.xcmappingmodel` —— 不打算做
 
