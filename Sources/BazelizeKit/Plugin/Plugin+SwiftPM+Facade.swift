@@ -15,7 +15,7 @@ extension PluginSwiftPM {
     static let packagesDirectory = "Packages"
 
     /// A product a target links, and the package it belongs to.
-    struct FacadeProduct {
+    struct FacadeProduct: Hashable {
         let package: String
         let product: String
     }
