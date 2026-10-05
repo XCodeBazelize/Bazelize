@@ -22,6 +22,10 @@ Or a Swift package — the `Package.swift`, or the directory holding one:
 bazelize --input path/to/Package.swift --output App
 ```
 
+`generate` is the default subcommand, so `bazelize generate --input … --output
+…` is the same command written out. `bazelize init` and `bazelize dump` are the
+other two.
+
 A package whose targets use a build tool plugin has its plugins run at the end
 of generation, with the `//:plugins` target the run writes:
 
@@ -53,35 +57,6 @@ way buildifier formats them. Formatting is buildifier's job, so generation does
 not do it and `//:lint` reports a formatting difference rather than failing on
 it.
 
-### Configuration
-
-Create the default file in the current directory, or in a specified directory:
-
-```sh
-bazelize init
-bazelize init path/to/project
-```
-
-The command creates the destination directory when needed and refuses to
-overwrite an existing `bazelize.yaml`.
-
-`bazelize generate` reads `bazelize.yaml` beside an input `.xcodeproj` or in a
-Swift package root:
-
-```yaml
-schema: 1
-
-buildifier:
-  version: "10.1.0"
-```
-
-Use `--config-file path/to/custom.yaml` to select another file. An explicit
-file takes precedence over automatic discovery; Bazelize does not merge them.
-The buildifier version must be in Bazelize's checksum catalog. Bazel and BCR
-dependency pins remain generator-owned and are not configuration properties.
-
-See [the configuration contract and v2 candidates](docs/Configuration.md).
-
 An Xcode target whose product type is `com.apple.product-type.bundle` is
 generated as a rules_apple `macos_bundle`.
 
@@ -97,69 +72,106 @@ reaches it under SwiftPM. There is no sandbox to widen, so what the plugin
 declared it wants to do is printed rather than refused — running the target is
 the permission.
 
+### Configuration
+
+Generation reads `bazelize.yaml` from the directory the input lives in: beside
+an `.xcodeproj`, or in the root of a Swift package. A workspace without one is
+generated from the defaults.
+
+```yaml
+schema: 1
+
+buildifier:
+  version: "10.1.0"
+```
+
+`bazelize init` writes that file. It takes the directory to write it in, which
+is the directory generation reads it from, and defaults to the current one:
+
+```sh
+cd path/to/project && bazelize init     # beside the .xcodeproj or Package.swift
+bazelize init path/to/project           # the same directory, named
+```
+
+It creates the directory when needed and refuses to overwrite an existing
+`bazelize.yaml`.
+
+Use `--config-file path/to/custom.yaml` to read a file from somewhere else. An
+explicit file takes precedence over that discovery; Bazelize does not merge
+them. The buildifier version must be in Bazelize's checksum catalog. Bazel and
+BCR dependency pins remain generator-owned and are not configuration
+properties.
+
+See [the configuration contract and v2 candidates](docs/Configuration.md).
+
 ---
 
 ## Bazel
 
 ### Project Hierarchy
 
+Everything is written under `--output`; the input tree is not modified. A
+generated workspace is self-contained — `MODULE.bazel`, not `WORKSPACE`:
+
 ```bash
-├── xxx.xcodeproj
-├── xxx.xcworkspace
-├── config.bazelrc        # generated file
-├── BUILD           # generated file
-├── WORKSPACE       # generated file
-├── Podfile
-├── Podfile.lock
-├── Target1
-│   ├── BUILD       # generated file
-│   └── xxx.swift
-├── Target2
-│   ├── BUILD       # generated file
-│   └── xxx.m
-├── TestTarget1
-│   ├── BUILD       # generated file
-│   └── xxx.swift
-├── TestTarget2
-│   ├── BUILD       # generated file
-│   └── xxx.swift
-└ ...
+App/                        # --output
+├── MODULE.bazel            # the bazel_dep pins this workspace needs
+├── BUILD                   # the `mode` flag, //:lint, //:format, //:plugins
+├── .bazelrc                # imports the three generated rc files below
+├── config.bazelrc          # --config=Debug|Release, deployment floors
+├── traits.bazelrc          # --config=<Package>.<Trait>, one per SwiftPM trait
+├── languages.bazelrc       # --config=lang.<code>, one per localization
+├── .bazelignore            # keeps SwiftPM's .build out of the workspace
+├── lint.sh, format.sh      # the buildifier pinned for the host
+├── plugins.sh, plugin-host.swift, plugin-plan.json
+├── tools/                  # `bazel list config|trait|language`
+├── Prebuilt/               # project-owned .framework/.a/.xcframework
+├── Targets/<XcodeTarget>/  # Xcode input only
+│   ├── BUILD
+│   ├── Sources/            # symlinks into the original sources
+│   └── Generated/          # entitlements, Info.plist, asset symbols
+├── Packages/
+│   ├── BUILD               # trait flags and the conditions rules select on
+│   └── <Package>/          # BUILD, Sources/ symlinks, Generated/
+├── Package.swift           # kept: the only way to rebuild .build/checkouts
+└── Package.resolved        # kept: the only source of pins
 ```
+
+`Targets/` is what an Xcode input generates and `Packages/` is what its Swift
+packages generate, so a package handed in directly produces the same workspace
+without `Targets/`.
 
 ### Config
 
-All `Xcode configs` is stored in `BUILD` file.
-
-You can build debug version with following code.
-
-> bazel build --//:mode=Debug [Package]
+An Xcode build configuration is a flag in the generated root `BUILD`:
 
 ```bazel
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
 string_flag(
     name = "mode",
-    build_setting_default = "normal",
+    build_setting_default = "Debug",
+    values = [
+        "Debug",
+        "Release",
+    ],
 )
 
 config_setting(
     name = "Debug",
-    flag_values = {
-        ":mode": "Debug"
-    },
+    flag_values = {":mode": "Debug"},
 )
 
 config_setting(
     name = "Release",
-    flag_values = {
-        ":mode": "Release"
-    },
+    flag_values = {":mode": "Release"},
 )
 ```
 
-Or you can fill in the following code into `.bazelrc`.
+`config.bazelrc` names each one, and the generated `.bazelrc` imports it, so a
+configuration is selected by name:
 
-```python
-import %workspace%/config.bazelrc
+```sh
+bazel build --config=Debug //Targets/Example
+bazel build --//:mode=Debug //Targets/Example   # the same thing, spelled out
 ```
-
-> bazel build --config=Debug [Package]
