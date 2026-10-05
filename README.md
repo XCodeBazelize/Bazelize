@@ -23,8 +23,8 @@ bazelize --input path/to/Package.swift --output App
 ```
 
 `generate` is the default subcommand, so `bazelize generate --input … --output
-…` is the same command written out. `bazelize init` and `bazelize dump` are the
-other two.
+…` is the same command written out. `bazelize config init` and `bazelize dump`
+are the other two.
 
 A package whose targets use a build tool plugin has its plugins run at the end
 of generation, with the `//:plugins` target the run writes:
@@ -85,16 +85,16 @@ buildifier:
   version: "10.1.0"
 ```
 
-`bazelize init` writes that file. It takes the directory to write it in, which
-is the directory generation reads it from, and defaults to the current one:
+`bazelize config init` writes that file. `-o` says where: a directory to put
+`bazelize.yaml` in, or the path of the file itself, defaulting to the current
+one. Missing directories are created, and an existing file is never
+overwritten.
 
 ```sh
-cd path/to/project && bazelize init     # beside the .xcodeproj or Package.swift
-bazelize init path/to/project           # the same directory, named
+cd path/to/project && bazelize config init   # beside the .xcodeproj or Package.swift
+bazelize config init -o path/to/project      # the same place, named
+bazelize config init -o config/custom.yaml   # for --config-file below
 ```
-
-It creates the directory when needed and refuses to overwrite an existing
-`bazelize.yaml`.
 
 Use `--config-file path/to/custom.yaml` to read a file from somewhere else. An
 explicit file takes precedence over that discovery; Bazelize does not merge

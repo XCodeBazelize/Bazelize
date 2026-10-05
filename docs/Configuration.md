@@ -8,7 +8,7 @@ promise.
 
 ## Version 1
 
-`bazelize init` writes this file:
+`bazelize config init` writes this file:
 
 ```yaml
 schema: 1
@@ -17,16 +17,18 @@ buildifier:
   version: "10.1.0"
 ```
 
-With no argument, `init` writes to the current directory. An optional directory
-selects another destination:
+Generation reads it from the directory the input lives in, so that is where it
+belongs. `-o` says where to write it: a directory to put `bazelize.yaml` in, or
+the path of the file itself, defaulting to the current directory.
 
 ```sh
-bazelize init
-bazelize init path/to/project
+cd path/to/project && bazelize config init
+bazelize config init -o path/to/project
+bazelize config init -o config/custom.yaml   # then `generate --config-file`
 ```
 
-Missing destination directories are created. An existing `bazelize.yaml` is an
-error and is never overwritten.
+Missing directories are created. An existing file is an error and is never
+overwritten.
 
 Only the buildifier release is configurable in v1. Bazel and BCR dependency
 versions are generator-owned pins and MUST NOT be copied into

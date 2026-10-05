@@ -53,19 +53,25 @@ public struct BazelizeConfiguration: Equatable, Sendable {
         self.buildifier = buildifier
     }
 
+    /// Writes the example at `destination`: inside it when that names a
+    /// directory, and as the file itself when it names a YAML file — `-o .`
+    /// and `-o config/custom.yaml` both land where they are read from.
     @discardableResult
-    public static func createExample(in directory: Path) throws -> Path {
-        let directory = directory.absolute().normalize()
-        if directory.exists, !directory.isDirectory {
-            throw BazelizeConfigurationError.destinationNotDirectory(directory.string)
-        }
-        try directory.mkpath()
+    public static func createExample(at destination: Path) throws -> Path {
+        let destination = destination.absolute().normalize()
+        /// A path that does not exist yet is a directory unless it is spelled
+        /// as a YAML file: `-o nested/project` makes the directory rather than
+        /// a file called `project`.
+        let namesFile = ["yaml", "yml"].contains(destination.extension ?? "")
+        let path = destination.isDirectory || !namesFile
+            ? destination + fileName
+            : destination
 
-        let path = directory + fileName
         guard !path.exists else {
             throw BazelizeConfigurationError.fileAlreadyExists(path.string)
         }
 
+        try path.parent().mkpath()
         do {
             try Data(example.utf8).write(to: path.url, options: .withoutOverwriting)
         } catch {
@@ -141,15 +147,12 @@ public struct BazelizeConfiguration: Equatable, Sendable {
 }
 
 public enum BazelizeConfigurationError: Error, LocalizedError {
-    case destinationNotDirectory(String)
     case fileAlreadyExists(String)
     case fileNotFound(String)
     case invalidFile(String, String)
 
     public var errorDescription: String? {
         switch self {
-        case let .destinationNotDirectory(path):
-            return "Configuration destination is not a directory: \(path)"
         case let .fileAlreadyExists(path):
             return "Configuration file already exists: \(path)"
         case let .fileNotFound(path):
