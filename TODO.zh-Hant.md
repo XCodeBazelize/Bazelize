@@ -10,7 +10,7 @@ bazelize 的 SwiftPM 這一側還沒做的事，以及為什麼。寫於 `spm/` 
 
 ## A. 產生器行為
 
-### A1. executable target 的 resources 不會被打包
+### A1. 不好做：executable target 的 resources 不會被打包
 
 `swift_binary` 建出來的程式拿得到產生的 `Bundle.module` accessor，卻拿不到
 bundle：`apple_resource_bundle` 是把資源交給「組 bundle 的人」—— app 或
@@ -21,29 +21,30 @@ test —— 而程式兩者都不是，所以那條規則產出的東西沒有�
 depset，所以就算在執行檔上掛 `data = [":XResources"]`，runfiles 裡也不會多出
 任何東西。
 
-目前的做法是在產生階段就明講（`SwiftPM+Resources.swift` 的 `.executable`
-分支），而不是留給使用者用 crash 去發現。
+rules_apple 沒有 `macos_binary`。最接近的是 Bazelize 已經用於 Xcode command line
+product 的 `macos_command_line_application`；但那條規則刻意只輸出 standalone
+binary，沒有 `resources` attribute，`DefaultInfo` 的 runfiles 也只有 Clang runtime，
+不會把 dependency 傳來的 resource bundle 放在程式旁邊，所以解不了 SwiftPM
+executable 的問題。
 
-要修的話，得把 bundle 目錄寫進產生的 workspace ——
-`Generated/<Package>_<Target>.bundle`，裡面放 Info.plist 與每個資源的
-symlink —— 用 `data` 帶進 runfiles，再教 accessor 認得 runfiles 的候選路徑。
-代價是 `.process` 不再編譯：程式的資源裡若有 asset catalog、xib 或 shader，
-會變成原樣複製而不是編譯，這與 SwiftPM 有落差，該在發生的地方回報。
+目前 generation 會在 `SwiftPM+Resources.swift` 的 `.executable` 分支明確回報，不把
+runtime crash 留給使用者猜。真正的修正必須把 bundle 目錄寫進 workspace、帶進
+runfiles，並教 accessor 去哪裡找；還得決定 asset catalog、xib、shader 等 `.process`
+resource 如何編譯，而不是直接複製。沒有現成規則能承接這些工作，所以標記為不好做，
+目前不排程。
 
-SwiftPM 會把那個 bundle 寫在程式旁邊，所以「CLI 工具帶資源」這種套件在
-SwiftPM 能跑、在這裡不能。
-
-### A2. 未宣告的 privacy manifest 不會進 bundle
+### A2. 未宣告的 privacy manifest 應主動 copy 進 bundle
 
 `PrivacyInfo.xcprivacy` 放在 target 原始碼旁邊時，SwiftPM 的預設 build system
 會把它打包，這裡不會 —— 產生器的「自動辨識資源類型」清單裡沒有它。有明確宣告
 （`.copy`）的套件兩邊都正常，`spm/TargetResource` 就是這樣做的。
 
-把 `xcprivacy` 加進自動辨識清單會對齊預設 build system，但會與
-`--build-system native` 不一致（後者忽略它）。改之前要先決定哪一個才是我們的
-契約。
+決定貼齊 SwiftPM 預設 build system：target source tree 裡若存在尚未宣告的
+`PrivacyInfo.xcprivacy`，在生成 resource rules 前主動合成與 `.copy` 相同的輸入；
+manifest 已明確宣告時不可重複加入。這會刻意與忽略該檔的 `--build-system native`
+不同；fixture 必須斷言最終 bundle 內確實有 privacy manifest。
 
-### A3. resource bundle 是扁平而非包裝式 —— 不打算做
+### A3. 先不修：resource bundle 是扁平而非包裝式
 
 macOS 上 SwiftPM 產的是 `Bundle.bundle/Contents/Resources/…`；rules_apple 在
 所有平台都刻意產扁平的 `Bundle.bundle/…`，那是 iOS 的形狀。實測過：
@@ -51,26 +52,25 @@ macOS 上 SwiftPM 產的是 `Bundle.bundle/Contents/Resources/…`；rules_apple
 只有自己手拼 `Contents/Resources` 路徑的程式碼會看見差異。要對齊就得放棄
 `apple_resource_bundle` 自己組 bundle，不划算。
 
-### A4. dynamic library product 會靜默變成一般 library
+### A4. 先不修：dynamic library product 會變成一般 library
 
 manifest 仍帶著 `{"library": ["dynamic"]}`，但 `PackageProduct.kind` 把所有 library
 product 都折成 `.library`。所以生成的 product 與 automatic library 一樣，只是一個
 alias 或 `swift_library_group`，也沒有 note 說 SwiftPM 原本要求的是 dynamic library。
 
-第一個可獨立交付的修正，是解析 `automatic`、`static`、`dynamic`，並對尚未支援的
-dynamic case 發出回報，先停止靜默降級。完整支援還需要產生 dylib 的規則、穩定的
-product facade、正確的 link／packaging 行為、fixture 與 CI coverage。
+目前還沒有決定完整的 dylib rule、product facade、transitive linking 與 packaging
+契約。只做一部分仍會讓 product 語意不清楚，因此先留下紀錄、不排程修正。
 
-### A5. build tool plugin executable 的 resource runfiles 會遺失
+### A5. 尚未決定：build tool plugin executable 的 resource runfiles 會遺失
 
 `//Packages:plugins` 是一個 `filegroup`，`srcs` 只有 plugin tool binaries，沒有轉發
 那些 binary 的 runfiles。帶 resource 的工具可以編得過、也能被 plugin host 找到，
 但執行期讀取 bundle 時會失敗。
 
-plugin entry point 與它需要的 runfiles 必須一起傳遞。要加一個 tool 在 plugin 執行時
-實際讀 resource 的 fixture；只驗證 executable 建得起來抓不到這個問題。
+plugin entry point 與它需要的 runfiles 必須一起傳遞，但 provider 形狀與 fixture
+契約都尚未決定；先不過早承諾自訂 forwarding rule。
 
-### A6. 設定檔不能選 target，也不能關閉生成的功能
+### A6. 先不修：設定檔不能選 target，也不能關閉生成的功能
 
 v1 `bazelize.yaml` schema 只有 `schema` 與 buildifier release。必須排除某個 target
 的人，目前只能 fork input project 或 generator。
@@ -80,14 +80,15 @@ v1 `bazelize.yaml` schema 只有 `schema` 與 buildifier release。必須排除�
 的能力，而不是內部 plugin class。Bazel／BCR dependency pin 仍由 generator 管理，
 Swift package version 仍由 `Package.resolved` 管理。
 
-### A7. 多個 trait 的選擇沒有單一 Bazel configuration
+### A7. trait selection 已貼齊 SwiftPM —— 已完成
 
-SwiftPM 的 `--traits A,B` 是一次 replacement selection。生成的 rc 對每個 trait
-各提供一個 config，另外有 `none`、`all`、`default` 三種具名選擇。公開的 boolean
-flag 能表示組合，但沒有一個 `--config` 就能拼出同樣的選擇。
+SwiftPM 的 `--traits A` 會讓該 package 以 `-DA` 編譯；沒有選到的其他 trait 不會產生
+任何 `-D`。現在的 `--config=<Package>.A` 正是這個行為：打開 A 的 build setting，
+其他 trait condition 不成立。false build setting 並不是一個負向 compiler define。
 
-支援逗號分隔的便利寫法需要累加式 selection 語意，不能直接組合現有的 replacement
-configs。這項先延後；目前的 escape hatch 是直接指定各 flag。
+生成的 `<Package>.none` 對應 `--disable-default-traits`；`<Package>.default` 還原
+manifest defaults，`<Package>.all` 打開全部。多個 trait 也能用公開的 boolean flags
+表示。少一個單一 config 的便利寫法不算 generator 行為缺口，因此不再列為未完成。
 
 ## B. 覆蓋率
 

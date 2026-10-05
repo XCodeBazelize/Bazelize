@@ -10,7 +10,7 @@ Ordered by what a user would hit first.
 
 ## A. Generator behaviour
 
-### A1. An executable target's resources are not bundled
+### A1. Hard: an executable target's resources are not bundled
 
 A program built by `swift_binary` gets the generated `Bundle.module` accessor
 and no bundle: `apple_resource_bundle` hands its resources to whatever bundles
@@ -22,31 +22,36 @@ runs.
 an empty depset, so `data = [":XResources"]` on the binary brings nothing into
 runfiles either.
 
+rules_apple has no `macos_binary`. Its nearest rule is
+`macos_command_line_application`, which Bazelize already uses for Xcode command
+line products. That rule deliberately emits a standalone binary, has no
+`resources` attribute, and its `DefaultInfo` runfiles contain the Clang runtime
+only; resources propagated by its dependencies are not placed beside it. It
+therefore does not solve a SwiftPM executable's bundle.
+
 Today the generator says so out loud while generating (`SwiftPM+Resources.swift`,
-the `.executable` case) rather than leaving it to be found by a crash.
+the `.executable` case) rather than leaving it to be found by a crash. A real
+fix means writing the bundle directory into the generated workspace, carrying
+it in runfiles, and teaching the accessor where to find it. That also means
+choosing how `.process` resources such as asset catalogues, xibs and shaders
+are compiled rather than merely copied. There is no existing rule to delegate
+that work to, so this remains marked hard and is not scheduled.
 
-A fix means writing the bundle directory into the generated workspace —
-`Generated/<Package>_<Target>.bundle` with the Info.plist and one link per
-resource — carrying it as `data`, and teaching the accessor the runfiles
-candidates. The cost is that `.process` no longer compiles: an asset catalogue,
-a xib or a shader in a program's resources would be copied rather than built,
-which is a divergence from SwiftPM worth reporting where it happens.
-
-SwiftPM writes that bundle beside the program, so a package shipping a CLI tool
-with resources works there and not here.
-
-### A2. An undeclared privacy manifest is not bundled
+### A2. An undeclared privacy manifest should be copied into the bundle
 
 `PrivacyInfo.xcprivacy` sitting beside a target's sources is bundled by
 SwiftPM's default build system and by nothing here — the generator's discovered
 resource types do not include it. A package that declares it (`.copy`) works
 either way, which is what `spm/TargetResource` does.
 
-Adding `xcprivacy` to the discovered types would match the default build
-system, and diverge from `--build-system native`, which ignores it. Decide
-which one is the contract before changing it.
+Decision: match SwiftPM's default build system. When an undeclared
+`PrivacyInfo.xcprivacy` exists in a target's source tree, synthesize the same
+resource input as an explicit `.copy` before resource rules are generated.
+Do not add it twice when the manifest already declares it. This intentionally
+differs from `--build-system native`, which ignores the undeclared file; add a
+fixture that asserts the manifest is present in the built bundle.
 
-### A3. A resource bundle is flat, not wrapped — not planned
+### A3. Not fixing for now: a resource bundle is flat, not wrapped
 
 On macOS SwiftPM produces `Bundle.bundle/Contents/Resources/…`; rules_apple
 produces a flat `Bundle.bundle/…` on every platform by design, which is the iOS
@@ -55,30 +60,30 @@ lookup answer the same on both, and only code that builds `Contents/Resources`
 paths by hand would notice. Aligning means not using `apple_resource_bundle`
 and assembling the bundle ourselves, which is not worth it.
 
-### A4. A dynamic library product silently becomes an ordinary library
+### A4. Not fixing for now: a dynamic library product becomes an ordinary library
 
 The manifest still carries `{"library": ["dynamic"]}`, but `PackageProduct.kind`
 collapses every library product to `.library`. The generated product is
 therefore the same alias or `swift_library_group` as an automatic library, with
 no note that SwiftPM was asked to vend a dynamic library.
 
-The first deliverable is to decode `automatic`, `static` and `dynamic` and
-report the unsupported dynamic case, stopping the silent downgrade. Complete
-support also needs a rule that produces the dylib, a stable product facade,
-the right link and packaging behaviour, a fixture, and CI coverage.
+No complete mapping has been chosen for the dylib-producing rule, product
+facade, transitive linking, and packaging behaviour. Partial handling would
+still leave the product contract unclear, so this remains documented and is
+not scheduled.
 
-### A5. A build tool plugin's executable loses its resource runfiles
+### A5. Undecided: a build tool plugin's executable loses its resource runfiles
 
 `//Packages:plugins` is a `filegroup` whose `srcs` are the plugin tool binaries.
 It does not forward the runfiles of those binaries. A tool with resources can
 compile and be found by the plugin host, then fail when it tries to load its
 bundle at run time.
 
-The plugin entry point and the runfiles it needs must travel together. Add a
-fixture whose tool reads a resource while the plugin runs; a test that only
-builds the executable does not cover the failure.
+The plugin entry point and the runfiles it needs must travel together, but the
+provider shape and fixture contract have not been chosen. Leave this undecided
+rather than committing to a custom forwarding rule prematurely.
 
-### A6. Configuration cannot select targets or disable generated features
+### A6. Not fixing for now: configuration cannot select targets or disable generated features
 
 The v1 `bazelize.yaml` schema has only `schema` and the buildifier release.
 Someone who must leave a target out cannot express that without forking the
@@ -91,16 +96,20 @@ keys name user-visible capabilities rather than internal plugin classes.
 Bazel/BCR dependency pins remain generator-owned, and Swift package versions
 remain owned by `Package.resolved`.
 
-### A7. A multi-trait selection has no single Bazel configuration
+### A7. Trait selection already matches SwiftPM — done
 
-SwiftPM's `--traits A,B` is one replacement selection. Generated rc files
-provide one config per trait and the named `none`, `all`, and `default`
-selections. The public boolean flags can represent a combination, but there is
-no one `--config` spelling for it.
+SwiftPM's `--traits A` compiles that package with `-DA`; another trait that is
+not selected contributes no `-D` at all. That is what the generated
+`--config=<Package>.A` does: it turns on A's build setting and leaves the
+package's other trait conditions absent. A false build setting is not a
+negative compiler definition.
 
-Supporting the comma-separated convenience form needs cumulative selection
-semantics rather than composing the existing replacement configs. This is
-deferred; direct flag assignment is the current escape hatch.
+The generated `<Package>.none` is the spelling for
+`--disable-default-traits`; `<Package>.default` restores the manifest defaults,
+and `<Package>.all` enables every trait. Several selected traits can be
+expressed with the public boolean flags. The missing single-config shorthand is
+only convenience, not a generator behaviour gap, so it is no longer tracked as
+unfinished work.
 
 ## B. Coverage
 
