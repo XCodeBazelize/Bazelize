@@ -54,8 +54,10 @@ extension SwiftPM.Generator {
         var resources: [String] = []
         var copied: [String: [String]] = [:]
         var embedded: [String] = []
+        var explicitlyDeclared: Set<String> = []
         for resource in target.resources {
             let pattern = Self.pattern(of: resource.path, in: directory, prefix: prefix)
+            explicitlyDeclared.formUnion(files.filter { Self.matches(pattern, $0) })
             if resource.isEmbedInCode {
                 embedded.append(resource.path)
             } else if resource.isCopy {
@@ -65,6 +67,11 @@ extension SwiftPM.Generator {
                 resources.append(pattern)
             }
         }
+
+        Self.copyUndeclaredPrivacyManifests(
+            in: files,
+            excluding: explicitlyDeclared,
+            into: &copied)
         resources = matching(resources, files)
             + matching(Self.discoveredResources(prefix: prefix), files)
             /// A plugin's output is named as it was found on disk, so it needs no
@@ -135,48 +142,80 @@ extension SwiftPM.Generator {
                     structured_resources: self.files(matching: patterns)))
         }
 
-        builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
-        builder.call(
-            Rules.Apple.Resources.Call.apple_resource_bundle(
-                name: name,
-                bundle_name: bundle,
-                infoplists: .build { [Starlark.Label.named(plist)] },
-                /// A glob and a group cannot be added together in one attribute, so
-                /// once there is a group everything is a group.
-                resources: groups.isEmpty
-                    ? resources.nonEmpty.map { self.files(matching: $0, allowEmpty: true) }
-                    : .build { groups.map { Starlark.Label.named(":\($0)") } },
-                tags: Self.manual))
+        let resourceInputs: Starlark.Value? = groups.isEmpty
+            ? resources.nonEmpty.map { self.files(matching: $0, allowEmpty: true) }
+            : .build { groups.map { Starlark.Label.named(":\($0)") } }
 
-        switch kind {
-        case .executable:
-            /// A resource bundle is built by whatever bundles it — an app or a
-            /// test — and a program is neither: the rule produces the bundle
-            /// for nothing to put anywhere, so `Bundle.module` finds nothing at
-            /// run time. SwiftPM writes the bundle beside the program, so the
-            /// difference is said out loud rather than discovered by a crash.
-            note("""
-            \(package.directory)/\(target.name) is a program with resources, which \
-            Bazel has nothing to bundle into: it is built, but `Bundle.module` finds \
-            nothing when it runs.
-            """)
-            fallthrough
-        case .swift, .test:
-            let accessor = "Generated/\(target.name)ResourceBundleAccessor.swift"
-            try (root + accessor).write(Self.swiftAccessor(bundle: bundle))
-            return ResourceBundle(
+        let executableMinimumOS: String?
+        if case .executable = kind {
+            executableMinimumOS = deployment.required(package, platform: "macos")
+        } else {
+            executableMinimumOS = nil
+        }
+        emit(
+            ResourceRule(
+                name: name,
+                bundle: bundle,
+                plist: plist,
+                resources: resourceInputs),
+            executableMinimumOS: executableMinimumOS,
+            builder: builder)
+
+        return try Self.resourceBundle(
+            ResourceResult(
+                target: target.name,
+                package: package.directory,
+                bundle: bundle,
                 label: ":\(name)",
-                accessors: [accessor] + (embeddedSource.map { [$0] } ?? []),
+                root: root,
+                kind: kind,
+                embeddedSource: embeddedSource))
+    }
+
+    /// Adds SwiftPM's implicit privacy manifest with `.copy` semantics. A
+    /// declared file or containing directory already owns the manifest.
+    private static func copyUndeclaredPrivacyManifests(
+        in files: [String],
+        excluding declared: Set<String>,
+        into copied: inout [String: [String]])
+    {
+        for manifest in files
+            where Path(manifest).lastComponent == "PrivacyInfo.xcprivacy"
+            && !declared.contains(manifest)
+        {
+            copied[Path(manifest).parent().normalize().string, default: []].append(manifest)
+        }
+    }
+
+    /// Writes the language-specific accessor and describes what the target carries.
+    private static func resourceBundle(_ result: ResourceResult) throws -> ResourceBundle? {
+        switch result.kind {
+        case .executable:
+            let accessor = "Generated/\(result.target)ResourceBundleAccessor.swift"
+            try (result.root + accessor).write(
+                swiftAccessor(
+                    bundle: result.bundle,
+                    runfilesPath: "Packages/\(result.package)/\(result.bundle).bundle"))
+            return ResourceBundle(
+                label: result.label,
+                accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
+                header: nil)
+        case .swift, .test:
+            let accessor = "Generated/\(result.target)ResourceBundleAccessor.swift"
+            try (result.root + accessor).write(swiftAccessor(bundle: result.bundle))
+            return ResourceBundle(
+                label: result.label,
+                accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
                 header: nil)
         case .clang:
-            let module = Self.moduleName(target.name)
-            let header = "Generated/\(target.name)ResourceBundleAccessor.h"
-            let implementation = "Generated/\(target.name)ResourceBundleAccessor.m"
-            try (root + header).write(Self.objcAccessorHeader(module: module))
-            try (root + implementation).write(
-                Self.objcAccessor(module: module, bundle: bundle))
+            let module = moduleName(result.target)
+            let header = "Generated/\(result.target)ResourceBundleAccessor.h"
+            let implementation = "Generated/\(result.target)ResourceBundleAccessor.m"
+            try (result.root + header).write(objcAccessorHeader(module: module))
+            try (result.root + implementation).write(
+                objcAccessor(module: module, bundle: result.bundle))
             return ResourceBundle(
-                label: ":\(name)",
+                label: result.label,
                 accessors: [header, implementation],
                 header: header)
         case .binary, .system, .macro, .unsupported:
@@ -289,39 +328,6 @@ extension SwiftPM.Generator {
             <string>1</string>
         </dict>
         </plist>
-
-        """
-    }
-
-    /// `Bundle.module`, the name a package's Swift code uses.
-    ///
-    /// The bundle sits next to the binary that linked the package, and which
-    /// binary that is depends on whether the package went into an app, a
-    /// framework or a tool — so every candidate is tried.
-    private static func swiftAccessor(bundle: String) -> String {
-        """
-        import Foundation
-
-        private final class BundleFinder {}
-
-        extension Foundation.Bundle {
-            static let module: Bundle = {
-                let candidates = [
-                    Bundle.main.resourceURL,
-                    Bundle(for: BundleFinder.self).resourceURL,
-                    Bundle.main.bundleURL,
-                ]
-
-                for candidate in candidates {
-                    let url = candidate?.appendingPathComponent("\(bundle).bundle")
-                    if let bundle = url.flatMap(Bundle.init(url:)) {
-                        return bundle
-                    }
-                }
-
-                fatalError("unable to find bundle named \(bundle)")
-            }()
-        }
 
         """
     }

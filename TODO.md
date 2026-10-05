@@ -2,63 +2,50 @@
 
 中文版：[TODO.zh-Hant.md](TODO.zh-Hant.md)
 
-What the SwiftPM side of bazelize does not do yet, and why. Written after the
-`spm/` fixture corpus reached 24 packages, all of which build and test both
-ways (`swift build`/`swift test` and `bazelize` + `bazel test //...`).
+What the SwiftPM side of bazelize does not do yet, and why. The fixture corpus
+builds, tests, and runs the supported package shapes through both SwiftPM and
+the generated Bazel workspace.
 
 Ordered by what a user would hit first.
 
 ## A. Generator behaviour
 
-### A1. Hard: an executable target's resources are not bundled
+### A1. Executable target resources — done
 
-A program built by `swift_binary` gets the generated `Bundle.module` accessor
-and no bundle: `apple_resource_bundle` hands its resources to whatever bundles
-them — an app or a test — and a program is neither, so the rule produces
-something nothing puts anywhere. The binary compiles and `fatalError`s when it
-runs.
+An executable now gets a real runfiles bundle rather than only a generated
+`Bundle.module` accessor. `macos_bundle` performs the same platform processing
+needed by asset catalogues, xibs, shaders, and other `.process` inputs; the
+generated `//Packages:swiftpm_resource_bundle.bzl` rule extracts its archive as
+a tree artifact, removes the bundler's empty executable and stale signature,
+and exposes the resource-only `.bundle` through `DefaultInfo` runfiles.
 
-`cquery --output=files` on such a bundle is empty, and its `OutputGroupInfo` is
-an empty depset, so `data = [":XResources"]` on the binary brings nothing into
-runfiles either.
+The `swift_binary` carries that target as `data`. Its accessor checks the normal
+Apple bundle locations first, then Bazel's `RUNFILES_DIR`, `TEST_SRCDIR`, and
+the executable's sibling runfiles tree. `spm/ExecutableResource` runs the
+result and checks copied and processed files, a compiled asset catalogue, and
+an undeclared privacy manifest.
 
-rules_apple has no `macos_binary`. Its nearest rule is
-`macos_command_line_application`, which Bazelize already uses for Xcode command
-line products. That rule deliberately emits a standalone binary, has no
-`resources` attribute, and its `DefaultInfo` runfiles contain the Clang runtime
-only; resources propagated by its dependencies are not placed beside it. It
-therefore does not solve a SwiftPM executable's bundle.
+### A2. Undeclared privacy manifests — done
 
-Today the generator says so out loud while generating (`SwiftPM+Resources.swift`,
-the `.executable` case) rather than leaving it to be found by a crash. A real
-fix means writing the bundle directory into the generated workspace, carrying
-it in runfiles, and teaching the accessor where to find it. That also means
-choosing how `.process` resources such as asset catalogues, xibs and shaders
-are compiled rather than merely copied. There is no existing rule to delegate
-that work to, so this remains marked hard and is not scheduled.
+`PrivacyInfo.xcprivacy` in a target's source tree now receives `.copy`
+semantics when no declared resource already owns it. The manifest therefore
+lands under its own name at the bundle root, matching SwiftPM's default build
+system without duplicating an explicit file or directory declaration.
 
-### A2. An undeclared privacy manifest should be copied into the bundle
-
-`PrivacyInfo.xcprivacy` sitting beside a target's sources is bundled by
-SwiftPM's default build system and by nothing here — the generator's discovered
-resource types do not include it. A package that declares it (`.copy`) works
-either way, which is what `spm/TargetResource` does.
-
-Decision: match SwiftPM's default build system. When an undeclared
-`PrivacyInfo.xcprivacy` exists in a target's source tree, synthesize the same
-resource input as an explicit `.copy` before resource rules are generated.
-Do not add it twice when the manifest already declares it. This intentionally
-differs from `--build-system native`, which ignores the undeclared file; add a
-fixture that asserts the manifest is present in the built bundle.
+`spm/ExecutableResource` covers the undeclared case;
+`spm/TargetResource` keeps its explicit `.copy` declaration and covers the
+deduplication path. This intentionally differs from `--build-system native`,
+which ignores an undeclared manifest.
 
 ### A3. Not fixing for now: a resource bundle is flat, not wrapped
 
-On macOS SwiftPM produces `Bundle.bundle/Contents/Resources/…`; rules_apple
-produces a flat `Bundle.bundle/…` on every platform by design, which is the iOS
-shape. Measured: `Bundle.module.infoDictionary` and every `url(forResource:)`
-lookup answer the same on both, and only code that builds `Contents/Resources`
-paths by hand would notice. Aligning means not using `apple_resource_bundle`
-and assembling the bundle ourselves, which is not worth it.
+On macOS SwiftPM produces library and test resource bundles as
+`Bundle.bundle/Contents/Resources/…`; rules_apple produces a flat
+`Bundle.bundle/…` on every platform by design, which is the iOS shape.
+Measured: `Bundle.module.infoDictionary` and every `url(forResource:)` lookup
+answer the same on both, and only code that builds `Contents/Resources` paths
+by hand would notice. Aligning those bundle shapes means not using
+`apple_resource_bundle` and assembling them ourselves, which is not worth it.
 
 ### A4. Not fixing for now: a dynamic library product becomes an ordinary library
 
@@ -135,11 +122,6 @@ and asserted, and what would compile it is rules_apple's own action.
 What migration is actually built on — a versioned `.xcdatamodeld` with both
 versions in the bundle and a mapping derivable between them — is covered.
 
-### B3. A dependency pinned by branch, revision or exact version
-
-Every fixture uses `from:`. For the generator these are the same path: SwiftPM
-resolves them and the generator reads the checkout. Low value.
-
 ### B4. A package with no products, and a plugin-only package — done
 
 Neither needed a lane of its own. `spm/TargetExclude` declares no products at
@@ -181,10 +163,12 @@ arrives because the library that declares the macro carries
 `plugins = [":ProviderMacros"]` and rules_swift propagates a compiler plugin to
 whoever depends on that library — through the product facade included.
 
-### B7. Asset catalogue variants
+### B7. Asset catalogue variants — done
 
-Only a colour set is built. An app icon set, a symbol set and the generated
-asset symbols are not.
+The iOS fixture now builds its app icon and a custom symbol set. It also enables
+Xcode's generated Swift asset symbols and compiles source references to the
+generated image, symbol-image, and colour APIs. The built IPA carries
+`Assets.car` and app-icon metadata.
 
 ### B8. Plugin output cannot be recorded in workspace snapshots
 

@@ -216,13 +216,15 @@ extension Rules.Swift {
         /// Reference: [rules_swift `swift_binary`](https://github.com/bazelbuild/rules_swift/blob/main/doc/rules.md#swift_binary)
         ///
         /// Signature:
-        /// `swift_binary(name, copts, deps, linkopts, module_name, srcs, stamp, swiftc_inputs)`.
+        /// `swift_binary(name, copts, data, deps, linkopts, module_name, srcs, stamp, swiftc_inputs)`.
         ///
         /// Parameters:
         /// - `name: String`
         ///   The Bazel target name.
         /// - `copts: Starlark.Value?`
         ///   C or Clang compilation flags forwarded through the target graph.
+        /// - `data: Starlark.Value?`
+        ///   Runtime data made available to the executable.
         /// - `deps: Starlark.Value?`
         ///   Dependencies linked into the executable.
         /// - `linkopts: Starlark.Value?`
@@ -242,6 +244,7 @@ extension Rules.Swift {
         public static func swift_binary(
             name: String,
             copts: Starlark.Value? = nil,
+            data: Starlark.Value? = nil,
             deps: Starlark.Value? = nil,
             linkopts: Starlark.Value? = nil,
             module_name: String? = nil,
@@ -257,6 +260,9 @@ extension Rules.Swift {
                 "name" => name
                 if let copts {
                     "copts" => copts
+                }
+                if let data {
+                    "data" => data
                 }
                 if let deps {
                     "deps" => deps

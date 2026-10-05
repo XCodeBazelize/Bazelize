@@ -2,54 +2,43 @@
 
 英文版：[TODO.md](TODO.md)。兩份內容相同。
 
-bazelize 的 SwiftPM 這一側還沒做的事，以及為什麼。寫於 `spm/` fixture 增到 24
-個套件之後 —— 這 24 個在兩邊都建得起來也測得過（`swift build`／`swift test`，
-以及 `bazelize` + `bazel test //...`）。
+bazelize 的 SwiftPM 這一側還沒做的事，以及為什麼。fixture corpus 會把支援的套件
+形狀分別透過 SwiftPM 與生成的 Bazel workspace 建置、測試並實際執行。
 
 依「使用者最先踩到什麼」排序。
 
 ## A. 產生器行為
 
-### A1. 不好做：executable target 的 resources 不會被打包
+### A1. executable target resources —— 已完成
 
-`swift_binary` 建出來的程式拿得到產生的 `Bundle.module` accessor，卻拿不到
-bundle：`apple_resource_bundle` 是把資源交給「組 bundle 的人」—— app 或
-test —— 而程式兩者都不是，所以那條規則產出的東西沒有人會放到任何地方。二進位
-檔編得過，跑起來 `fatalError`。
+executable 現在會拿到真正的 runfiles bundle，不再只有生成的 `Bundle.module`
+accessor。`macos_bundle` 負責 asset catalog、xib、shader 與其他 `.process` 輸入所需
+的平台編譯；生成的 `//Packages:swiftpm_resource_bundle.bzl` 規則會把 archive 解成
+tree artifact、移除 bundler 合成的空 executable 與失效簽章，再透過 `DefaultInfo`
+runfiles 提供純資源 `.bundle`。
 
-證據：對那個 bundle 下 `cquery --output=files` 是空的，`OutputGroupInfo` 是空
-depset，所以就算在執行檔上掛 `data = [":XResources"]`，runfiles 裡也不會多出
-任何東西。
+`swift_binary` 以 `data` 帶入該 target。accessor 先找一般 Apple bundle 位置，再找
+Bazel 的 `RUNFILES_DIR`、`TEST_SRCDIR` 與 executable 旁的 runfiles tree。
+`spm/ExecutableResource` 會實際執行結果，檢查 copy 與 process 的檔案、編譯過的
+asset catalog，以及未宣告的 privacy manifest。
 
-rules_apple 沒有 `macos_binary`。最接近的是 Bazelize 已經用於 Xcode command line
-product 的 `macos_command_line_application`；但那條規則刻意只輸出 standalone
-binary，沒有 `resources` attribute，`DefaultInfo` 的 runfiles 也只有 Clang runtime，
-不會把 dependency 傳來的 resource bundle 放在程式旁邊，所以解不了 SwiftPM
-executable 的問題。
+### A2. 未宣告的 privacy manifest —— 已完成
 
-目前 generation 會在 `SwiftPM+Resources.swift` 的 `.executable` 分支明確回報，不把
-runtime crash 留給使用者猜。真正的修正必須把 bundle 目錄寫進 workspace、帶進
-runfiles，並教 accessor 去哪裡找；還得決定 asset catalog、xib、shader 等 `.process`
-resource 如何編譯，而不是直接複製。沒有現成規則能承接這些工作，所以標記為不好做，
-目前不排程。
+target source tree 裡的 `PrivacyInfo.xcprivacy` 若尚未被任何已宣告 resource 包含，
+現在會自動取得 `.copy` 語意。因此 manifest 以自己的檔名落在 bundle root，與
+SwiftPM 預設 build system 一致，也不會和明確宣告的檔案或目錄重複。
 
-### A2. 未宣告的 privacy manifest 應主動 copy 進 bundle
-
-`PrivacyInfo.xcprivacy` 放在 target 原始碼旁邊時，SwiftPM 的預設 build system
-會把它打包，這裡不會 —— 產生器的「自動辨識資源類型」清單裡沒有它。有明確宣告
-（`.copy`）的套件兩邊都正常，`spm/TargetResource` 就是這樣做的。
-
-決定貼齊 SwiftPM 預設 build system：target source tree 裡若存在尚未宣告的
-`PrivacyInfo.xcprivacy`，在生成 resource rules 前主動合成與 `.copy` 相同的輸入；
-manifest 已明確宣告時不可重複加入。這會刻意與忽略該檔的 `--build-system native`
-不同；fixture 必須斷言最終 bundle 內確實有 privacy manifest。
+`spm/ExecutableResource` 覆蓋未宣告情況；`spm/TargetResource` 保留明確的 `.copy`
+宣告並覆蓋去重路徑。這會刻意與忽略未宣告 manifest 的
+`--build-system native` 不同。
 
 ### A3. 先不修：resource bundle 是扁平而非包裝式
 
-macOS 上 SwiftPM 產的是 `Bundle.bundle/Contents/Resources/…`；rules_apple 在
-所有平台都刻意產扁平的 `Bundle.bundle/…`，那是 iOS 的形狀。實測過：
-`Bundle.module.infoDictionary` 與各種 `url(forResource:)` 查找在兩邊答案相同，
-只有自己手拼 `Contents/Resources` 路徑的程式碼會看見差異。要對齊就得放棄
+macOS 上 SwiftPM 的 library 與 test resource bundle 是
+`Bundle.bundle/Contents/Resources/…`；rules_apple 在所有平台都刻意產扁平的
+`Bundle.bundle/…`，那是 iOS 的形狀。實測過：`Bundle.module.infoDictionary` 與
+各種 `url(forResource:)` 查找在兩邊答案相同，只有自己手拼
+`Contents/Resources` 路徑的程式碼會看見差異。要對齊這些 bundle 形狀就得放棄
 `apple_resource_bundle` 自己組 bundle，不划算。
 
 ### A4. 先不修：dynamic library product 會變成一般 library
@@ -112,11 +101,6 @@ or version`），而且在一台裝了 Xcode 的機器上也找不到任何範�
 migration 真正立足的東西 —— 有版本的 `.xcdatamodeld`、兩個版本都在 bundle 裡、
 兩版之間能推導出 mapping —— 已經覆蓋了。
 
-### B3. 用 branch、revision 或精確版本釘住的依賴
-
-所有 fixture 都用 `from:`。對產生器而言這幾種是同一條路：SwiftPM 解析完，產生
-器讀 checkout。價值低。
-
 ### B4. 沒有 product 的套件，以及只有 plugin 的套件 —— 已完成
 
 兩個都不需要自己的 lane。`spm/TargetExclude` 完全不宣告 product —— 一個只有
@@ -150,9 +134,11 @@ plugin，隔壁套件那個之所以生效，是因為宣告該 macro 的 librar
 `plugins = [":ProviderMacros"]`，而 rules_swift 會把 compiler plugin 傳播給
 依賴那個 library 的人 —— 經過 product facade 也一樣。
 
-### B7. asset catalog 的各種變體
+### B7. asset catalog 的各種變體 —— 已完成
 
-只建過 colorset。app icon set、symbol set 與產生的 asset symbols 都沒有。
+iOS fixture 現在會建 app icon 與自訂 symbol set，也會啟用 Xcode 生成的 Swift
+asset symbols，並編譯使用生成 image、symbol image、color API 的原始碼。建出的
+IPA 內含 `Assets.car` 與 app icon metadata。
 
 ### B8. plugin 生成物還不能錄進 workspace snapshot
 

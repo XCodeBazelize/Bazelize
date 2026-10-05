@@ -167,6 +167,7 @@ struct RulesSwiftTests {
         let call = Rules.Swift.Call.swift_binary(
             name: "CLI",
             copts: ["-DDEBUG"],
+            data: [":RuntimeResources"],
             deps: ["//Lib:Core"],
             linkopts: ["-ObjC"],
             module_name: "CLI",
@@ -183,6 +184,9 @@ struct RulesSwiftTests {
                     name = "CLI",
                     copts = [
                         "-DDEBUG",
+                    ],
+                    data = [
+                        ":RuntimeResources",
                     ],
                     deps = [
                         "//Lib:Core",

@@ -212,6 +212,7 @@ extension SwiftPM {
         private func preparePackagesRoot() throws {
             if packagesRoot.exists { try packagesRoot.delete() }
             try packagesRoot.mkpath()
+            try (packagesRoot + "swiftpm_resource_bundle.bzl").write(Self.resourceBundleRule)
         }
 
         private func generate(_ package: Package) throws {

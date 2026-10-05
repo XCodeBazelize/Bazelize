@@ -4,6 +4,23 @@ load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 
+genrule(
+    name = "AssetSymbols",
+    srcs = glob([
+        "Sources/Example/Assets.xcassets/**",
+        "Sources/Example/Preview Content/Preview Assets.xcassets/**",
+    ]),
+    outs = [
+        "GeneratedAssetSymbols.swift",
+    ],
+    cmd = """set -e
+    catalogs=$$(for src in $(SRCS); do echo "$${src%%.xcassets/*}.xcassets"; done | sort -u)
+    compile=$$(mktemp -d)
+    xcrun actool $$catalogs --compile "$$compile" --platform iphoneos --minimum-deployment-target 16.2 --bundle-identifier com.bazel.Example --output-format human-readable-text --generate-swift-asset-symbol-extensions YES --generate-swift-asset-symbols $@ > /dev/null""",
+    visibility = [
+        "//visibility:private",
+    ],
+)
 filegroup(
     name = "Assets",
     srcs = glob([
@@ -33,6 +50,7 @@ swift_library(
         "Sources/Example/ContentView.swift",
         "Sources/Example/ExampleApp.swift",
         "Sources/Example/Test.swift",
+        ":AssetSymbols",
     ],
     deps = [
         "//Prebuilt:SVProgressHUD",

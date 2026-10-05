@@ -52,9 +52,11 @@ struct ContentView: View {
         VStack {
             VStack {
                 Text("Assets")
-                Image("bazel")
+                Image(.bazel)
                     .imageScale(.large)
-                    .foregroundColor(.accentColor)
+                Image(.probe)
+                    .imageScale(.large)
+                    .foregroundColor(.accent)
             }.background(Color.brown)
             VStack {
                 Text("Localize")

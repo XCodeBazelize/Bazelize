@@ -504,6 +504,9 @@ jobs:
             # test as well: the dependency behind it is linked only then.
             config: DependencyCondition.Extras
           - name: DependencyShape
+          - name: ExecutableResource
+            programs: |
+              //Packages/ExecutableResource:resource-probe
           - name: Macro
           - name: Platform
           - name: PluginDependency

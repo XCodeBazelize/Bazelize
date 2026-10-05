@@ -28,6 +28,9 @@ extension SwiftPM.Generator {
             Rules.Swift.Call.swift_binary(
                 name: ruleName(of: target.name, in: package),
                 copts: copts(of: target, in: package),
+                data: resources?.label.map { label in
+                    .build { [Starlark.Label.named(label)] }
+                },
                 deps: deps(of: target, in: package),
                 linkopts: linkopts(of: target, in: package),
                 module_name: Self.moduleName(target.name),

@@ -683,6 +683,7 @@ extension Rules.Apple.MacOS {
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
             strings: Starlark.Value? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -702,6 +703,7 @@ extension Rules.Apple.MacOS {
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
                 if let resources { "resources" => resources }
                 if let strings { "strings" => strings }
+                if let tags { "tags" => tags }
                 if let visibility { visibility }
             }
         }

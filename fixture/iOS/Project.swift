@@ -113,6 +113,7 @@ let project = Project(
             ],
             settings: [
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+                "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
                 "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
                 "DEVELOPMENT_ASSET_PATHS": "\"Example/Preview Content\"",
                 "OTHER_SWIFT_FLAGS": "-DYDebug -D A",
