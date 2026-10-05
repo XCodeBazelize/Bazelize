@@ -90,6 +90,8 @@ extension SwiftPM {
                 }
                 .map(\.directory)
 
+            try preparePackagesRoot()
+
             for package in workspace.packages {
                 try generate(package)
             }
@@ -201,6 +203,15 @@ extension SwiftPM {
 
         var packagesRoot: Path {
             output + PluginSwiftPM.packagesDirectory
+        }
+
+        /// `Packages/` is generated output. Rebuilding it removes rules for a
+        /// dependency or target that left the graph; a stale `BUILD` would
+        /// otherwise remain part of `//...`. The output root itself stays:
+        /// SwiftPM and Bazel keep their resolved state beside this directory.
+        private func preparePackagesRoot() throws {
+            if packagesRoot.exists { try packagesRoot.delete() }
+            try packagesRoot.mkpath()
         }
 
         private func generate(_ package: Package) throws {

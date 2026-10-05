@@ -71,10 +71,10 @@ App/
 ├── MODULE.bazel              # no rspm
 ├── Package.swift             # kept: the only way to rebuild .build/checkouts
 ├── Package.resolved          # kept: the only source of pins
-├── .bazelrc                  # imports the three generated rc files below
-├── config.bazelrc
-├── traits.bazelrc            # one `--config` per trait of the packages
-├── languages.bazelrc         # one `--config` per localization they ship
+├── .bazelrc                  # kept: user flags plus generated rc imports
+├── config.bazelrc            # generated: configurations and deployment floors
+├── traits.bazelrc            # generated: one config per package trait
+├── languages.bazelrc         # generated: one config per localization
 ├── .bazelignore              # SwiftPM's working directory, kept out of Bazel
 ├── .bazelversion
 ├── BUILD
@@ -97,6 +97,10 @@ App/
 ```
 
 `Patches/` disappears entirely.
+
+Generation preserves the workspace root and existing `.bazelrc` content, adding
+each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
+generator-owned and rebuilt as units; project-owned files belong at the root.
 
 ### What the workspace can be asked and told
 

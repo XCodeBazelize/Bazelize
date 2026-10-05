@@ -121,6 +121,10 @@ Sources/C -> <real>/C
 Each Swift package the project depends on has its own directory under
 `Packages/`, whoever generates its rules.
 
+`Packages/` is generated output and is replaced as a unit on every run. Files
+owned by the project belong beside it at the workspace root; a dependency or
+target that leaves the resolved graph must not leave a buildable rule behind.
+
 ```text
 Packages/
     $Package/

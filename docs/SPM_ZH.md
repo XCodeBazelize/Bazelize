@@ -64,10 +64,10 @@ App/
 ├── MODULE.bazel              # 不再有 rspm
 ├── Package.swift             # 保留：重建 .build/checkouts 的唯一途徑
 ├── Package.resolved          # 保留：pin 的唯一來源
-├── .bazelrc                  # import 底下那三個產生出來的 rc 檔
-├── config.bazelrc
-├── traits.bazelrc            # 每個 package trait 一個 `--config`
-├── languages.bazelrc         # 它們帶的每個 localization 一個 `--config`
+├── .bazelrc                  # 保留：使用者 flag 加上生成 rc 的 import
+├── config.bazelrc            # 生成：configuration 與 deployment floor
+├── traits.bazelrc            # 生成：每個 package trait 一個 config
+├── languages.bazelrc         # 生成：每個 localization 一個 config
 ├── .bazelignore              # 把 SwiftPM 的工作目錄排除在 Bazel 之外
 ├── .bazelversion
 ├── BUILD
@@ -90,6 +90,10 @@ App/
 ```
 
 `Patches/` 整組消失。
+
+生成時會保留 workspace root 與既有的 `.bazelrc` 內容，並確保每條生成 rc 的
+import 只出現一次。`Targets/`、`Prebuilt/`、`Packages/` 由生成器管理、每次整棵
+重建；專案自己管理的檔案應放在 root。
 
 ### 這個 workspace 可以被問什麼
 

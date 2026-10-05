@@ -117,10 +117,10 @@ generated workspace is self-contained — `MODULE.bazel`, not `WORKSPACE`:
 App/                        # --output
 ├── MODULE.bazel            # the bazel_dep pins this workspace needs
 ├── BUILD                   # the `mode` flag, //:lint, //:format, //:plugins, //:xcodeproj
-├── .bazelrc                # imports the three generated rc files below
-├── config.bazelrc          # --config=Debug|Release, deployment floors
-├── traits.bazelrc          # --config=<Package>.<Trait>, plus .none, .all, .default
-├── languages.bazelrc       # --config=lang.<code>, one per localization
+├── .bazelrc                # kept: user flags plus imports of the generated rc files
+├── config.bazelrc          # generated: configurations and deployment floors
+├── traits.bazelrc          # generated: SwiftPM trait selections
+├── languages.bazelrc       # generated: one config per localization
 ├── .bazelignore            # keeps SwiftPM's .build out of the workspace
 ├── lint.sh, format.sh      # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
@@ -141,6 +141,11 @@ App/                        # --output
 `Targets/` is what an Xcode input generates and `Packages/` is what its Swift
 packages generate, so a package handed in directly produces the same workspace
 without `Targets/`.
+
+Generation preserves the workspace root and existing `.bazelrc` content, adding
+each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
+generator-owned and rebuilt as units, so rules that leave the input graph
+cannot remain part of `bazel build //...`.
 
 ### Config
 

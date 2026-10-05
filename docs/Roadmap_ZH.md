@@ -121,6 +121,9 @@ Sources/C -> <real>/C
 專案依賴的每個 Swift package 都會在 `Packages/` 底下有自己的目錄，不論它的規則
 是誰產生的。
 
+`Packages/` 是生成物，每次執行都會整棵重建。專案自己管理的檔案應放在同層的
+workspace root；已離開解析結果的 dependency 或 target 不可留下仍能被建置的規則。
+
 ```text
 Packages/
     $Package/
