@@ -22,8 +22,8 @@ struct Command: AsyncParsableCommand {
         version: version,
         subcommands: [
             GenerateCommand.self,
-            InitCommand.self,
-            DumpCommand.self
+            ConfigCommand.self,
+            DumpCommand.self,
         ],
         defaultSubcommand: GenerateCommand.self)
 }
@@ -74,18 +74,37 @@ struct GenerateCommand: AsyncParsableCommand {
     }
 }
 
-// MARK: - InitCommand
+// MARK: - ConfigCommand
 
-struct InitCommand: ParsableCommand {
+struct ConfigCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "config",
+        abstract: "Work with bazelize.yaml.",
+        subcommands: [ConfigInitCommand.self])
+}
+
+// MARK: - ConfigInitCommand
+
+struct ConfigInitCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "init",
-        abstract: "Create a bazelize.yaml configuration file.")
+        abstract: "Write a bazelize.yaml configuration file.",
+        discussion: """
+        Generation reads the file from the directory the input lives in, so \
+        that is where it belongs: beside an .xcodeproj, or in a Swift package \
+        root. An existing file is never overwritten.
+        """)
 
-    @Argument(help: "Destination directory. Defaults to the current directory.")
-    var directory = "."
+    @Option(
+        name: [.short, .customLong("output", withSingleDash: false)],
+        help: """
+        Where to write it: a directory to put \(BazelizeConfiguration.fileName) \
+        in, or the path of the file itself. Defaults to the current directory.
+        """)
+    var output = "."
 
     func run() throws {
-        let path = try BazelizeConfiguration.createExample(in: Path.current + directory)
+        let path = try BazelizeConfiguration.createExample(at: Path.current + output)
         print("Created \(path.string)")
     }
 }

@@ -55,15 +55,21 @@ package 的 BUILD 不在那裡，而在
 
 輸入可以是 `.xcodeproj`，也可以是 `Package.swift`——直接傳進來的 package 會被當成
 「一個什麼都沒有的 project 底下唯一那個本地 package」來載入，所以以下結構兩種輸入都
-一樣。package 輸入多出來的是：它自己的測試 target 會產生成 `swift_test`，因為把工具
-指向一個 package，就是指向那個 package 的測試。
+一樣。package 輸入多出來的是：它自己的測試 target 會產生成一個放原始碼的
+`swift_library`（`<Target>_library`，testonly）加上一個 `macos_unit_test`，因為把
+工具指向一個 package，就是指向那個 package 的測試。
 
 ```text
 App/
 ├── MODULE.bazel              # 不再有 rspm
 ├── Package.swift             # 保留：重建 .build/checkouts 的唯一途徑
 ├── Package.resolved          # 保留：pin 的唯一來源
-├── config.bazelrc
+├── .bazelrc                  # 保留：使用者 flag 加上生成 rc 的 import
+├── config.bazelrc            # 生成：configuration 與 deployment floor
+├── traits.bazelrc            # 生成：每個 package trait 一個 config
+├── languages.bazelrc         # 生成：每個 localization 一個 config
+├── .bazelignore              # 把 SwiftPM 的工作目錄排除在 Bazel 之外
+├── .bazelversion
 ├── BUILD
 ├── lint.sh                   # 下載並執行固定版本的 buildifier
 ├── format.sh                 # 同一支 buildifier，改寫成它的格式
@@ -74,14 +80,20 @@ App/
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # 完全不變
 └── Packages/                 # ★ 新增
+    ├── BUILD                 # trait flag、config_setting 與它們的 group
     └── <PackageName>/
         ├── BUILD             # 該 package 全部 target 的規則（我們產生）
         ├── Generated/        # resource bundle accessor、module map、plist
         ├── Sources/<Target>  # 指向該 target 原始碼的 symlink
-        └── Artifacts/<Target>/<Name>.xcframework   # binary target
+        └── Artifacts/<Target>/<Name>.xcframework   # binary target，或它帶的
+                                                    # `.artifactbundle`
 ```
 
 `Patches/` 整組消失。
+
+生成時會保留 workspace root 與既有的 `.bazelrc` 內容，並確保每條生成 rc 的
+import 只出現一次。`Targets/`、`Prebuilt/`、`Packages/` 由生成器管理、每次整棵
+重建；專案自己管理的檔案應放在 root。
 
 ### 這個 workspace 可以被問什麼
 
@@ -92,6 +104,7 @@ App/
 | `bazel run //:format` | 同一支 buildifier，把那些檔案改寫成它的格式 |
 | `bazel run //tools:list-config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
 | `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
+| `bazel run //tools:list-language` | 它的 package 與 target 帶了哪些 localization，以及挑一個要用哪個 `--config` |
 
 Lint、format、plugin 與清單指令都是產生出來的 target。`//:lint` 把固定版本的
 buildifier 快取在使用者的 cache 目錄；lint warning 會失敗，格式差異只回報，
@@ -99,7 +112,7 @@ buildifier 快取在使用者的 cache 目錄；lint warning 會失敗，格式�
 `//:plugins` 用 Bazel 建 host、plugin 與工具，接著完全從它們的 runfiles
 執行，不會再去 `PATH` 找 `bazelize`。清單答案來自產生 package rules 時使用的
 同一份 resolved workspace 與設定檔。產生的 `tools/bazel` wrapper 仍保留較短的
-`bazel list config|trait` alias，其他指令則原封不動往下傳。
+`bazel list config|trait|language` alias，其他指令則原封不動往下傳。
 
 ### package 的原始碼怎麼進來
 
@@ -139,15 +152,11 @@ module extension 每次評估都在那個 label 所在目錄跑 SwiftPM。
 ### SwiftPM 由誰執行
 
 每一步 SwiftPM 都是使用者安裝的 toolchain 的 `swift` 指令：`swift package resolve`
-取得 checkouts、每個 checkout 一次 `swift package dump-package` 讀 manifest、
-`swift build` 讓 build tool plugin 跑起來。不是 libSwiftPM——本 package 現在完全
-不依賴它。
+取得 checkouts、每個 checkout 一次 `swift package dump-package` 讀 manifest。不是
+libSwiftPM——本 package 現在完全不依賴它。
 
-- plugin 這一步搬不過去：跑它需要 build system，而 `SwiftPMDataModel` 刻意只有
-  data model——`Build`、`SPMLLBuild` 與 SwiftDriver 只在完整的 `SwiftPM` product 裡。
-  用釘住的 library 解析、卻用安裝的 toolchain 建 plugin，等於同一個 `.build` 被兩個
-  版本的 SwiftPM 寫：checkouts、`Package.resolved` 格式、manifest cache 都屬於最後
-  跑的那個。「只有一個 SwiftPM，而且和 Xcode 用的是同一個」是值得保留的性質。
+- 這兩步就是 SwiftPM 在這裡剩下的全部：build tool plugin 由 bazelize 產生、
+  Bazel 建置的 host 執行，所以產生流程沒有任何一步需要 SwiftPM 的 build system。
 - 要依賴它就得釘一個對上 toolchain 的 branch，而 libSwiftPM 自己聲明 API 不穩定、
   隨時可能改。`dump-package` 的 JSON 橫跨依賴圖裡所有 tools version，而且只被解碼成
   產生器真正要讀的那幾個欄位。
@@ -180,13 +189,14 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | clang target（C/ObjC/C++） | `objc_library` + `swift_interop_hint`，package 沒帶 module map 時我們產生一份 |
 | system-library target | `cc_library` + `swift_interop_hint`，用 package 自己帶的 module map |
 | binary target（xcframework） | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
-| binary target（本地 archive） | 先解壓，再同上 |
+| binary target（artifact bundle） | `native_binary`，取 bundle 宣告的 triple 裡本機跑得動的那個 variant |
+| binary target（遠端 artifact） | SwiftPM 解壓到 `.build/artifacts`，bazelize 再連結成 `Artifacts/<Target>/`，然後同上 |
 | executable target | `swift_binary` |
-| 傳進來那個 package 的測試 target | `swift_test` |
+| 傳進來那個 package 的測試 target | `swift_library`（`<Target>_library`，testonly）+ `macos_unit_test`，`minimum_os_version` 取該 package 對 macOS 要求的版本 |
 | executable product | `alias` 指向該 target 的 binary |
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
-| `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
+| `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift`；C 系 target 則是一組 `.h`/`.m` |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`：把 bytes 變成 `PackageResources`，bundle 裡什麼都不放 |
 | auto-discovered resources（xib／xcassets／metal／xcstrings／`.lproj`） | 同上；有 `.metal` 時該 target 的 header 也一起進 resource group，因為 bundler 會把它們當 Metal header 編 |
 | `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳；`.define("A", to: "1")` 是一個 flag：`-DA=1` |
@@ -204,9 +214,15 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
 | macro target | `swift_compiler_plugin`，並在宣告該 macro 的 target 上加 `plugins` |
 | traits（SE-0450） | 一個 trait 一個 `bool_flag`，預設值就是 manifest 解析出來的結果，旁邊配一個會把它打開的 `--config=<Package>.<Trait>`；開著的 trait 會為該 package 的 Swift 原始碼定義同名條件，跟 SwiftPM 一樣 |
-| setting 或依賴上的 `.when(platforms:)` | 專案沒有建那些平台就丟掉；Apple toolchain 根本不建的平台一律丟掉 |
-| setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`，由 build 當下決定；條件寫了多個 trait 就產生 `config_setting_group` |
-| setting 上的 `.when(configuration:)` | 保留：規則是在哪個 configuration 建，是 Bazel 當下決定的，不是產生時 |
+| setting 或依賴上的 `.when(platforms:)` | 變成掛在 `@platforms//os` 上的 `select`，由 build 當下的 target platform 決定；多個 platform 產生 `config_setting_group`，Mac Catalyst 另外比對 Apple support 的 Catalyst constraint |
+| setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`；條件寫了多個 trait 就產生 `config_setting_group` |
+| setting 上的 `.when(configuration:)` | 變成掛在 Bazel compilation mode 上的 `select` |
+
+同一個 `.when` 裡的不同維度會產生 `match_all` 的
+`config_setting_group`：例如 iOS debug setting 必須同時符合 iOS constraint 與
+debug compilation mode。沒有對應 Bazel constraint 的 platform 名稱，會保留在一個
+任何產生出的 target platform 都不會帶的條件後面；產生時會回報這個限制，而不是把
+該值誤當成無條件套用。
 
 每個產生的 `swift_library` 都對齊兩個 SwiftPM 行為：`alwayslink`，因為 SwiftPM
 一律整份連結 package library；還有 `always_include_developer_search_paths`，
@@ -395,13 +411,16 @@ executable target，它讀 package 根的一個 `.tb` 檔——那個檔不屬�
 
 要把這些告訴 Bazel，就得知道「只有 plugin 能產生」的那些 command；而 plugin 產生它們
 走的是 SwiftPM 的私有協定：host 透過 pipe 向 plugin 要 build command，請求裡帶著整張
-package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部用大約五百行在
-序列化。自己實作那個 host 等於綁在一個會隨 toolchain 變動的 schema 上。
+package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式。
 
-所以讓 SwiftPM 去跑。「建那個 target」就是讓它跑該 target 的 plugin 的唯一方式——沒有
-只跑 plugin 的指令——跑完結果留在 `.build/plugins/outputs/<package>/<target>/`。那些
-檔案被連結到 `Generated/<Target>Plugin/`，並按 SwiftPM 自己的分法交給「要求該 plugin
-的那個 target」：
+所以這個 workspace 自己帶一個 host。bazelize 寫出 `plugin-host.swift`——只實作
+build tool plugin 會用到的那段 wire protocol——以及 `plugin-plan.json`，裡面一個
+plugin 執行一筆 request。host、plugin 與 plugin 的工具都由 Bazel 建；
+`bazel run //:plugins` 從它們的 runfiles 逐筆執行，plugin 寫出來的東西直接落在
+`Packages/<Package>/Generated/<Target>Plugin/`。產生流程結束時會自動跑一次。協定屬於
+toolchain，所以解不開的訊息會如實回報，而不是被當成「沒有 command」。
+
+這些檔案按 SwiftPM 自己的分法交給「要求該 plugin 的那個 target」：
 
 - target 自己編的副檔名（Swift target 的 `.swift`、C 系 target 的 `.c`/`.m`/…）進
   `srcs`。
@@ -416,16 +435,17 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
   跑完再 glob 就好。
 - 產生的原始碼在「重跑 bazelize」時更新，不是在輸入改變時更新——這對 bazelize 寫出來的
   每個檔案本來都成立。
-- 只對「專案自己 repository 裡的 package」這樣做。跑一次 plugin 等於用 SwiftPM 建一次
-  它的 package；對每個只做 lint 的依賴都建一次會讓產生工作癱掉，所以依賴的 plugin 是
-  在結束時具名告知。
+- 只對「專案自己 repository 裡的 package」這樣做。跑一次 plugin 等於用 Bazel 建一次
+  host、該 plugin 與 plugin 自己的工具；對每個只做 lint 的依賴都建一次會讓產生工作
+  癱掉，所以依賴的 plugin 是在結束時具名告知。
 - 跑不起來也會具名告知：那個 target 少掉的是 plugin 該產生的檔案，而 Bazel 端的編譯
   錯誤只會提到那些檔案，不會提到 plugin。
 
 ## 分階段與通過條件
 
 每一階段的通過條件都一樣：**12 個 app 至少維持現狀**（7 個綠的仍綠、blocked 的
-理由不變），加上 114 單元測試與 iOS fixture。
+理由不變），加上單元測試，以及 `fixture/iOS`、`spm/TargetResource`、`spm/Platform`
+三個輸入各自「一次 run 寫出什麼」的 snapshot。
 
 | 階段 | 範圍 | 目標 |
 |---|---|---|
@@ -441,12 +461,15 @@ package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式，它內部�
 
 ## Registry package
 
-- **registry package（`.package(id:)`）**：和其他 dependency 一樣會產生規則。
-  SwiftPM 把它解析成解壓在 `.build/registry/downloads/<scope>/<name>/<version>`
-  的 archive，規則指向的就是磁碟上的那個目錄；package 目錄名用它的 identity
-  `scope.name`，dependency 用該 identity 或裸名稱都解得到。
-  resolve 本身是 SwiftPM 的事，需要該 scope 設定好 registry；resolve 失敗時
-  會以已解壓的內容繼續產生，並在結尾具名回報，而不是安靜地少一個 dependency。
-  fixture 是 `spm/RegistryPackage`，但不是 CI lane：這個 repository 連不到任何
-  registry，所以 fixture 自帶 registry 會提供的內容，由測試放到 SwiftPM 會放的
-  位置。fetch、checksum 驗證與版本選擇因此不在覆蓋範圍內。
+用 registry identity（`.package(id:)`）指名的 dependency，和其他 dependency 一樣會
+產生規則。SwiftPM 把它解析成解壓在
+`.build/registry/downloads/<scope>/<name>/<version>` 的 archive，所以規則指向的就是
+磁碟上的那個目錄；package 目錄名用它被歸檔的 identity `scope.name`，dependency 寫該
+identity 或裸名稱都解得到。
+
+resolve 本身是 SwiftPM 的事，需要該 scope 設定好 registry。resolve 不成功的那次 run
+會以已經解壓的內容繼續做完，並在結尾講出來，而不是安靜地少一個 dependency。
+
+fixture 是 `spm/RegistryPackage`。它不是 CI lane：這個 repository 連不到任何
+registry，所以 fixture 自帶 registry 會提供的內容，由測試放到 SwiftPM 會放的位置。
+fetch、checksum 驗證與版本選擇因此不在覆蓋範圍內。

@@ -1,5 +1,10 @@
 # Podfile.Lock -> Pods.WORKSPACE
 
+> Historical: research notes on CocoaPods. Nothing here is implemented —
+> bazelize has no CocoaPods support in its sources — and the `WORKSPACE` and
+> `new_pod_repository` form below belongs to the WORKSPACE era: a generated
+> workspace is `MODULE.bazel` now. The text below is kept unchanged.
+
 ---
 
 ### Github

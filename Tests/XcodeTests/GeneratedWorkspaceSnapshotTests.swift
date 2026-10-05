@@ -46,6 +46,18 @@ struct GeneratedWorkspaceSnapshotTests {
     }
 
     @Test
+    func swiftPackagePlatformConditions() async throws {
+        try await verify(
+            input: "spm/Platform",
+            snapshot: "Platform",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/Platform/BUILD",
+            ])
+    }
+
+    @Test
     func configuredBuildifierReleaseIsWrittenToLintCommand() async throws {
         let scratch = Path(NSTemporaryDirectory()) + UUID().uuidString
         defer { try? scratch.delete() }

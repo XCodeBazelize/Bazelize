@@ -4,11 +4,10 @@ import PackageDescription
 
 /// What a platform decides, and when it is decided.
 ///
-/// A trait or a build configuration is the build's answer, so it becomes a
-/// `select`. A platform is not: a package rule is compiled for whatever pulls
-/// it in, so a setting conditional on a platform nothing here builds is
-/// dropped while the rules are written, and one conditional on a platform an
-/// Apple toolchain does build is kept.
+/// A platform, trait or build configuration is the build's answer, so every
+/// one becomes a `select`: the same generated package rule can be compiled
+/// through a macOS or iOS transition and gets only that platform's settings
+/// and dependencies.
 let package = Package(
     name: "Platform",
     platforms: [
@@ -21,12 +20,20 @@ let package = Package(
     targets: [
         .target(
             name: "Platform",
+            dependencies: [
+                .target(name: "IOSOnly", condition: .when(platforms: [.iOS])),
+            ],
             swiftSettings: [
                 .define("APPLE_PLATFORM", .when(platforms: [.macOS, .iOS])),
                 .define("MACOS_PLATFORM", .when(platforms: [.macOS])),
+                .define("IOS_PLATFORM", .when(platforms: [.iOS])),
+                .define(
+                    "IOS_DEBUG",
+                    .when(platforms: [.iOS], configuration: .debug)),
                 .define("LINUX_PLATFORM", .when(platforms: [.linux])),
                 .define("WINDOWS_PLATFORM", .when(platforms: [.windows])),
             ]),
+        .target(name: "IOSOnly"),
         .testTarget(
             name: "PlatformTests",
             dependencies: ["Platform"]),

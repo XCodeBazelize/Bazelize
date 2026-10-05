@@ -15,17 +15,40 @@ $Output/ <- Bazel Root
     BUILD
     MODULE.bazel
     Package.swift <- generated if have SwiftPM
+    Package.resolved <- kept from the project if it has one
 
-    Targets/
+    .bazelrc <- imports the three below
+    config.bazelrc
+    traits.bazelrc
+    languages.bazelrc
+    .bazelignore
+    .bazelversion
+
+    lint.sh
+    format.sh
+    plugins.sh
+    plugin-host.swift
+    plugin-plan.json
+
+    tools/
+        BUILD
+        bazel
+        list-config.sh
+        list-trait.sh
+        list-language.sh
+
+    Targets/ <- only when the input is an Xcode project
         $Target1/
             BUILD
             Sources/
             Generated/
 
     Packages/
+        BUILD
         $Package1/
             BUILD
-            Package/
+            Sources/
+                $PackageTarget1/
             Generated/
 
     Prebuilt/
@@ -98,17 +121,24 @@ Sources/C -> <real>/C
 Each Swift package the project depends on has its own directory under
 `Packages/`, whoever generates its rules.
 
+`Packages/` is generated output and is replaced as a unit on every run. Files
+owned by the project belong beside it at the workspace root; a dependency or
+target that leaves the resolved graph must not leave a buildable rule behind.
+
 ```text
 Packages/
     $Package/
         BUILD
-        Package/
+        Sources/
+            $PackageTarget/
         Generated/
 ```
 
 - the directory is named after the package as a human reads it: the last path
   component of the URL without `.git`, or the directory name of a local package
-- `Package/` is one symlink to the package's sources, remote or local
+- `Sources/` holds one symlink per package target, pointing at that target's
+  source directory in the checkout, remote or local; a tree whose symlinks form
+  a cycle is mirrored entry by entry instead
 - a product is a label in this directory, so `//Packages/$Package:$Product` is
   what a target depends on regardless of how the rules are generated
 

@@ -7,7 +7,7 @@ v2 章節是設計 backlog，不是相容性承諾。
 
 ## Version 1
 
-`bazelize init` 會產生以下檔案：
+`bazelize config init` 會產生以下檔案：
 
 ```yaml
 schema: 1
@@ -16,15 +16,16 @@ buildifier:
   version: "10.1.0"
 ```
 
-`init` 不帶 argument 時會寫到目前目錄；也可以指定其他 destination directory：
+產生器是從輸入所在的目錄讀這個檔，所以它就該放在那裡。`-o` 指定寫到哪：可以是要放
+`bazelize.yaml` 的目錄，也可以是檔案本身的路徑，預設是目前目錄。
 
 ```sh
-bazelize init
-bazelize init path/to/project
+cd path/to/project && bazelize config init
+bazelize config init -o path/to/project
+bazelize config init -o config/custom.yaml   # 之後用 `generate --config-file` 指定
 ```
 
-不存在的 destination directory 會自動建立。既有的 `bazelize.yaml` 會造成錯誤，
-絕不覆寫。
+不存在的目錄會自動建立。既有的檔案會造成錯誤，絕不覆寫。
 
 v1 只允許設定 buildifier release。Bazel 與 BCR dependencies 的版本屬於
 generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。

@@ -6,7 +6,7 @@
 
  1. Migrating to `bazel` with minimal impact on existing `Xcode` projects.
      * See [Ref](#Ref)
- 2. Migrating `xxx.xcodeproj` and its dependencies to `bazel`, for example, `pod`, `spm`.
+ 2. Migrating `xxx.xcodeproj` and its dependencies to `bazel`, for example, `spm` (`pod` is not supported yet).
 
 ----
 
@@ -18,12 +18,12 @@ The project is parsed by [XcodeProj](https://github.com/tuist/XcodeProj) to get 
 
 > `Xcode Target` is treated as [Bazel Packages](https://docs.bazel.build/versions/4.2.1/build-ref.html#packages)
 
-See [`Xcode Target` setting](#Xcode-Target-setting)
+See [`Xcode Target` setting](Design_ZH.md#xcode-target-setting) (only written in the Chinese version so far)
 ---
 
 ## Dependency Management
 
-See [Dependecy](Dependecy.md)
+See [Dependecy](Dependecy_ZH.md)
 ---
 
 ## Design of Bazelize
@@ -34,13 +34,14 @@ See [Dependecy](Dependecy.md)
 
 First, let's talk about the code part. Our code will be applied to special rules, such as `xxx_library`.
 
-(Currently, only `xxx_library` can be applied to the same language)
+A `xxx_library` rule only covers one language, so the language of the sources decides which rule we emit:
 
-We are currently focusing on `swift_library` and `objc_library` implementations.
+ * Swift only -> `swift_library`
+ * C family (`.c`/`.m`/`.mm`/`.cc`) only -> `objc_library`
+ * both -> `mixed_language_library` (from `rules_swift`)
 
-Fortunately, `Xcode Target` seems to support only one language.
-
-> Except for application, we can use `bridge-header` or generated header `${target_name}-Swift.h`
+> A mixed target gets the Objective-C side of the module through the generated header `${module_name}-Swift.h`,
+> and the Swift side through the bridging header / module map.
 
 
 ### `Xcode Target` type
@@ -57,4 +58,34 @@ The criterion are [PBXProductType][product_type] and [XCConfigurationList][confi
 
 `BUILD` file contains two types of rules, `xxx_library` and `main rule`.
 
-(working in progress)
+Suppose `Framework2` is an `iOS Framework` written in Objective-C.
+
+The `xxx_library` is named `TargetName + _xxx`, so it is `Framework2_objc`
+(`_swift` for `swift_library`, `_mixed` for `mixed_language_library`).
+
+Since the consumer does not care which language implements the library, an `alias`
+named `TargetName + _library` points at it.
+
+```bazel
+objc_library(
+    name = "Framework2_objc",
+)
+alias(
+    name = "Framework2_library",
+    actual = "Framework2_objc",
+    visibility = ["//visibility:public"],
+)
+```
+
+The `main rule` is picked from the `Xcode Target` type (`iOS Framework` -> `ios_framework`)
+and keeps the target name itself.
+
+```bazel
+ios_framework(
+    name = "Framework2",
+    deps = [":Framework2_library"],
+)
+```
+
+The package path is `Targets/<XcodeTarget>`, so another target depends on it through
+`//Targets/Framework2:Framework2_library`.

@@ -15,8 +15,8 @@ extension SwiftPM.Generator {
     /// anything the rules model: a `defines` attribute would re-tokenize a value
     /// and a feature is not a flag the rules know.
     ///
-    /// A conditional setting becomes a `select` on its traits and build
-    /// configuration, so the build decides it rather than this run.
+    /// A conditional setting becomes a `select` on its platform, traits and
+    /// build configuration, so the build decides it rather than this run.
     func copts(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Starlark.Value? {
         grouped(
             target.settings,
@@ -175,8 +175,8 @@ extension SwiftPM.Generator {
         ["-D\(name)", "-Xcc", "-D\(name)"]
     }
 
-    /// Settings as one list plus one `select` per trait or configuration
-    /// condition.
+    /// Settings as one list plus one `select` per platform, trait or
+    /// configuration condition.
     ///
     /// One `select` per condition rather than one with every key: two conditions
     /// can be on at once, and a `select` whose keys both match is an error rather
@@ -210,7 +210,7 @@ extension SwiftPM.Generator {
             byCondition[condition, default: []] += values
         }
 
-        return traitValue(
+        return conditionalValue(
             always,
             conditional: conditions.map { ($0, byCondition[$0] ?? []) })
     }

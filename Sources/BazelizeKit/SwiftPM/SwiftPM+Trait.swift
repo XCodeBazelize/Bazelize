@@ -78,6 +78,54 @@ extension SwiftPM.Generator {
         })
     }
 
+    /// SwiftPM platform names that have the same meaning in Bazel's standard
+    /// OS constraint. A custom platform has no constraint to select on; it is
+    /// represented by a condition no generated target platform carries.
+    private static let standardPlatformConstraints: Set = [
+        "android", "chromiumos", "emscripten", "freebsd", "fuchsia", "haiku",
+        "ios", "linux", "macos", "netbsd", "nixos", "none", "openbsd", "qnx",
+        "tvos", "uefi", "visionos", "vxworks", "wasi", "watchos", "windows",
+    ]
+
+    private static let unsupportedPlatformCondition =
+        "//\(PluginSwiftPM.packagesDirectory):swiftpm_unsupported_platform"
+
+    /// The label a `select` keys a platform condition on. Several platforms
+    /// are alternatives, exactly as they are in `PackageDescription`.
+    func platformCondition(_ platforms: [String]) -> String? {
+        let names = Set(platforms.map { $0.lowercased() }).sorted()
+        guard !names.isEmpty else { return nil }
+
+        let labels = Set(names.map { name -> String in
+            /// Catalyst is iOS APIs in the Catalyst target environment, not a
+            /// separate standard OS constraint.
+            if name == "maccatalyst" {
+                let group = "swiftpm_platform_maccatalyst"
+                conditionGroups[group] = [
+                    "@platforms//os:ios",
+                    "@apple_support//constraints:catalyst",
+                ]
+                return "//\(PluginSwiftPM.packagesDirectory):\(group)"
+            }
+
+            guard Self.standardPlatformConstraints.contains(name) else {
+                if unsupportedPlatforms.insert(name).inserted {
+                    note("""
+                    SwiftPM platform condition '\(name)' has no matching Bazel platform \
+                    constraint: values behind it stay out of the build.
+                    """)
+                }
+                return Self.unsupportedPlatformCondition
+            }
+            return "@platforms//os:\(name)"
+        }).sorted()
+
+        guard labels.count > 1 else { return labels[0] }
+        let group = "swiftpm_platform_" + names.map(Self.identifier).joined(separator: "_or_")
+        platformGroups[group] = labels
+        return "//\(PluginSwiftPM.packagesDirectory):\(group)"
+    }
+
     /// The label a `select` keys a trait condition on, or `nil` when what
     /// carries the condition is in every build.
     ///
@@ -98,34 +146,38 @@ extension SwiftPM.Generator {
         return "//\(PluginSwiftPM.packagesDirectory):\(group)"
     }
 
-    /// The label a setting condition selects on. Trait names are alternatives
-    /// within the trait condition; a build configuration must also match when
-    /// the manifest names both.
+    /// The label a setting or dependency condition selects on. Platforms and
+    /// traits are alternatives within their own dimension; dimensions and the
+    /// build configuration all have to match together.
     func settingCondition(
         _ condition: SwiftPM.SettingCondition?,
-        in package: SwiftPM.Package) -> String?
+        in package: SwiftPM.Package)
+        -> String?
     {
         guard let condition else { return nil }
 
-        let trait = traitCondition(condition.traits, in: package)
-        let configuration = configurationCondition(condition.config)
-        switch (trait, configuration) {
-        case (nil, nil):
-            return nil
-        case (.some(let label), nil), (nil, .some(let label)):
-            return label
-        case (.some(let trait), .some(let configuration)):
-            let names = condition.traits.sorted() + [condition.config?.lowercased() ?? ""]
-            let group = "condition_\(Self.identifier(package.directory))_"
-                + names.map(Self.identifier).joined(separator: "_and_")
-            conditionGroups[group] = [trait, configuration]
-            return "//\(PluginSwiftPM.packagesDirectory):\(group)"
-        }
+        let members = [
+            platformCondition(condition.platformNames),
+            traitCondition(condition.traits, in: package),
+            configurationCondition(condition.config),
+        ].compactMap { $0 }
+
+        guard let first = members.first else { return nil }
+        guard members.count > 1 else { return first }
+
+        let dimensions = condition.platformNames.sorted().map { "platform_\(Self.identifier($0))" }
+            + condition.traits.sorted().map { "trait_\(Self.identifier($0))" }
+            + (condition.config.map { ["configuration_\(Self.identifier($0.lowercased()))"] } ?? [])
+        let group = "condition_\(Self.identifier(package.directory))_"
+            + dimensions.joined(separator: "_and_")
+        conditionGroups[group] = members
+        return "//\(PluginSwiftPM.packagesDirectory):\(group)"
     }
 
     private func configurationCondition(_ configuration: String?) -> String? {
-        guard let configuration = configuration?.lowercased(),
-              configuration == "debug" || configuration == "release"
+        guard
+            let configuration = configuration?.lowercased(),
+            configuration == "debug" || configuration == "release"
         else {
             return nil
         }
@@ -134,14 +186,15 @@ extension SwiftPM.Generator {
         return "//\(PluginSwiftPM.packagesDirectory):swiftpm_\(configuration)"
     }
 
-    /// A list of flags or labels, plus one `select` per trait condition.
+    /// A list of flags or labels, plus one `select` per build condition.
     ///
-    /// One `select` each rather than one with several keys: two traits can be
+    /// One `select` each rather than one with every key: two conditions can be
     /// on at once, and a `select` whose keys both match is an error rather than
     /// both lists.
-    func traitValue(
+    func conditionalValue(
         _ always: [String],
-        conditional: [(condition: String, values: [String])]) -> Starlark.Value?
+        conditional: [(condition: String, values: [String])])
+        -> Starlark.Value?
     {
         guard !conditional.isEmpty else { return always.starlark }
 
@@ -176,6 +229,17 @@ extension SwiftPM.Generator {
             }
         }
 
+        if !unsupportedPlatforms.isEmpty {
+            builder.call(
+                Rules.Builtin.Call.constraint_setting(
+                    name: "swiftpm_unsupported_platform_setting"))
+            builder.call(
+                Rules.Builtin.Call.constraint_value(
+                    name: "swiftpm_unsupported_platform",
+                    constraint_setting: ":swiftpm_unsupported_platform_setting",
+                    visibility: .public))
+        }
+
         if configurationConditions.contains("debug") {
             builder.call(
                 Rules.Builtin.Call.config_setting(
@@ -194,6 +258,7 @@ extension SwiftPM.Generator {
         }
 
         let hasGroups = !traitGroups.isEmpty
+            || !platformGroups.isEmpty
             || !conditionGroups.isEmpty
             || configurationConditions.contains("debug")
         guard hasGroups else { return }
@@ -210,6 +275,12 @@ extension SwiftPM.Generator {
                 Rules.Selects.Call.config_setting_group(
                     name: group,
                     match_any: (traitGroups[group] ?? []).map { ":\($0)" }))
+        }
+        for group in platformGroups.keys.sorted() {
+            builder.call(
+                Rules.Selects.Call.config_setting_group(
+                    name: group,
+                    match_any: platformGroups[group] ?? []))
         }
         for group in conditionGroups.keys.sorted() {
             builder.call(

@@ -1,5 +1,9 @@
 # [Podfile](https://guides.cocoapods.org/using/the-podfile.html)
 
+> Historical: research notes on CocoaPods. Nothing here is implemented —
+> bazelize has no CocoaPods support in its sources. The text below is kept
+> unchanged.
+
  * Build configurations
     * `:configurations => ['Debug', 'Beta']`
  * Modular Headers

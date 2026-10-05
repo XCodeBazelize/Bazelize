@@ -35,6 +35,15 @@ extension SwiftPM {
         /// by name, written with the flags once every rule is generated.
         var traitGroups: [String: [String]] = [:]
 
+        /// Platform alternatives a condition names, emitted as one group so a
+        /// setting or dependency applies when any named platform is built.
+        var platformGroups: [String: [String]] = [:]
+
+        /// Platform names with no Bazel constraint. Their conditions use a
+        /// generated constraint no real target platform carries, so they stay
+        /// false rather than becoming unconditional.
+        var unsupportedPlatforms: Set<String> = []
+
         /// Conditions that require both a trait expression and a build
         /// configuration, emitted after every package has registered its use.
         var conditionGroups: [String: [String]] = [:]
@@ -80,6 +89,8 @@ extension SwiftPM {
                         && package.manifest.targets.contains { !$0.pluginUsages.isEmpty }
                 }
                 .map(\.directory)
+
+            try preparePackagesRoot()
 
             for package in workspace.packages {
                 try generate(package)
@@ -192,6 +203,15 @@ extension SwiftPM {
 
         var packagesRoot: Path {
             output + PluginSwiftPM.packagesDirectory
+        }
+
+        /// `Packages/` is generated output. Rebuilding it removes rules for a
+        /// dependency or target that left the graph; a stale `BUILD` would
+        /// otherwise remain part of `//...`. The output root itself stays:
+        /// SwiftPM and Bazel keep their resolved state beside this directory.
+        private func preparePackagesRoot() throws {
+            if packagesRoot.exists { try packagesRoot.delete() }
+            try packagesRoot.mkpath()
         }
 
         private func generate(_ package: Package) throws {
@@ -907,9 +927,7 @@ extension SwiftPM {
                         /// Which targets `package` visibility reaches: every target of
                         /// the same package, which is what the name identifies.
                         package_name: package.manifest.name,
-                        plugins: plugins(of: target, in: package).nonEmpty.map { macros in
-                            .build { macros }
-                        },
+                        plugins: plugins(of: target, in: package),
                         srcs: sources(
                             naming: resources?.accessors ?? [],
                             globbing: matching(
@@ -971,29 +989,27 @@ extension SwiftPM {
         static let ignoredExtensions = ["docc", "xcprivacy"]
 
         /// The macros a target loads: a macro target is a program the compiler
-        /// runs, so it belongs in `plugins` rather than in `deps`.
-        func plugins(of target: PackageTarget, in package: Package) -> [Starlark.Label] {
-            let macros = package.manifest.targets.filter { other in
-                if case .macro = kinds[package.directory]?[other.name] { return true }
-                return false
-            }.map(\.name)
+        /// runs, so it belongs in `plugins` rather than in `deps`. Its dependency
+        /// condition still decides whether the compiler loads it.
+        func plugins(of target: PackageTarget, in package: Package) -> Starlark.Value? {
+            let macros = Set(package.manifest.targets.compactMap { other -> String? in
+                if case .macro = kinds[package.directory]?[other.name] { return other.name }
+                return nil
+            })
 
-            let names = target.dependencies.compactMap { dependency -> String? in
+            return conditionalDependencies(of: target, in: package) { dependency in
                 switch dependency.kind {
                 case .target(let name), .byName(let name):
-                    return macros.contains(name) ? name : nil
+                    guard macros.contains(name) else { return [] }
+                    return [":\(ruleName(of: name, in: package))"]
                 case .product:
-                    return nil
+                    return []
                 }
-            }
-
-            return Set(names).sorted().map { name in
-                Starlark.Label.named(":\(ruleName(of: name, in: package))")
             }
         }
 
-        /// What the target links, with whatever a trait decides in a `select`
-        /// on that trait's flag.
+        /// What the target links. A SwiftPM dependency condition becomes a
+        /// `select`, so the consuming build decides whether that label exists.
         func deps(of target: PackageTarget, in package: Package) -> Starlark.Value? {
             let localTargets = Set(package.manifest.targets.map(\.name))
             let localProducts = Dictionary(
@@ -1027,15 +1043,30 @@ extension SwiftPM {
                 }
             }
 
+            return conditionalDependencies(
+                of: target,
+                in: package,
+                labels: dependencyLabels)
+        }
+
+        /// Labels are unconditional only when their SwiftPM dependency is.
+        /// Platform, trait and configuration dimensions are kept as selectors
+        /// so the configuration that compiles the consumer decides.
+        private func conditionalDependencies(
+            of target: PackageTarget,
+            in package: Package,
+            labels: (SwiftPM.TargetDependency) -> [String])
+            -> Starlark.Value?
+        {
             var always: Set<String> = []
             var conditions: [String] = []
             var byCondition: [String: Set<String>] = [:]
 
             for dependency in target.dependencies {
-                let labels = dependencyLabels(dependency)
+                let labels = labels(dependency)
                 guard !labels.isEmpty else { continue }
 
-                guard let condition = traitCondition(dependency.traits, in: package) else {
+                guard let condition = settingCondition(dependency.condition, in: package) else {
                     always.formUnion(labels)
                     continue
                 }
@@ -1044,7 +1075,7 @@ extension SwiftPM {
                 byCondition[condition, default: []].formUnion(labels)
             }
 
-            return traitValue(
+            return conditionalValue(
                 always.sorted(),
                 conditional: conditions.map { ($0, (byCondition[$0] ?? []).sorted()) })
         }

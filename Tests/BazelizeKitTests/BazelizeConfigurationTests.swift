@@ -134,12 +134,12 @@ struct BazelizeConfigurationTests {
     }
 
     @Test
-    func createsCanonicalExampleInDestinationDirectory() throws {
+    func writesCanonicalExampleIntoADestinationDirectory() throws {
         let root = try scratch()
         defer { try? root.delete() }
         let destination = root + "nested/project"
 
-        let path = try BazelizeConfiguration.createExample(in: destination)
+        let path = try BazelizeConfiguration.createExample(at: destination)
 
         #expect(path == destination + BazelizeConfiguration.fileName)
         #expect(try path.read() == BazelizeConfiguration.example)
@@ -149,15 +149,29 @@ struct BazelizeConfigurationTests {
         #expect(configuration == .default)
     }
 
+    /// `-o` naming a YAML file writes that file, which is what `--config-file`
+    /// then reads.
     @Test
-    func creatingExampleDoesNotOverwriteExistingConfiguration() throws {
+    func writesTheExampleAtAYAMLPathItIsGiven() throws {
+        let root = try scratch()
+        defer { try? root.delete() }
+        let destination = root + "config/custom.yaml"
+
+        let path = try BazelizeConfiguration.createExample(at: destination)
+
+        #expect(path == destination)
+        #expect(try path.read() == BazelizeConfiguration.example)
+    }
+
+    @Test
+    func writingTheExampleDoesNotOverwriteAnExistingConfiguration() throws {
         let root = try scratch()
         defer { try? root.delete() }
         let existing = root + BazelizeConfiguration.fileName
         try existing.write("keep me\n")
 
         do {
-            _ = try BazelizeConfiguration.createExample(in: root)
+            _ = try BazelizeConfiguration.createExample(at: root)
             Issue.record("Expected an existing configuration to be preserved.")
         } catch {
             #expect(error.localizedDescription.contains("Configuration file already exists"))

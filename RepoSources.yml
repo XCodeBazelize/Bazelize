@@ -24,6 +24,9 @@
 - name: AppleSupport
   url: https://github.com/bazelbuild/apple_support
   module: apple_support
+- name: Platforms
+  url: https://github.com/bazelbuild/platforms
+  module: platforms
 - name: Buildifier
   url: https://github.com/bazel-contrib/buildtools
   module: buildifier_prebuilt

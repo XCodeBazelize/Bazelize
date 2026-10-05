@@ -15,17 +15,40 @@ $Output/ <- Bazel Root
     BUILD
     MODULE.bazel
     Package.swift <- 如果有 SwiftPM 則產生
+    Package.resolved <- 專案有的話沿用
 
-    Targets/
+    .bazelrc <- import 下面三個
+    config.bazelrc
+    traits.bazelrc
+    languages.bazelrc
+    .bazelignore
+    .bazelversion
+
+    lint.sh
+    format.sh
+    plugins.sh
+    plugin-host.swift
+    plugin-plan.json
+
+    tools/
+        BUILD
+        bazel
+        list-config.sh
+        list-trait.sh
+        list-language.sh
+
+    Targets/ <- 只有輸入是 Xcode 專案時才有
         $Target1/
             BUILD
             Sources/
             Generated/
 
     Packages/
+        BUILD
         $Package1/
             BUILD
-            Package/
+            Sources/
+                $PackageTarget1/
             Generated/
 
     Prebuilt/
@@ -98,16 +121,21 @@ Sources/C -> <real>/C
 專案依賴的每個 Swift package 都會在 `Packages/` 底下有自己的目錄，不論它的規則
 是誰產生的。
 
+`Packages/` 是生成物，每次執行都會整棵重建。專案自己管理的檔案應放在同層的
+workspace root；已離開解析結果的 dependency 或 target 不可留下仍能被建置的規則。
+
 ```text
 Packages/
     $Package/
         BUILD
-        Package/
+        Sources/
+            $PackageTarget/
         Generated/
 ```
 
 - 目錄名取人看得懂的 package 名：remote 用 URL 最後一段去掉 `.git`，local 用目錄名
-- `Package/` 是一條指向該 package 原始碼的 symlink，遠端或本地皆然
+- `Sources/` 底下每個 package target 一條 symlink，指向 checkout 裡該 target 的
+  原始碼目錄，遠端或本地皆然；若該目錄的 symlink 構成迴圈，則改為逐項鏡像
 - product 就是這個目錄裡的 label，所以不論規則怎麼產生，target 依賴的都是
   `//Packages/$Package:$Product`
 

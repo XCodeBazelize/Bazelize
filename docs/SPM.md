@@ -62,17 +62,24 @@ The package BUILD files were not there; they were in
 The input is an `.xcodeproj`, or a `Package.swift` — a package handed in directly
 is loaded as the one local package of a project with nothing else in it, so
 everything below is the same either way. The difference is what a package input
-adds: its own test targets, as `swift_test`, because pointing the tool at a
-package is pointing it at that package's tests.
+adds: its own test targets, as a `swift_library` of their sources plus a
+`macos_unit_test` over it, because pointing the tool at a package is pointing
+it at that package's tests.
 
 ```text
 App/
 ├── MODULE.bazel              # no rspm
 ├── Package.swift             # kept: the only way to rebuild .build/checkouts
 ├── Package.resolved          # kept: the only source of pins
-├── config.bazelrc
+├── .bazelrc                  # kept: user flags plus generated rc imports
+├── config.bazelrc            # generated: configurations and deployment floors
+├── traits.bazelrc            # generated: one config per package trait
+├── languages.bazelrc         # generated: one config per localization
+├── .bazelignore              # SwiftPM's working directory, kept out of Bazel
+├── .bazelversion
 ├── BUILD
 ├── lint.sh                   # downloads and runs the pinned buildifier
+├── format.sh                 # the same buildifier, rewriting those files
 ├── plugins.sh                # enters the Bazel-built SwiftPM plugin host
 ├── plugin-host.swift         # compiled by Bazel for `//:plugins`
 ├── plugin-plan.json          # plugin requests and runfile paths
@@ -80,14 +87,20 @@ App/
 ├── Prebuilt/
 ├── Targets/<XcodeTarget>/    # unchanged
 └── Packages/                 # ★ new
+    ├── BUILD                 # trait flags, config settings and their groups
     └── <PackageName>/
         ├── BUILD             # the rules for every target of that package
         ├── Generated/        # resource bundle accessors, module maps, plists
         ├── Sources/<Target>  # symlink to that target's sources
-        └── Artifacts/<Target>/<Name>.xcframework   # binary targets
+        └── Artifacts/<Target>/<Name>.xcframework   # binary targets, or the
+                                                    # `.artifactbundle` one ships
 ```
 
 `Patches/` disappears entirely.
+
+Generation preserves the workspace root and existing `.bazelrc` content, adding
+each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
+generator-owned and rebuilt as units; project-owned files belong at the root.
 
 ### What the workspace can be asked and told
 
@@ -98,6 +111,7 @@ App/
 | `bazel run //:format` | the same buildifier, rewriting those files the way it formats them |
 | `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
 | `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
+| `bazel run //tools:list-language` | the localizations its packages and targets ship, and the `--config` that picks one |
 
 The lint, format, plugin, and listing commands are generated targets. `//:lint`
 caches the pinned buildifier under the user's cache directory and fails on lint
@@ -106,8 +120,9 @@ reported rather than failed on. `//:plugins` builds
 its host, plugins and tools with Bazel, then runs entirely from their runfiles;
 it does not look up `bazelize` on `PATH`. The listing answers are embedded from
 the same resolved workspace and configuration files that generate the package
-rules. The generated `tools/bazel` wrapper keeps `bazel list config|trait` as
-shorter aliases and forwards every other command unchanged.
+rules. The generated `tools/bazel` wrapper keeps
+`bazel list config|trait|language` as shorter aliases and forwards every other
+command unchanged.
 
 ### How a package's sources get in
 
@@ -151,17 +166,12 @@ extension.
 ### Who runs SwiftPM
 
 Every SwiftPM step is the installed toolchain's `swift` command: `swift package
-resolve` for the checkouts, `swift package dump-package` per checkout for the
-manifests, and `swift build` to run a build tool plugin. Not libSwiftPM, which
-this package no longer depends on at all.
+resolve` for the checkouts and `swift package dump-package` per checkout for the
+manifests. Not libSwiftPM, which this package no longer depends on at all.
 
-- Plugins cannot move there. Running one needs a build system, and
-  `SwiftPMDataModel` is deliberately the data model alone — `Build`,
-  `SPMLLBuild` and SwiftDriver are only in the full `SwiftPM` product. Resolving
-  with a pinned library while plugins build with the installed toolchain would
-  put two versions of SwiftPM in one `.build`: the checkouts, the
-  `Package.resolved` format and the manifest cache would belong to whichever ran
-  last. One SwiftPM — the same one Xcode uses — is the property worth keeping.
+- Those two are all that is left of SwiftPM here: a build tool plugin is run by
+  a host bazelize generates and Bazel builds, so no step of generation needs a
+  SwiftPM build system.
 - Depending on it means pinning a branch to match the toolchain, and libSwiftPM
   says of itself that the API is unstable and may change at any time.
   `dump-package`'s JSON spans every tools version in the graph, and it is
@@ -199,13 +209,14 @@ No test pins how a package's rules are produced either.
 | clang target (C/ObjC/C++) | `objc_library` + `swift_interop_hint`, and a module map when the package ships none |
 | system-library target | `cc_library` + `swift_interop_hint` over the module map the package ships |
 | binary target (xcframework) | `apple_dynamic_xcframework_import` / `apple_static_xcframework_import` |
-| binary target (local archive) | unarchived first, then as above |
+| binary target (artifact bundle) | `native_binary` over the variant this machine can run, picked by the triples the bundle names |
+| binary target (remote artifact) | SwiftPM unpacks it under `.build/artifacts`; bazelize links it into `Artifacts/<Target>/` and imports it as above |
 | executable target | `swift_binary` |
-| test target of the package handed in | `swift_test` |
+| test target of the package handed in | `swift_library` (`<Target>_library`, testonly) + `macos_unit_test`, whose `minimum_os_version` is what the package asks of macOS |
 | executable product | `alias` to the target's binary |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
-| `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift` |
+| `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift`, or a `.h`/`.m` pair for a C-family target |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`: the bytes as `PackageResources`, and nothing in a bundle |
 | auto-discovered resources (xib/xcassets/metal/xcstrings/`.lproj`) | as above; a `.metal` file takes the target's headers into the resource group, because the bundler compiles them as Metal headers |
 | `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent; `.define("A", to: "1")` is one flag, `-DA=1` |
@@ -223,9 +234,16 @@ No test pins how a package's rules are produced either.
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |
 | macro target | `swift_compiler_plugin`, and `plugins` on whatever declares the macro |
 | traits (SE-0450) | a `bool_flag` each, defaulting to what the manifests resolve to, with a `--config=<Package>.<Trait>` that turns one on; a trait that is on defines its own name for that package's Swift sources, the way SwiftPM compiles it |
-| `.when(platforms:)` on a setting or a dependency | dropped unless the project builds one of those platforms; a platform no Apple toolchain builds is always dropped |
-| `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag, so the build decides it — a condition naming several traits is a `config_setting_group` |
-| `.when(configuration:)` on a setting | kept: which configuration a rule is built in is Bazel's answer, not the generator's |
+| `.when(platforms:)` on a setting or a dependency | a `select` on `@platforms//os`, so the target platform decides it at build time; several platforms are a `config_setting_group`, and Mac Catalyst additionally matches Apple support's Catalyst constraint |
+| `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag — a condition naming several traits is a `config_setting_group` |
+| `.when(configuration:)` on a setting | a `select` on Bazel's compilation mode |
+
+Dimensions written in the same `.when` are a `config_setting_group` with
+`match_all`: for example, an iOS debug setting needs both the iOS constraint and
+a debug compilation mode. A platform name without a corresponding Bazel
+constraint is preserved behind a condition no generated target platform
+carries, and generation reports that limitation instead of making the value
+unconditional.
 
 Two SwiftPM behaviours are matched on every generated `swift_library`:
 `alwayslink`, because SwiftPM always links a package library, and
@@ -434,15 +452,19 @@ from one — and generating a source file for the package's test target.
 Declaring that to Bazel means knowing commands only the plugin can produce, and a
 plugin produces them over a protocol private to SwiftPM: the host asks for build
 commands over a pipe, and the request carries the whole package graph in
-SwiftPM's own `HostToPluginMessage` format, serialized by some five hundred lines
-inside SwiftPM. Reimplementing that host ties bazelize to a schema that moves
-with every toolchain.
+SwiftPM's own `HostToPluginMessage` format.
 
-So SwiftPM runs them. Building a target is what makes it run that target's
-plugins — there is no command that only runs them — and it leaves the result
-under `.build/plugins/outputs/<package>/<target>/`. Those files are linked into
-`Generated/<Target>Plugin/` and handed to the target that asked for the plugin
-the way SwiftPM splits them itself:
+So the workspace gets a host of its own. bazelize writes `plugin-host.swift`,
+which implements only the part of that wire protocol a build tool plugin uses,
+and `plugin-plan.json`, which carries one request per plugin invocation. Bazel
+builds the host, the plugins and their tools; `bazel run //:plugins` runs each
+request from their runfiles, and what a plugin writes goes straight into
+`Packages/<Package>/Generated/<Target>Plugin/`. Generation ends by running it
+once. A message the host cannot decode is reported as exactly that, rather than
+read as an absent command, because the protocol belongs to the toolchain.
+
+Those files are handed to the target that asked for the plugin the way SwiftPM
+splits them itself:
 
 - an extension the target compiles (`.swift` for a Swift target, `.c`/`.m`/… for
   a C-family one) goes into its `srcs`;
@@ -458,10 +480,11 @@ What that buys and costs:
   directory needs no tree artifact: whatever it wrote is globbed afterwards.
 - The generated sources change when bazelize runs again, not when their inputs
   do — already true of every file bazelize writes.
-- Only a package in the project's own repository is built this way. Running a
-  plugin costs a SwiftPM build of its package, and doing that for every
-  dependency that merely lints would make generating a workspace unusable; a
-  dependency's plugin is named at the end of the run instead.
+- Only a package in the project's own repository is run this way. Running a
+  plugin costs a Bazel build of the host, the plugin and the plugin's own tool,
+  and doing that for every dependency that merely lints would make generating a
+  workspace unusable; a dependency's plugin is named at the end of the run
+  instead.
 - A plugin that could not run is named too: what the target loses is whatever
   the plugin generates, and the compile error names those files rather than the
   plugin.
@@ -470,7 +493,8 @@ What that buys and costs:
 
 The exit criterion is the same at every stage: **the 12 apps at least hold
 their ground** (the 7 green ones stay green, the blocked ones keep the same
-reason), plus the 114 unit tests and the iOS fixture.
+reason), plus the unit tests and the snapshots of what a run writes for
+`fixture/iOS`, `spm/TargetResource` and `spm/Platform`.
 
 | Stage | Scope | Goal |
 |---|---|---|
@@ -478,7 +502,7 @@ reason), plus the 114 unit tests and the iOS fixture.
 | 0.5 ✅ | the `//Packages` facade (aliases into rspm) | all apps; label shape settled |
 | 1 ✅ | pure Swift library targets, `swiftLanguageMode` / `define` / upcoming and experimental features / `strictMemorySafety` / `defaultIsolation` / `interoperabilityMode` / `unsafeFlags`; unsupported kinds skipped with a warning, together with their dependents; behind a flag, rspm still the default | 58 packages build on their own |
 | 2 ✅ | clang targets (`headerSearchPath` / `publicHeadersPath` / explicit `sources` / `exclude` / module maps), resources + `Bundle.module` accessor, binary targets (remote xcframework and local archive), system libraries | the 7 green apps build and run; every package of the other five builds |
-| 3 ✅ | macro targets; per-target platform versions (nothing to build — SwiftPM rejects such a graph, so the report is the answer); build tool plugins, built by Bazel and run by bazelize | `spm/BuildToolPlugin`'s tests pass through a plugin-generated source |
+| 3 ✅ | macro targets; per-target platform versions (nothing to build — SwiftPM rejects such a graph, so the report is the answer); build tool plugins, with host and plugins both built and run by Bazel | `spm/BuildToolPlugin`'s tests pass through a plugin-generated source |
 | 4 ✅ | the rspm dependency, `Patches/`, the version gate and the mode flag are gone | the 7 green apps build and run |
 
 Stage 4 removed the alternative rather than keeping a flag: two paths would

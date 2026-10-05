@@ -1,5 +1,12 @@
 # Roadmap Command Implementation Plan
 
+> Historical: a plan for a CLI that no longer exists. There is no `bazelize
+> roadmap` command and no `Xcode.RoadmapTreeBuilder`; the work is done by
+> `generate` through `BazelizeKit`, and `fixture/iOS2` was never added — only
+> `fixture/iOS`. The empty-`BUILD`-placeholder step was abandoned and the
+> deferred missing-file behaviour has since shipped. The text below is kept
+> unchanged.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a `bazelize roadmap` command that creates the roadmap directory tree and target source symlinks for an Xcode project.
