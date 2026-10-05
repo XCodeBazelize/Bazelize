@@ -55,6 +55,53 @@ lookup answer the same on both, and only code that builds `Contents/Resources`
 paths by hand would notice. Aligning means not using `apple_resource_bundle`
 and assembling the bundle ourselves, which is not worth it.
 
+### A4. A dynamic library product silently becomes an ordinary library
+
+The manifest still carries `{"library": ["dynamic"]}`, but `PackageProduct.kind`
+collapses every library product to `.library`. The generated product is
+therefore the same alias or `swift_library_group` as an automatic library, with
+no note that SwiftPM was asked to vend a dynamic library.
+
+The first deliverable is to decode `automatic`, `static` and `dynamic` and
+report the unsupported dynamic case, stopping the silent downgrade. Complete
+support also needs a rule that produces the dylib, a stable product facade,
+the right link and packaging behaviour, a fixture, and CI coverage.
+
+### A5. A build tool plugin's executable loses its resource runfiles
+
+`//Packages:plugins` is a `filegroup` whose `srcs` are the plugin tool binaries.
+It does not forward the runfiles of those binaries. A tool with resources can
+compile and be found by the plugin host, then fail when it tries to load its
+bundle at run time.
+
+The plugin entry point and the runfiles it needs must travel together. Add a
+fixture whose tool reads a resource while the plugin runs; a test that only
+builds the executable does not cover the failure.
+
+### A6. Configuration cannot select targets or disable generated features
+
+The v1 `bazelize.yaml` schema has only `schema` and the buildifier release.
+Someone who must leave a target out cannot express that without forking the
+input project or the generator.
+
+The conservative target-selection contract is exact target names and an error
+when an included target depends on an excluded one. Feature switches should be
+added only for generated surfaces with a demonstrated cost or incompatibility;
+keys name user-visible capabilities rather than internal plugin classes.
+Bazel/BCR dependency pins remain generator-owned, and Swift package versions
+remain owned by `Package.resolved`.
+
+### A7. A multi-trait selection has no single Bazel configuration
+
+SwiftPM's `--traits A,B` is one replacement selection. Generated rc files
+provide one config per trait and the named `none`, `all`, and `default`
+selections. The public boolean flags can represent a combination, but there is
+no one `--config` spelling for it.
+
+Supporting the comma-separated convenience form needs cumulative selection
+semantics rather than composing the existing replacement configs. This is
+deferred; direct flag assignment is the current escape hatch.
+
 ## B. Coverage
 
 ### B1. Nothing in `spm/` is *tested* on iOS
@@ -130,6 +177,13 @@ whoever depends on that library — through the product facade included.
 Only a colour set is built. An app icon set, a symbol set and the generated
 asset symbols are not.
 
+### B8. Plugin output cannot be recorded in workspace snapshots
+
+A generated plugin `BUILD` contains an absolute path into the active Swift
+toolchain. Recording it verbatim would make the snapshot specific to one
+machine and Xcode installation. Mask that path in the snapshot harness before
+adding a plugin workspace to `GeneratedWorkspaceSnapshotTests`.
+
 ## C. Process
 
 ### C1. Sub-packages have no tests — by design
@@ -142,6 +196,12 @@ assert. CI builds each of them — except one that is nothing but a plugin,
 which SwiftPM refuses to build at all — and runs `swift test` only where a
 `Tests` directory exists, rather than padding them with tests that prove
 nothing.
+
+The directory check misses a package that declares a custom test target path.
+`spm/TargetPath` keeps its tests in `Code/Tests`, so its SwiftPM tests have
+never run in this lane even though the Bazel side does. Use
+`swift package dump-package` to ask whether the manifest has a test target
+instead of assuming a top-level `Tests` directory.
 
 ### C2. A lane fails on a note no fixture expects — done
 
@@ -163,3 +223,24 @@ On the toolchain that lane was written against, `swiftbuild` generated no
 has generated it all along. The lane names the build system that implements the
 rule rather than inheriting whichever the runner ships, which is why that rule
 has a package of its own.
+
+### C4. Generated Starlark lint does not gate CI
+
+Both `Check Generated Starlark` steps run `bazel run //:lint` with
+`continue-on-error: true`, so a new lint warning is reported and ignored. Move
+this to a cheap lane that does only `generate` then `lint` for each fixture —
+no build and no test — and remove the duplicate checks from the expensive
+integration lanes. The first gate blocks lint warnings but continues to allow
+format-only `# reformat` reports.
+
+### C5. Decide whether generation can opt into formatting
+
+The current contract is explicit formatting with `bazel run //:format`;
+generation itself does not format. If generation gets an opt-in, decide between
+a `--format` flag and a persistent configuration key. It must invoke the
+workspace's `//:format`, which downloads the configured buildifier release and
+verifies its checksum, rather than using an arbitrary executable from `PATH`.
+
+Adopting formatted generated output requires re-recording every generated
+workspace snapshot. Only after that can the lint gate reject format differences
+as well as lint warnings.
