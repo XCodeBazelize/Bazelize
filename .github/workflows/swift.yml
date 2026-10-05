@@ -404,22 +404,71 @@ jobs:
 
       - name: Build Application
         working-directory: ${{ matrix.name }}/App
-        run: bazel build ${{ matrix.target }}
+        run: |
+          bazel build ${{ matrix.target }} \
+            --build_event_json_file="$GITHUB_WORKSPACE/build-events.json"
 
       # What the lane built, kept: a bundle that can be downloaded and opened
       # is the only way to see what a generated build actually produces.
       # rules_apple packages a macOS application as a `.zip` and an iOS one as
       # an `.ipa`, and a lane that builds `//...` produces more than one.
+      #
+      # What the build produced is read out of its own event stream rather than
+      # asked for again: a bundle rule transitions its configuration, so the
+      # output is not under the `bazel-bin` symlink — which a multi-platform
+      # build deletes anyway — and a second `cquery` is a second analysis that
+      # can disagree with the build that just succeeded.
+      #
+      # A macOS application is re-packaged as a disk image. `upload-artifact`
+      # zips whatever it is given and follows symlinks doing it, which flattens
+      # the `Versions/Current` links every framework bundle is made of and
+      # breaks the signature with them: what comes back out is an application
+      # macOS refuses to open. A `.dmg` is one opaque file, so it arrives as it
+      # left.
+      #
+      # The signature is ad-hoc either way — no identity exists on a runner —
+      # so Gatekeeper still asks before the first launch. These are build
+      # artifacts to look at, not a release.
       - name: Collect ${{ matrix.name }}
-        working-directory: ${{ matrix.name }}/App
         run: |
           mkdir -p "$GITHUB_WORKSPACE/artifacts"
-          bazel cquery ${{ matrix.target }} --output=files \
-            | grep -E '\.(ipa|zip)$' \
-            | grep -v '__internal__' \
-            | while read -r file; do
-                [ -f "$file" ] && cp "$file" "$GITHUB_WORKSPACE/artifacts/"
-              done
+          python3 - <<'PY'
+          import json, os, shutil
+
+          workspace = os.environ["GITHUB_WORKSPACE"]
+          wanted = (".ipa", ".zip")
+          produced = set()
+
+          with open(f"{workspace}/build-events.json") as events:
+              for line in events:
+                  files = json.loads(line).get("namedSetOfFiles", {}).get("files", [])
+                  for file in files:
+                      uri = file.get("uri", "")
+                      if not uri.startswith("file://") or not uri.endswith(wanted):
+                          continue
+                      if "__internal__" in uri:
+                          continue
+                      produced.add(uri[len("file://"):])
+
+          for path in sorted(produced):
+              shutil.copy(path, f"{workspace}/artifacts/")
+          PY
+
+          cd "$GITHUB_WORKSPACE/artifacts"
+          for archive in *.zip; do
+            [ -f "$archive" ] || continue
+            name="${archive%.zip}"
+            staging=$(mktemp -d)
+            unzip -q "$archive" -d "$staging"
+            # Only an application is worth a disk image; a framework or a test
+            # bundle stays the archive Bazel wrote.
+            if [ -d "$staging/$name.app" ]; then
+              hdiutil create -quiet -volname "$name" -srcfolder "$staging" \
+                -ov -format UDZO "$name.dmg"
+              rm -f "$archive"
+            fi
+            rm -rf "$staging"
+          done
           ls -l "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload ${{ matrix.name }}
