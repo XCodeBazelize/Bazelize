@@ -82,45 +82,31 @@ extension SwiftPM {
                 notes: [])
         }
 
-        /// Resolution is what fetches a package nothing has fetched yet. A
-        /// package handed directly to bazelize must be resolved in its own
-        /// directory: resolving the generated manifest sees it as a dependency
-        /// and intentionally omits dependencies used only by its tests.
+        /// Resolution is what fetches a package nothing has fetched yet, and a
+        /// run that cannot resolve still has whatever is already on disk — a
+        /// registry dependency SwiftPM unpacked earlier, say, on a machine
+        /// whose registry this one is not configured for. What it could not
+        /// resolve shows up as a package nothing generated, named at the end
+        /// of the run.
         var notes: [String] = []
-        let packageScratch: Path?
-        if let input, (input + "Package.swift").exists {
-            packageScratch = input + ".build"
-            do {
-                try await resolve(output: input)
-            } catch {
-                notes.append("""
-                swift package resolve failed (\(error)): the packages it had not \
-                already fetched are not generated.
-                """)
-            }
-        } else {
-            packageScratch = nil
-            do {
-                try await resolve(output: output)
-            } catch {
-                notes.append("""
-                swift package resolve failed (\(error)): the packages it had not \
-                already fetched are not generated.
-                """)
-            }
+        do {
+            try await resolve(output: output)
+        } catch {
+            notes.append("""
+            swift package resolve failed (\(error)): the packages it had not \
+            already fetched are not generated.
+            """)
         }
 
-        var pending = try roots(
-            scratch: packageScratch ?? (output + ".build"),
-            locals: locals)
-        if packageScratch != nil {
-            let directories = Set(pending.map(\.directory))
-            pending += try roots(scratch: output + ".build", locals: [])
-                .filter { !directories.contains($0.directory) }
-        }
-
+        let scratch = output + ".build"
         var manifests: [(root: Root, manifest: Manifest)] = []
         var directoryByIdentity: [String: String] = [:]
+
+        /// A worklist rather than a list: a package read in place can declare
+        /// `path:` dependencies of its own, and those are not in
+        /// `.build/checkouts` either — the manifest that declares one is the
+        /// only thing that knows where it is.
+        var pending = try roots(scratch: scratch, locals: locals)
         var seen: Set<String> = []
 
         while !pending.isEmpty {

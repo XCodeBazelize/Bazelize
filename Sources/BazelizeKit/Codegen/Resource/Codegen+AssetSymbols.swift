@@ -40,10 +40,11 @@ extension Target {
     }
 
     /// `actool` refuses to emit symbols without a bundle identifier, and it needs to
-    /// know the platform it is compiling for. Catalogs are passed directly rather
-    /// than reconstructed from `$(SRCS)`: Bazel expands that variable without shell
-    /// quoting, so a filename containing whitespace or parentheses would corrupt the
-    /// command before the loop started.
+    /// know the platform it is compiling for. Catalog paths are derived from
+    /// `$(SRCS)` so the command stays correct when a target carries several catalogs.
+    ///
+    /// Starlark rejects unknown escape sequences inside the string, so the command
+    /// avoids backslashes entirely.
     private var assetSymbolsCommand: String {
         /// `actool` only needs an identifier to key the generated symbols with; one
         /// that still references a build setting Xcode would have expanded is no use
@@ -59,13 +60,10 @@ extension Target {
             "--output-format human-readable-text",
             "--generate-swift-asset-symbol-extensions YES",
         ].joined(separator: " ")
-        let catalogs = assets
-            .map { "'\(String(describing: $0).replacingOccurrences(of: "'", with: "'\"'\"'"))'" }
-            .joined(separator: " ")
 
         return """
         set -e
-        catalogs=\(catalogs)
+        catalogs=$$(for src in $(SRCS); do echo "$${src%%.xcassets/*}.xcassets"; done | sort -u)
         compile=$$(mktemp -d)
         xcrun actool $$catalogs --compile "$$compile" \(arguments) --generate-swift-asset-symbols $@ > /dev/null
         """

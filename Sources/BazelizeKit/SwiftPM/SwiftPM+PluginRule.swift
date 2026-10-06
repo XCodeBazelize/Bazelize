@@ -71,16 +71,6 @@ extension SwiftPM.Generator {
             return
         }
 
-        /// A package can expose an executable under the same spelling as its
-        /// command verb (`swift run swiftformat` and `swift package swiftformat`).
-        /// Bazel labels share one namespace, so keep the product's public name
-        /// and give only the command wrapper a deterministic suffix.
-        let occupied = Set(package.manifest.products.map(\.name))
-        var commandName = verb
-        while occupied.contains(commandName) {
-            commandName += "_command"
-        }
-
         /// The verb is the name a user types, and on a case-insensitive file
         /// system `hello` and `Hello` are one file: the program the wrapper
         /// runs is named apart from the target that runs it.
@@ -120,7 +110,7 @@ extension SwiftPM.Generator {
         builder.load(loadableRule: Rules.Shell.sh_binary)
         builder.call(
             Rules.Shell.Call.sh_binary(
-                name: commandName,
+                name: verb,
                 srcs: [script],
                 data: [
                     ":\(rule)",
