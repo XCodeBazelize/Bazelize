@@ -128,7 +128,7 @@ App/                        # --output
 ├── lint.sh, format.sh      # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
 ├── .bazelversion
-├── tools/                  # `bazel list config|trait|language`
+├── tools/                  # `bazel list config|trait|language`, asset_symbols.bzl
 ├── Prebuilt/               # project-owned .framework/.a/.xcframework
 ├── Targets/<XcodeTarget>/  # Xcode input only
 │   ├── BUILD
@@ -150,6 +150,17 @@ each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
 generator-owned and rebuilt as units, so rules that leave the input graph
 cannot remain part of `bazel build //...`.
 
+### Asset symbols
+
+`ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS` makes Xcode turn
+a catalog into Swift members the target compiles. No ruleset wraps `actool` for
+that, so the workspace carries the rule itself in `tools/asset_symbols.bzl`. It
+runs `actool` as an Apple action: the selected Xcode is part of the action's key,
+so symbols are not reused across Xcode versions, and the platform comes from the
+configuration the target is built in — the project's own SDK is only the
+fallback for a build that carries no Apple platform constraint. CI diffs the
+result against the file Xcode writes into `DerivedSources`.
+
 ### Integration corpus
 
 CI regenerates and builds pinned revisions of six public Swift packages:
@@ -159,6 +170,19 @@ Maccy, whose revision runs on the `xcode-27` image because it needs that SDK.
 Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
+
+CI also compares bundles: Xcode builds the fixture application, the generated
+workspace builds the same application, and every path Xcode ships is required
+to be in the generated bundle too. A build that compiles is not evidence that
+it ships what the project asked for.
+
+### Unsupported targets
+
+A target whose product type — or, for an application, whose platform — has no
+rule here stops generation with an error naming it. A workspace that silently
+omits a target is a workspace that builds the wrong thing. A target that has no
+sources of its own is still reported as a note and skipped: there is nothing to
+bundle.
 
 ### Config
 

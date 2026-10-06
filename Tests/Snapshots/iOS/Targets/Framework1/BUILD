@@ -1,4 +1,4 @@
-# Generated using Bazelize 0.0.5 - https://github.com/XCodeBazelize/Bazelize
+# Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
 load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_framework")
@@ -50,19 +50,32 @@ alias(
     ],
 )
 plist_fragment(
+    name = "plist_file",
+    extension = "plist",
+    template = '''
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>FMWK</string>
+    ''',
+    visibility = [
+        "//visibility:private",
+    ],
+)
+plist_fragment(
     name = "plist_default",
     extension = "plist",
     template = '''
-    <key>CFBundleName</key>
-    <string>$(PRODUCT_NAME)</string>
-    <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
     <key>CFBundleVersion</key>
     <string>1</string>
-    <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
     ''',
@@ -81,6 +94,7 @@ ios_framework(
         "ipad",
     ],
     infoplists = [
+        ":plist_file",
         ":plist_default",
     ],
     minimum_os_version = "16.2",

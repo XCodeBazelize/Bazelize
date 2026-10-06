@@ -38,25 +38,42 @@ struct ConfigListLoader: Hashable {
     }
 
     private func resolvedSettings(for config: XCBuildConfiguration) -> [String: String] {
-        let fileSettings = resolvedXCConfigSettings(for: config.baseConfiguration)
+        let fileSettings = resolvedXCConfigSettings(of: config)
         let inlineSettings = config.buildSettings.mapValues(\.value)
         return fileSettings.merging(inlineSettings) { _, current in current }
     }
 
-    private func resolvedXCConfigSettings(
-        for file: PBXFileReference?,
-        visited: inout Set<String>)
-        -> [String: String]
-    {
-        guard let file else { return [:] }
-        guard let fullPath = try? file.fullPath(sourceRoot: sourceRoot.string) else { return [:] }
-        guard visited.insert(fullPath).inserted else { return [:] }
-        return resolvedXCConfigSettings(at: Path(fullPath), visited: &visited)
+    /// Where the configuration's base `.xcconfig` is.
+    ///
+    /// Xcode writes the reference two ways and a configuration uses one of them:
+    /// a file reference inside a group, or — when the file lives in a
+    /// synchronized folder — that folder's reference plus a path relative to it.
+    /// A project built the second way (NetNewsWire) carries `SDKROOT` and its
+    /// deployment targets nowhere else, so missing it loses the whole project.
+    private func baseConfiguration(of config: XCBuildConfiguration) -> Path? {
+        if
+            let file = config.baseConfiguration,
+            let path = try? file.fullPath(sourceRoot: sourceRoot.string)
+        {
+            return Path(path)
+        }
+
+        guard
+            let anchor = config.baseConfigurationAnchor,
+            let relative = config.baseConfigurationReferenceRelativePath,
+            let root = try? anchor.fullPath(sourceRoot: sourceRoot.string)
+        else {
+            return nil
+        }
+
+        return Path(root) + relative
     }
 
-    private func resolvedXCConfigSettings(for file: PBXFileReference?) -> [String: String] {
-        var visited: Set<String> = []
-        return resolvedXCConfigSettings(for: file, visited: &visited)
+    private func resolvedXCConfigSettings(of config: XCBuildConfiguration) -> [String: String] {
+        guard let path = baseConfiguration(of: config) else { return [:] }
+
+        var visited: Set<String> = [path.string]
+        return resolvedXCConfigSettings(at: path, visited: &visited)
     }
 
     private func resolvedXCConfigSettings(at path: Path, visited: inout Set<String>) -> [String: String] {
@@ -83,11 +100,24 @@ struct ConfigListLoader: Hashable {
 
             guard let separator = line.firstIndex(of: "=") else { continue }
             let key = line[..<separator].trimmingCharacters(in: .whitespacesAndNewlines)
-            let value = line[line.index(after: separator)...]
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            result[key] = value
+            result[key] = Self.value(of: line[line.index(after: separator)...])
         }
 
         return result
+    }
+
+    /// What the assignment is worth once the file's own punctuation is gone.
+    ///
+    /// `//` starts a comment anywhere in the line, and a trailing `;` is the
+    /// `project.pbxproj` habit leaking into an `.xcconfig` — Xcode accepts both
+    /// and neither belongs to the value. `SDKROOT = macosx;` read verbatim is a
+    /// platform nothing matches.
+    private static func value(of assignment: Substring) -> String {
+        let uncommented = assignment.range(of: "//").map { assignment[..<$0.lowerBound] } ?? assignment
+        var value = uncommented.trimmingCharacters(in: .whitespaces)
+        while value.hasSuffix(";") {
+            value = String(value.dropLast()).trimmingCharacters(in: .whitespaces)
+        }
+        return value
     }
 }

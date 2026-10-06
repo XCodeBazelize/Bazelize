@@ -24,8 +24,8 @@ extension Bazel {
 
 
         mutating
-        func setup(_ kit: Kit) {
-            code = target.generateCode(kit)
+        func setup(_ kit: Kit) throws {
+            code = try target.generateCode(kit)
         }
 
         func mkpath() throws {

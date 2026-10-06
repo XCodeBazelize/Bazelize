@@ -65,10 +65,11 @@ extension SwiftPM.Generator {
                         sources(of: target, prefix: prefix, extensions: compiled)
                             /// Private headers are compilation inputs wherever they
                             /// sit, so they are collected from the whole directory
-                            /// even when the sources are listed one by one.
-                            + (headerPrefix == prefix
-                                ? []
-                                : Self.headerExtensions.map { "\(prefix)/**/*.\($0)" }),
+                            /// even when the sources are listed one by one. A target
+                            /// whose public headers are its own directory needs them
+                            /// too: a `#include "sibling.hpp"` is resolved beside the
+                            /// source, not through the mirrored interface.
+                            + Self.headerExtensions.map { "\(prefix)/**/*.\($0)" },
                         files)
                         /// A plugin's output compiles like a source of the target,
                         /// and the header beside it is an input the same way a
@@ -204,13 +205,22 @@ extension SwiftPM.Generator {
 
         return target.exclude.flatMap { excluded -> [String] in
             let path = Path(excluded).normalize().string
+            let `extension` = Path(excluded).extension
 
             if searched.contains(path) {
                 return Self.compileExtensions.map { "\(prefix)/\(path)/**/*.\($0)" }
             }
-            return Path(excluded).extension == nil
-                ? ["\(prefix)/\(excluded)/**"]
-                : ["\(prefix)/\(excluded)"]
+
+            /// A header a manifest excludes is excluded from being compiled, which
+            /// it never was: it is included by a source beside it, and dropping it
+            /// leaves the compiler looking for a file the sandbox does not have.
+            if let `extension`, Self.headerExtensions.contains(`extension`) {
+                return []
+            }
+
+            return `extension` == nil
+                ? ["\(prefix)/\(path)/**"]
+                : ["\(prefix)/\(path)"]
         } + Self.ignoredExtensions.map { "\(prefix)/**/*.\($0)/**" }
     }
 

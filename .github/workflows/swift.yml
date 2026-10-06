@@ -58,6 +58,29 @@ jobs:
     - name: Build
       run: make build
 
+  # The unit suite resolves real package graphs, so it is slow and has nothing
+  # to do with whether the tool compiles: it gets its own job rather than
+  # holding the build's.
+  test:
+    runs-on: macos-26
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: jdx/mise-action@v4
+
+    # The snapshot tests read the generated fixture project.
+    - name: Generate iOS fixture
+      run: tuist generate --path fixture/iOS --no-open
+
+    - name: SPM Cache
+      uses: actions/cache@v5
+      with:
+        path: .build
+        key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-macos-26-spm-
+
     - name: Run tests
       run: make test
 
@@ -221,6 +244,87 @@ jobs:
           name: iOS_Example.ipa
           path: fixture/iOS/Example.ipa
           if-no-files-found: ignore # 'warn' or 'ignore'
+
+  # A build that compiles says nothing about what it ships. Xcode builds the
+  # fixture app, the generated workspace builds the same app, and the two
+  # bundles are compared: anything Xcode copies in and the generated build does
+  # not is a fidelity bug that would otherwise only show at run time.
+  CompareBundles:
+    runs-on: macos-26
+    needs: [artifact]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v4
+
+      - name: Generate Xcode project
+        run: tuist generate --path fixture/iOS --no-open
+
+      - name: Bazel Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/bazel-disk
+            ~/bazel-repo
+          key: ${{ runner.os }}-bazel-CompareBundles-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-CompareBundles-
+
+      - name: Bazel Cache Settings
+        run: |
+          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
+          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      # `ENABLE_DEBUG_DYLIB` is Xcode's own debugging mechanism, not something
+      # the app asked for: it adds a dylib and a preview stub that no build of
+      # the same sources is expected to produce.
+      - name: Build With Xcode
+        working-directory: fixture/iOS
+        run: |
+          xcodebuild \
+            -project Example.xcodeproj \
+            -scheme Example \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath "$RUNNER_TEMP/xcode" \
+            CODE_SIGNING_ALLOWED=NO \
+            ENABLE_DEBUG_DYLIB=NO \
+            build
+
+      - name: Build With Bazel
+        run: |
+          chmod +x bazelize
+          ./bazelize --input fixture/iOS/Example.xcodeproj --output fixture/iOS/App
+          cd fixture/iOS/App
+          bazel build //Targets/Example --ios_multi_cpus=sim_arm64
+          ipa=$(bazel cquery //Targets/Example --output=files | grep '\.ipa$')
+          mkdir -p "$RUNNER_TEMP/bazel"
+          unzip -q "$ipa" -d "$RUNNER_TEMP/bazel"
+
+      - name: Compare Bundles
+        run: |
+          python3 .github/scripts/compare-bundles.py \
+            --xcode "$RUNNER_TEMP/xcode/Build/Products/Debug-iphonesimulator/Example.app" \
+            --bazel "$RUNNER_TEMP/bazel/Payload/Example.app"
+
+      # The symbols a catalog becomes are source the target compiles, so they are
+      # compared as source: Xcode writes its copy into DerivedSources, and the two
+      # files are expected to be identical.
+      - name: Compare Asset Symbols
+        run: |
+          xcode=$(find "$RUNNER_TEMP/xcode" -name GeneratedAssetSymbols.swift -path '*Example.build*' | head -1)
+          bazel=$(find -L fixture/iOS/App/bazel-out -name GeneratedAssetSymbols.swift -path '*ios_sim*Targets/Example*' | head -1)
+          if [ -z "$xcode" ] || [ -z "$bazel" ]; then
+            echo "::error::one of the two asset symbol files was not produced"
+            exit 1
+          fi
+          diff "$xcode" "$bazel"
 
   # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
   # lane clones what it measures at the revision it was measured against.
