@@ -1,21 +1,19 @@
 # Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
+load("//tools:asset_symbols.bzl", "asset_symbols")
 load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 
-genrule(
+asset_symbols(
     name = "AssetSymbols",
-    srcs = glob([
+    bundle_id = "com.bazel.Example",
+    catalogs = glob([
         "Sources/Example/Assets.xcassets/**",
         "Sources/Example/Preview Content/Preview Assets.xcassets/**",
     ]),
-    outs = [
-        "GeneratedAssetSymbols.swift",
-    ],
-    cmd = """set -e
-    compile=$$(mktemp -d)
-    xcrun actool 'Targets/Example/Sources/Example/Assets.xcassets' 'Targets/Example/Sources/Example/Preview Content/Preview Assets.xcassets' --compile "$$compile" --platform iphoneos --minimum-deployment-target 16.2 --bundle-identifier com.bazel.Example --output-format human-readable-text --generate-swift-asset-symbol-extensions YES --generate-swift-asset-symbols $@ > /dev/null""",
+    minimum_os_version = "16.2",
+    platform = "iphoneos",
     visibility = [
         "//visibility:private",
     ],

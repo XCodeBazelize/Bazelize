@@ -313,6 +313,19 @@ jobs:
             --xcode "$RUNNER_TEMP/xcode/Build/Products/Debug-iphonesimulator/Example.app" \
             --bazel "$RUNNER_TEMP/bazel/Payload/Example.app"
 
+      # The symbols a catalog becomes are source the target compiles, so they are
+      # compared as source: Xcode writes its copy into DerivedSources, and the two
+      # files are expected to be identical.
+      - name: Compare Asset Symbols
+        run: |
+          xcode=$(find "$RUNNER_TEMP/xcode" -name GeneratedAssetSymbols.swift -path '*Example.build*' | head -1)
+          bazel=$(find -L fixture/iOS/App/bazel-out -name GeneratedAssetSymbols.swift -path '*ios_sim*Targets/Example*' | head -1)
+          if [ -z "$xcode" ] || [ -z "$bazel" ]; then
+            echo "::error::one of the two asset symbol files was not produced"
+            exit 1
+          fi
+          diff "$xcode" "$bazel"
+
   # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
   # lane clones what it measures at the revision it was measured against.
   IntegrateApp:

@@ -128,7 +128,7 @@ App/                        # --output
 ├── lint.sh, format.sh      # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
 ├── .bazelversion
-├── tools/                  # `bazel list config|trait|language`
+├── tools/                  # `bazel list config|trait|language`, asset_symbols.bzl
 ├── Prebuilt/               # project-owned .framework/.a/.xcframework
 ├── Targets/<XcodeTarget>/  # Xcode input only
 │   ├── BUILD
@@ -149,6 +149,17 @@ Generation preserves the workspace root and existing `.bazelrc` content, adding
 each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
 generator-owned and rebuilt as units, so rules that leave the input graph
 cannot remain part of `bazel build //...`.
+
+### Asset symbols
+
+`ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS` makes Xcode turn
+a catalog into Swift members the target compiles. No ruleset wraps `actool` for
+that, so the workspace carries the rule itself in `tools/asset_symbols.bzl`. It
+runs `actool` as an Apple action: the selected Xcode is part of the action's key,
+so symbols are not reused across Xcode versions, and the platform comes from the
+configuration the target is built in — the project's own SDK is only the
+fallback for a build that carries no Apple platform constraint. CI diffs the
+result against the file Xcode writes into `DerivedSources`.
 
 ### Integration corpus
 

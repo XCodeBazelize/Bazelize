@@ -23,6 +23,7 @@ public final class Kit {
     lazy var config = Bazel.BazelRC(outputRoot)
     lazy var rootRC = Bazel.RootRC(outputRoot)
     lazy var prebuilt = Bazel.PrebuiltBuild(outputRoot)
+    lazy var assetSymbols = Bazel.AssetSymbols(outputRoot)
     lazy var targetsBuild = project.targets.map { target in
         Bazel.TargetBuild(outputRoot, target)
     }
@@ -273,7 +274,15 @@ extension Kit {
         try generateBuild()
         try generateConfig()
         try generatePrebuiltBuild()
+        try generateWorkspaceRules()
         try generatePluginExtraFile()
+    }
+
+    /// {WORKSPACE}/tools/*.bzl: the rules the generated targets load and no
+    /// ruleset provides.
+    private final func generateWorkspaceRules() throws {
+        try assetSymbols.path.parent().mkpath()
+        try assetSymbols.write()
     }
 
     private func generateRoadmap() throws {
