@@ -672,9 +672,18 @@ jobs:
           grep -q "Hello from CommandPlugin" command.log
           grep -q "Arguments: alpha --beta" command.log
 
+      # `bazel test` treats an empty wildcard as an error. Executable-only and
+      # library-only fixtures still build above; ask Bazel whether there is
+      # anything for this step to run instead of inventing a no-op test.
       - name: Test Package
         working-directory: spm/${{ matrix.name }}/App
-        run: bazel test //...
+        run: |
+          tests=$(bazel query 'tests(//...)')
+          if [ -n "$tests" ]; then
+            bazel test //...
+          else
+            echo "no Bazel tests, nothing to test"
+          fi
 
       # One generated library is compiled through two platform configurations:
       # each gets its own settings and only iOS gets the conditional target.

@@ -150,17 +150,20 @@ plugin workspace 加進 `GeneratedWorkspaceSnapshotTests`。
 
 ### C1. 子套件沒有測試 —— 刻意如此
 
-fixture 底下有 13 個套件（`vendor-kit`、`Alt`、`Other`、`Stamping`、`Marking`、
-`Products`、`Macro/Provider`、`Trait/Dependency`、`TraitGraph/*Dependency`、
-`DependencyCondition/Extras`、`DependencyCondition/LinuxOnly`）是給人依賴用的，
-本身沒有東西好斷言。CI 對每一個都跑 `swift build` —— 只有 plugin 的那個除外，
-SwiftPM 根本拒絕建它 —— 而只有存在 `Tests` 目錄的才跑 `swift test`，不會為了讓
-指令回 0 而塞一堆證明不了任何事的測試。
+沒有測試的 fixture 不會為了湊數塞入證明不了任何事的斷言。Bazel 這側的 CI 會先問
+`bazel query 'tests(//...)'`，有結果才執行 `bazel test //...`；
+`spm/ExecutableResource` 這類只有 executable 的套件照常建置，並由專用 program step
+實際執行，不再因空的 test selection 讓 lane 失敗。
 
-這個目錄判斷會漏掉自訂 test target path 的套件。`spm/TargetPath` 把測試放在
-`Code/Tests`，所以它的 SwiftPM 測試從未在這條 lane 執行，只有 Bazel 側有跑到。
-應改用 `swift package dump-package` 判斷 manifest 是否有 test target，而不是假設
-一定存在頂層 `Tests` 目錄。
+13 個子套件（`vendor-kit`、`Alt`、`Other`、`Stamping`、`Marking`、`Products`、
+`Macro/Provider`、`Trait/Dependency`、`TraitGraph/*Dependency`、
+`DependencyCondition/Extras`、`DependencyCondition/LinuxOnly`）同樣沒有自己的內容
+需要斷言。
+
+SwiftPM 這側仍有一個缺口：目錄判斷會漏掉自訂 test target path 的套件。
+`spm/TargetPath` 把測試放在 `Code/Tests`，所以它的 SwiftPM 測試從未在這條 lane
+執行，只有 Bazel 側有跑到。應改用 `swift package dump-package` 判斷 manifest
+是否有 test target，而不是假設一定存在頂層 `Tests` 目錄。
 
 ### C2. lane 會因為沒人預期的 note 而失敗 —— 已完成
 

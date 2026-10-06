@@ -181,20 +181,22 @@ adding a plugin workspace to `GeneratedWorkspaceSnapshotTests`.
 
 ### C1. Sub-packages have no tests — by design
 
-Thirteen packages under the fixtures (`vendor-kit`, `Alt`, `Other`,
-`Stamping`, `Marking`, `Products`, `Macro/Provider`, `Trait/Dependency`,
-`TraitGraph/*Dependency`, `DependencyCondition/Extras`,
-`DependencyCondition/LinuxOnly`) are dependencies with nothing of their own to
-assert. CI builds each of them — except one that is nothing but a plugin,
-which SwiftPM refuses to build at all — and runs `swift test` only where a
-`Tests` directory exists, rather than padding them with tests that prove
-nothing.
+Fixtures with no tests are not padded with assertions that prove nothing. On
+the Bazel side, CI asks `bazel query 'tests(//...)'` before invoking
+`bazel test //...`; executable-only packages such as `spm/ExecutableResource`
+are built and run by their dedicated program step without turning an empty test
+selection into a lane failure.
 
-The directory check misses a package that declares a custom test target path.
-`spm/TargetPath` keeps its tests in `Code/Tests`, so its SwiftPM tests have
-never run in this lane even though the Bazel side does. Use
-`swift package dump-package` to ask whether the manifest has a test target
-instead of assuming a top-level `Tests` directory.
+Thirteen sub-packages (`vendor-kit`, `Alt`, `Other`, `Stamping`, `Marking`,
+`Products`, `Macro/Provider`, `Trait/Dependency`, `TraitGraph/*Dependency`,
+`DependencyCondition/Extras`, `DependencyCondition/LinuxOnly`) likewise have
+nothing of their own to assert.
+
+One SwiftPM-side gap remains: the directory check misses a package that
+declares a custom test target path. `spm/TargetPath` keeps its tests in
+`Code/Tests`, so its SwiftPM tests have never run in this lane even though the
+Bazel side does. Use `swift package dump-package` to ask whether the manifest
+has a test target instead of assuming a top-level `Tests` directory.
 
 ### C2. A lane fails on a note no fixture expects — done
 
