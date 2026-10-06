@@ -67,6 +67,9 @@ hello` is:
 bazel run //Packages/YourPackage:hello -- <arguments>
 ```
 
+If a product already owns that name, the plugin target appends `_command`
+until its label is unique.
+
 Everything after `--` reaches the plugin the way everything after the verb
 reaches it under SwiftPM. There is no sandbox to widen, so what the plugin
 declared it wants to do is printed rather than refused — running the target is
@@ -146,6 +149,16 @@ Generation preserves the workspace root and existing `.bazelrc` content, adding
 each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
 generator-owned and rebuilt as units, so rules that leave the input graph
 cannot remain part of `bazel build //...`.
+
+### Integration corpus
+
+CI regenerates and builds pinned revisions of six public Swift packages:
+swift-collections, SwiftFormat, swift-protobuf, GRDB.swift, swift-nio, and
+swift-dependencies. It also builds pinned application projects, including
+Maccy, whose revision runs on the `xcode-27` image because it needs that SDK.
+Exact revisions and measured exclusions live beside the matrix in
+`.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
+change rather than an update from an upstream default branch.
 
 ### Config
 

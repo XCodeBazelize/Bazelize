@@ -508,7 +508,7 @@ extension SwiftPM {
             /// GRDB's test fixtures do — and Bazel cannot glob through the cycle.
             /// Such a tree is mirrored instead, entry by entry, without the link
             /// that closes the loop.
-            if Self.hasCycle(directory) {
+            if Self.hasCycle(directory) || Self.containsBazelPackage(directory) {
                 try Self.mirror(directory, at: link)
             } else {
                 try link.symlink(directory)
@@ -585,12 +585,21 @@ extension SwiftPM {
             return false
         }
 
+        /// A linked source directory that contains its own `BUILD` file creates
+        /// nested Bazel packages and hides files from the generated target. Mirror
+        /// such a tree so those foreign package markers can be omitted.
+        private static func containsBazelPackage(_ directory: Path) -> Bool {
+            entries(of: directory).contains { packageMarkers.contains($0.lastComponent) }
+        }
+
         /// A copy of the directory's shape, with one link per file.
         private static func mirror(_ directory: Path, at destination: Path) throws {
             try destination.mkpath()
 
             let root = directory.url.resolvingSymlinksInPath().path
             for child in (try? directory.children()) ?? [] {
+                if packageMarkers.contains(child.lastComponent) { continue }
+
                 let target = destination + child.lastComponent
 
                 if child.isSymlink {
@@ -616,6 +625,8 @@ extension SwiftPM {
                 return [child] + entries(of: child)
             }
         }
+
+        private static let packageMarkers: Set = ["BUILD", "BUILD.bazel"]
 
         static let sourcesRoot = "Sources"
 
@@ -1151,22 +1162,37 @@ extension SwiftPM {
             }
         }
 
-        /// Which package declares a product: the one the dependency names, or the
-        /// one whose identity matches.
+        /// Which package declares a product. The name a dependency writes is the
+        /// one its own manifest gave that package — SwiftPM's identity, the
+        /// dependency's `name:`, or the manifest's own name — so all three are
+        /// tried before falling back to the single package declaring the product.
+        /// Never guess from an unrelated dependency merely because it appears
+        /// first in the manifest.
         private func package(
             ofProduct product: String,
             package name: String?,
-            from package: Package) -> Package?
+            from consumer: Package) -> Package?
         {
-            let identities = [name, product].compactMap { $0 }
-                + package.manifest.dependencies.map(\.identity)
+            if let name {
+                let identities = [name] + consumer.manifest.dependencies
+                    .filter { $0.name?.lowercased() == name.lowercased() }
+                    .map(\.identity)
 
-            for identity in identities {
-                guard let directory = workspace.directoryByIdentity[identity.lowercased()] else { continue }
-                return workspace.packages.first { $0.directory == directory }
+                for identity in identities {
+                    guard
+                        let directory = workspace.directoryByIdentity[identity.lowercased()],
+                        let owner = workspace.packages.first(where: { $0.directory == directory })
+                    else {
+                        continue
+                    }
+                    return owner
+                }
             }
 
-            return nil
+            let owners = workspace.packages.filter { candidate in
+                candidate.manifest.products.contains { $0.name == product }
+            }
+            return owners.count == 1 ? owners[0] : nil
         }
 
         private func build(

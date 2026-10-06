@@ -14,9 +14,8 @@ genrule(
         "GeneratedAssetSymbols.swift",
     ],
     cmd = """set -e
-    catalogs=$$(for src in $(SRCS); do echo "$${src%%.xcassets/*}.xcassets"; done | sort -u)
     compile=$$(mktemp -d)
-    xcrun actool $$catalogs --compile "$$compile" --platform iphoneos --minimum-deployment-target 16.2 --bundle-identifier com.bazel.Example --output-format human-readable-text --generate-swift-asset-symbol-extensions YES --generate-swift-asset-symbols $@ > /dev/null""",
+    xcrun actool 'Targets/Example/Sources/Example/Assets.xcassets' 'Targets/Example/Sources/Example/Preview Content/Preview Assets.xcassets' --compile "$$compile" --platform iphoneos --minimum-deployment-target 16.2 --bundle-identifier com.bazel.Example --output-format human-readable-text --generate-swift-asset-symbol-extensions YES --generate-swift-asset-symbols $@ > /dev/null""",
     visibility = [
         "//visibility:private",
     ],
