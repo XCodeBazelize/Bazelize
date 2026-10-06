@@ -226,7 +226,9 @@ jobs:
   # lane clones what it measures at the revision it was measured against.
   IntegrateApp:
     name: IntegrateApp (${{ matrix.name }})
-    runs-on: macos-26
+    # An app whose revision needs a newer SDK than the default image ships names
+    # the image it is measured against; everything else stays on one image.
+    runs-on: ${{ matrix.runner || 'macos-26' }}
     needs: [artifact]
     timeout-minutes: 120
     strategy:
@@ -284,19 +286,24 @@ jobs:
             project: IceCubesApp.xcodeproj
             target: //Targets/IceCubesApp
 
-          # Four more apps were measured locally but do not meet the lane
-          # contract. Their revisions stay recorded so a retry is reproducible.
-          #
-          # Maccy builds locally against Xcode 27 but not on a runner: at
-          # 19c3d828 it adopted SwiftUI's `.reorderable()` / `ReorderDifference`,
-          # which the runner's Xcode 26.6 SDK does not have, and its
-          # `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` sources are rejected by
-          # that toolchain's concurrency checking as well. Neither is the
-          # generated build's doing.
-          # Maccy: 19c3d8282f50316779085964b5148b76d4bb88ce
-          #
-          # NetNewsWire generates no application rule, Mastodon's pinned Nuke
-          # fails under Xcode 27, and Swiftfin fails during SwiftPM resolution.
+          # Measured against Xcode 27 locally, and run on the `xcode-27` image
+          # because the revision needs it: `19c3d828` adopted SwiftUI's
+          # `.reorderable()` / `ReorderDifference`, which the macOS 26 SDK does
+          # not have, and the app's `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`
+          # sources are rejected by that older toolchain's concurrency checking.
+          # Its asset catalog holds filenames with spaces and parentheses, which
+          # is what shell-safe asset-symbol generation is measured against.
+          - name: Maccy
+            runner: xcode-27
+            repo: https://github.com/p0deje/Maccy
+            rev: 19c3d8282f50316779085964b5148b76d4bb88ce
+            project: Maccy.xcodeproj
+            target: //Targets/Maccy
+
+          # Three more apps were measured locally but do not meet the lane
+          # contract: NetNewsWire generates no application rule, Mastodon's
+          # pinned Nuke fails under Xcode 27, and Swiftfin fails during SwiftPM
+          # resolution. Their revisions stay recorded so a retry is reproducible.
           # NetNewsWire: 383e46f28421f7f55934ee3869f431bfde1c6de3
           # Mastodon: c52a63091abe557724a1e588149f3172466756e5
           # Swiftfin: a088a83c4deb70d87f4077c7f9e42ecacd0fe8c7

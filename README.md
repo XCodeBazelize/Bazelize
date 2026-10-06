@@ -154,7 +154,8 @@ cannot remain part of `bazel build //...`.
 
 CI regenerates and builds pinned revisions of six public Swift packages:
 swift-collections, SwiftFormat, swift-protobuf, GRDB.swift, swift-nio, and
-swift-dependencies, alongside the pinned application projects it already built.
+swift-dependencies. It also builds pinned application projects, including
+Maccy, whose revision runs on the `xcode-27` image because it needs that SDK.
 Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
