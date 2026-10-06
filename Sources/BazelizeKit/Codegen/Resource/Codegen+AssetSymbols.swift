@@ -40,10 +40,11 @@ extension Target {
     }
 
     /// `actool` refuses to emit symbols without a bundle identifier, and it needs to
-    /// know the platform it is compiling for. Catalogs are passed directly rather
+    /// know the platform it is compiling for. Catalogs are named literally rather
     /// than reconstructed from `$(SRCS)`: Bazel expands that variable without shell
     /// quoting, so a filename containing whitespace or parentheses would corrupt the
-    /// command before the loop started.
+    /// command before it ran. A genrule runs from the execution root, so each
+    /// catalog is named from there rather than from the package.
     private var assetSymbolsCommand: String {
         /// `actool` only needs an identifier to key the generated symbols with; one
         /// that still references a build setting Xcode would have expanded is no use
@@ -60,14 +61,16 @@ extension Target {
             "--generate-swift-asset-symbol-extensions YES",
         ].joined(separator: " ")
         let catalogs = assets
-            .map { "'\(String(describing: $0).replacingOccurrences(of: "'", with: "'\"'\"'"))'" }
+            .map { asset -> String in
+                let path = "Targets/\(name)/\(asset)"
+                return "'\(path.replacingOccurrences(of: "'", with: "'\"'\"'"))'"
+            }
             .joined(separator: " ")
 
         return """
         set -e
-        catalogs=\(catalogs)
         compile=$$(mktemp -d)
-        xcrun actool $$catalogs --compile "$$compile" \(arguments) --generate-swift-asset-symbols $@ > /dev/null
+        xcrun actool \(catalogs) --compile "$$compile" \(arguments) --generate-swift-asset-symbols $@ > /dev/null
         """
     }
 

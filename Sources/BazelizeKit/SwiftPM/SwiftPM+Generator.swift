@@ -1162,19 +1162,31 @@ extension SwiftPM {
             }
         }
 
-        /// Which package declares a product. An explicit package name is
-        /// authoritative; a by-name dependency is resolved by the product
-        /// declaration itself. Never guess from an unrelated dependency merely
-        /// because it appears first in the manifest.
+        /// Which package declares a product. The name a dependency writes is the
+        /// one its own manifest gave that package — SwiftPM's identity, the
+        /// dependency's `name:`, or the manifest's own name — so all three are
+        /// tried before falling back to the single package declaring the product.
+        /// Never guess from an unrelated dependency merely because it appears
+        /// first in the manifest.
         private func package(
             ofProduct product: String,
             package name: String?,
-            from _: Package) -> Package?
+            from consumer: Package) -> Package?
         {
-            if let name,
-               let directory = workspace.directoryByIdentity[name.lowercased()]
-            {
-                return workspace.packages.first { $0.directory == directory }
+            if let name {
+                let identities = [name] + consumer.manifest.dependencies
+                    .filter { $0.name?.lowercased() == name.lowercased() }
+                    .map(\.identity)
+
+                for identity in identities {
+                    guard
+                        let directory = workspace.directoryByIdentity[identity.lowercased()],
+                        let owner = workspace.packages.first(where: { $0.directory == directory })
+                    else {
+                        continue
+                    }
+                    return owner
+                }
             }
 
             let owners = workspace.packages.filter { candidate in

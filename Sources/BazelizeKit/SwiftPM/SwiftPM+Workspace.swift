@@ -110,9 +110,10 @@ extension SwiftPM {
             }
         }
 
-        var pending = try roots(
-            scratch: packageScratch ?? (output + ".build"),
-            locals: locals)
+        /// Resolution unpacked every binary artifact into the scratch it ran in,
+        /// so that is the directory the generated rules read them from.
+        let scratch = packageScratch ?? (output + ".build")
+        var pending = try roots(scratch: scratch, locals: locals)
         if packageScratch != nil {
             let directories = Set(pending.map(\.directory))
             pending += try roots(scratch: output + ".build", locals: [])
@@ -161,7 +162,7 @@ extension SwiftPM {
 
         return .init(
             packages: packages,
-            artifacts: output + ".build/artifacts",
+            artifacts: scratch + "artifacts",
             directoryByIdentity: directoryByIdentity,
             traits: traits,
             notes: notes)

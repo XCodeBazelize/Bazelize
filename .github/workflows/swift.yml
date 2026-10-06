@@ -556,29 +556,32 @@ jobs:
         with:
           name: bazelize
 
+      # The checkout directory is the package directory the generated workspace
+      # files rules under, so it is named after the package rather than
+      # something generic.
       - name: Clone ${{ matrix.name }}
         run: |
           chmod +x bazelize
-          git clone --filter=blob:none "${{ matrix.repo }}" package
-          git -C package checkout --detach "${{ matrix.rev }}"
+          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
+          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
 
       - name: SwiftPM Cache
         uses: actions/cache@v5
         with:
-          path: package/.build
+          path: ${{ matrix.name }}/.build
           key: ${{ runner.os }}-spm-package-${{ matrix.name }}-${{ matrix.rev }}
           restore-keys: |
             ${{ runner.os }}-spm-package-${{ matrix.name }}-
 
       - name: SwiftPM Build
-        working-directory: package
+        working-directory: ${{ matrix.name }}
         run: swift build
 
       - name: Bazel Generation
-        run: ./bazelize --input package --output package/App
+        run: ./bazelize --input "${{ matrix.name }}" --output "${{ matrix.name }}/App"
 
       - name: Build Package Product
-        working-directory: package/App
+        working-directory: ${{ matrix.name }}/App
         run: bazel build ${{ matrix.target }}
 
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
