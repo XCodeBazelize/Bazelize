@@ -1,5 +1,10 @@
 # Repository Instructions
 
+## Change delivery
+
+Any new feature or behavior change goes on its own branch and is delivered as a
+pull request. Never push such work directly to `master`.
+
 ## Generated workspace ownership
 
 Bazelize preserves the workspace root. Never replace or delete it wholesale:
