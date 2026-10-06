@@ -1,12 +1,16 @@
-# Generated using Bazelize 0.0.5 - https://github.com/XCodeBazelize/Bazelize
+# Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
 load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_bundle")
+load("@build_bazel_rules_apple//apple:resources.bzl", "apple_resource_group")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 
-filegroup(
-    name = "Resources",
-    srcs = glob([
+apple_resource_group(
+    name = "ResourceFolders",
+    strip_structured_resources_prefixes = [
+        "Sources/MacBundle",
+    ],
+    structured_resources = glob([
         "Sources/MacBundle/Resources/**",
     ]),
     visibility = [
@@ -91,7 +95,7 @@ macos_bundle(
     ],
     minimum_os_version = "13.0",
     resources = [
-        ":Resources",
+        ":ResourceFolders",
     ],
     # strings = None,
     visibility = [

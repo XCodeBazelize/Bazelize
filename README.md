@@ -160,6 +160,19 @@ Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
 
+CI also compares bundles: Xcode builds the fixture application, the generated
+workspace builds the same application, and every path Xcode ships is required
+to be in the generated bundle too. A build that compiles is not evidence that
+it ships what the project asked for.
+
+### Unsupported targets
+
+A target whose product type — or, for an application, whose platform — has no
+rule here stops generation with an error naming it. A workspace that silently
+omits a target is a workspace that builds the wrong thing. A target that has no
+sources of its own is still reported as a note and skipped: there is nothing to
+bundle.
+
 ### Config
 
 An Xcode build configuration is a flag in the generated root `BUILD`:

@@ -333,7 +333,7 @@ extension Kit {
             var build = build
 
             try build.mkpath()
-            build.setup(self)
+            try build.setup(self)
             try build.write()
 
             let path = build.path
