@@ -8,10 +8,12 @@ let package = Package(
     name: "CommandPlugin",
     products: [
         .library(name: "Greeting", targets: ["Greeting"]),
+        .executable(name: "hello", targets: ["HelloTool"]),
         .plugin(name: "Hello", targets: ["Hello"]),
     ],
     targets: [
         .target(name: "Greeting"),
+        .executableTarget(name: "HelloTool"),
         .plugin(
             name: "Hello",
             capability: .command(

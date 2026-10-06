@@ -283,6 +283,23 @@ jobs:
             rev: b2db3033fbf67a97b54d25d6dac2df8a029b26b1
             project: IceCubesApp.xcodeproj
             target: //Targets/IceCubesApp
+          # Xcode and the generated workspace both build the application at
+          # this revision. Its asset catalog contains filenames with spaces and
+          # parentheses, exercising shell-safe asset-symbol generation.
+          - name: Maccy
+            repo: https://github.com/p0deje/Maccy
+            rev: 19c3d8282f50316779085964b5148b76d4bb88ce
+            project: Maccy.xcodeproj
+            target: //Targets/Maccy
+
+          # Three more recommended apps were measured locally but do not meet
+          # the lane contract yet: NetNewsWire generates no application rule,
+          # Mastodon's pinned Nuke fails under Xcode 27, and Swiftfin fails
+          # during SwiftPM resolution. Their measured revisions stay recorded
+          # here so a future retry is reproducible.
+          # NetNewsWire: 383e46f28421f7f55934ee3869f431bfde1c6de3
+          # Mastodon: c52a63091abe557724a1e588149f3172466756e5
+          # Swiftfin: a088a83c4deb70d87f4077c7f9e42ecacd0fe8c7
 
           # Apps measured for the corpus and kept out of it, with the reason
           # each one was kept out. `xcodebuild` is the control: an app Xcode
@@ -478,6 +495,92 @@ jobs:
           path: artifacts
           if-no-files-found: warn
 
+  # Real packages complement the focused fixtures below. Each revision is
+  # immutable; SwiftPM first proves the checkout builds, then Bazel proves the
+  # generated rule for its primary product builds. Upstream test suites are not
+  # used as the control because several encode host locale, timing, or compiler
+  # assumptions unrelated to generated build fidelity.
+  IntegrateExternalPackage:
+    name: IntegrateExternalPackage (${{ matrix.name }})
+    runs-on: macos-26
+    needs: [artifact]
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: swift-collections
+            repo: https://github.com/apple/swift-collections
+            rev: 3b69cedbaa49957e97c092ae400bb57602ef941f
+            target: //Packages/swift-collections:Collections
+          - name: SwiftFormat
+            repo: https://github.com/nicklockwood/SwiftFormat
+            rev: fbc07aca537317b8ecdde8fc22914cdd16d989a2
+            target: //Packages/SwiftFormat:swiftformat
+          - name: swift-protobuf
+            repo: https://github.com/apple/swift-protobuf
+            rev: ad92f08214402fae0e4ab1664fc65c76c1c0fa32
+            target: //Packages/swift-protobuf:SwiftProtobuf
+          - name: GRDB.swift
+            repo: https://github.com/groue/GRDB.swift
+            rev: 0d8cf958b4b66a0473ec6e6986eb9da462171da9
+            target: //Packages/GRDB.swift:GRDB
+          - name: swift-nio
+            repo: https://github.com/apple/swift-nio
+            rev: 6db9d9abd92ad7399b8a564cafbb87d3507245fa
+            target: //Packages/swift-nio:NIOCore
+          - name: swift-dependencies
+            repo: https://github.com/pointfreeco/swift-dependencies
+            rev: b476cc5761057d8d857de063fe7ac8daecf5c06b
+            target: //Packages/swift-dependencies:Dependencies
+    steps:
+      - name: Bazel Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/bazel-disk
+            ~/bazel-repo
+          key: ${{ runner.os }}-bazel-package-${{ matrix.name }}-${{ matrix.rev }}-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-package-${{ matrix.name }}-${{ matrix.rev }}-
+            ${{ runner.os }}-bazel-package-${{ matrix.name }}-
+
+      - name: Bazel Cache Settings
+        run: |
+          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
+          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Clone ${{ matrix.name }}
+        run: |
+          chmod +x bazelize
+          git clone --filter=blob:none "${{ matrix.repo }}" package
+          git -C package checkout --detach "${{ matrix.rev }}"
+
+      - name: SwiftPM Cache
+        uses: actions/cache@v5
+        with:
+          path: package/.build
+          key: ${{ runner.os }}-spm-package-${{ matrix.name }}-${{ matrix.rev }}
+          restore-keys: |
+            ${{ runner.os }}-spm-package-${{ matrix.name }}-
+
+      - name: SwiftPM Build
+        working-directory: package
+        run: swift build
+
+      - name: Bazel Generation
+        run: ./bazelize --input package --output package/App
+
+      - name: Build Package Product
+        working-directory: package/App
+        run: bazel build ${{ matrix.target }}
+
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
@@ -498,6 +601,8 @@ jobs:
           - name: BuildToolPlugin
           - name: Clang
           - name: CommandPlugin
+            programs: |
+              //Packages/CommandPlugin:hello
           - name: ConfigurationCondition
           - name: DependencyCondition
             # A trait is a flag, so the build that turns one on is a build to
@@ -662,13 +767,14 @@ jobs:
           ! unzip -Z1 "$bundle" | grep -q "de.lproj"
 
       # A command plugin is not run by a build: it is a verb someone types, and
-      # running it is the only proof it is there. `swift package hello alpha
-      # --beta` above and this answer the same, arguments included.
+      # running it is the only proof it is there. The fixture also has an
+      # executable product named `hello`, so the command target is disambiguated
+      # as `hello_command`.
       - name: Run Command Plugin
         if: matrix.name == 'CommandPlugin'
         working-directory: spm/CommandPlugin/App
         run: |
-          bazel run //Packages/CommandPlugin:hello -- alpha --beta > command.log
+          bazel run //Packages/CommandPlugin:hello_command -- alpha --beta > command.log
           grep -q "Hello from CommandPlugin" command.log
           grep -q "Arguments: alpha --beta" command.log
 
