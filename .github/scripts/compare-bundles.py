@@ -193,6 +193,41 @@ def command_output(*arguments: str | Path) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
+def asset_catalog_values(path: Path) -> Any:
+    values = json.loads(
+        "\n".join(
+            command_output(
+                "xcrun",
+                "--sdk",
+                "macosx",
+                "assetutil",
+                "--info",
+                path,
+            )
+        )
+    )
+    # actool records its invocation time in the catalog header. It does not
+    # describe a rendition and differs between otherwise equivalent builds.
+    if isinstance(values, list) and values and isinstance(values[0], dict):
+        values[0].pop("Timestamp", None)
+    return values
+
+
+def asset_catalog_differences(
+    path: str,
+    reference: Path,
+    generated: Path,
+) -> list[Difference]:
+    if asset_catalog_values(reference) == asset_catalog_values(generated):
+        return []
+    return [
+        Difference(
+            f"asset:{path}",
+            f"{path}: asset catalog metadata or renditions differ",
+        )
+    ]
+
+
 def normalize_rpath(path: str) -> str:
     path = re.sub(
         r"^/(?:private/var/select/developer_dir|var/db/xcode_select_link)",
@@ -330,16 +365,34 @@ def compare_entries(
         if reference_path.read_bytes() == generated_path.read_bytes():
             continue
 
-        reference_is_plist, reference_plist = load_plist(reference_path)
-        generated_is_plist, generated_plist = load_plist(generated_path)
-        if reference_is_plist and generated_is_plist:
-            differences += plist_differences(path, reference_plist, generated_plist)
-        elif is_macho(reference_path) and is_macho(generated_path):
-            differences += macho_differences(path, reference_path, generated_path)
-        else:
-            differences.append(
-                Difference(f"content:{path}", f"{path}: file contents differ")
+        if reference_path.name == "Assets.car":
+            differences += asset_catalog_differences(
+                path,
+                reference_path,
+                generated_path,
             )
+        else:
+            reference_is_plist, reference_plist = load_plist(reference_path)
+            generated_is_plist, generated_plist = load_plist(generated_path)
+            if reference_is_plist and generated_is_plist:
+                differences += plist_differences(
+                    path,
+                    reference_plist,
+                    generated_plist,
+                )
+            elif is_macho(reference_path) and is_macho(generated_path):
+                differences += macho_differences(
+                    path,
+                    reference_path,
+                    generated_path,
+                )
+            else:
+                differences.append(
+                    Difference(
+                        f"content:{path}",
+                        f"{path}: file contents differ",
+                    )
+                )
     return differences
 
 

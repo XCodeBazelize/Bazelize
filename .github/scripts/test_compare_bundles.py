@@ -1,4 +1,5 @@
 import json
+import os
 import plistlib
 import subprocess
 import tempfile
@@ -21,11 +22,19 @@ class CompareBundlesTests(unittest.TestCase):
     def tearDown(self):
         self.temporary_directory.cleanup()
 
-    def run_comparison(self, *arguments):
+    def run_comparison(self, *arguments, env=None):
         return subprocess.run(
-            [str(SCRIPT), "--reference", str(self.reference), "--generated", str(self.generated), *arguments],
+            [
+                str(SCRIPT),
+                "--reference",
+                str(self.reference),
+                "--generated",
+                str(self.generated),
+                *arguments,
+            ],
             capture_output=True,
             check=False,
+            env=env,
             text=True,
         )
 
@@ -64,6 +73,29 @@ class CompareBundlesTests(unittest.TestCase):
         )
 
         result = self.run_comparison()
+
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_ignores_asset_catalog_build_timestamp(self):
+        (self.reference / "Assets.car").write_bytes(b"reference")
+        (self.generated / "Assets.car").write_bytes(b"generated")
+        fake_bin = self.root / "bin"
+        fake_bin.mkdir()
+        xcrun = fake_bin / "xcrun"
+        xcrun.write_text(
+            """#!/bin/sh
+case "$5" in
+  *generated*) timestamp=315532800 ;;
+  *) timestamp=1791770420 ;;
+esac
+printf '[{"StorageVersion":17,"Timestamp":%s},{"AssetType":"Color","Name":"Brand"}]\\n' "$timestamp"
+"""
+        )
+        xcrun.chmod(0o755)
+        environment = os.environ.copy()
+        environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
+
+        result = self.run_comparison(env=environment)
 
         self.assertEqual(result.returncode, 0, result.stdout)
 
