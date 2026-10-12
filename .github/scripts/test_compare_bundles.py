@@ -76,7 +76,7 @@ class CompareBundlesTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stdout)
 
-    def test_ignores_asset_catalog_build_timestamp(self):
+    def test_ignores_asset_catalog_compiler_metadata(self):
         (self.reference / "Assets.car").write_bytes(b"reference")
         (self.generated / "Assets.car").write_bytes(b"generated")
         fake_bin = self.root / "bin"
@@ -85,10 +85,14 @@ class CompareBundlesTests(unittest.TestCase):
         xcrun.write_text(
             """#!/bin/sh
 case "$5" in
-  *generated*) timestamp=315532800 ;;
-  *) timestamp=1791770420 ;;
+  *generated*)
+    timestamp=315532800 identifier=2 digest=generated size=300 tool=generated
+    ;;
+  *)
+    timestamp=1791770420 identifier=1 digest=reference size=260 tool=reference
+    ;;
 esac
-printf '[{"StorageVersion":17,"Timestamp":%s},{"AssetType":"Color","Name":"Brand"}]\\n' "$timestamp"
+printf '[{"Authoring Tool":"%s","StorageVersion":17,"Timestamp":%s},{"AssetType":"Color","Color components":[0.75,0.25,0.5,1],"Name":"Brand","NameIdentifier":%s,"SHA1Digest":"%s","SizeOnDisk":%s}]\\n' "$tool" "$timestamp" "$identifier" "$digest" "$size"
 """
         )
         xcrun.chmod(0o755)

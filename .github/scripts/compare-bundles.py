@@ -206,10 +206,28 @@ def asset_catalog_values(path: Path) -> Any:
             )
         )
     )
-    # actool records its invocation time in the catalog header. It does not
-    # describe a rendition and differs between otherwise equivalent builds.
-    if isinstance(values, list) and values and isinstance(values[0], dict):
-        values[0].pop("Timestamp", None)
+    # assetutil exposes build-tool metadata in the catalog header and internal
+    # rendition bookkeeping. Neither changes what CoreUI serves to a consumer.
+    # Keep schema, platform, traits, names, and decoded rendition values strict.
+    header_metadata = {
+        "AssetStorageVersion",
+        "Authoring Tool",
+        "CoreUIVersion",
+        "DumpToolVersion",
+        "MainVersion",
+        "Timestamp",
+    }
+    rendition_metadata = {
+        "NameIdentifier",
+        "SHA1Digest",
+        "SizeOnDisk",
+    }
+    if isinstance(values, list):
+        for index, value in enumerate(values):
+            if not isinstance(value, dict):
+                continue
+            for key in header_metadata if index == 0 else rendition_metadata:
+                value.pop(key, None)
     return values
 
 
