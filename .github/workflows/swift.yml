@@ -335,7 +335,11 @@ jobs:
       # files are expected to be identical.
       - name: Compare Asset Symbols
         run: |
-          xcode=$(find "$RUNNER_TEMP/xcode" -name GeneratedAssetSymbols.swift -path '*Example.build*' | head -1)
+          (cd fixture/iOS/App &&
+            bazel build //Targets/Example:AssetSymbols \
+              --config=Debug \
+              --ios_multi_cpus=sim_arm64)
+          xcode=$(find "$RUNNER_TEMP/xcode" -name GeneratedAssetSymbols.swift -path '*Example.build*' -print -quit)
           bazel_output=$(cd fixture/iOS/App &&
             bazel cquery 'filter("AssetSymbols", deps(//Targets/Example:Example))' \
               --config=Debug \
@@ -343,8 +347,12 @@ jobs:
               --output=files)
           bazel_execution_root=$(cd fixture/iOS/App && bazel info execution_root)
           bazel="$bazel_execution_root/$bazel_output"
-          if [ -z "$xcode" ] || [ ! -f "$bazel" ]; then
-            echo "::error::one of the two asset symbol files was not produced"
+          if [ -z "$xcode" ]; then
+            echo "::error::Xcode did not produce GeneratedAssetSymbols.swift"
+            exit 1
+          fi
+          if [ ! -f "$bazel" ]; then
+            echo "::error::Bazel did not produce $bazel"
             exit 1
           fi
           diff "$xcode" "$bazel"
