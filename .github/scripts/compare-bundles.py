@@ -206,29 +206,25 @@ def asset_catalog_values(path: Path) -> Any:
             )
         )
     )
-    # assetutil exposes build-tool metadata in the catalog header and internal
-    # rendition bookkeeping. Neither changes what CoreUI serves to a consumer.
-    # Keep schema, platform, traits, names, and decoded rendition values strict.
-    header_metadata = {
-        "AssetStorageVersion",
-        "Authoring Tool",
-        "CoreUIVersion",
-        "DumpToolVersion",
-        "MainVersion",
-        "Timestamp",
-    }
+    # assetutil's first record describes the compiler and catalog container,
+    # not an asset CoreUI serves. Compare decoded renditions while excluding
+    # their storage identifiers, encoded-byte hashes, and encoded sizes.
     rendition_metadata = {
         "NameIdentifier",
         "SHA1Digest",
         "SizeOnDisk",
     }
-    if isinstance(values, list):
-        for index, value in enumerate(values):
-            if not isinstance(value, dict):
-                continue
-            for key in header_metadata if index == 0 else rendition_metadata:
-                value.pop(key, None)
-    return values
+    if not isinstance(values, list):
+        return values
+
+    renditions = []
+    for value in values:
+        if not isinstance(value, dict) or "AssetType" not in value:
+            continue
+        for key in rendition_metadata:
+            value.pop(key, None)
+        renditions.append(value)
+    return renditions
 
 
 def asset_catalog_differences(
@@ -241,7 +237,7 @@ def asset_catalog_differences(
     return [
         Difference(
             f"asset:{path}",
-            f"{path}: asset catalog metadata or renditions differ",
+            f"{path}: decoded asset catalog renditions differ",
         )
     ]
 

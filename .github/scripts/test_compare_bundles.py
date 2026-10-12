@@ -84,15 +84,17 @@ class CompareBundlesTests(unittest.TestCase):
         xcrun = fake_bin / "xcrun"
         xcrun.write_text(
             """#!/bin/sh
+color=0.75
 case "$5" in
   *generated*)
     timestamp=315532800 identifier=2 digest=generated size=300 tool=generated
+    [ "$ASSET_DIFFERENT" = 1 ] && color=0.5
     ;;
   *)
     timestamp=1791770420 identifier=1 digest=reference size=260 tool=reference
     ;;
 esac
-printf '[{"Authoring Tool":"%s","StorageVersion":17,"Timestamp":%s},{"AssetType":"Color","Color components":[0.75,0.25,0.5,1],"Name":"Brand","NameIdentifier":%s,"SHA1Digest":"%s","SizeOnDisk":%s}]\\n' "$tool" "$timestamp" "$identifier" "$digest" "$size"
+printf '[{"Authoring Tool":"%s","StorageVersion":17,"Timestamp":%s},{"AssetType":"Color","Color components":[%s,0.25,0.5,1],"Name":"Brand","NameIdentifier":%s,"SHA1Digest":"%s","SizeOnDisk":%s}]\\n' "$tool" "$timestamp" "$color" "$identifier" "$digest" "$size"
 """
         )
         xcrun.chmod(0o755)
@@ -102,6 +104,11 @@ printf '[{"Authoring Tool":"%s","StorageVersion":17,"Timestamp":%s},{"AssetType"
         result = self.run_comparison(env=environment)
 
         self.assertEqual(result.returncode, 0, result.stdout)
+
+        environment["ASSET_DIFFERENT"] = "1"
+        different = self.run_comparison(env=environment)
+        self.assertNotEqual(different.returncode, 0)
+        self.assertIn("asset:Assets.car", different.stdout)
 
     def test_accepts_only_observed_baseline_differences(self):
         (self.reference / "resource.txt").write_text("reference")
