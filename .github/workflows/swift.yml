@@ -929,11 +929,13 @@ jobs:
       - name: Compare Resource Bundles
         if: matrix.name == 'TargetResource'
         run: |
-          archive=$(cd spm/TargetResource/App &&
+          output=$(cd spm/TargetResource/App &&
             bazel cquery //Packages/TargetResource:TargetResourceTests --output=files |
             grep 'TargetResourceTests.zip$')
+          execution_root=$(cd spm/TargetResource/App && bazel info execution_root)
+          archive="$execution_root/$output"
           generated="$RUNNER_TEMP/target-resource-bundles"
-          unzip -q "spm/TargetResource/App/$archive" -d "$generated"
+          unzip -q "$archive" -d "$generated"
 
           for name in \
             TargetResource_TargetResource.bundle \
