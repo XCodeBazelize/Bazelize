@@ -336,8 +336,14 @@ jobs:
       - name: Compare Asset Symbols
         run: |
           xcode=$(find "$RUNNER_TEMP/xcode" -name GeneratedAssetSymbols.swift -path '*Example.build*' | head -1)
-          bazel=$(find -L fixture/iOS/App/bazel-out -name GeneratedAssetSymbols.swift -path '*ios_sim*Targets/Example*' | head -1)
-          if [ -z "$xcode" ] || [ -z "$bazel" ]; then
+          bazel_output=$(cd fixture/iOS/App &&
+            bazel cquery 'filter("AssetSymbols", deps(//Targets/Example:Example))' \
+              --config=Debug \
+              --ios_multi_cpus=sim_arm64 \
+              --output=files)
+          bazel_execution_root=$(cd fixture/iOS/App && bazel info execution_root)
+          bazel="$bazel_execution_root/$bazel_output"
+          if [ -z "$xcode" ] || [ ! -f "$bazel" ]; then
             echo "::error::one of the two asset symbol files was not produced"
             exit 1
           fi
@@ -929,6 +935,8 @@ jobs:
       - name: Compare Resource Bundles
         if: matrix.name == 'TargetResource'
         run: |
+          (cd spm/TargetResource/App &&
+            bazel build //Packages/TargetResource:TargetResourceTests)
           output=$(cd spm/TargetResource/App &&
             bazel cquery //Packages/TargetResource:TargetResourceTests --output=files |
             grep 'TargetResourceTests.zip$')
