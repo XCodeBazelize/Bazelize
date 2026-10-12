@@ -171,10 +171,16 @@ Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
 
-CI also compares bundles: Xcode builds the fixture application, the generated
-workspace builds the same application, and every path Xcode ships is required
-to be in the generated bundle too. A build that compiles is not evidence that
-it ships what the project asked for.
+CI also compares controlled bundles against their native builds. The
+`TargetResource` fixture compares SwiftPM's library and test resource bundles
+with the generated `apple_resource_bundle` outputs; macOS's
+`Contents/Resources` wrapper is normalized, while every logical resource,
+property-list value, node type, and stable byte is compared in both directions.
+The fixture's `MacBundle.bundle` similarly compares the complete Xcode and
+`macos_bundle` product trees, including the executable's architectures, build
+platform, dependencies, exported symbols, and rpaths. Known differences are
+named in a checked-in baseline; a new difference or one that disappears fails
+CI until the baseline is updated.
 
 ### Unsupported targets
 

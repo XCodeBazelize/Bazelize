@@ -9,6 +9,7 @@ on:
       - 'Tests/**'
       - 'spm/**'
       - '.github/workflows/**'
+      - '.github/scripts/**'
       - 'Package.swift'
       - 'fixture/iOS/**'
       - 'mise.toml'
@@ -18,6 +19,7 @@ on:
       - 'Tests/**'
       - 'spm/**'
       - '.github/workflows/**'
+      - '.github/scripts/**'
       - 'Package.swift'
       - 'fixture/iOS/**'
       - 'mise.toml'
@@ -80,6 +82,9 @@ jobs:
         key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
           ${{ runner.os }}-macos-26-spm-
+
+    - name: Test bundle comparison
+      run: python3 .github/scripts/test_compare_bundles.py
 
     - name: Run tests
       run: make test
@@ -245,10 +250,10 @@ jobs:
           path: fixture/iOS/Example.ipa
           if-no-files-found: ignore # 'warn' or 'ignore'
 
-  # A build that compiles says nothing about what it ships. Xcode builds the
-  # fixture app, the generated workspace builds the same app, and the two
-  # bundles are compared: anything Xcode copies in and the generated build does
-  # not is a fidelity bug that would otherwise only show at run time.
+  # A build that compiles says nothing about what it ships. Xcode and the
+  # generated workspace build the same macOS product bundle; their complete
+  # trees and stable contents must match. Every accepted difference is named
+  # in the checked-in baseline, and any new or stale difference fails.
   CompareBundles:
     runs-on: macos-26
     needs: [artifact]
@@ -297,21 +302,33 @@ jobs:
             ENABLE_DEBUG_DYLIB=NO \
             build
 
+          xcodebuild \
+            -project Example.xcodeproj \
+            -scheme MacBundle \
+            -configuration Debug \
+            -sdk macosx \
+            -derivedDataPath "$RUNNER_TEMP/xcode" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
       - name: Build With Bazel
         run: |
           chmod +x bazelize
           ./bazelize --input fixture/iOS/Example.xcodeproj --output fixture/iOS/App
           cd fixture/iOS/App
-          bazel build //Targets/Example --ios_multi_cpus=sim_arm64
-          ipa=$(bazel cquery //Targets/Example --output=files | grep '\.ipa$')
+          bazel build //Targets/Example --config=Debug --ios_multi_cpus=sim_arm64
+          bazel build //Targets/MacBundle --config=Debug
+          bundle=$(bazel cquery //Targets/MacBundle --config=Debug --output=files |
+            grep 'MacBundle.zip$')
           mkdir -p "$RUNNER_TEMP/bazel"
-          unzip -q "$ipa" -d "$RUNNER_TEMP/bazel"
+          unzip -q "$bundle" -d "$RUNNER_TEMP/bazel"
 
-      - name: Compare Bundles
+      - name: Compare Product Bundle
         run: |
           python3 .github/scripts/compare-bundles.py \
-            --xcode "$RUNNER_TEMP/xcode/Build/Products/Debug-iphonesimulator/Example.app" \
-            --bazel "$RUNNER_TEMP/bazel/Payload/Example.app"
+            --reference "$RUNNER_TEMP/xcode/Build/Products/Debug/MacBundle.bundle" \
+            --generated "$RUNNER_TEMP/bazel/MacBundle.bundle" \
+            --baseline .github/scripts/bundle-differences.json
 
       # The symbols a catalog becomes are source the target compiles, so they are
       # compared as source: Xcode writes its copy into DerivedSources, and the two
@@ -904,6 +921,32 @@ jobs:
           else
             echo "no Bazel tests, nothing to test"
           fi
+
+      # SwiftPM's macOS resource bundle is wrapped in Contents/Resources while
+      # apple_resource_bundle is flat. Compare their logical resource roots,
+      # and require every other observed difference to stay in the documented
+      # baseline.
+      - name: Compare Resource Bundles
+        if: matrix.name == 'TargetResource'
+        run: |
+          archive=$(cd spm/TargetResource/App &&
+            bazel cquery //Packages/TargetResource:TargetResourceTests --output=files |
+            grep 'TargetResourceTests.zip$')
+          generated="$RUNNER_TEMP/target-resource-bundles"
+          unzip -q "spm/TargetResource/App/$archive" -d "$generated"
+
+          for name in \
+            TargetResource_TargetResource.bundle \
+            TargetResource_TargetResourceTests.bundle
+          do
+            reference=$(find -L spm/TargetResource/.build \
+              -type d -name "$name" -not -path '*.xctest/*' -print -quit)
+            .github/scripts/compare-bundles.py \
+              --reference "$reference" \
+              --generated "$generated/TargetResourceTests.xctest/Contents/Resources/$name" \
+              --swiftpm-resource \
+              --baseline .github/scripts/bundle-differences.json
+          done
 
       # One generated library is compiled through two platform configurations:
       # each gets its own settings and only iOS gets the conditional target.

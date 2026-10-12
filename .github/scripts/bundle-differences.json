@@ -1,0 +1,61 @@
+{
+  "bundles": {
+    "TargetResource_TargetResource.bundle": {
+      "content:Main.storyboardc/NSViewController-B8D-0N-5wS.nib": "ibtool embeds the per-invocation storyboard object identifier in the compiled nib",
+      "content:default.metallib": "the independent Metal compiler actions do not produce byte-identical libraries",
+      "executable:Assets.car": "rules_apple archives compiled asset output as executable while SwiftPM records it as data",
+      "executable:Info.plist": "rules_apple archives its generated bundle plist as executable while SwiftPM records it as data",
+      "executable:Main.storyboardc/B8D-0N-5wS-view-m2S-Jp-Qdl.nib": "rules_apple archives compiled Interface Builder output as executable while SwiftPM records it as data",
+      "executable:Main.storyboardc/Info.plist": "rules_apple archives compiled Interface Builder output as executable while SwiftPM records it as data",
+      "executable:Main.storyboardc/NSViewController-B8D-0N-5wS.nib": "rules_apple archives compiled Interface Builder output as executable while SwiftPM records it as data",
+      "executable:Model.momd/Model.mom": "rules_apple archives compiled Core Data output as executable while SwiftPM records it as data",
+      "executable:Model.momd/Model2.mom": "rules_apple archives compiled Core Data output as executable while SwiftPM records it as data",
+      "executable:Model.momd/Model2.omo": "rules_apple archives compiled Core Data output as executable while SwiftPM records it as data",
+      "executable:Model.momd/VersionInfo.plist": "rules_apple archives compiled Core Data output as executable while SwiftPM records it as data",
+      "executable:Panel.nib": "rules_apple archives compiled Interface Builder output as executable while SwiftPM records it as data",
+      "executable:default.metallib": "rules_apple archives compiled Metal output as executable while SwiftPM records it as data",
+      "executable:en.lproj/Catalog.strings": "rules_apple archives compiled string-catalog output as executable while SwiftPM records it as data",
+      "plist:Info.plist:/BuildMachineOSBuild": "SwiftPM records build-environment metadata that rules_apple omits",
+      "plist:Info.plist:/CFBundleDevelopmentRegion": "SwiftPM records the package default localization while the generated fragment does not",
+      "plist:Info.plist:/CFBundleIdentifier": "SwiftPM and Bazelize derive resource bundle identifiers differently",
+      "plist:Info.plist:/CFBundleShortVersionString": "the generated rules_apple fragment carries a default version that SwiftPM omits",
+      "plist:Info.plist:/CFBundleSupportedPlatforms": "SwiftPM records platform metadata that rules_apple omits",
+      "plist:Info.plist:/CFBundleVersion": "the generated rules_apple fragment carries a default version that SwiftPM omits",
+      "plist:Info.plist:/DTCompiler": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTPlatformBuild": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTPlatformName": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTPlatformVersion": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTSDKBuild": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTSDKName": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTXcode": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTXcodeBuild": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/LSMinimumSystemVersion": "SwiftPM records the deployment target while the generated fragment does not",
+      "plist:Main.storyboardc/Info.plist:/NSViewControllerIdentifiersToUUIDs/NSViewController-B8D-0N-5wS": "ibtool assigns a fresh storyboard object identifier on each independent compilation"
+    },
+    "TargetResource_TargetResourceTests.bundle": {
+      "executable:Info.plist": "rules_apple archives its generated bundle plist as executable while SwiftPM records it as data",
+      "plist:Info.plist:/BuildMachineOSBuild": "SwiftPM records build-environment metadata that rules_apple omits",
+      "plist:Info.plist:/CFBundleDevelopmentRegion": "SwiftPM records the package default localization while the generated fragment does not",
+      "plist:Info.plist:/CFBundleIdentifier": "SwiftPM and Bazelize derive resource bundle identifiers differently",
+      "plist:Info.plist:/CFBundleShortVersionString": "the generated rules_apple fragment carries a default version that SwiftPM omits",
+      "plist:Info.plist:/CFBundleSupportedPlatforms": "SwiftPM records platform metadata that rules_apple omits",
+      "plist:Info.plist:/CFBundleVersion": "the generated rules_apple fragment carries a default version that SwiftPM omits",
+      "plist:Info.plist:/DTCompiler": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTPlatformBuild": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTPlatformName": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTPlatformVersion": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTSDKBuild": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTSDKName": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTXcode": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/DTXcodeBuild": "SwiftPM records toolchain metadata that rules_apple omits",
+      "plist:Info.plist:/LSMinimumSystemVersion": "SwiftPM records the deployment target while the generated fragment does not"
+    },
+    "MacBundle.bundle": {
+      "executable:Contents/Info.plist": "rules_apple archives the processed product plist as executable while Xcode records it as data",
+      "macho:Contents/MacOS/MacBundle:dependencies:extra:/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa": "rules_swift links Cocoa in addition to the frameworks selected by Xcode",
+      "macho:Contents/MacOS/MacBundle:dependencies:extra:/usr/lib/libc++.1.dylib": "rules_swift links libc++ in addition to the libraries selected by Xcode",
+      "macho:Contents/MacOS/MacBundle:rpaths:extra:$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-$VERSION/macosx": "rules_swift adds its selected toolchain Swift library search path",
+      "macho:Contents/MacOS/MacBundle:rpaths:extra:@executable_path/../Frameworks": "rules_swift adds the conventional embedded Frameworks search path"
+    }
+  }
+}
