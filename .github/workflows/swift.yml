@@ -336,9 +336,10 @@ jobs:
       - name: Compare Asset Symbols
         run: |
           (cd fixture/iOS/App &&
-            bazel build //Targets/Example:AssetSymbols \
+            bazel build //Targets/Example:Example \
               --config=Debug \
-              --ios_multi_cpus=sim_arm64)
+              --ios_multi_cpus=sim_arm64 \
+              --remote_download_outputs=all)
           xcode=$(find "$RUNNER_TEMP/xcode" -name GeneratedAssetSymbols.swift -path '*Example.build*' -print -quit)
           bazel_output=$(cd fixture/iOS/App &&
             bazel cquery 'filter("AssetSymbols", deps(//Targets/Example:Example))' \
