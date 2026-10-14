@@ -55,9 +55,10 @@ package 的 BUILD 不在那裡，而在
 
 輸入可以是 `.xcodeproj`，也可以是 `Package.swift`——直接傳進來的 package 會被當成
 「一個什麼都沒有的 project 底下唯一那個本地 package」來載入，所以以下結構兩種輸入都
-一樣。package 輸入多出來的是：它自己的測試 target 會產生成一個放原始碼的
-`swift_library`（`<Target>_library`，testonly）加上一個 `macos_unit_test`，因為把
-工具指向一個 package，就是指向那個 package 的測試。
+一樣。Package 輸入多出來的是自己的測試 targets：一個放原始碼、test-only 的
+`swift_library`，加上符合平台的 Apple test bundles。`bazel test //...` 在預設 macOS
+host 會選到既有 `macos_unit_test`；明確指定 iOS Simulator target platform 時則選到
+生成的 `ios_unit_test` variant。
 
 ```text
 App/
@@ -192,7 +193,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | binary target（artifact bundle） | `native_binary`，取 bundle 宣告的 triple 裡本機跑得動的那個 variant |
 | binary target（遠端 artifact） | SwiftPM 解壓到 `.build/artifacts`，bazelize 再連結成 `Artifacts/<Target>/`，然後同上 |
 | executable target | `swift_binary` |
-| 傳進來那個 package 的測試 target | `swift_library`（`<Target>_library`，testonly）+ `macos_unit_test`，`minimum_os_version` 取該 package 對 macOS 要求的版本 |
+| 傳進來那個 package 的測試 target | `swift_library`（`<Target>_library`，testonly）+ 符合平台的 `macos_unit_test`／`ios_unit_test` variants；各 variant 的 `minimum_os_version` 取該 package 對該平台要求的版本 |
 | executable product | `alias` 指向該 target 的 binary |
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
@@ -217,6 +218,30 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | setting 或依賴上的 `.when(platforms:)` | 變成掛在 `@platforms//os` 上的 `select`，由 build 當下的 target platform 決定；多個 platform 產生 `config_setting_group`，Mac Catalyst 另外比對 Apple support 的 Catalyst constraint |
 | setting 或依賴上的 `.when(traits:)` | 變成掛在該 trait flag 上的 `select`；條件寫了多個 trait 就產生 `config_setting_group` |
 | setting 上的 `.when(configuration:)` | 變成掛在 Bazel compilation mode 上的 `select` |
+
+### 選擇 package test 平台
+
+Host platform 維持預設值，因此在受支援的 macOS host 上，既有 command 與 test labels
+仍維持 macOS 行為：
+
+```sh
+bazel test //...
+```
+
+透過 Bazel 的 target-platform flag 選擇生成的 iOS Simulator variants：
+
+```sh
+bazel test //... --platforms=@apple_support//platforms:ios_sim_arm64
+```
+
+平台專用的 test labels 是實作細節。`target_compatible_with` 會讓 wildcard expansion
+跳過其他 variants。這個 flag 不會把 `macos_unit_test` 轉換成 iOS test；每個 variant
+使用各自的 Apple bundle rule 與 platform transition。
+
+Upstream 雖然已有 tvOS、watchOS 與 visionOS bundle rules，但 rules_apple 5.2.0
+尚未提供可用的預設 simulator runners。Mac Catalyst 也沒有專用的 upstream unit-test
+rule。在補上 runner 或 upstream rule 支援前，Bazelize 不能宣稱這些平台已能執行
+runtime tests。
 
 同一個 `.when` 裡的不同維度會產生 `match_all` 的
 `config_setting_group`：例如 iOS debug setting 必須同時符合 iOS constraint 與

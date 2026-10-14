@@ -62,9 +62,10 @@ The package BUILD files were not there; they were in
 The input is an `.xcodeproj`, or a `Package.swift` — a package handed in directly
 is loaded as the one local package of a project with nothing else in it, so
 everything below is the same either way. The difference is what a package input
-adds: its own test targets, as a `swift_library` of their sources plus a
-`macos_unit_test` over it, because pointing the tool at a package is pointing
-it at that package's tests.
+adds: its own test targets, as a test-only `swift_library` of their sources plus
+platform-compatible Apple test bundles. `bazel test //...` selects the existing
+`macos_unit_test` on the default macOS host; an explicit iOS Simulator target
+platform selects the generated `ios_unit_test` variant instead.
 
 ```text
 App/
@@ -212,7 +213,7 @@ No test pins how a package's rules are produced either.
 | binary target (artifact bundle) | `native_binary` over the variant this machine can run, picked by the triples the bundle names |
 | binary target (remote artifact) | SwiftPM unpacks it under `.build/artifacts`; bazelize links it into `Artifacts/<Target>/` and imports it as above |
 | executable target | `swift_binary` |
-| test target of the package handed in | `swift_library` (`<Target>_library`, testonly) + `macos_unit_test`, whose `minimum_os_version` is what the package asks of macOS |
+| test target of the package handed in | `swift_library` (`<Target>_library`, testonly) + platform-compatible `macos_unit_test` / `ios_unit_test` variants; each variant uses that platform's package `minimum_os_version` |
 | executable product | `alias` to the target's binary |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
@@ -237,6 +238,31 @@ No test pins how a package's rules are produced either.
 | `.when(platforms:)` on a setting or a dependency | a `select` on `@platforms//os`, so the target platform decides it at build time; several platforms are a `config_setting_group`, and Mac Catalyst additionally matches Apple support's Catalyst constraint |
 | `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag — a condition naming several traits is a `config_setting_group` |
 | `.when(configuration:)` on a setting | a `select` on Bazel's compilation mode |
+
+### Selecting a package test platform
+
+The host platform remains the default, so on the supported macOS host the
+existing command and test labels keep their macOS behavior:
+
+```sh
+bazel test //...
+```
+
+Select the generated iOS Simulator variants with Bazel's target-platform flag:
+
+```sh
+bazel test //... --platforms=@apple_support//platforms:ios_sim_arm64
+```
+
+The platform-specific test labels are an implementation detail.
+`target_compatible_with` makes wildcard expansion skip every other variant.
+The flag does not transform a `macos_unit_test` into an iOS test; each variant
+uses its own Apple bundle rule and platform transition.
+
+tvOS, watchOS, and visionOS bundle rules exist upstream, but rules_apple 5.2.0
+does not provide working default simulator runners for them. Mac Catalyst has
+no dedicated upstream unit-test rule. Those platforms require runner or
+upstream rule support before Bazelize can claim runtime test execution.
 
 Dimensions written in the same `.when` are a `config_setting_group` with
 `match_all`: for example, an iOS debug setting needs both the iOS constraint and
