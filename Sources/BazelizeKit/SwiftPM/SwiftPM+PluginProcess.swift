@@ -34,32 +34,6 @@ extension SwiftPM {
             }
         }
 
-        /// Where the toolchain keeps the module a plugin is compiled against,
-        /// which the rules that build a plugin need spelled out.
-        ///
-        /// `xcrun` is asked once: a run builds against one toolchain.
-        static let pluginAPIPath: String? = {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-            process.arguments = ["--find", "swiftc"]
-
-            let output = Pipe()
-            process.standardOutput = output
-            process.standardError = FileHandle.nullDevice
-
-            guard (try? process.run()) != nil else { return nil }
-            let data = output.fileHandleForReading.readDataToEndOfFile()
-            process.waitUntilExit()
-
-            let found = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard !found.isEmpty else { return nil }
-
-            /// `<toolchain>/usr/bin/swiftc` → `<toolchain>/usr/lib/swift/pm/PluginAPI`
-            let api = Path(found).parent().parent() + "lib/swift/pm/PluginAPI"
-            return api.isDirectory ? api.string : nil
-        }()
-
         // MARK: Private
 
         private static func errors(_ output: String?) -> String {

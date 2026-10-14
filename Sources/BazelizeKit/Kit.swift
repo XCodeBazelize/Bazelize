@@ -86,6 +86,17 @@ public final class Kit {
     /// their build tool plugins once the workspace is complete.
     private var packageGenerator: SwiftPM.Generator?
 
+    /// Whether a run ends by running the workspace's build tool plugins, which
+    /// is what every real run does.
+    ///
+    /// The generated workspace snapshots turn it off. They record the rules a
+    /// run writes, and running the plugins would have them start a Bazel build
+    /// in a throwaway directory — a fresh output base, a download of every
+    /// module and a server left behind, per test. What the plugins produce is
+    /// covered where it belongs, by the fixture lanes that build and test the
+    /// generated workspaces.
+    var runsBuildToolPlugins = true
+
     public final func run() async throws {
         defer { tips() }
 
@@ -175,7 +186,13 @@ extension Kit {
     /// What landed decides how the rules name it, so the packages that have a
     /// plugin are written once more afterwards.
     private final func runBuildToolPlugins() async throws {
-        guard let generator = packageGenerator, generator.hasBuildToolPlugins else { return }
+        guard
+            runsBuildToolPlugins,
+            let generator = packageGenerator,
+            generator.hasBuildToolPlugins
+        else {
+            return
+        }
 
         do {
             try await SwiftPM.PluginHost.runPlugins(in: outputRoot)

@@ -1,7 +1,7 @@
-import BazelizeKit
 import Foundation
 import PathKit
 import Testing
+@testable import BazelizeKit
 @testable import Xcode
 
 /// What a run writes, kept verbatim.
@@ -54,6 +54,21 @@ struct GeneratedWorkspaceSnapshotTests {
                 "MODULE.bazel",
                 "Packages/BUILD",
                 "Packages/Platform/BUILD",
+            ])
+    }
+
+    /// A plugin's rules name the toolchain by the placeholders Bazel resolves,
+    /// so what a run writes here is the same file on every machine and under
+    /// every Xcode — which is what makes recording it possible at all.
+    @Test
+    func swiftPackageBuildToolPlugin() async throws {
+        try await verify(
+            input: "spm/BuildToolPlugin",
+            snapshot: "BuildToolPlugin",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/BuildToolPlugin/BUILD",
             ])
     }
 
@@ -114,6 +129,7 @@ struct GeneratedWorkspaceSnapshotTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(root + input, nil, outputPath: output)
+        kit.runsBuildToolPlugins = false
         try await kit.run()
 
         let recorded = root + "Tests/Snapshots" + name
