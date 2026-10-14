@@ -5,4 +5,4 @@
 //  Created by Yume on 2023/1/13.
 //
 
-public let version = "0.0.5"
+public let version = "0.1.0"

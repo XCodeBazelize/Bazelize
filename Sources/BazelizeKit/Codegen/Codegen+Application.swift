@@ -2,25 +2,21 @@ import Util
 extension Target {
     // MARK: Internal
 
-    func generateApplicationCode(_ builder: CodeBuilder, _ kit: Kit) {
+    func generateApplicationCode(_ builder: CodeBuilder, _ kit: Kit) throws {
         switch platformSDK {
         case .iOS: buildIOS(builder, kit)
         case .macOS: buildMac(builder, kit)
         case .tvOS: buildTV(builder, kit)
         case .watchOS: buildWatch(builder, kit)
         case .auto:
-            let family = prefer(\.platform.deviceFamily)
-            guard let family else {
-                return
+            /// No SDK of its own: the device families the project targets are what
+            /// is left to read the platform from.
+            guard let family = prefer(\.platform.deviceFamily), family.contains(.iphone) else {
+                throw UnsupportedTarget.applicationPlatform(target: name, sdk: platformSDK?.rawValue)
             }
-            if family.contains(.iphone) {
-                buildIOS(builder, kit)
-            }
+            buildIOS(builder, kit)
         default:
-            Log.codeGenerate.warning("""
-            Name: \(name, privacy: .public)
-            SDK: \(platformSDK?.rawValue ?? "nil", privacy: .public) has no application rule
-            """)
+            throw UnsupportedTarget.applicationPlatform(target: name, sdk: platformSDK?.rawValue)
         }
     }
 

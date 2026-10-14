@@ -41,6 +41,11 @@ macOS 上 SwiftPM 的 library 與 test resource bundle 是
 `Contents/Resources` 路徑的程式碼會看見差異。要對齊這些 bundle 形狀就得放棄
 `apple_resource_bundle` 自己組 bundle，不划算。
 
+`Compare Resource Bundles` 會明確留下這個實體 layout 差異，再正規化 resource root，
+雙向比較 library 與 test bundles。其他已知的 metadata、mode 與 compiler output
+差異都逐項列在 `.github/scripts/bundle-differences.json`；未列出或已消失的差異會讓
+CI 失敗。
+
 ### A4. 先不修：dynamic library product 會變成一般 library
 
 manifest 仍帶著 `{"library": ["dynamic"]}`，但 `PackageProduct.kind` 把所有 library

@@ -1,4 +1,4 @@
-# Generated using Bazelize 0.0.5 - https://github.com/XCodeBazelize/Bazelize
+# Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
 load("@build_bazel_rules_apple//apple:apple.bzl", "apple_dynamic_xcframework_import")
 

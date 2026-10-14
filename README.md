@@ -128,7 +128,7 @@ App/                        # --output
 ├── lint.sh, format.sh      # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
 ├── .bazelversion
-├── tools/                  # `bazel list config|trait|language`
+├── tools/                  # `bazel list config|trait|language`, asset_symbols.bzl
 ├── Prebuilt/               # project-owned .framework/.a/.xcframework
 ├── Targets/<XcodeTarget>/  # Xcode input only
 │   ├── BUILD
@@ -150,6 +150,17 @@ each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
 generator-owned and rebuilt as units, so rules that leave the input graph
 cannot remain part of `bazel build //...`.
 
+### Asset symbols
+
+`ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS` makes Xcode turn
+a catalog into Swift members the target compiles. No ruleset wraps `actool` for
+that, so the workspace carries the rule itself in `tools/asset_symbols.bzl`. It
+runs `actool` as an Apple action: the selected Xcode is part of the action's key,
+so symbols are not reused across Xcode versions, and the platform comes from the
+configuration the target is built in — the project's own SDK is only the
+fallback for a build that carries no Apple platform constraint. CI diffs the
+result against the file Xcode writes into `DerivedSources`.
+
 ### Integration corpus
 
 CI regenerates and builds pinned revisions of six public Swift packages:
@@ -159,6 +170,25 @@ Maccy, whose revision runs on the `xcode-27` image because it needs that SDK.
 Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
+
+CI also compares controlled bundles against their native builds. The
+`TargetResource` fixture compares SwiftPM's library and test resource bundles
+with the generated `apple_resource_bundle` outputs; macOS's
+`Contents/Resources` wrapper is normalized, while every logical resource,
+property-list value, node type, and stable byte is compared in both directions.
+The fixture's `MacBundle.bundle` similarly compares the complete Xcode and
+`macos_bundle` product trees, including the executable's architectures, build
+platform, dependencies, exported symbols, and rpaths. Known differences are
+named in a checked-in baseline; a new difference or one that disappears fails
+CI until the baseline is updated.
+
+### Unsupported targets
+
+A target whose product type — or, for an application, whose platform — has no
+rule here stops generation with an error naming it. A workspace that silently
+omits a target is a workspace that builds the wrong thing. A target that has no
+sources of its own is still reported as a note and skipped: there is nothing to
+bundle.
 
 ### Config
 

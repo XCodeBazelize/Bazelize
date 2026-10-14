@@ -25,7 +25,10 @@ func target(
         product: product,
         bundleId: "com.bazel.\(name)",
         deploymentTargets: deploymentTargets,
-        infoPlist: product == .app || product == .unitTests || product == .uiTests
+        /// A framework Xcode embeds is validated when the app is built, and one
+        /// with no `Info.plist` fails that validation.
+        infoPlist: product == .app || product == .framework
+            || product == .unitTests || product == .uiTests
             ? .extendingDefault(with: [:])
             : nil,
         sources: sources,

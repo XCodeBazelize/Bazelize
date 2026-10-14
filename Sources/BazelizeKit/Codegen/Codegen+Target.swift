@@ -15,7 +15,7 @@ extension Target {
         !(srcs_c + srcs_cpp + srcs_objc + srcs_objcpp + srcs_swift).isEmpty
     }
 
-    func generateCode(_ kit: Kit) -> String {
+    func generateCode(_ kit: Kit) throws -> String {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
         generateAssetSymbols(builder, kit)
@@ -43,7 +43,7 @@ extension Target {
             generateStrings(builder, kit)
             generateCopiedProducts(builder, kit)
             generateCopiedFiles(builder, kit)
-            generateApplicationCode(builder, kit)
+            try generateApplicationCode(builder, kit)
         case "com.apple.product-type.bundle",
              "com.apple.product-type.xpc-service",
              "com.apple.product-type.app-extension":
@@ -59,11 +59,38 @@ extension Target {
         case "com.apple.product-type.bundle.ui-testing":
             generateUITest(builder, kit)
         default:
-            kit.note("""
-            \(name) is not generated: \(productType ?? "its product type") is a product type \
-            bazelize has no rule for.
-            """)
+            /// A product type nothing here knows is not a target to skip: whatever
+            /// the project builds from it would be missing from every build that
+            /// followed, and the error naming it is the only chance to notice.
+            throw UnsupportedTarget.productType(target: name, productType: productType)
         }
         return builder.build()
+    }
+}
+
+// MARK: - UnsupportedTarget
+
+/// What the project asks for and this generator has no rule for. Generation
+/// stops: a workspace missing a target is a workspace that builds the wrong
+/// thing.
+enum UnsupportedTarget: LocalizedError, CustomStringConvertible {
+    case productType(target: String, productType: String?)
+    case applicationPlatform(target: String, sdk: String?)
+
+    var errorDescription: String? { description }
+
+    var description: String {
+        switch self {
+        case .productType(let target, let productType):
+            return """
+            \(target): \(productType ?? "a target with no product type") is a product type \
+            bazelize has no rule for.
+            """
+        case .applicationPlatform(let target, let sdk):
+            return """
+            \(target): an application for \(sdk ?? "no SDK of its own") is a platform \
+            bazelize has no application rule for.
+            """
+        }
     }
 }

@@ -1,4 +1,4 @@
-# Generated using Bazelize 0.0.5 - https://github.com/XCodeBazelize/Bazelize
+# Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@build_bazel_rules_swift//swift:swift_binary.bzl", "swift_binary")

@@ -47,6 +47,12 @@ answer the same on both, and only code that builds `Contents/Resources` paths
 by hand would notice. Aligning those bundle shapes means not using
 `apple_resource_bundle` and assembling them ourselves, which is not worth it.
 
+`Compare Resource Bundles` keeps that physical layout difference explicit, then
+normalizes the resource root and compares the library and test bundles in both
+directions. Other known metadata, mode, and compiler-output differences are
+individually named in `.github/scripts/bundle-differences.json`; an unlisted or
+stale difference fails CI.
+
 ### A4. Not fixing for now: a dynamic library product becomes an ordinary library
 
 The manifest still carries `{"library": ["dynamic"]}`, but `PackageProduct.kind`

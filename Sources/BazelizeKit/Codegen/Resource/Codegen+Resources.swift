@@ -6,6 +6,7 @@ import Xcode
 
 extension Target {
     static let resourceGroupName = "Resources"
+    static let structuredResourceGroupName = "ResourceFolders"
 
     /// Everything Xcode's Resources build phase copies into the bundle, minus what a
     /// dedicated rule attribute already owns: an asset catalog, a `.strings` table
@@ -16,21 +17,35 @@ extension Target {
     /// nib or a storyboard is declared: passing one through the library's `data` as
     /// well makes two rules compile it to the same path.
     func generateResources(_ builder: CodeBuilder, _ kit: Kit) {
-        let patterns = resourcePatterns(project: kit.project)
-        guard !patterns.isEmpty else { return }
+        let resources = resourceFiles(project: kit.project)
+        if !resources.isEmpty {
+            builder.call(
+                Rules.Builtin.Call.filegroup(
+                    name: Self.resourceGroupName,
+                    srcs: Starlark.paths(resources),
+                    visibility: .private))
+        }
 
+        let folders = resourceFolders(project: kit.project)
+        guard !folders.isEmpty else { return }
+
+        builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
         builder.call(
-            Rules.Builtin.Call.filegroup(
-                name: Self.resourceGroupName,
-                srcs: Starlark.paths(patterns),
+            Rules.Apple.Resources.Call.apple_resource_group(
+                name: Self.structuredResourceGroupName,
+                strip_structured_resources_prefixes: Array(Set(folders.map(\.parent))).sorted(),
+                structured_resources: Starlark.paths(folders.map { "\($0.path)/**" }),
                 visibility: .private))
     }
 
-    /// The bundle rule's `resources`: the group above plus the asset catalog.
+    /// The bundle rule's `resources`: the groups above plus the asset catalog.
     func bundleResources(project: Project?) -> [Starlark.Label] {
         var labels: [Starlark.Label] = []
-        if let project, !resourcePatterns(project: project).isEmpty {
+        if let project, !resourceFiles(project: project).isEmpty {
             labels.append(.named(":\(Self.resourceGroupName)"))
+        }
+        if let project, !resourceFolders(project: project).isEmpty {
+            labels.append(.named(":\(Self.structuredResourceGroupName)"))
         }
         if !assets.isEmpty {
             labels.append(.named(":Assets"))
@@ -40,22 +55,47 @@ extension Target {
 
     // MARK: Private
 
-    /// A resource is either a file or a folder reference — Xcode copies a folder
-    /// whole — so a directory becomes a recursive glob.
-    private func resourcePatterns(project: Project) -> [String] {
+    /// A folder reference: Xcode copies the directory whole, keeping its name and
+    /// everything under it. Flattening one into `resources` places every file it
+    /// holds at the bundle's root, which is both wrong and — for two themes that
+    /// each ship an `Info.plist` — rejected outright.
+    private struct ResourceFolder {
+        let path: String
+        let parent: String
+    }
+
+    private func resourceFiles(project: Project) -> [String] {
+        Array(Set(classifiedResources(project: project).files)).sorted()
+    }
+
+    private func resourceFolders(project: Project) -> [ResourceFolder] {
+        let folders = classifiedResources(project: project).folders
+        return Array(Set(folders.map(\.path)))
+            .sorted()
+            .map { .init(path: $0, parent: Path($0).parent().normalize().string) }
+    }
+
+    private func classifiedResources(project: Project) -> (files: [String], folders: [ResourceFolder]) {
         let workspace = Path(project.workspacePath)
 
-        let patterns = resources.compactMap { resource -> String? in
-            guard !Self.ownedResourceExtensions.contains(Path(resource).extension ?? "") else { return nil }
+        var files: [String] = []
+        var folders: [ResourceFolder] = []
+        for resource in resources {
+            guard !Self.ownedResourceExtensions.contains(Path(resource).extension ?? "") else { continue }
 
             /// The model already addresses a file through the target's `Sources/`
             /// tree; the project is where it is read from.
             let source = workspace + Path(resource.droppingSourcesPrefix)
-            guard source.exists else { return nil }
-            return source.isDirectory ? "\(resource)/**" : resource
+            guard source.exists else { continue }
+
+            if source.isDirectory {
+                folders.append(.init(path: resource, parent: Path(resource).parent().normalize().string))
+            } else {
+                files.append(resource)
+            }
         }
 
-        return Array(Set(patterns)).sorted()
+        return (files, folders)
     }
 
     /// Resources another attribute of the same rule already carries: passing them
