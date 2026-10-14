@@ -59,6 +59,9 @@ sh_binary(
         "plugin-plan.json",
         "//Packages:plugins",
     ],
+    tags = [
+        "manual",
+    ],
 )
 xcodeproj(
     name = "xcodeproj",

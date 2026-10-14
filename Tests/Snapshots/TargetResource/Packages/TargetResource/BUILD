@@ -1,3 +1,4 @@
+load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_unit_test")
 load("@build_bazel_rules_apple//apple:resources.bzl", "apple_resource_bundle", "apple_resource_group")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
@@ -129,6 +130,23 @@ macos_unit_test(
         ":TargetResourceTests_library",
     ],
     minimum_os_version = "12.0",
+    target_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+ios_unit_test(
+    name = "TargetResourceTests_ios_simulator",
+    deps = [
+        ":TargetResourceTests_library",
+    ],
+    minimum_os_version = "15.0",
+    target_compatible_with = [
+        "@platforms//os:ios",
+        "@apple_support//constraints:simulator",
+    ],
     visibility = [
         "//visibility:public",
     ],

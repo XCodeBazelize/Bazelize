@@ -39,4 +39,13 @@ public enum Platform {
     public static var deploymentTargetIsDeclared: Bool {
         if #available(macOS 13.0, *) { true } else { false }
     }
+
+    /// Reaches the dependency selected only for the active platform.
+    public static var selectedDependency: String {
+        #if os(iOS)
+        IOSOnly.value
+        #else
+        "macOS"
+        #endif
+    }
 }

@@ -1,4 +1,6 @@
+load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_unit_test")
+load("@build_bazel_rules_apple//apple:resources.bzl", "apple_resource_bundle")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 
 swift_library(
@@ -97,6 +99,19 @@ swift_library(
         "//visibility:public",
     ],
 )
+apple_resource_bundle(
+    name = "PlatformTestsResources",
+    bundle_name = "Platform_PlatformTests",
+    infoplists = [
+        "Generated/PlatformTestsResourceBundle-Info.plist",
+    ],
+    resources = glob([
+        "Sources/PlatformTests/Fixtures/**",
+    ], allow_empty = True),
+    tags = [
+        "manual",
+    ],
+)
 swift_library(
     name = "PlatformTests_library",
     alwayslink = True,
@@ -108,7 +123,9 @@ swift_library(
     ],
     module_name = "PlatformTests",
     package_name = "Platform",
-    srcs = glob([
+    srcs = [
+        "Generated/PlatformTestsResourceBundleAccessor.swift",
+    ] + glob([
         "Sources/PlatformTests/**/*.swift",
     ], exclude = [
         "Sources/PlatformTests/**/*.docc/**",
@@ -116,6 +133,9 @@ swift_library(
     ], allow_empty = True),
     deps = [
         ":Platform",
+    ],
+    data = [
+        ":PlatformTestsResources",
     ],
     tags = [
         "manual",
@@ -131,6 +151,23 @@ macos_unit_test(
         ":PlatformTests_library",
     ],
     minimum_os_version = "13.0",
+    target_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+)
+ios_unit_test(
+    name = "PlatformTests_ios_simulator",
+    deps = [
+        ":PlatformTests_library",
+    ],
+    minimum_os_version = "16.0",
+    target_compatible_with = [
+        "@platforms//os:ios",
+        "@apple_support//constraints:simulator",
+    ],
     visibility = [
         "//visibility:public",
     ],

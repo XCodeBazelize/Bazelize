@@ -58,6 +58,7 @@ struct RulesAppleTests {
             name: "AppTests",
             deps: [":AppTests_library"],
             minimum_os_version: "18.0",
+            target_compatible_with: ["@platforms//os:ios"],
             test_host: "//App:App")
 
         #expect(
@@ -69,6 +70,9 @@ struct RulesAppleTests {
                         ":AppTests_library",
                     ],
                     minimum_os_version = "18.0",
+                    target_compatible_with = [
+                        "@platforms//os:ios",
+                    ],
                     test_host = "//App:App",
                 )
                 """)

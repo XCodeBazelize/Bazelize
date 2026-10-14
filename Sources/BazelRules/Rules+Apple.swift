@@ -438,6 +438,7 @@ extension Rules.Apple.IOS {
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             minimum_os_version: String? = nil,
+            target_compatible_with: [String]? = nil,
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
@@ -450,6 +451,9 @@ extension Rules.Apple.IOS {
                 if let deps { "deps" => deps }
                 if let env { "env" => .init(env) ?? None }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
                 if let runner { "runner" => runner }
                 if let test_filter { "test_filter" => test_filter }
                 if let test_host { "test_host" => test_host }
@@ -914,6 +918,7 @@ extension Rules.Apple.MacOS {
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             minimum_os_version: String? = nil,
+            target_compatible_with: [String]? = nil,
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
@@ -926,6 +931,9 @@ extension Rules.Apple.MacOS {
                 if let deps { "deps" => deps }
                 if let env { "env" => .init(env) ?? None }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
                 if let runner { "runner" => runner }
                 if let test_filter { "test_filter" => test_filter }
                 if let test_host { "test_host" => test_host }

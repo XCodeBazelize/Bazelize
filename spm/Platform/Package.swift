@@ -36,5 +36,6 @@ let package = Package(
         .target(name: "IOSOnly"),
         .testTarget(
             name: "PlatformTests",
-            dependencies: ["Platform"]),
+            dependencies: ["Platform"],
+            resources: [.process("Fixtures")]),
     ])

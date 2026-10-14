@@ -58,14 +58,24 @@ extension SwiftPM.Generator {
                 testonly: true,
                 visibility: .private))
 
+        builder.load(.ios_unit_test)
         builder.load(.macos_unit_test)
         builder.call(
             Rules.Apple.MacOS.Call.macos_unit_test(
                 name: name,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                /// A package's tests run where the tool runs, so the version is the
-                /// one the package asks of macOS.
                 minimum_os_version: deployment.required(package, platform: "macos"),
+                target_compatible_with: ["@platforms//os:macos"],
+                visibility: .public))
+        builder.call(
+            Rules.Apple.IOS.Call.ios_unit_test(
+                name: "\(name)_ios_simulator",
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "ios"),
+                target_compatible_with: [
+                    "@platforms//os:ios",
+                    "@apple_support//constraints:simulator",
+                ],
                 visibility: .public))
     }
 }
