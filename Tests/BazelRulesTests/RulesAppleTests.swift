@@ -58,8 +58,10 @@ struct RulesAppleTests {
             name: "AppTests",
             deps: [":AppTests_library"],
             minimum_os_version: "18.0",
+            tags: ["manual"],
             target_compatible_with: ["@platforms//os:ios"],
-            test_host: "//App:App")
+            test_host: "//App:App",
+            timeout: "long")
 
         #expect(
             call.text
@@ -70,10 +72,14 @@ struct RulesAppleTests {
                         ":AppTests_library",
                     ],
                     minimum_os_version = "18.0",
+                    tags = [
+                        "manual",
+                    ],
                     target_compatible_with = [
                         "@platforms//os:ios",
                     ],
                     test_host = "//App:App",
+                    timeout = "long",
                 )
                 """)
     }
@@ -135,7 +141,12 @@ struct RulesAppleTests {
         let call = Rules.Apple.TVOS.Call.tvos_unit_test(
             name: "TVTests",
             deps: [":TVTests_library"],
-            minimum_os_version: "18.0")
+            minimum_os_version: "18.0",
+            tags: ["manual"],
+            target_compatible_with: [
+                "@platforms//os:tvos",
+                "@apple_support//constraints:simulator",
+            ])
 
         #expect(
             call.text
@@ -146,6 +157,77 @@ struct RulesAppleTests {
                         ":TVTests_library",
                     ],
                     minimum_os_version = "18.0",
+                    tags = [
+                        "manual",
+                    ],
+                    target_compatible_with = [
+                        "@platforms//os:tvos",
+                        "@apple_support//constraints:simulator",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testWatchOSUnitTestTypedCall() {
+        let call = Rules.Apple.WatchOS.Call.watchos_unit_test(
+            name: "WatchTests",
+            deps: [":WatchTests_library"],
+            minimum_os_version: "11.0",
+            tags: ["manual"],
+            target_compatible_with: [
+                "@platforms//os:watchos",
+                "@apple_support//constraints:simulator",
+            ])
+
+        #expect(
+            call.text
+                == """
+                watchos_unit_test(
+                    name = "WatchTests",
+                    deps = [
+                        ":WatchTests_library",
+                    ],
+                    minimum_os_version = "11.0",
+                    tags = [
+                        "manual",
+                    ],
+                    target_compatible_with = [
+                        "@platforms//os:watchos",
+                        "@apple_support//constraints:simulator",
+                    ],
+                )
+                """)
+    }
+
+    @Test
+    func testVisionOSUnitTestTypedCall() {
+        let call = Rules.Apple.VisionOS.Call.visionos_unit_test(
+            name: "VisionTests",
+            deps: [":VisionTests_library"],
+            minimum_os_version: "2.0",
+            tags: ["manual"],
+            target_compatible_with: [
+                "@platforms//os:visionos",
+                "@apple_support//constraints:simulator",
+            ])
+
+        #expect(
+            call.text
+                == """
+                visionos_unit_test(
+                    name = "VisionTests",
+                    deps = [
+                        ":VisionTests_library",
+                    ],
+                    minimum_os_version = "2.0",
+                    tags = [
+                        "manual",
+                    ],
+                    target_compatible_with = [
+                        "@platforms//os:visionos",
+                        "@apple_support//constraints:simulator",
+                    ],
                 )
                 """)
     }

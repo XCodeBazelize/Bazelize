@@ -97,6 +97,28 @@ extension SwiftPM.Generator {
         guard !names.isEmpty else { return nil }
 
         let labels = Set(names.map { name -> String in
+            /// Bazel models Catalyst as iOS plus its own target environment,
+            /// so the OS constraint alone would incorrectly satisfy an iOS
+            /// SwiftPM condition while compiling for Catalyst.
+            if name == "ios" {
+                let device = "swiftpm_platform_ios_device"
+                conditionGroups[device] = [
+                    "@platforms//os:ios",
+                    "@apple_support//constraints:device",
+                ]
+                let simulator = "swiftpm_platform_ios_simulator"
+                conditionGroups[simulator] = [
+                    "@platforms//os:ios",
+                    "@apple_support//constraints:simulator",
+                ]
+                let group = "swiftpm_platform_ios"
+                platformGroups[group] = [
+                    "//\(PluginSwiftPM.packagesDirectory):\(device)",
+                    "//\(PluginSwiftPM.packagesDirectory):\(simulator)",
+                ]
+                return "//\(PluginSwiftPM.packagesDirectory):\(group)"
+            }
+
             /// Catalyst is iOS APIs in the Catalyst target environment, not a
             /// separate standard OS constraint.
             if name == "maccatalyst" {

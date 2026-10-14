@@ -9,10 +9,18 @@ func theDeclaredDeploymentTargetIsWhatTheTargetIsBuiltFor() {
 
 @Test
 func theSelectedPlatformDependencyIsUsableAtRuntime() {
-    #if os(iOS)
-    #expect(Platform.selectedDependency == "iOS")
-    #else
+    #if targetEnvironment(macCatalyst)
+    #expect(Platform.selectedDependency == "Mac Catalyst")
+    #elseif os(macOS)
     #expect(Platform.selectedDependency == "macOS")
+    #elseif os(iOS)
+    #expect(Platform.selectedDependency == "iOS")
+    #elseif os(tvOS)
+    #expect(Platform.selectedDependency == "tvOS")
+    #elseif os(watchOS)
+    #expect(Platform.selectedDependency == "watchOS")
+    #elseif os(visionOS)
+    #expect(Platform.selectedDependency == "visionOS")
     #endif
 }
 

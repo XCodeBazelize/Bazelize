@@ -60,6 +60,10 @@ extension SwiftPM.Generator {
 
         builder.load(.ios_unit_test)
         builder.load(.macos_unit_test)
+        builder.load(.tvos_unit_test)
+        builder.load(loadableRule: Rules.Apple.VisionOS.visionos_unit_test)
+        builder.load(.watchos_unit_test)
+        builder.load(loadableRule: Rules.Workspace.apple_simulator_test)
         builder.call(
             Rules.Apple.MacOS.Call.macos_unit_test(
                 name: name,
@@ -76,6 +80,162 @@ extension SwiftPM.Generator {
                     "@platforms//os:ios",
                     "@apple_support//constraints:simulator",
                 ],
+                timeout: "long",
+                visibility: .public))
+
+        let iOSDeviceConstraints = [
+            "@platforms//os:ios",
+            "@apple_support//constraints:device",
+        ]
+        let iOSDeviceRule = "\(name)_ios_device_bundle_rule"
+        builder.call(
+            Rules.Apple.IOS.Call.ios_unit_test(
+                name: iOSDeviceRule,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "ios"),
+                tags: Self.manual,
+                target_compatible_with: iOSDeviceConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: "\(name)_ios_device_bundle",
+                actual: .named(":\(iOSDeviceRule).__internal__.__test_bundle"),
+                tags: Self.manual,
+                visibility: .public))
+
+        let tvOSConstraints = [
+            "@platforms//os:tvos",
+            "@apple_support//constraints:simulator",
+        ]
+        let tvOSBundle = "\(name)_tvos_simulator_bundle"
+        builder.call(
+            Rules.Apple.TVOS.Call.tvos_unit_test(
+                name: tvOSBundle,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "tvos"),
+                tags: Self.manual,
+                target_compatible_with: tvOSConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Workspace.Call.apple_simulator_test(
+                name: "\(name)_tvos_simulator",
+                bundle: .named(":\(tvOSBundle).__internal__.__test_bundle"),
+                destination_platform: "tvOS Simulator",
+                developer_platform: "AppleTVSimulator",
+                product_family: "Apple TV",
+                runtime_platform: "tvOS",
+                target_compatible_with: tvOSConstraints,
+                timeout: "long",
+                visibility: .public))
+
+        let tvOSDeviceConstraints = [
+            "@platforms//os:tvos",
+            "@apple_support//constraints:device",
+        ]
+        let tvOSDeviceRule = "\(name)_tvos_device_bundle_rule"
+        builder.call(
+            Rules.Apple.TVOS.Call.tvos_unit_test(
+                name: tvOSDeviceRule,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "tvos"),
+                tags: Self.manual,
+                target_compatible_with: tvOSDeviceConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: "\(name)_tvos_device_bundle",
+                actual: .named(":\(tvOSDeviceRule).__internal__.__test_bundle"),
+                tags: Self.manual,
+                visibility: .public))
+
+        let watchOSConstraints = [
+            "@platforms//os:watchos",
+            "@apple_support//constraints:simulator",
+        ]
+        let watchOSBundle = "\(name)_watchos_simulator_bundle"
+        builder.call(
+            Rules.Apple.WatchOS.Call.watchos_unit_test(
+                name: watchOSBundle,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "watchos"),
+                tags: Self.manual,
+                target_compatible_with: watchOSConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Workspace.Call.apple_simulator_test(
+                name: "\(name)_watchos_simulator",
+                bundle: .named(":\(watchOSBundle).__internal__.__test_bundle"),
+                destination_platform: "watchOS Simulator",
+                developer_platform: "WatchSimulator",
+                product_family: "Apple Watch",
+                runtime_platform: "watchOS",
+                target_compatible_with: watchOSConstraints,
+                timeout: "long",
+                visibility: .public))
+
+        let watchOSDeviceConstraints = [
+            "@platforms//os:watchos",
+            "@apple_support//constraints:device",
+        ]
+        let watchOSDeviceRule = "\(name)_watchos_device_bundle_rule"
+        builder.call(
+            Rules.Apple.WatchOS.Call.watchos_unit_test(
+                name: watchOSDeviceRule,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "watchos"),
+                tags: Self.manual,
+                target_compatible_with: watchOSDeviceConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: "\(name)_watchos_device_bundle",
+                actual: .named(":\(watchOSDeviceRule).__internal__.__test_bundle"),
+                tags: Self.manual,
+                visibility: .public))
+
+        let visionOSConstraints = [
+            "@platforms//os:visionos",
+            "@apple_support//constraints:simulator",
+        ]
+        let visionOSBundle = "\(name)_xros_simulator_bundle"
+        builder.call(
+            Rules.Apple.VisionOS.Call.visionos_unit_test(
+                name: visionOSBundle,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "visionos"),
+                tags: Self.manual,
+                target_compatible_with: visionOSConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Workspace.Call.apple_simulator_test(
+                name: "\(name)_xros_simulator",
+                bundle: .named(":\(visionOSBundle).__internal__.__test_bundle"),
+                destination_platform: "visionOS Simulator",
+                developer_platform: "XRSimulator",
+                product_family: "Apple Vision",
+                runtime_platform: "xrOS",
+                target_compatible_with: visionOSConstraints,
+                timeout: "long",
+                visibility: .public))
+
+        let visionOSDeviceConstraints = [
+            "@platforms//os:visionos",
+            "@apple_support//constraints:device",
+        ]
+        let visionOSDeviceRule = "\(name)_xros_device_bundle_rule"
+        builder.call(
+            Rules.Apple.VisionOS.Call.visionos_unit_test(
+                name: visionOSDeviceRule,
+                deps: .build { [Starlark.Label.named(":\(library)")] },
+                minimum_os_version: deployment.required(package, platform: "visionos"),
+                tags: Self.manual,
+                target_compatible_with: visionOSDeviceConstraints,
+                visibility: .private))
+        builder.call(
+            Rules.Builtin.Call.alias(
+                name: "\(name)_xros_device_bundle",
+                actual: .named(":\(visionOSDeviceRule).__internal__.__test_bundle"),
+                tags: Self.manual,
                 visibility: .public))
     }
 }

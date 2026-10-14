@@ -63,6 +63,36 @@ sh_binary(
         "manual",
     ],
 )
+toolchain(
+    name = "tvos_simulator_test_toolchain",
+    exec_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = [
+        "@platforms//os:tvos",
+        "@apple_support//constraints:simulator",
+    ],
+    toolchain = "@bazel_tools//tools/test:empty_toolchain",
+    toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
+)
+toolchain(
+    name = "visionos_simulator_test_toolchain",
+    exec_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = [
+        "@platforms//os:visionos",
+        "@apple_support//constraints:simulator",
+    ],
+    toolchain = "@bazel_tools//tools/test:empty_toolchain",
+    toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
+)
+toolchain(
+    name = "watchos_simulator_test_toolchain",
+    exec_compatible_with = ["@platforms//os:macos"],
+    target_compatible_with = [
+        "@platforms//os:watchos",
+        "@apple_support//constraints:simulator",
+    ],
+    toolchain = "@bazel_tools//tools/test:empty_toolchain",
+    toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
+)
 xcodeproj(
     name = "xcodeproj",
     project_name = "Example",
