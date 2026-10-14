@@ -937,6 +937,14 @@ jobs:
             echo "no Bazel tests, nothing to test"
           fi
 
+      # The root package's test bundle follows the requested target platform.
+      # This fixture proves both platform-conditional dependencies and
+      # Bundle.module in a simulator process; building the library is not enough.
+      - name: Test Package on iOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: bazel test //... --platforms=@apple_support//platforms:ios_sim_arm64
+
       # SwiftPM's macOS resource bundle is wrapped in Contents/Resources while
       # apple_resource_bundle is flat. Compare their logical resource roots,
       # and require every other observed difference to stay in the documented
