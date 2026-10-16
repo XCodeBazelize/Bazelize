@@ -697,7 +697,9 @@ jobs:
     name: IntegratePackage (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
-    timeout-minutes: 60
+    # Platform builds five SDK variants and executes four of them serially;
+    # cold hosted runners exceed one hour even when every command succeeds.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
