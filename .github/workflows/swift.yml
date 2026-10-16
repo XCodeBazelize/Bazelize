@@ -923,6 +923,59 @@ jobs:
             --platforms=@apple_support//platforms:ios_sim_arm64 \
             //...
 
+      # rules_apple can build these test bundles but its default runners reject
+      # every invocation. Bazelize's generated runner executes each bundle with
+      # xcodebuild on the matching Simulator runtime.
+      - name: Test Package on tvOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:tvos_sim_arm64 \
+            //Packages/Platform:PlatformTests_tvos_simulator
+
+      - name: Test Package on watchOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:watchos_arm64 \
+            //Packages/Platform:PlatformTests_watchos_simulator
+
+      - name: Test Package on visionOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:visionos_sim_arm64 \
+            //Packages/Platform:PlatformTests_xros_simulator
+
+      # GitHub-hosted runners have no provisioned physical devices. Still
+      # compile and bundle every device variant; runtime execution remains an
+      # explicit external requirement rather than a skipped or fake test.
+      - name: Build Package Tests for Apple Devices
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel build \
+            --platforms=@apple_support//platforms:ios_arm64 \
+            //Packages/Platform:PlatformTests_ios_device_bundle
+          bazel build \
+            --platforms=@apple_support//platforms:tvos_arm64 \
+            //Packages/Platform:PlatformTests_tvos_device_bundle
+          bazel build \
+            --platforms=@apple_support//platforms:watchos_device_arm64 \
+            //Packages/Platform:PlatformTests_watchos_device_bundle
+          bazel build \
+            --platforms=@apple_support//platforms:visionos_arm64 \
+            //Packages/Platform:PlatformTests_xros_device_bundle
+
       # SwiftPM's macOS resource bundle is wrapped in Contents/Resources while
       # apple_resource_bundle is flat. Compare their logical resource roots,
       # and require every other observed difference to stay in the documented
