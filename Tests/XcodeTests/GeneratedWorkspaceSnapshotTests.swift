@@ -72,6 +72,35 @@ struct GeneratedWorkspaceSnapshotTests {
             ])
     }
 
+    /// A prebuild command: the plugin runs before the build and names a
+    /// directory rather than files, so the target's rule globs what landed.
+    @Test
+    func swiftPackagePrebuildPlugin() async throws {
+        try await verify(
+            input: "spm/PrebuildPlugin",
+            snapshot: "PrebuildPlugin",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/PrebuildPlugin/BUILD",
+            ])
+    }
+
+    /// A command plugin, which is a program to run rather than a step of a
+    /// build: the wrapper that runs it, and the name it got because the
+    /// package already ships an executable spelled the way its verb is.
+    @Test
+    func swiftPackageCommandPlugin() async throws {
+        try await verify(
+            input: "spm/CommandPlugin",
+            snapshot: "CommandPlugin",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/CommandPlugin/BUILD",
+            ])
+    }
+
     @Test
     func configuredBuildifierReleaseIsWrittenToLintCommand() async throws {
         let scratch = Path(NSTemporaryDirectory()) + UUID().uuidString
