@@ -191,7 +191,7 @@ jobs:
       # runtime its Xcode ships, which is not the one this repository is
       # developed against.
       - name: Boot Simulator
-        run: .github/scripts/boot-ios-simulator.sh
+        run: .github/scripts/boot-apple-simulator.sh
 
       - name: Unit Test
         working-directory: fixture/iOS/App
@@ -903,7 +903,7 @@ jobs:
 
       - name: Boot Simulator for Platform Package
         if: matrix.name == 'Platform'
-        run: .github/scripts/boot-ios-simulator.sh
+        run: .github/scripts/boot-apple-simulator.sh
 
       # The root package's test bundle follows the requested target platform.
       # This fixture proves both platform-conditional dependencies and
@@ -945,6 +945,12 @@ jobs:
             --test_output=errors \
             --platforms=@apple_support//platforms:watchos_arm64 \
             //Packages/Platform:PlatformTests_watchos_simulator
+
+      # visionOS performs lengthy first-boot migrations on a fresh hosted
+      # runner. Keep that work outside Bazel's test timeout.
+      - name: Boot visionOS Simulator for Platform Package
+        if: matrix.name == 'Platform'
+        run: .github/scripts/boot-apple-simulator.sh xrOS 'Apple Vision'
 
       - name: Test Package on visionOS Simulator
         if: matrix.name == 'Platform'

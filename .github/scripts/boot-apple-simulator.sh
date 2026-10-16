@@ -2,10 +2,15 @@
 
 set -euo pipefail
 
+runtime_platform=${1:-iOS}
+device_prefix=${2:-iPhone}
+
 # A device name has spaces in it, so emit one field per line.
-{ read -r device; read -r version; read -r udid; } < <(python3 - <<'PY'
+{ read -r device; read -r version; read -r udid; } < <(
+    python3 - "$runtime_platform" "$device_prefix" <<'PY'
 import json
 import subprocess
+import sys
 
 
 def simctl(*arguments):
@@ -18,28 +23,32 @@ def simctl(*arguments):
     return json.loads(listed.stdout)
 
 
+platform, prefix = sys.argv[1:]
 runtimes = [
     runtime
     for runtime in simctl("runtimes")["runtimes"]
-    if runtime["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.iOS")
-    and runtime.get("isAvailable")
+    if runtime.get("platform") == platform and runtime.get("isAvailable")
 ]
+if not runtimes:
+    raise RuntimeError(f"no available {platform} Simulator runtime")
 runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
 runtime = runtimes[-1]
 
 devices = [
     device
     for device in simctl("devices", "available")["devices"].get(runtime["identifier"], [])
-    if device["name"].startswith("iPhone")
+    if device.get("isAvailable") and device["name"].startswith(prefix)
 ]
 if devices:
     name, udid = devices[-1]["name"], devices[-1]["udid"]
 else:
     kinds = [
         kind
-        for kind in simctl("devicetypes")["devicetypes"]
-        if kind["name"].startswith("iPhone")
+        for kind in runtime["supportedDeviceTypes"]
+        if kind["name"].startswith(prefix)
     ]
+    if not kinds:
+        raise RuntimeError(f"no {prefix} device supports the {runtime['name']} runtime")
     name = kinds[-1]["name"]
     created = subprocess.run(
         [
@@ -62,7 +71,7 @@ print(udid)
 PY
 )
 
-echo "Simulator: $device, iOS $version ($udid)"
+echo "Simulator: $device, $runtime_platform $version ($udid)"
 printf 'SIMULATOR_DEVICE=%s\n' "$device" >> "${GITHUB_ENV:-/dev/null}"
 printf 'SIMULATOR_VERSION=%s\n' "$version" >> "${GITHUB_ENV:-/dev/null}"
 xcrun simctl boot "$udid" || true
