@@ -28,6 +28,18 @@ extension SwiftPM.Generator {
     static let pluginAPILink =
         "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/PluginAPI"
 
+    /// Where a built plugin looks for `libPackagePlugin.dylib` when it runs.
+    ///
+    /// An rpath is written into the program, so a path resolved while linking
+    /// would name the Xcode of that moment. `xcode-select` keeps these two
+    /// symlinks pointed at the selected `Developer` directory on macOS — the
+    /// same pair `rules_swift` gives the binaries it links, for the same
+    /// reason — so a plugin still finds its library after Xcode is switched.
+    static let pluginAPIRunPaths = [
+        "/private/var/select/developer_dir",
+        "/var/db/xcode_select_link",
+    ].map { "\($0)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/PluginAPI" }
+
     /// A build tool plugin as a program Bazel builds.
     ///
     /// A plugin links nothing but the toolchain's `PackagePlugin`, so this is an
@@ -56,11 +68,10 @@ extension SwiftPM.Generator {
                     /// availability is stated in terms of the tools version.
                     "-package-description-version", package.manifest.toolsVersion,
                 ].starlark,
-                linkopts: [
+                linkopts: ([
                     "-L", Self.pluginAPILink,
                     "-lPackagePlugin",
-                    "-Xlinker", "-rpath", "-Xlinker", Self.pluginAPILink,
-                ].starlark,
+                ] + Self.pluginAPIRunPaths.map { "-Wl,-rpath,\($0)" }).starlark,
                 module_name: Self.moduleName(target.name),
                 srcs: Starlark.glob(["\(prefix)/**/*.swift"]),
                 tags: Self.manual,
