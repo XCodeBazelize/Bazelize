@@ -950,7 +950,7 @@ jobs:
       # runner. Keep that work outside Bazel's test timeout.
       - name: Boot visionOS Simulator for Platform Package
         if: matrix.name == 'Platform'
-        run: .github/scripts/boot-apple-simulator.sh xrOS 'Apple Vision'
+        run: .github/scripts/boot-apple-simulator.sh xrOS 'Apple Vision' fresh
 
       - name: Test Package on visionOS Simulator
         if: matrix.name == 'Platform'

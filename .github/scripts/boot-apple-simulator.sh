@@ -4,10 +4,11 @@ set -euo pipefail
 
 runtime_platform=${1:-iOS}
 device_prefix=${2:-iPhone}
+fresh=${3:-}
 
 # A device name has spaces in it, so emit one field per line.
 { read -r device; read -r version; read -r udid; } < <(
-    python3 - "$runtime_platform" "$device_prefix" <<'PY'
+    python3 - "$runtime_platform" "$device_prefix" "$fresh" <<'PY'
 import json
 import subprocess
 import sys
@@ -23,7 +24,7 @@ def simctl(*arguments):
     return json.loads(listed.stdout)
 
 
-platform, prefix = sys.argv[1:]
+platform, prefix, fresh = sys.argv[1:]
 runtimes = [
     runtime
     for runtime in simctl("runtimes")["runtimes"]
@@ -39,7 +40,7 @@ devices = [
     for device in simctl("devices", "available")["devices"].get(runtime["identifier"], [])
     if device.get("isAvailable") and device["name"].startswith(prefix)
 ]
-if devices:
+if devices and not fresh:
     name, udid = devices[-1]["name"], devices[-1]["udid"]
 else:
     kinds = [
