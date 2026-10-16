@@ -959,6 +959,7 @@ jobs:
           bazel test \
             --test_timeout=900 \
             --test_output=errors \
+            --test_env=SIMULATOR_UDID \
             --platforms=@apple_support//platforms:visionos_sim_arm64 \
             //Packages/Platform:PlatformTests_xros_simulator
 

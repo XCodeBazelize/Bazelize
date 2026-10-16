@@ -75,5 +75,6 @@ PY
 echo "Simulator: $device, $runtime_platform $version ($udid)"
 printf 'SIMULATOR_DEVICE=%s\n' "$device" >> "${GITHUB_ENV:-/dev/null}"
 printf 'SIMULATOR_VERSION=%s\n' "$version" >> "${GITHUB_ENV:-/dev/null}"
+printf 'SIMULATOR_UDID=%s\n' "$udid" >> "${GITHUB_ENV:-/dev/null}"
 xcrun simctl boot "$udid" || true
 xcrun simctl bootstatus "$udid"

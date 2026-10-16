@@ -64,7 +64,17 @@ extension Bazel {
             for device in simctl("devices", "available")["devices"].get(runtime["identifier"], [])
             if device.get("isAvailable") and device["name"].startswith(PRODUCT_FAMILY)
         ]
-        if devices:
+        requested_udid = os.environ.get("SIMULATOR_UDID")
+        if requested_udid:
+            device = next(
+                (item for item in devices if item["udid"] == requested_udid),
+                None,
+            )
+            if device is None:
+                raise RuntimeError(
+                    f"requested Simulator {requested_udid} is unavailable for {runtime['name']}"
+                )
+        elif devices:
             device = next((item for item in devices if item["state"] == "Booted"), devices[-1])
         else:
             device_types = [
