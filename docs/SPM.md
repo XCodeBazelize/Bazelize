@@ -265,6 +265,12 @@ tvOS, watchOS, and visionOS runners unimplemented, so Bazelize generates a
 runner that boots an available Simulator and passes the bundle to
 `xcodebuild test-without-building`.
 
+GitHub-hosted runners have an upstream visionOS Simulator attach/boot failure
+([actions/runner-images#13129](https://github.com/actions/runner-images/issues/13129)).
+CI therefore executes the macOS, iOS, tvOS, and watchOS variants and compiles
+the visionOS Simulator variant; run the visionOS command above on a working
+local Simulator for runtime coverage.
+
 Mac Catalyst remains unavailable because apple_support defines its target
 environment but publishes no Catalyst platform or Swift/C++ toolchain, and
 rules_apple has no Catalyst unit-test rule. Physical-device execution requires a

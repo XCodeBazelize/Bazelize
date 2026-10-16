@@ -243,6 +243,12 @@ transition。iOS variant 使用 rules_apple 的 runner。rules_apple 5.2.0 刻�
 tvOS、watchOS 與 visionOS runners，因此 Bazelize 會生成 runner：啟動可用的
 Simulator，再把 test bundle 交給 `xcodebuild test-without-building`。
 
+GitHub-hosted runner 有尚未解決的 visionOS Simulator attach／boot 問題
+（[actions/runner-images#13129](https://github.com/actions/runner-images/issues/13129)）。
+因此 CI 會實際執行 macOS、iOS、tvOS、watchOS variants，並編譯 visionOS
+Simulator variant；visionOS runtime coverage 請在可正常運作的本機 Simulator
+執行上面的指令。
+
 Mac Catalyst 仍無法支援：apple_support 雖定義了它的 target environment，卻沒有提供
 Catalyst platform 或 Swift/C++ toolchain，rules_apple 也沒有 Catalyst unit-test
 rule。實機執行則需要已連線並完成 provisioning 的裝置與 device runner。Bazelize
