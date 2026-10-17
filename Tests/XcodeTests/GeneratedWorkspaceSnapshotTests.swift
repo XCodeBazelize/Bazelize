@@ -54,6 +54,7 @@ struct GeneratedWorkspaceSnapshotTests {
                 "MODULE.bazel",
                 "Packages/BUILD",
                 "Packages/Platform/BUILD",
+                "tools/apple_simulator_test.bzl",
             ])
     }
 

@@ -62,9 +62,10 @@ The package BUILD files were not there; they were in
 The input is an `.xcodeproj`, or a `Package.swift` — a package handed in directly
 is loaded as the one local package of a project with nothing else in it, so
 everything below is the same either way. The difference is what a package input
-adds: its own test targets, as a `swift_library` of their sources plus a
-`macos_unit_test` over it, because pointing the tool at a package is pointing
-it at that package's tests.
+adds: its own test targets, as a test-only `swift_library` of their sources plus
+platform-compatible Apple test bundles. `bazel test //...` selects
+`macos_unit_test` on the default macOS host; an explicit Apple Simulator target
+platform selects the generated iOS, tvOS, watchOS, or visionOS variant.
 
 ```text
 App/
@@ -212,7 +213,7 @@ No test pins how a package's rules are produced either.
 | binary target (artifact bundle) | `native_binary` over the variant this machine can run, picked by the triples the bundle names |
 | binary target (remote artifact) | SwiftPM unpacks it under `.build/artifacts`; bazelize links it into `Artifacts/<Target>/` and imports it as above |
 | executable target | `swift_binary` |
-| test target of the package handed in | `swift_library` (`<Target>_library`, testonly) + `macos_unit_test`, whose `minimum_os_version` is what the package asks of macOS |
+| test target of the package handed in | `swift_library` (`<Target>_library`, testonly) + runtime test variants for macOS and every Apple Simulator, plus build-only iOS/tvOS/watchOS/visionOS device bundles; each variant uses that platform's package `minimum_os_version` |
 | executable product | `alias` to the target's binary |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
@@ -237,6 +238,55 @@ No test pins how a package's rules are produced either.
 | `.when(platforms:)` on a setting or a dependency | a `select` on `@platforms//os`, so the target platform decides it at build time; several platforms are a `config_setting_group`, and Mac Catalyst additionally matches Apple support's Catalyst constraint |
 | `.when(traits:)` on a setting or a dependency | a `select` on that trait's flag — a condition naming several traits is a `config_setting_group` |
 | `.when(configuration:)` on a setting | a `select` on Bazel's compilation mode |
+
+### Selecting a package test platform
+
+The host platform remains the default, so on the supported macOS host the
+existing command and test labels keep their macOS behavior:
+
+```sh
+bazel test //...
+```
+
+Select a generated Simulator variant with Bazel's target-platform flag:
+
+```sh
+bazel test //... --platforms=@apple_support//platforms:ios_sim_arm64
+bazel test //... --platforms=@apple_support//platforms:tvos_sim_arm64
+bazel test //... --platforms=@apple_support//platforms:watchos_arm64
+bazel test //... --platforms=@apple_support//platforms:visionos_sim_arm64
+```
+
+The platform-specific test labels are an implementation detail.
+`target_compatible_with` makes wildcard expansion skip every other variant.
+Each variant uses its own Apple bundle rule and platform transition. The iOS
+variant uses rules_apple's runner. rules_apple 5.2.0 deliberately leaves its
+tvOS, watchOS, and visionOS runners unimplemented, so Bazelize generates a
+runner that boots an available Simulator and passes the bundle to
+`xcodebuild test-without-building`.
+
+GitHub-hosted runners have an upstream visionOS Simulator attach/boot failure
+([actions/runner-images#13129](https://github.com/actions/runner-images/issues/13129)).
+CI therefore executes the macOS, iOS, tvOS, and watchOS variants and compiles
+the visionOS Simulator variant; run the visionOS command above on a working
+local Simulator for runtime coverage.
+
+Mac Catalyst remains unavailable because apple_support defines its target
+environment but publishes no Catalyst platform or Swift/C++ toolchain, and
+rules_apple has no Catalyst unit-test rule. Physical-device execution requires a
+connected, provisioned device and a device runner. Bazelize therefore exposes
+device bundles for honest build validation without reporting a runtime test:
+
+```sh
+bazel build //Packages/Package:Tests_ios_device_bundle \
+  --platforms=@apple_support//platforms:ios_arm64
+bazel build //Packages/Package:Tests_tvos_device_bundle \
+  --platforms=@apple_support//platforms:tvos_arm64
+bazel build //Packages/Package:Tests_watchos_device_bundle \
+  --platforms=@apple_support//platforms:watchos_device_arm64
+bazel build //Packages/Package:Tests_xros_device_bundle \
+  --platforms=@apple_support//platforms:visionos_arm64
+```
 
 Dimensions written in the same `.when` are a `config_setting_group` with
 `match_all`: for example, an iOS debug setting needs both the iOS constraint and

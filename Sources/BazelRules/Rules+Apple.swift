@@ -89,6 +89,14 @@ extension Rules {
             case watchos_build_test
         }
 
+        public enum VisionOS: String, LoadableRule {
+            public var module: String {
+                "@build_bazel_rules_apple//apple:visionos.bzl"
+            }
+
+            case visionos_unit_test
+        }
+
         // MARK: - Shared Apple Rules
 
         public enum General: String, LoadableRule {
@@ -438,9 +446,12 @@ extension Rules.Apple.IOS {
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             minimum_os_version: String? = nil,
+            tags: [String]? = nil,
+            target_compatible_with: [String]? = nil,
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
+            timeout: String? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -450,9 +461,14 @@ extension Rules.Apple.IOS {
                 if let deps { "deps" => deps }
                 if let env { "env" => .init(env) ?? None }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let tags { "tags" => tags }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
                 if let runner { "runner" => runner }
                 if let test_filter { "test_filter" => test_filter }
                 if let test_host { "test_host" => test_host }
+                if let timeout { "timeout" => timeout }
                 if let visibility { visibility }
             }
         }
@@ -914,6 +930,7 @@ extension Rules.Apple.MacOS {
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             minimum_os_version: String? = nil,
+            target_compatible_with: [String]? = nil,
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
@@ -926,6 +943,9 @@ extension Rules.Apple.MacOS {
                 if let deps { "deps" => deps }
                 if let env { "env" => .init(env) ?? None }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
                 if let runner { "runner" => runner }
                 if let test_filter { "test_filter" => test_filter }
                 if let test_host { "test_host" => test_host }
@@ -1084,6 +1104,8 @@ extension Rules.Apple.TVOS {
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             minimum_os_version: String? = nil,
+            tags: [String]? = nil,
+            target_compatible_with: [String]? = nil,
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
@@ -1096,6 +1118,10 @@ extension Rules.Apple.TVOS {
                 if let deps { "deps" => deps }
                 if let env { "env" => .init(env) ?? None }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let tags { "tags" => tags }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
                 if let runner { "runner" => runner }
                 if let test_filter { "test_filter" => test_filter }
                 if let test_host { "test_host" => test_host }
@@ -1254,6 +1280,8 @@ extension Rules.Apple.WatchOS {
             deps: Starlark.Value? = nil,
             env: [String: String]? = nil,
             minimum_os_version: String? = nil,
+            tags: [String]? = nil,
+            target_compatible_with: [String]? = nil,
             runner: Starlark.Label? = nil,
             test_filter: String? = nil,
             test_host: Starlark.Label? = nil,
@@ -1266,6 +1294,10 @@ extension Rules.Apple.WatchOS {
                 if let deps { "deps" => deps }
                 if let env { "env" => .init(env) ?? None }
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let tags { "tags" => tags }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
                 if let runner { "runner" => runner }
                 if let test_filter { "test_filter" => test_filter }
                 if let test_host { "test_host" => test_host }
@@ -1310,6 +1342,44 @@ extension Rules.Apple.WatchOS {
                 "name" => name
                 if let minimum_os_version { "minimum_os_version" => minimum_os_version }
                 "targets" => targets
+                if let visibility { visibility }
+            }
+        }
+    }
+}
+
+// MARK: - Rules.Apple.VisionOS.Call
+
+extension Rules.Apple.VisionOS {
+    public enum Call {
+        /// Builds a `visionos_unit_test` target.
+        public static func visionos_unit_test(
+            name: String,
+            data: Starlark.Value? = nil,
+            deps: Starlark.Value? = nil,
+            env: [String: String]? = nil,
+            minimum_os_version: String? = nil,
+            runner: Starlark.Label? = nil,
+            tags: [String]? = nil,
+            target_compatible_with: [String]? = nil,
+            test_filter: String? = nil,
+            test_host: Starlark.Label? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Apple.VisionOS.visionos_unit_test.call {
+                "name" => name
+                if let data { "data" => data }
+                if let deps { "deps" => deps }
+                if let env { "env" => .init(env) ?? None }
+                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
+                if let runner { "runner" => runner }
+                if let tags { "tags" => tags }
+                if let target_compatible_with {
+                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
+                }
+                if let test_filter { "test_filter" => test_filter }
+                if let test_host { "test_host" => test_host }
                 if let visibility { visibility }
             }
         }

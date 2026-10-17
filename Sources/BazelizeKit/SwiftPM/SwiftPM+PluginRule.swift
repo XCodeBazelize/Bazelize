@@ -154,7 +154,8 @@ extension SwiftPM.Generator {
                     ":\(rule)",
                     request,
                     "//:_plugin_host",
-                ]))
+                ],
+                tags: Self.manual))
     }
 
     /// The `performCommand` request, with the package the command is run on.

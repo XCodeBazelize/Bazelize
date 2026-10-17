@@ -86,14 +86,16 @@ manifest defaults，`<Package>.all` 打開全部。多個 trait 也能用公開�
 
 ## B. 覆蓋率
 
-### B1. `spm/` 裡沒有任何東西在 iOS 上**測**
+### B1. Root package tests 會在 macOS 與 iOS Simulator 執行 —— 已完成
 
-`spm/Platform` 現在會為 iOS 建：它那條 lane 用
-`--platforms=@apple_support//platforms:ios_sim_arm64` 建 package 規則，並斷言那個
-configuration 選到哪些 setting 與 dependency。還是只有 macOS 的，是所有「需要真的
-有一個 bundle」的東西 —— iOS 的 bundle 形狀、iOS 規則上的 `minimum_os_version`
-—— 因為套件的測試是 `macos_unit_test`。把 fixture 的測試跑在模擬器上，是剩下的
-那個洞。
+每個 root-package test target 現在都有符合平台的 macOS 與 iOS Simulator bundle
+variants。`bazel test //...` 保留既有 macOS target 與 label；
+`--platforms=@apple_support//platforms:ios_sim_arm64` 會跳過它並執行 iOS variant。
+`spm/Platform` 證明 simulator execution 會使用 iOS-only dependency，並透過
+`Bundle.module` 讀取 test resource。
+
+tvOS、watchOS、visionOS、實體裝置與 Mac Catalyst 因 upstream runners 或 bundle rules
+尚未全部到位，繼續由 issue #43 追蹤。
 
 ### B2. `.xcmappingmodel` —— 不打算做
 

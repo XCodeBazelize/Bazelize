@@ -18,6 +18,7 @@ extension Rules {
             "//tools:\(rawValue).bzl"
         }
 
+        case apple_simulator_test
         case asset_symbols
     }
 }
@@ -48,6 +49,32 @@ extension Rules.Workspace {
                 if let visibility {
                     visibility.argument
                 }
+            }
+        }
+
+        /// Runs a rules_apple test bundle in a non-iOS Apple Simulator.
+        public static func apple_simulator_test(
+            name: String,
+            bundle: Starlark.Label,
+            destination_platform: String,
+            developer_platform: String,
+            product_family: String,
+            runtime_platform: String,
+            target_compatible_with: [String],
+            timeout: String? = nil,
+            visibility: Starlark.Statement.Argument.Visibility? = nil) -> Starlark.Statement.Call
+        {
+            Rules.Workspace.apple_simulator_test.call {
+                "name" => name
+                "bundle" => bundle
+                "destination_platform" => destination_platform
+                "developer_platform" => developer_platform
+                "product_family" => product_family
+                "runtime_platform" => runtime_platform
+                "target_compatible_with" =>
+                    target_compatible_with.map { Starlark.Label.named($0) }
+                if let timeout { "timeout" => timeout }
+                if let visibility { visibility.argument }
             }
         }
     }

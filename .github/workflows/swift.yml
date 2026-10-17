@@ -191,43 +191,7 @@ jobs:
       # runtime its Xcode ships, which is not the one this repository is
       # developed against.
       - name: Boot Simulator
-        run: |
-          # A device name has spaces in it, so one field per line.
-          { read -r device; read -r version; read -r udid; } < <(python3 - <<'PY'
-          import json, subprocess
-
-          def simctl(*arguments):
-              listed = subprocess.run(["xcrun", "simctl", "list", "-j", *arguments], capture_output=True, text=True)
-              return json.loads(listed.stdout)
-
-          runtimes = [runtime for runtime in simctl("runtimes")["runtimes"]
-                      if runtime["identifier"].startswith("com.apple.CoreSimulator.SimRuntime.iOS")
-                      and runtime.get("isAvailable")]
-          runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
-          runtime = runtimes[-1]
-
-          devices = [device for device in simctl("devices", "available")["devices"].get(runtime["identifier"], [])
-                     if device["name"].startswith("iPhone")]
-          if devices:
-              name, udid = devices[-1]["name"], devices[-1]["udid"]
-          else:
-              kinds = [kind for kind in simctl("devicetypes")["devicetypes"] if kind["name"].startswith("iPhone")]
-              name = kinds[-1]["name"]
-              created = subprocess.run(
-                  ["xcrun", "simctl", "create", name, kinds[-1]["identifier"], runtime["identifier"]],
-                  capture_output=True, text=True)
-              udid = created.stdout.strip()
-
-          print(name)
-          print(runtime["version"])
-          print(udid)
-          PY
-          )
-          echo "Simulator: $device, iOS $version ($udid)"
-          echo "SIMULATOR_DEVICE=$device" >> "${GITHUB_ENV:-/dev/null}"
-          echo "SIMULATOR_VERSION=$version" >> "${GITHUB_ENV:-/dev/null}"
-          xcrun simctl boot "$udid" || true
-          xcrun simctl bootstatus "$udid"
+        run: .github/scripts/boot-apple-simulator.sh
 
       - name: Unit Test
         working-directory: fixture/iOS/App
@@ -733,7 +697,9 @@ jobs:
     name: IntegratePackage (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
-    timeout-minutes: 60
+    # Platform builds five SDK variants and executes four of them serially;
+    # cold hosted runners exceed one hour even when every command succeeds.
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -936,6 +902,77 @@ jobs:
           else
             echo "no Bazel tests, nothing to test"
           fi
+
+      - name: Boot Simulator for Platform Package
+        if: matrix.name == 'Platform'
+        run: .github/scripts/boot-apple-simulator.sh
+
+      # The root package's test bundle follows the requested target platform.
+      # This fixture proves both platform-conditional dependencies and
+      # Bundle.module in a simulator process; building the library is not enough.
+      # Booting before Bazel starts the test keeps cold CI startup outside the
+      # test timeout, and the explicit device keeps rules_apple on that simulator.
+      - name: Test Package on iOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test \
+            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="$SIMULATOR_DEVICE" \
+            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version="$SIMULATOR_VERSION" \
+            --local_test_jobs=1 \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:ios_sim_arm64 \
+            //...
+
+      # rules_apple can build these test bundles but its default runners reject
+      # every invocation. Bazelize's generated runner executes each bundle with
+      # xcodebuild on the matching Simulator runtime.
+      - name: Test Package on tvOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:tvos_sim_arm64 \
+            //Packages/Platform:PlatformTests_tvos_simulator
+
+      - name: Test Package on watchOS Simulator
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel test \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:watchos_arm64 \
+            //Packages/Platform:PlatformTests_watchos_simulator
+
+
+      # GitHub-hosted visionOS Simulators can remain stuck waiting for the
+      # system app indefinitely (actions/runner-images#13129). Compile that
+      # runtime target here without presenting it as an executed test. Hosted
+      # runners also have no provisioned physical devices, so compile and
+      # bundle every device variant without claiming runtime execution.
+      - name: Build Remaining Apple Test Variants
+        if: matrix.name == 'Platform'
+        working-directory: spm/${{ matrix.name }}/App
+        run: |
+          bazel build \
+            --platforms=@apple_support//platforms:visionos_sim_arm64 \
+            //Packages/Platform:PlatformTests_xros_simulator
+          bazel build \
+            --platforms=@apple_support//platforms:ios_arm64 \
+            //Packages/Platform:PlatformTests_ios_device_bundle
+          bazel build \
+            --platforms=@apple_support//platforms:tvos_arm64 \
+            //Packages/Platform:PlatformTests_tvos_device_bundle
+          bazel build \
+            --platforms=@apple_support//platforms:watchos_device_arm64 \
+            //Packages/Platform:PlatformTests_watchos_device_bundle
+          bazel build \
+            --platforms=@apple_support//platforms:visionos_arm64 \
+            //Packages/Platform:PlatformTests_xros_device_bundle
 
       # SwiftPM's macOS resource bundle is wrapped in Contents/Resources while
       # apple_resource_bundle is flat. Compare their logical resource roots,

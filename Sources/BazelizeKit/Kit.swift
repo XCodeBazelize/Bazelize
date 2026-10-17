@@ -24,6 +24,7 @@ public final class Kit {
     lazy var rootRC = Bazel.RootRC(outputRoot)
     lazy var prebuilt = Bazel.PrebuiltBuild(outputRoot)
     lazy var assetSymbols = Bazel.AssetSymbols(outputRoot)
+    lazy var appleSimulatorTest = Bazel.AppleSimulatorTest(outputRoot)
     lazy var targetsBuild = project.targets.map { target in
         Bazel.TargetBuild(outputRoot, target)
     }
@@ -299,6 +300,7 @@ extension Kit {
     /// ruleset provides.
     private final func generateWorkspaceRules() throws {
         try assetSymbols.path.parent().mkpath()
+        try appleSimulatorTest.write()
         try assetSymbols.write()
     }
 
