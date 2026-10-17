@@ -106,15 +106,16 @@ unfinished work.
 
 ## B. Coverage
 
-### B1. Nothing in `spm/` is *tested* on iOS
+### B1. Root-package tests run on macOS and iOS Simulator — done
 
-`spm/Platform` is now built for iOS: its lane compiles the package rule through
-`--platforms=@apple_support//platforms:ios_sim_arm64` and asserts which
-settings and dependencies that configuration selects. What is still macOS-only
-is everything that needs a bundle to exist — the iOS bundle shape and
-`minimum_os_version` on an iOS rule — because a package's tests are a
-`macos_unit_test`. Running a fixture's tests on a simulator is the remaining
-hole.
+Each root-package test target now has platform-compatible macOS and iOS
+Simulator bundle variants. `bazel test //...` keeps the existing macOS target
+and label; `--platforms=@apple_support//platforms:ios_sim_arm64` skips it and
+runs the iOS variant. `spm/Platform` proves the simulator execution reaches an
+iOS-only dependency and reads a test resource through `Bundle.module`.
+
+tvOS, watchOS, visionOS, physical devices, and Mac Catalyst remain in issue
+#43 because their upstream runners or bundle rules are not all available.
 
 ### B2. `.xcmappingmodel` — not planned
 

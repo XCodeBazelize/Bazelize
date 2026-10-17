@@ -31,10 +31,29 @@ bazel_dep(
     version = "5.2.0",
     repo_name = "build_bazel_rules_apple",
 )
+register_toolchains(
+    "//:tvos_simulator_test_toolchain",
+    "//:visionos_simulator_test_toolchain",
+    "//:watchos_simulator_test_toolchain",
+)
 bazel_dep(
     name = "rules_swift",
     version = "4.1.2",
     repo_name = "build_bazel_rules_swift",
+)
+system_sdk = use_extension("@build_bazel_rules_swift//swift:extensions.bzl", "system_sdk")
+system_sdk.configure_sdks(
+    names = [
+        "AppleTVOS",
+        "AppleTVSimulator",
+        "MacOSX",
+        "WatchOS",
+        "WatchSimulator",
+        "XROS",
+        "XRSimulator",
+        "iPhoneOS",
+        "iPhoneSimulator",
+    ],
 )
 bazel_dep(
     name = "rules_xcodeproj",

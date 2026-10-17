@@ -253,7 +253,8 @@ final class PluginSwiftPM: PluginBuiltin {
                     ":_plugin_host",
                     "plugin-plan.json",
                     "//\(Self.packagesDirectory):plugins",
-                ]))
+                ],
+                tags: ["manual"]))
     }
 
     override var custom: [PluginBuiltin.Custom]? {

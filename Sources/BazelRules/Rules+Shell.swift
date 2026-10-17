@@ -28,7 +28,8 @@ extension Rules.Shell {
         public static func sh_binary(
             name: String,
             srcs: [String],
-            data: [String] = []) -> Starlark.Statement.Call
+            data: [String] = [],
+            tags: [String] = []) -> Starlark.Statement.Call
         {
             Rules.Shell.sh_binary.call {
                 "name" => name
@@ -36,6 +37,7 @@ extension Rules.Shell {
                 if !data.isEmpty {
                     "data" => data.map { Starlark.Label.named($0) }
                 }
+                if !tags.isEmpty { "tags" => tags }
             }
         }
     }
