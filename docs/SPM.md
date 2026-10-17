@@ -504,6 +504,16 @@ plugin produces them over a protocol private to SwiftPM: the host asks for build
 commands over a pipe, and the request carries the whole package graph in
 SwiftPM's own `HostToPluginMessage` format.
 
+A plugin itself is a `swift_binary` compiled against the toolchain's
+`PackagePlugin`, and where that module sits is not written down as a path off
+the generating machine: `copts` name it under `__BAZEL_SWIFT_TOOLCHAIN_PATH__`,
+which `rules_swift`'s worker replaces with the toolchain it resolved for the
+action, and `linkopts` name it under `__BAZEL_XCODE_DEVELOPER_DIR__`, which
+`apple_support`'s `wrapped_clang` replaces with `DEVELOPER_DIR`. A plugin is
+therefore built against whichever Xcode runs the build — the same one every
+`swift_library` of the workspace is compiled with — rather than whichever one
+generated the workspace.
+
 So the workspace gets a host of its own. bazelize writes `plugin-host.swift`,
 which implements only the part of that wire protocol a build tool plugin uses,
 and `plugin-plan.json`, which carries one request per plugin invocation. Bazel

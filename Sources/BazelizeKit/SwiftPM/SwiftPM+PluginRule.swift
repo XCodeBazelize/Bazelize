@@ -12,6 +12,34 @@ import Starlark
 import Util
 
 extension SwiftPM.Generator {
+    /// Where the toolchain keeps `PackagePlugin`, spelled the way the tools
+    /// that run the build spell it rather than as a path off this machine.
+    ///
+    /// `rules_swift` runs every `swiftc` through its worker, which replaces
+    /// `__BAZEL_SWIFT_TOOLCHAIN_PATH__` in each argument with the toolchain it
+    /// resolved for that action — the same one every `swift_library` of the
+    /// workspace compiles against.
+    static let pluginAPIInclude = "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/pm/PluginAPI"
+
+    /// The same directory for the linker, which is `apple_support`'s
+    /// `wrapped_clang` and knows only `__BAZEL_XCODE_DEVELOPER_DIR__`
+    /// (`DEVELOPER_DIR`). The toolchain under it is named the way `rules_swift`
+    /// names it when it points the linker at the Swift runtime.
+    static let pluginAPILink =
+        "__BAZEL_XCODE_DEVELOPER_DIR__/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/PluginAPI"
+
+    /// Where a built plugin looks for `libPackagePlugin.dylib` when it runs.
+    ///
+    /// An rpath is written into the program, so a path resolved while linking
+    /// would name the Xcode of that moment. `xcode-select` keeps these two
+    /// symlinks pointed at the selected `Developer` directory on macOS — the
+    /// same pair `rules_swift` gives the binaries it links, for the same
+    /// reason — so a plugin still finds its library after Xcode is switched.
+    static let pluginAPIRunPaths = [
+        "/private/var/select/developer_dir",
+        "/var/db/xcode_select_link",
+    ].map { "\($0)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/PluginAPI" }
+
     /// A build tool plugin as a program Bazel builds.
     ///
     /// A plugin links nothing but the toolchain's `PackagePlugin`, so this is an
@@ -19,6 +47,10 @@ extension SwiftPM.Generator {
     /// here rather than with SwiftPM is what keeps the plugin path independent
     /// of whether the package it lives in builds at all — some toolchains
     /// cannot even load a package whose plugin names its tool by target.
+    ///
+    /// Nothing here asks this machine where that module is: the placeholders
+    /// are resolved by whichever Xcode runs the build, so a workspace is not
+    /// specific to the installation that generated it.
     func buildPlugin(
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
@@ -26,23 +58,20 @@ extension SwiftPM.Generator {
         named name: String? = nil,
         builder: CodeBuilder)
     {
-        guard let api = SwiftPM.PluginHost.pluginAPIPath else { return }
-
         builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.call(
             Rules.Swift.Call.swift_binary(
                 name: name ?? ruleName(of: target.name, in: package),
                 copts: [
-                    "-I", api,
+                    "-I", Self.pluginAPIInclude,
                     /// Which `PackagePlugin` the plugin was written against; its
                     /// availability is stated in terms of the tools version.
                     "-package-description-version", package.manifest.toolsVersion,
                 ].starlark,
-                linkopts: [
-                    "-L", api,
+                linkopts: ([
+                    "-L", Self.pluginAPILink,
                     "-lPackagePlugin",
-                    "-Xlinker", "-rpath", "-Xlinker", api,
-                ].starlark,
+                ] + Self.pluginAPIRunPaths.map { "-Wl,-rpath,\($0)" }).starlark,
                 module_name: Self.moduleName(target.name),
                 srcs: Starlark.glob(["\(prefix)/**/*.swift"]),
                 tags: Self.manual,
@@ -65,8 +94,7 @@ extension SwiftPM.Generator {
     {
         guard
             let capability = target.pluginCapability,
-            let verb = capability.verb,
-            SwiftPM.PluginHost.pluginAPIPath != nil
+            let verb = capability.verb
         else {
             return
         }

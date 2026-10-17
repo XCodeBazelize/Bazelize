@@ -177,12 +177,17 @@ Xcode's generated Swift asset symbols and compiles source references to the
 generated image, symbol-image, and colour APIs. The built IPA carries
 `Assets.car` and app-icon metadata.
 
-### B8. Plugin output cannot be recorded in workspace snapshots
+### B8. Plugin rules named the generating machine's toolchain — done
 
-A generated plugin `BUILD` contains an absolute path into the active Swift
-toolchain. Recording it verbatim would make the snapshot specific to one
-machine and Xcode installation. Mask that path in the snapshot harness before
-adding a plugin workspace to `GeneratedWorkspaceSnapshotTests`.
+A generated plugin `BUILD` carried the absolute path of the Swift toolchain's
+`PluginAPI` directory, found with `xcrun` while generating: the workspace was
+specific to one Xcode installation, and no plugin fixture could be recorded as
+a snapshot. The rules now name that directory the way the tools running the
+build name it — `__BAZEL_SWIFT_TOOLCHAIN_PATH__` in `copts`, which
+`rules_swift`'s worker resolves to the toolchain of the action, and
+`__BAZEL_XCODE_DEVELOPER_DIR__` in `linkopts`, which `apple_support`'s
+`wrapped_clang` resolves to `DEVELOPER_DIR`. Generation asks `xcrun` nothing,
+and `Tests/Snapshots/BuildToolPlugin` records the rules verbatim.
 
 ## C. Process
 

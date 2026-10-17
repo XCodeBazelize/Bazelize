@@ -460,6 +460,14 @@ executable target，它讀 package 根的一個 `.tb` 檔——那個檔不屬�
 走的是 SwiftPM 的私有協定：host 透過 pipe 向 plugin 要 build command，請求裡帶著整張
 package graph，用 SwiftPM 自己的 `HostToPluginMessage` 格式。
 
+plugin 本身是一個對著 toolchain 的 `PackagePlugin` 編譯的 `swift_binary`，而那個
+module 在哪裡並不是用「產生 workspace 那台機器的路徑」寫死的：`copts` 用
+`__BAZEL_SWIFT_TOOLCHAIN_PATH__`，由 `rules_swift` 的 worker 換成該 action 解析到的
+toolchain；`linkopts` 用 `__BAZEL_XCODE_DEVELOPER_DIR__`，由 `apple_support` 的
+`wrapped_clang` 換成 `DEVELOPER_DIR`。所以 plugin 是對著「跑這次 build 的那個
+Xcode」編的——跟 workspace 裡每個 `swift_library` 用的是同一個——而不是對著「產生
+workspace 的那個 Xcode」。
+
 所以這個 workspace 自己帶一個 host。bazelize 寫出 `plugin-host.swift`——只實作
 build tool plugin 會用到的那段 wire protocol——以及 `plugin-plan.json`，裡面一個
 plugin 執行一筆 request。host、plugin 與 plugin 的工具都由 Bazel 建；

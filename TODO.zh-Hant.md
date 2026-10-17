@@ -147,11 +147,15 @@ iOS fixture 現在會建 app icon 與自訂 symbol set，也會啟用 Xcode 生�
 asset symbols，並編譯使用生成 image、symbol image、color API 的原始碼。建出的
 IPA 內含 `Assets.car` 與 app icon metadata。
 
-### B8. plugin 生成物還不能錄進 workspace snapshot
+### B8. plugin rules 寫死了產生它的那台機器的 toolchain —— 已完成
 
-生成的 plugin `BUILD` 含有目前 Swift toolchain 的絕對路徑，原樣記錄會讓 snapshot
-只適用於一台機器與一個 Xcode 安裝位置。先在 snapshot harness 遮罩該路徑，再把
-plugin workspace 加進 `GeneratedWorkspaceSnapshotTests`。
+生成的 plugin `BUILD` 以前含有「生成當下用 `xcrun` 找到的」Swift toolchain
+`PluginAPI` 絕對路徑：workspace 因此綁死一個 Xcode 安裝位置，plugin fixture 也錄
+不進 snapshot。現在改用跑 build 的那些工具自己的寫法——`copts` 用
+`__BAZEL_SWIFT_TOOLCHAIN_PATH__`，由 `rules_swift` 的 worker 換成該 action 的
+toolchain；`linkopts` 用 `__BAZEL_XCODE_DEVELOPER_DIR__`，由 `apple_support` 的
+`wrapped_clang` 換成 `DEVELOPER_DIR`。生成階段不再問 `xcrun`，
+`Tests/Snapshots/BuildToolPlugin` 則是原樣記錄這些 rules。
 
 ## C. 流程
 

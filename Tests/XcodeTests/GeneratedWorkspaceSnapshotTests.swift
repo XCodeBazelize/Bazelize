@@ -1,7 +1,7 @@
-import BazelizeKit
 import Foundation
 import PathKit
 import Testing
+@testable import BazelizeKit
 @testable import Xcode
 
 /// What a run writes, kept verbatim.
@@ -55,6 +55,50 @@ struct GeneratedWorkspaceSnapshotTests {
                 "Packages/BUILD",
                 "Packages/Platform/BUILD",
                 "tools/apple_simulator_test.bzl",
+            ])
+    }
+
+    /// A plugin's rules name the toolchain by the placeholders Bazel resolves,
+    /// so what a run writes here is the same file on every machine and under
+    /// every Xcode — which is what makes recording it possible at all.
+    @Test
+    func swiftPackageBuildToolPlugin() async throws {
+        try await verify(
+            input: "spm/BuildToolPlugin",
+            snapshot: "BuildToolPlugin",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/BuildToolPlugin/BUILD",
+            ])
+    }
+
+    /// A prebuild command: the plugin runs before the build and names a
+    /// directory rather than files, so the target's rule globs what landed.
+    @Test
+    func swiftPackagePrebuildPlugin() async throws {
+        try await verify(
+            input: "spm/PrebuildPlugin",
+            snapshot: "PrebuildPlugin",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/PrebuildPlugin/BUILD",
+            ])
+    }
+
+    /// A command plugin, which is a program to run rather than a step of a
+    /// build: the wrapper that runs it, and the name it got because the
+    /// package already ships an executable spelled the way its verb is.
+    @Test
+    func swiftPackageCommandPlugin() async throws {
+        try await verify(
+            input: "spm/CommandPlugin",
+            snapshot: "CommandPlugin",
+            files: [
+                "MODULE.bazel",
+                "Packages/BUILD",
+                "Packages/CommandPlugin/BUILD",
             ])
     }
 
@@ -115,6 +159,7 @@ struct GeneratedWorkspaceSnapshotTests {
         defer { try? output.delete() }
 
         let kit = try await Kit(root + input, nil, outputPath: output)
+        kit.runsBuildToolPlugins = false
         try await kit.run()
 
         let recorded = root + "Tests/Snapshots" + name

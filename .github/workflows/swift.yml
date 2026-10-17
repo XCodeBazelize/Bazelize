@@ -24,8 +24,11 @@ on:
       - 'fixture/iOS/**'
       - 'mise.toml'
 
-concurrency: 
-  group: ci
+# One run at a time per branch or pull request, never per repository: a shared
+# group let any other branch's push cancel a run that was proving a change, so
+# "CI passed" was a question of what else was pushed that hour.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
