@@ -50,8 +50,8 @@ extension SwiftPM.Generator {
                         + generated,
                     excluding: excluded(target, prefix: prefix)),
                 deps: deps(of: target, in: package),
-                data: resources?.label.map { label in
-                    .build { [Starlark.Label.named(label)] }
+                data: resources?.labels.nonEmpty.map { labels in
+                    .build { labels.map { Starlark.Label.named($0) } }
                 },
                 linkopts: linkopts(of: target, in: package),
                 tags: Self.manual,

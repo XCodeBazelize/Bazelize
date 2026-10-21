@@ -15,6 +15,7 @@ would not tell us anything.
 | `ConfigurationCondition` | settings conditional on debug and release, which the build decides rather than the generator |
 | `DependencyCondition` | dependencies conditional on a platform and on a trait: what the condition excludes must not be built |
 | `DependencyShape` | how a dependency is named: `.target`, by name, `.product`, a package whose identity is neither its directory nor its manifest name, two packages shipping a product of the same name, `moduleAliases` renaming a module that would otherwise clash, and a dependency's own resource bundle |
+| `ExecutableResource` | resources reaching a program that has no Apple bundler to embed them: a command line tool's own `.copy`, `.process` and asset catalogue, plus a library it links whose `Bundle.module` only resolves when that library's bundle travels with the tool |
 | `Macro` | a macro target, loaded by the compiler while the target beside it is compiled |
 | `Platform` | platform-conditional settings and dependencies as build-time `select` expressions: the same generated rule takes the macOS branch on the host, the iOS branch through an iOS platform transition, and combines platform with debug configuration |
 | `PluginDependency` | a build tool plugin that belongs to another package, named with the package it comes from, running that package's tool |

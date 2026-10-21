@@ -155,7 +155,7 @@ extension SwiftPM.Generator {
     /// tried before falling back to the single package declaring the product.
     /// Never guess from an unrelated dependency merely because it appears
     /// first in the manifest.
-    private func package(
+    func package(
         ofProduct product: String,
         package name: String?,
         from consumer: SwiftPM.Package) -> SwiftPM.Package?

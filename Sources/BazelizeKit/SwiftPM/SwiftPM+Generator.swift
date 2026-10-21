@@ -31,6 +31,10 @@ extension SwiftPM {
 
         var kinds: [String: [String: TargetKind]] = [:]
 
+        /// The library targets some program links directly. Their resource
+        /// bundles travel in runfiles, not through an Apple bundler.
+        var executableReach: Set<TargetKey> = []
+
         /// The `config_setting_group` a condition on several traits asked for,
         /// by name, written with the flags once every rule is generated.
         var traitGroups: [String: [String]] = [:]
@@ -80,6 +84,8 @@ extension SwiftPM {
                 report(deploymentOf: package)
                 report(pluginsOf: package)
             }
+
+            executableReach = targetsReachedByExecutables()
 
             collectModuleAliases()
 

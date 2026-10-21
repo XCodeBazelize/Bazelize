@@ -219,6 +219,7 @@ No test pins how a package's rules are produced either.
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift`, or a `.h`/`.m` pair for a C-family target |
+| resources of a target a program links | the same bundle built once more as a directory the executable carries in its runfiles: `apple_resource_bundle` only propagates to an Apple bundler, and a command line tool has none |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`: the bytes as `PackageResources`, and nothing in a bundle |
 | auto-discovered resources (xib/xcassets/metal/xcstrings/`.lproj`) | as above; a `.metal` file takes the target's headers into the resource group, because the bundler compiles them as Metal headers |
 | `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent; `.define("A", to: "1")` is one flag, `-DA=1` |
