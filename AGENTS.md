@@ -5,6 +5,23 @@
 Any new feature or behavior change goes on its own branch and is delivered as a
 pull request. Never push such work directly to `master`.
 
+A branch is cut from the current `master` before the first edit, and the pull
+request names the issue it settles with a closing keyword — `Closes #44` — so
+merging the pull request closes it. Work that only investigates an issue, or
+that changes the issue's own description, uses `Refs #44` instead: an
+investigation is not a fix.
+
+## Issue language
+
+Every issue this repository files carries both English and 中文, in that order,
+separated by `---`. Both halves say the same thing: the same problem, the same
+proposed direction, and the same acceptance criteria. A reader of either
+language gets the whole issue, never a summary of the other half.
+
+Each issue states what is observably wrong, the direction a fix would take, and
+the acceptance criteria that decide when it is done. An acceptance criterion
+names behavior that can be run, not the shape of the code that produces it.
+
 ## Generated workspace ownership
 
 Bazelize preserves the workspace root. Never replace or delete it wholesale:
