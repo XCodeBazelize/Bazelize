@@ -36,6 +36,13 @@ sh_binary(
 )
 
 sh_binary(
+    name = "lint-ci",
+    srcs = [
+        "lint-ci.sh",
+    ],
+)
+
+sh_binary(
     name = "format",
     srcs = [
         "format.sh",

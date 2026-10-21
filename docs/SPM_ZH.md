@@ -72,7 +72,8 @@ App/
 ├── .bazelignore              # 把 SwiftPM 的工作目錄排除在 Bazel 之外
 ├── .bazelversion
 ├── BUILD
-├── lint.sh                   # 下載並執行固定版本的 buildifier
+├── lint.sh                   # 回報固定版本 buildifier 的全部 warning
+├── lint-ci.sh                # 執行會影響行為的 warning allowlist
 ├── format.sh                 # 同一支 buildifier，改寫成它的格式
 ├── plugins.sh                # 進入 Bazel 建出的 SwiftPM plugin host
 ├── plugin-host.swift         # 由 Bazel 編成 `//:plugins` 的 host
@@ -101,15 +102,18 @@ import 只出現一次。`Targets/`、`Prebuilt/`、`Packages/` 由生成器管�
 | 指令 | 做什麼 |
 |---|---|
 | `bazel run //:plugins` | 讓 Bazel 建這個 workspace 的 build tool plugin 與它們的工具、執行它們，把產生的檔案寫回 `Packages/*/Generated/` |
-| `bazel run //:lint` | 下載該 host（`uname -s` 與 `uname -m`）對應的固定版本 buildifier、驗證 checksum，並 lint 全部產生出的 Starlark 檔案 |
+| `bazel run //:lint` | 下載該 host（`uname -s` 與 `uname -m`）對應的固定版本 buildifier、驗證 checksum，並回報全部生成 Starlark warning |
+| `bazel run //:lint-ci` | 只檢查經審核、會影響行為的 warning category，作為 repository 的 CI 規則 |
 | `bazel run //:format` | 同一支 buildifier，把那些檔案改寫成它的格式 |
 | `bazel run //tools:list-config` | 這個 workspace 定義了哪些 `--config=<name>`，以及每次 build 一定會拿到的 flag |
 | `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
 | `bazel run //tools:list-language` | 它的 package 與 target 帶了哪些 localization，以及挑一個要用哪個 `--config` |
 
 Lint、format、plugin 與清單指令都是產生出來的 target。Bazelize 會直接依照固定
-版本 buildifier 的標準格式寫出 Starlark。`//:lint` 把該 buildifier 快取在使用者
-的 cache 目錄；後續格式差異只回報、不會失敗，lint warning 則會失敗。
+版本 buildifier 的標準格式寫出 Starlark。`//:lint` 提供完整報告；`//:lint-ci`
+只讓 `constant-glob`、`duplicated-name`、`no-effect`、`return-value`、
+`uninitialized` 與 `unreachable` 失敗。Buildifier 只有 warning category，沒有
+嚴重度；新 category 必須先審核，才可加入 CI 規則。兩個指令都不因排版差異失敗。
 `//:format` 可重寫生成後被修改的檔案。
 `//:plugins` 用 Bazel 建 host、plugin 與工具，接著完全從它們的 runfiles
 執行，不會再去 `PATH` 找 `bazelize`。清單答案來自產生 package rules 時使用的

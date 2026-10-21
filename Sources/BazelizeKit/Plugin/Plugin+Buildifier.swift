@@ -6,9 +6,8 @@
 
 /// A generated workspace's own buildifier commands.
 ///
-/// Formatting is buildifier's job rather than the generator's, so a workspace
-/// carries the tool to do it: `//:lint` says what is wrong, `//:format` fixes
-/// what is only formatting. Neither is run by generation.
+/// `//:lint` reports everything, `//:lint-ci` enforces only warnings that can
+/// change behavior, and `//:format` rewrites files changed after generation.
 final class PluginBuildifier: PluginBuiltin {
     override var name: String { "Buildifier" }
 
@@ -34,10 +33,31 @@ final class PluginBuildifier: PluginBuiltin {
 
     /// What a generated workspace can do to its own Starlark.
     enum Command: String, CaseIterable {
-        /// Report warnings; formatting differences are reported but do not fail.
+        /// Report every warning; formatting differences are reported but do
+        /// not fail. This is the complete local audit, not the CI policy.
         case lint
+        /// Fail only for warnings that can change behavior or leave a generated
+        /// project unloadable. Style, documentation and migration advice stay
+        /// visible through `//:lint` without becoming release policy.
+        case lintCI = "lint-ci"
         /// Rewrite the files the way buildifier formats them.
         case format
+
+        /// A small allowlist by design. Buildifier has categories, not severity:
+        /// a new category must be understood before it can block this project.
+        ///
+        /// - constant-glob can silently omit a file.
+        /// - duplicated-name can make a package unloadable.
+        /// - no-effect means generated code does nothing.
+        /// - return-value, uninitialized and unreachable are broken control flow.
+        private static let ciWarnings = [
+            "constant-glob",
+            "duplicated-name",
+            "no-effect",
+            "return-value",
+            "uninitialized",
+            "unreachable"
+        ]
 
         var file: String { "\(rawValue).sh" }
 
@@ -45,10 +65,16 @@ final class PluginBuildifier: PluginBuiltin {
         /// collected.
         var body: String {
             switch self {
-            case .lint:
+            case .lint, .lintCI:
+                let warningOption = self == .lintCI
+                    ? " --warnings=\(Self.ciWarnings.joined(separator: ","))"
+                    : ""
+                let description = self == .lintCI
+                    ? "behavior-affecting buildifier warnings"
+                    : "buildifier warnings"
                 return """
                 set +e
-                output=$("$buildifier" --mode=check --lint=warn "${files[@]}" 2>&1)
+                output=$("$buildifier" --mode=check --lint=warn\(warningOption) "${files[@]}" 2>&1)
                 result=$?
                 set -e
 
@@ -68,7 +94,7 @@ final class PluginBuildifier: PluginBuiltin {
 
                 warnings=$(printf '%s\\n' "$output" | grep -v ' # reformat$' || true)
                 if [[ -n "$warnings" ]]; then
-                    echo "generated Starlark has buildifier warnings" >&2
+                    echo "generated Starlark has \(description)" >&2
                     printf '%s\\n' "$warnings" >&2
                     exit 1
                 fi

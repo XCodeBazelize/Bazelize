@@ -79,7 +79,8 @@ App/
 ├── .bazelignore              # SwiftPM's working directory, kept out of Bazel
 ├── .bazelversion
 ├── BUILD
-├── lint.sh                   # downloads and runs the pinned buildifier
+├── lint.sh                   # reports every warning from the pinned buildifier
+├── lint-ci.sh                # enforces the behavior-affecting warning allowlist
 ├── format.sh                 # the same buildifier, rewriting those files
 ├── plugins.sh                # enters the Bazel-built SwiftPM plugin host
 ├── plugin-host.swift         # compiled by Bazel for `//:plugins`
@@ -108,7 +109,8 @@ generator-owned and rebuilt as units; project-owned files belong at the root.
 | command | what it does |
 |---|---|
 | `bazel run //:plugins` | builds this workspace's build tool plugins and their tools, runs them, and writes what they generate back into `Packages/*/Generated/` |
-| `bazel run //:lint` | downloads the buildifier pinned for the host — `uname -s` and `uname -m` — verifies it, and lints every generated Starlark file |
+| `bazel run //:lint` | downloads the buildifier pinned for the host — `uname -s` and `uname -m` — verifies it, and reports every generated Starlark warning |
+| `bazel run //:lint-ci` | checks only the reviewed behavior-affecting warning categories used as repository CI policy |
 | `bazel run //:format` | the same buildifier, rewriting those files the way it formats them |
 | `bazel run //tools:list-config` | the `--config=<name>` this workspace defines, and the flags every build gets anyway |
 | `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
@@ -116,9 +118,12 @@ generator-owned and rebuilt as units; project-owned files belong at the root.
 
 The lint, format, plugin, and listing commands are generated targets. Bazelize
 writes generated Starlark in the pinned buildifier's canonical format. `//:lint`
-caches that buildifier under the user's cache directory, reports later
-formatting differences without failing, and fails on lint warnings; `//:format`
-rewrites files changed after generation. `//:plugins` builds
+is the complete report. `//:lint-ci` fails only for `constant-glob`,
+`duplicated-name`, `no-effect`, `return-value`, `uninitialized`, and
+`unreachable`; buildifier provides warning categories rather than severity, so
+new categories must be reviewed before they become release policy. Formatting
+differences fail neither command. `//:format` rewrites files changed after
+generation. `//:plugins` builds
 its host, plugins and tools with Bazel, then runs entirely from their runfiles;
 it does not look up `bazelize` on `PATH`. The listing answers are embedded from
 the same resolved workspace and configuration files that generate the package
