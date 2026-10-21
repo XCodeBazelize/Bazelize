@@ -71,7 +71,10 @@ let project = Project(
             "Static2",
             product: .staticLibrary,
             sources: ["Static2/**/*.m"],
-            headers: .headers(public: ["Static2/**/*.h"])),
+            headers: .headers(public: ["Static2/**/*.h"]),
+            /// Only this setting defines the macro its header insists on, so a
+            /// generated rule that drops `OTHER_CFLAGS` does not compile.
+            settings: ["OTHER_CFLAGS": "-DBAZELIZE_OTHER_FLAGS"]),
         target(
             "StaticFramework1",
             product: .staticFramework,
@@ -119,7 +122,9 @@ let project = Project(
                 "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
                 "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
                 "DEVELOPMENT_ASSET_PATHS": "\"Example/Preview Content\"",
-                "OTHER_SWIFT_FLAGS": "-DYDebug -D A",
+                /// `-D` reaches Swift as a condition; `-Xcc -D` reaches the
+                /// clang importer, which is what reads Static2's header.
+                "OTHER_SWIFT_FLAGS": "-DYDebug -D A -Xcc -DBAZELIZE_OTHER_FLAGS",
             ]),
         target(
             "ExampleTests",

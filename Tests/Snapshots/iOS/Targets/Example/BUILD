@@ -52,6 +52,8 @@ swift_library(
         "-swift-version",
         "5",
         "-enable-bare-slash-regex",
+        "-Xcc",
+        "-DBAZELIZE_OTHER_FLAGS",
     ],
     data = [
         ":Assets",

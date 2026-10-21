@@ -79,7 +79,6 @@ extension Xcode.BuildSettings {
         guard let value = self["SWIFT_DEFAULT_ACTOR_ISOLATION"], !value.isEmpty else { return nil }
         return value
     }
-    public var swiftDefine: String? { self["OTHER_SWIFT_FLAGS"] }
 
     /// Everything Swift compiles with `-D`: the conditions Xcode dedicates a
     /// setting to, plus any `-D` smuggled through `OTHER_SWIFT_FLAGS`.
@@ -87,28 +86,11 @@ extension Xcode.BuildSettings {
     /// `SWIFT_ACTIVE_COMPILATION_CONDITIONS` is how a project spells `#if FEATURE`
     /// for Swift — UTM decides which SPICE module to import with it.
     public var swiftDefines: [String] {
-        let conditions = (self["SWIFT_ACTIVE_COMPILATION_CONDITIONS"] ?? "")
-            .split(separator: " ")
-            .map(String.init)
-            .filter { !$0.isEmpty && $0 != "$(inherited)" }
-
-        var flagged: [String] = []
-        var isPreviousDefine = false
-        for flag in (swiftDefine ?? "").split(separator: " ").map(String.init) {
-            if flag == "-D" {
-                isPreviousDefine = true
-            } else if isPreviousDefine {
-                /// `-D ABC`
-                flagged.append(flag)
-                isPreviousDefine = false
-            } else if flag.hasPrefix("-D") {
-                /// `-DABC`
-                flagged.append(String(flag.dropFirst(2)))
-            }
-        }
-
         var result: [String] = []
-        for define in conditions + flagged where !result.contains(define) {
+        for define in Self.split(self["SWIFT_ACTIVE_COMPILATION_CONDITIONS"])
+            + Self.swiftFlags(self["OTHER_SWIFT_FLAGS"]).defines
+            where !result.contains(define)
+        {
             /// `swiftc` rejects anything that is not an identifier, and a project
             /// routinely leaves a build setting reference in here — iina spells one
             /// condition `$AVAILABLE_$(SDK_VERSION_MAJOR)`.
@@ -118,6 +100,68 @@ extension Xcode.BuildSettings {
             result.append(define)
         }
         return result
+    }
+
+    /// What `OTHER_SWIFT_FLAGS` says apart from the conditions `swiftDefines`
+    /// already took out of it. A project reaches the frontend through this
+    /// setting — `-Xfrontend`, `-enable-experimental-feature`, `-Xcc` — and a
+    /// module written against those flags does not compile without them.
+    public var otherSwiftFlags: [String] {
+        Self.swiftFlags(self["OTHER_SWIFT_FLAGS"]).flags
+    }
+
+    /// `OTHER_SWIFT_FLAGS` as the two things it holds: the conditions it
+    /// defines, and every other flag in the order it was written.
+    ///
+    /// A `-D` is Swift's own define, but the one in `-Xcc -DFOO` belongs to the
+    /// clang importer and stays a flag — the header it guards is not compiled
+    /// by `swiftc`.
+    private static func swiftFlags(_ value: String?) -> (defines: [String], flags: [String]) {
+        var defines: [String] = []
+        var flags: [String] = []
+        var remaining = split(value).makeIterator()
+
+        while let flag = remaining.next() {
+            if flag == "-D" {
+                /// `-D ABC`
+                if let define = remaining.next() { defines.append(define) }
+            } else if flag.hasPrefix("-D") {
+                /// `-DABC`
+                defines.append(String(flag.dropFirst(2)))
+            } else if passthroughPairs.contains(flag) {
+                flags.append(flag)
+                if let argument = remaining.next() { flags.append(argument) }
+            } else {
+                flags.append(flag)
+            }
+        }
+
+        return (defines, flags)
+    }
+
+    /// Flags whose argument is another tool's, and is therefore read by
+    /// neither this type nor `swiftc` itself.
+    private static let passthroughPairs: Set<String> = ["-Xcc", "-Xfrontend", "-Xllvm", "-Xclang-linker"]
+
+    /// `OTHER_CFLAGS`: what every C-family compile of the target takes.
+    public var otherCFlags: [String] {
+        Self.split(self["OTHER_CFLAGS"])
+    }
+
+    /// `OTHER_CPLUSPLUSFLAGS`: what the C++ compiles take on top of
+    /// `OTHER_CFLAGS`, which is how Xcode spells a C++ dialect a C file would
+    /// be rejected for.
+    public var otherCPlusPlusFlags: [String] {
+        Self.split(self["OTHER_CPLUSPLUSFLAGS"])
+    }
+
+    /// One build setting's flags: whitespace-separated, unquoted, without
+    /// Xcode's `$(inherited)` marker.
+    private static func split(_ value: String?) -> [String] {
+        (value ?? "")
+            .split(separator: " ")
+            .map { String($0).unquoted }
+            .filter { !$0.isEmpty && $0 != "$(inherited)" }
     }
     public var bridgingHeader: String? { self["SWIFT_OBJC_BRIDGING_HEADER"] }
 
