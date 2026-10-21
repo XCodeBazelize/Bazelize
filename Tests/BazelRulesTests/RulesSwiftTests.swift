@@ -95,16 +95,12 @@ struct RulesSwiftTests {
                 == """
                 swift_library(
                     name = "Core",
-                    alwayslink = True,
-                    copts = [
-                        "-whole-module-optimization",
-                    ],
-                    module_name = "CoreKit",
+                    testonly = True,
                     srcs = [
                         "A.swift",
                     ],
-                    deps = [
-                        "//Lib:Util",
+                    copts = [
+                        "-whole-module-optimization",
                     ],
                     data = [
                         ":Assets",
@@ -118,16 +114,20 @@ struct RulesSwiftTests {
                         "-ObjC",
                     ],
                     linkstatic = True,
+                    module_name = "CoreKit",
                     private_deps = [
                         "//LibPrivate:Impl",
                     ],
                     swiftc_inputs = [
                         ":Config.json",
                     ],
-                    testonly = True,
                     visibility = [
                         "//visibility:public",
                     ],
+                    deps = [
+                        "//Lib:Util",
+                    ],
+                    alwayslink = True,
                 )
                 """)
     }
@@ -148,7 +148,6 @@ struct RulesSwiftTests {
                 == """
                 swift_library(
                     name = "Core",
-                    alwayslink = True,
                     srcs = [
                         "A.swift",
                     ],
@@ -158,6 +157,7 @@ struct RulesSwiftTests {
                         ],
                         "//conditions:default": None,
                     }),
+                    alwayslink = True,
                 )
                 """)
     }
@@ -182,29 +182,29 @@ struct RulesSwiftTests {
                 == """
                 swift_binary(
                     name = "CLI",
+                    testonly = True,
+                    srcs = [
+                        "main.swift",
+                    ],
                     copts = [
                         "-DDEBUG",
                     ],
                     data = [
                         ":RuntimeResources",
                     ],
-                    deps = [
-                        "//Lib:Core",
-                    ],
                     linkopts = [
                         "-ObjC",
                     ],
                     module_name = "CLI",
-                    srcs = [
-                        "main.swift",
-                    ],
                     stamp = 1,
                     swiftc_inputs = [
                         ":Config.json",
                     ],
-                    testonly = True,
                     visibility = [
                         "//visibility:public",
+                    ],
+                    deps = [
+                        "//Lib:Core",
                     ],
                 )
                 """)
@@ -230,7 +230,6 @@ struct RulesSwiftTests {
                 == """
                 mixed_language_library(
                     name = "Core",
-                    alwayslink = True,
                     clang_copts = [
                         "-fmodule-name=Core",
                     ],
@@ -249,6 +248,7 @@ struct RulesSwiftTests {
                     swift_srcs = [
                         "A.swift",
                     ],
+                    alwayslink = True,
                 )
                 """)
     }
@@ -274,6 +274,9 @@ struct RulesSwiftTests {
                 == """
                 swift_test(
                     name = "CoreTests",
+                    srcs = [
+                        "CoreTests.swift",
+                    ],
                     args = [
                         "--filter",
                         "CoreTests/testFoo",
@@ -284,9 +287,6 @@ struct RulesSwiftTests {
                     data = [
                         ":Fixtures",
                     ],
-                    deps = [
-                        "//Lib:Core",
-                    ],
                     env = {
                         "FOO": "BAR",
                     },
@@ -294,15 +294,15 @@ struct RulesSwiftTests {
                         "-ObjC",
                     ],
                     module_name = "CoreTests",
-                    srcs = [
-                        "CoreTests.swift",
-                    ],
                     stamp = 0,
                     swiftc_inputs = [
                         ":Config.json",
                     ],
                     visibility = [
                         "//visibility:private",
+                    ],
+                    deps = [
+                        "//Lib:Core",
                     ],
                 )
                 """)
@@ -320,10 +320,10 @@ struct RulesSwiftTests {
                 == """
                 swift_library(
                     name = "Core",
-                    alwayslink = True,
                     srcs = [
                         "A.swift",
                     ],
+                    alwayslink = True,
                 )
                 """)
     }
@@ -362,11 +362,11 @@ struct RulesSwiftTests {
                 == """
                 swift_overlay(
                     name = "CGreetOverlay",
-                    overlay_deps = [
-                        ":CGreet",
-                    ],
                     srcs = [
                         "Overlay.swift",
+                    ],
+                    overlay_deps = [
+                        ":CGreet",
                     ],
                 )
                 """)
@@ -384,10 +384,10 @@ struct RulesSwiftTests {
                 == """
                 swift_c_module(
                     name = "CGreet",
+                    module_map = "module.modulemap",
                     deps = [
                         ":CGreet_lib",
                     ],
-                    module_map = "module.modulemap",
                 )
                 """)
     }
@@ -422,11 +422,11 @@ struct RulesSwiftTests {
                 == """
                 swift_grpc_library(
                     name = "ServiceGRPC",
-                    deps = [
-                        ":Service_proto",
-                    ],
                     srcs = [
                         ":service_proto_srcs",
+                    ],
+                    deps = [
+                        ":Service_proto",
                     ],
                 )
                 """)

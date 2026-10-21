@@ -25,7 +25,7 @@ struct RulesPlistTests {
 
         #expect(
             call.text
-                == """
+                == #"""
                 plist_fragment(
                     name = "InfoPlist",
                     extension = "plist",
@@ -37,6 +37,6 @@ struct RulesPlistTests {
                         "//visibility:private",
                     ],
                 )
-                """)
+                """#)
     }
 }

@@ -31,14 +31,14 @@ struct RulesObjcTests {
                     hdrs = [
                         "A.h",
                     ],
-                    deps = [
-                        "//Lib:Support",
-                    ],
                     sdk_frameworks = [
                         "UIKit",
                     ],
                     visibility = [
                         "//visibility:public",
+                    ],
+                    deps = [
+                        "//Lib:Support",
                     ],
                 )
                 """)
@@ -78,12 +78,12 @@ struct RulesObjcTests {
                 == """
                 xcode_version(
                     name = "xcode_16",
-                    version = "16.0",
                     aliases = [
                         "16",
                         "16.0",
                     ],
                     default_ios_sdk_version = "18.0",
+                    version = "16.0",
                 )
                 """)
     }
@@ -120,11 +120,11 @@ struct RulesObjcTests {
                 == """
                 j2objc_library(
                     name = "ModelJava",
-                    deps = [
-                        "//java/model:model",
-                    ],
                     entry_classes = [
                         "com.example.Model",
+                    ],
+                    deps = [
+                        "//java/model",
                     ],
                 )
                 """)

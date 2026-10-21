@@ -7,18 +7,21 @@ filegroup(
         "//visibility:public",
     ],
 )
+
 config_setting(
     name = "swiftpm_debug_dbg",
     values = {
         "compilation_mode": "dbg",
     },
 )
+
 config_setting(
     name = "swiftpm_debug_fastbuild",
     values = {
         "compilation_mode": "fastbuild",
     },
 )
+
 selects.config_setting_group(
     name = "swiftpm_debug",
     match_any = [
@@ -26,6 +29,7 @@ selects.config_setting_group(
         ":swiftpm_debug_fastbuild",
     ],
 )
+
 selects.config_setting_group(
     name = "swiftpm_platform_ios",
     match_any = [
@@ -33,6 +37,7 @@ selects.config_setting_group(
         "//Packages:swiftpm_platform_ios_simulator",
     ],
 )
+
 selects.config_setting_group(
     name = "swiftpm_platform_ios_or_maccatalyst_or_macos_or_tvos_or_visionos_or_watchos",
     match_any = [
@@ -44,6 +49,7 @@ selects.config_setting_group(
         "@platforms//os:watchos",
     ],
 )
+
 selects.config_setting_group(
     name = "condition_Platform_platform_ios_and_configuration_debug",
     match_all = [
@@ -51,6 +57,7 @@ selects.config_setting_group(
         "//Packages:swiftpm_debug",
     ],
 )
+
 selects.config_setting_group(
     name = "swiftpm_platform_ios_device",
     match_all = [
@@ -58,6 +65,7 @@ selects.config_setting_group(
         "@apple_support//constraints:device",
     ],
 )
+
 selects.config_setting_group(
     name = "swiftpm_platform_ios_simulator",
     match_all = [
@@ -65,6 +73,7 @@ selects.config_setting_group(
         "@apple_support//constraints:simulator",
     ],
 )
+
 selects.config_setting_group(
     name = "swiftpm_platform_maccatalyst",
     match_all = [

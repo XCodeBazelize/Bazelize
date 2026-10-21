@@ -114,10 +114,11 @@ generator-owned and rebuilt as units; project-owned files belong at the root.
 | `bazel run //tools:list-trait` | the traits its packages declare, which are on, and the `--config` that switches each |
 | `bazel run //tools:list-language` | the localizations its packages and targets ship, and the `--config` that picks one |
 
-The lint, format, plugin, and listing commands are generated targets. `//:lint`
-caches the pinned buildifier under the user's cache directory and fails on lint
-warnings; formatting is `//:format`'s business, so a formatting difference is
-reported rather than failed on. `//:plugins` builds
+The lint, format, plugin, and listing commands are generated targets. Bazelize
+writes generated Starlark in the pinned buildifier's canonical format. `//:lint`
+caches that buildifier under the user's cache directory, reports later
+formatting differences without failing, and fails on lint warnings; `//:format`
+rewrites files changed after generation. `//:plugins` builds
 its host, plugins and tools with Bazel, then runs entirely from their runfiles;
 it does not look up `bazelize` on `PATH`. The listing answers are embedded from
 the same resolved workspace and configuration files that generate the package

@@ -5,14 +5,13 @@ load("@rules_cc//cc:defs.bzl", "objc_library")
 
 objc_library(
     name = "Static2_objc",
+    testonly = False,
     srcs = [
         "Sources/Static2/Static2.m",
     ],
     hdrs = [
         "Headers/Static2/Static2.h",
     ],
-    # deps = None,
-    # data = None,
     copts = [
         "-fblocks",
         "-fobjc-arc",
@@ -20,6 +19,7 @@ objc_library(
         "-fmodule-name=Static2",
         "-DDEBUG=1",
     ],
+    # data = None,
     enable_modules = True,
     includes = [
         ".",
@@ -39,12 +39,13 @@ objc_library(
     tags = [
         "manual",
     ],
-    testonly = False,
     visibility = [
         "//visibility:private",
     ],
     # weak_sdk_frameworks = None,
+    # deps = None,
 )
+
 alias(
     name = "Static2_library",
     actual = "Static2_objc",
@@ -55,10 +56,11 @@ alias(
         "//visibility:public",
     ],
 )
+
 plist_fragment(
     name = "plist_default",
     extension = "plist",
-    template = '''
+    template = """
     <key>CFBundleName</key>
     <string>$(PRODUCT_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -71,11 +73,12 @@ plist_fragment(
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
-    ''',
+    """,
     visibility = [
         "//visibility:private",
     ],
 )
+
 alias(
     name = "Static2",
     actual = "Static2_library",

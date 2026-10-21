@@ -17,20 +17,19 @@ apple_resource_group(
         "//visibility:private",
     ],
 )
+
 swift_library(
     name = "MacBundle_swift",
-    alwayslink = True,
+    testonly = False,
+    srcs = [
+        "Sources/Derived/Sources/TuistBundle+MacBundle.swift",
+        "Sources/MacBundle/MacBundle.swift",
+    ],
     copts = [
         "-swift-version",
         "5",
         "-enable-bare-slash-regex",
     ],
-    module_name = "MacBundle",
-    srcs = [
-        "Sources/Derived/Sources/TuistBundle+MacBundle.swift",
-        "Sources/MacBundle/MacBundle.swift",
-    ],
-    # deps = None,
     # data = None,
     defines = select({
         "//:Debug": [
@@ -38,15 +37,18 @@ swift_library(
         ],
         "//:Release": None,
     }),
+    module_name = "MacBundle",
     # swiftc_inputs = None,
     tags = [
         "manual",
     ],
-    testonly = False,
     visibility = [
         "//visibility:private",
     ],
+    # deps = None,
+    alwayslink = True,
 )
+
 alias(
     name = "MacBundle_library",
     actual = "MacBundle_swift",
@@ -57,10 +59,11 @@ alias(
         "//visibility:public",
     ],
 )
+
 plist_fragment(
     name = "plist_file",
     extension = "plist",
-    template = '''
+    template = """
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleExecutable</key>
@@ -78,18 +81,16 @@ plist_fragment(
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright ©. All rights reserved.</string>
-    ''',
+    <string>Copyright \302\251. All rights reserved.</string>
+    """,
     visibility = [
         "//visibility:private",
     ],
 )
+
 macos_bundle(
     name = "MacBundle",
     bundle_id = "com.bazel.MacBundle",
-    deps = [
-        ":MacBundle_library",
-    ],
     infoplists = [
         ":plist_file",
     ],
@@ -100,5 +101,8 @@ macos_bundle(
     # strings = None,
     visibility = [
         "//visibility:public",
+    ],
+    deps = [
+        ":MacBundle_library",
     ],
 )

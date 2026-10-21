@@ -49,11 +49,12 @@ extension Starlark.Statement.LoadSymbol: ExpressibleByStringLiteral {
     }
 }
 
-
 // MARK: - Starlark.Statement.Load + Comparable
 
 extension Starlark.Statement.Load: Comparable {
+    /// buildifier's order, not the string's: a module with a repository leads,
+    /// a relative one trails.
     public static func < (lhs: Self, rhs: Self) -> Bool {
-        lhs.module < rhs.module
+        Starlark.Format.loadPrecedes(lhs.module, rhs.module)
     }
 }

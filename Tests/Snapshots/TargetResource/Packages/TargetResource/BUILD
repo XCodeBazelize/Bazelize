@@ -1,4 +1,3 @@
-load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_unit_test")
 load("@build_bazel_rules_apple//apple:resources.bzl", "apple_resource_bundle", "apple_resource_group")
@@ -6,26 +5,31 @@ load("@build_bazel_rules_apple//apple:tvos.bzl", "tvos_unit_test")
 load("@build_bazel_rules_apple//apple:visionos.bzl", "visionos_unit_test")
 load("@build_bazel_rules_apple//apple:watchos.bzl", "watchos_unit_test")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 
 apple_resource_group(
     name = "TargetResourceResourcesProcessed",
-    resources = glob([
-        "Sources/TargetResource/**/*.h",
-        "Sources/TargetResource/**/*.lproj/**",
-        "Sources/TargetResource/**/*.metal",
-        "Sources/TargetResource/**/*.storyboard",
-        "Sources/TargetResource/**/*.xcassets/**",
-        "Sources/TargetResource/**/*.xcdatamodel/**",
-        "Sources/TargetResource/**/*.xcdatamodeld/**",
-        "Sources/TargetResource/**/*.xcstrings",
-        "Sources/TargetResource/**/*.xib",
-        "Sources/TargetResource/Assets.xcassets/**",
-        "Sources/TargetResource/Base.lproj/**",
-        "Sources/TargetResource/Localized/**",
-        "Sources/TargetResource/Model.xcdatamodeld/**",
-        "Sources/TargetResource/Processed/**",
-    ], allow_empty = True),
+    resources = glob(
+        [
+            "Sources/TargetResource/**/*.h",
+            "Sources/TargetResource/**/*.lproj/**",
+            "Sources/TargetResource/**/*.metal",
+            "Sources/TargetResource/**/*.storyboard",
+            "Sources/TargetResource/**/*.xcassets/**",
+            "Sources/TargetResource/**/*.xcdatamodel/**",
+            "Sources/TargetResource/**/*.xcdatamodeld/**",
+            "Sources/TargetResource/**/*.xcstrings",
+            "Sources/TargetResource/**/*.xib",
+            "Sources/TargetResource/Assets.xcassets/**",
+            "Sources/TargetResource/Base.lproj/**",
+            "Sources/TargetResource/Localized/**",
+            "Sources/TargetResource/Model.xcdatamodeld/**",
+            "Sources/TargetResource/Processed/**",
+        ],
+        allow_empty = True,
+    ),
 )
+
 apple_resource_group(
     name = "TargetResourceResourcesCopied0",
     strip_structured_resources_prefixes = [
@@ -39,6 +43,7 @@ apple_resource_group(
         "Sources/TargetResource/de.lproj/**",
     ]),
 )
+
 apple_resource_bundle(
     name = "TargetResourceResources",
     bundle_name = "TargetResource_TargetResource",
@@ -46,93 +51,105 @@ apple_resource_bundle(
         "Generated/TargetResourceResourceBundle-Info.plist",
     ],
     resources = [
-        ":TargetResourceResourcesProcessed",
         ":TargetResourceResourcesCopied0",
+        ":TargetResourceResourcesProcessed",
     ],
     tags = [
         "manual",
     ],
 )
+
 swift_library(
     name = "TargetResource",
-    alwayslink = True,
+    package_name = "TargetResource",
+    srcs = [
+        "Generated/TargetResourceResourceBundleAccessor.swift",
+    ] + glob(
+        [
+            "Sources/TargetResource/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/TargetResource/**/*.docc/**",
+            "Sources/TargetResource/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
     ],
-    module_name = "TargetResource",
-    package_name = "TargetResource",
-    srcs = [
-        "Generated/TargetResourceResourceBundleAccessor.swift",
-    ] + glob([
-        "Sources/TargetResource/**/*.swift",
-    ], exclude = [
-        "Sources/TargetResource/**/*.docc/**",
-        "Sources/TargetResource/**/*.xcprivacy/**",
-    ], allow_empty = True),
     data = [
         ":TargetResourceResources",
     ],
+    module_name = "TargetResource",
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 apple_resource_bundle(
     name = "TargetResourceTestsResources",
     bundle_name = "TargetResource_TargetResourceTests",
     infoplists = [
         "Generated/TargetResourceTestsResourceBundle-Info.plist",
     ],
-    resources = glob([
-        "Sources/TargetResourceTests/Fixtures/**",
-    ], allow_empty = True),
+    resources = glob(
+        [
+            "Sources/TargetResourceTests/Fixtures/**",
+        ],
+        allow_empty = True,
+    ),
     tags = [
         "manual",
     ],
 )
+
 swift_library(
     name = "TargetResourceTests_library",
-    alwayslink = True,
+    package_name = "TargetResource",
+    testonly = True,
+    srcs = [
+        "Generated/TargetResourceTestsResourceBundleAccessor.swift",
+    ] + glob(
+        [
+            "Sources/TargetResourceTests/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/TargetResourceTests/**/*.docc/**",
+            "Sources/TargetResourceTests/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
     ],
-    module_name = "TargetResourceTests",
-    package_name = "TargetResource",
-    srcs = [
-        "Generated/TargetResourceTestsResourceBundleAccessor.swift",
-    ] + glob([
-        "Sources/TargetResourceTests/**/*.swift",
-    ], exclude = [
-        "Sources/TargetResourceTests/**/*.docc/**",
-        "Sources/TargetResourceTests/**/*.xcprivacy/**",
-    ], allow_empty = True),
-    deps = [
-        ":TargetResource",
-    ],
     data = [
         ":TargetResourceTestsResources",
     ],
+    module_name = "TargetResourceTests",
     tags = [
         "manual",
     ],
-    testonly = True,
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResource",
+    ],
+    alwayslink = True,
 )
+
 macos_unit_test(
     name = "TargetResourceTests",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "12.0",
     target_compatible_with = [
         "@platforms//os:macos",
@@ -140,27 +157,29 @@ macos_unit_test(
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "TargetResourceTests_ios_simulator",
     deps = [
         ":TargetResourceTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "TargetResourceTests_ios_simulator",
+    timeout = "long",
     minimum_os_version = "15.0",
     target_compatible_with = [
         "@platforms//os:ios",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "TargetResourceTests_ios_device_bundle_rule",
     deps = [
         ":TargetResourceTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "TargetResourceTests_ios_device_bundle_rule",
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -172,7 +191,11 @@ ios_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 alias(
     name = "TargetResourceTests_ios_device_bundle",
     actual = ":TargetResourceTests_ios_device_bundle_rule.__internal__.__test_bundle",
@@ -183,11 +206,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "TargetResourceTests_tvos_simulator_bundle",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -199,9 +220,14 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "TargetResourceTests_tvos_simulator",
+    timeout = "long",
     bundle = ":TargetResourceTests_tvos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "tvOS Simulator",
     developer_platform = "AppleTVSimulator",
@@ -211,16 +237,13 @@ apple_simulator_test(
         "@platforms//os:tvos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "TargetResourceTests_tvos_device_bundle_rule",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -232,7 +255,11 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 alias(
     name = "TargetResourceTests_tvos_device_bundle",
     actual = ":TargetResourceTests_tvos_device_bundle_rule.__internal__.__test_bundle",
@@ -243,11 +270,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "TargetResourceTests_watchos_simulator_bundle",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -259,9 +284,14 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "TargetResourceTests_watchos_simulator",
+    timeout = "long",
     bundle = ":TargetResourceTests_watchos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "watchOS Simulator",
     developer_platform = "WatchSimulator",
@@ -271,16 +301,13 @@ apple_simulator_test(
         "@platforms//os:watchos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "TargetResourceTests_watchos_device_bundle_rule",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -292,7 +319,11 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 alias(
     name = "TargetResourceTests_watchos_device_bundle",
     actual = ":TargetResourceTests_watchos_device_bundle_rule.__internal__.__test_bundle",
@@ -303,11 +334,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "TargetResourceTests_xros_simulator_bundle",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -319,9 +348,14 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "TargetResourceTests_xros_simulator",
+    timeout = "long",
     bundle = ":TargetResourceTests_xros_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "visionOS Simulator",
     developer_platform = "XRSimulator",
@@ -331,16 +365,13 @@ apple_simulator_test(
         "@platforms//os:visionos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "TargetResourceTests_xros_device_bundle_rule",
-    deps = [
-        ":TargetResourceTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -352,7 +383,11 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TargetResourceTests_library",
+    ],
 )
+
 alias(
     name = "TargetResourceTests_xros_device_bundle",
     actual = ":TargetResourceTests_xros_device_bundle_rule.__internal__.__test_bundle",

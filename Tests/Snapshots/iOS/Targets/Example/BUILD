@@ -1,9 +1,9 @@
 # Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
-load("//tools:asset_symbols.bzl", "asset_symbols")
 load("@Plist//build-system/ios-utils:plist_fragment.bzl", "plist_fragment")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("//tools:asset_symbols.bzl", "asset_symbols")
 
 asset_symbols(
     name = "AssetSymbols",
@@ -18,28 +18,27 @@ asset_symbols(
         "//visibility:private",
     ],
 )
+
 filegroup(
     name = "Assets",
-    srcs = glob([
-        "Sources/Example/Assets.xcassets/**",
-        "Sources/Example/Preview Content/Preview Assets.xcassets/**",
-    ], exclude = [
-        "Sources/Example/Assets.xcassets/*.appiconset/**",
-        "Sources/Example/Preview Content/Preview Assets.xcassets/*.appiconset/**",
-    ]),
+    srcs = glob(
+        [
+            "Sources/Example/Assets.xcassets/**",
+            "Sources/Example/Preview Content/Preview Assets.xcassets/**",
+        ],
+        exclude = [
+            "Sources/Example/Assets.xcassets/*.appiconset/**",
+            "Sources/Example/Preview Content/Preview Assets.xcassets/*.appiconset/**",
+        ],
+    ),
     visibility = [
         "//visibility:private",
     ],
 )
+
 swift_library(
     name = "Example_swift",
-    alwayslink = True,
-    copts = [
-        "-swift-version",
-        "5",
-        "-enable-bare-slash-regex",
-    ],
-    module_name = "Example",
+    testonly = False,
     srcs = [
         "Sources/Derived/Sources/TuistAssets+Example.swift",
         "Sources/Derived/Sources/TuistBundle+Example.swift",
@@ -49,15 +48,10 @@ swift_library(
         "Sources/Example/Test.swift",
         ":AssetSymbols",
     ],
-    deps = [
-        "//Prebuilt:SVProgressHUD",
-        "//Targets/Framework1:Framework1_library",
-        "//Targets/Framework3:Framework3_library",
-        "//Targets/Static2:Static2_library",
-        "//Targets/StaticFramework1:StaticFramework1_library",
-        "//Packages/AnyCodable:AnyCodable",
-        "//Packages/Local1:LocalLib1",
-        "//Packages/Local1:LocalLib2",
+    copts = [
+        "-swift-version",
+        "5",
+        "-enable-bare-slash-regex",
     ],
     data = [
         ":Assets",
@@ -76,15 +70,27 @@ swift_library(
     linkopts = [
         "-L$$(DT_TOOLCHAIN_DIR)/usr/lib/swift/iphoneos",
     ],
+    module_name = "Example",
     # swiftc_inputs = None,
     tags = [
         "manual",
     ],
-    testonly = False,
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        "//Packages/AnyCodable",
+        "//Packages/Local1:LocalLib1",
+        "//Packages/Local1:LocalLib2",
+        "//Prebuilt:SVProgressHUD",
+        "//Targets/Framework1:Framework1_library",
+        "//Targets/Framework3:Framework3_library",
+        "//Targets/Static2:Static2_library",
+        "//Targets/StaticFramework1:StaticFramework1_library",
+    ],
+    alwayslink = True,
 )
+
 alias(
     name = "Example_library",
     actual = "Example_swift",
@@ -95,10 +101,11 @@ alias(
         "//visibility:public",
     ],
 )
+
 plist_fragment(
     name = "plist_file",
     extension = "plist",
-    template = '''
+    template = """
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleExecutable</key>
@@ -141,11 +148,12 @@ plist_fragment(
     <string>UIInterfaceOrientationLandscapeLeft</string>
     <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
-    ''',
+    """,
     visibility = [
         "//visibility:private",
     ],
 )
+
 filegroup(
     name = "Strings",
     srcs = [
@@ -156,29 +164,22 @@ filegroup(
         "//visibility:private",
     ],
 )
+
 ios_application(
     name = "Example",
     app_icons = glob([
         "Sources/Example/Assets.xcassets/AppIcon.appiconset/**",
     ]),
     bundle_id = "com.bazel.Example",
-    deps = [
-        ":Example_library",
-        "//Prebuilt:SVProgressHUD",
-        "//Targets/Framework1:Framework1",
-        "//Targets/Framework3:Framework3",
-        "//Targets/Static2:Static2",
-        "//Targets/StaticFramework1:StaticFramework1",
-    ],
     # extensions = None,
+    families = [
+        "iphone",
+        "ipad",
+    ],
     frameworks = [
         "//Targets/Framework1:Framework1",
         "//Targets/Framework2:Framework2",
         "//Targets/Framework3:Framework3",
-    ],
-    families = [
-        "iphone",
-        "ipad",
     ],
     infoplists = [
         ":plist_file",
@@ -193,5 +194,13 @@ ios_application(
     ],
     visibility = [
         "//visibility:public",
+    ],
+    deps = [
+        ":Example_library",
+        "//Prebuilt:SVProgressHUD",
+        "//Targets/Framework1",
+        "//Targets/Framework3",
+        "//Targets/Static2",
+        "//Targets/StaticFramework1",
     ],
 )

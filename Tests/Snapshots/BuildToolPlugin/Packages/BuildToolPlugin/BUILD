@@ -1,4 +1,3 @@
-load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_unit_test")
 load("@build_bazel_rules_apple//apple:tvos.bzl", "tvos_unit_test")
@@ -6,9 +5,13 @@ load("@build_bazel_rules_apple//apple:visionos.bzl", "visionos_unit_test")
 load("@build_bazel_rules_apple//apple:watchos.bzl", "watchos_unit_test")
 load("@build_bazel_rules_swift//swift:swift_binary.bzl", "swift_binary")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 
 swift_binary(
     name = "GenerateTbTestCode",
+    srcs = glob([
+        "Sources/GenerateTbTestCode/**/*.swift",
+    ]),
     copts = [
         "-I",
         "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/pm/PluginAPI",
@@ -23,9 +26,6 @@ swift_binary(
         "-Wl,-rpath,/var/db/xcode_select_link/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/PluginAPI",
     ],
     module_name = "GenerateTbTestCode",
-    srcs = glob([
-        "Sources/GenerateTbTestCode/**/*.swift",
-    ]),
     tags = [
         "manual",
     ],
@@ -33,35 +33,51 @@ swift_binary(
         "//visibility:public",
     ],
 )
+
 swift_binary(
     name = "TbCodeGenerater",
+    srcs = glob(
+        [
+            "Sources/TbCodeGenerater/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/TbCodeGenerater/**/*.docc/**",
+            "Sources/TbCodeGenerater/**/*.xcprivacy/**",
+            "Sources/TbCodeGenerater/tds/**",
+        ],
+    ),
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
     ],
-    deps = [
-        "//Packages/swift-argument-parser:ArgumentParser",
-        ":TbParser",
-    ],
     module_name = "TbCodeGenerater",
-    srcs = glob([
-        "Sources/TbCodeGenerater/**/*.swift",
-    ], exclude = [
-        "Sources/TbCodeGenerater/**/*.docc/**",
-        "Sources/TbCodeGenerater/**/*.xcprivacy/**",
-        "Sources/TbCodeGenerater/tds/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    deps = [
+        ":TbParser",
+        "//Packages/swift-argument-parser:ArgumentParser",
+    ],
 )
+
 swift_library(
     name = "TbParser",
-    alwayslink = True,
+    package_name = "BuildToolPlugin",
+    srcs = glob(
+        [
+            "Sources/TbParser/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/TbParser/**/*.docc/**",
+            "Sources/TbParser/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -69,23 +85,30 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "TbParser",
-    package_name = "BuildToolPlugin",
-    srcs = glob([
-        "Sources/TbParser/**/*.swift",
-    ], exclude = [
-        "Sources/TbParser/**/*.docc/**",
-        "Sources/TbParser/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 swift_library(
     name = "TbParserTests_library",
-    alwayslink = True,
+    package_name = "BuildToolPlugin",
+    testonly = True,
+    srcs = glob(
+        [
+            "Generated/TbParserTestsPlugin/**/*.swift",
+            "Sources/TbParserTests/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/TbParserTests/**/*.docc/**",
+            "Sources/TbParserTests/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -93,30 +116,20 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "TbParserTests",
-    package_name = "BuildToolPlugin",
-    srcs = glob([
-        "Generated/TbParserTestsPlugin/**/*.swift",
-        "Sources/TbParserTests/**/*.swift",
-    ], exclude = [
-        "Sources/TbParserTests/**/*.docc/**",
-        "Sources/TbParserTests/**/*.xcprivacy/**",
-    ], allow_empty = True),
-    deps = [
-        ":TbParser",
-    ],
     tags = [
         "manual",
     ],
-    testonly = True,
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParser",
+    ],
+    alwayslink = True,
 )
+
 macos_unit_test(
     name = "TbParserTests",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "13.0",
     target_compatible_with = [
         "@platforms//os:macos",
@@ -124,27 +137,29 @@ macos_unit_test(
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "TbParserTests_ios_simulator",
     deps = [
         ":TbParserTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "TbParserTests_ios_simulator",
+    timeout = "long",
     minimum_os_version = "15.0",
     target_compatible_with = [
         "@platforms//os:ios",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "TbParserTests_ios_device_bundle_rule",
     deps = [
         ":TbParserTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "TbParserTests_ios_device_bundle_rule",
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -156,7 +171,11 @@ ios_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 alias(
     name = "TbParserTests_ios_device_bundle",
     actual = ":TbParserTests_ios_device_bundle_rule.__internal__.__test_bundle",
@@ -167,11 +186,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "TbParserTests_tvos_simulator_bundle",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -183,9 +200,14 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "TbParserTests_tvos_simulator",
+    timeout = "long",
     bundle = ":TbParserTests_tvos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "tvOS Simulator",
     developer_platform = "AppleTVSimulator",
@@ -195,16 +217,13 @@ apple_simulator_test(
         "@platforms//os:tvos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "TbParserTests_tvos_device_bundle_rule",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -216,7 +235,11 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 alias(
     name = "TbParserTests_tvos_device_bundle",
     actual = ":TbParserTests_tvos_device_bundle_rule.__internal__.__test_bundle",
@@ -227,11 +250,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "TbParserTests_watchos_simulator_bundle",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -243,9 +264,14 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "TbParserTests_watchos_simulator",
+    timeout = "long",
     bundle = ":TbParserTests_watchos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "watchOS Simulator",
     developer_platform = "WatchSimulator",
@@ -255,16 +281,13 @@ apple_simulator_test(
         "@platforms//os:watchos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "TbParserTests_watchos_device_bundle_rule",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -276,7 +299,11 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 alias(
     name = "TbParserTests_watchos_device_bundle",
     actual = ":TbParserTests_watchos_device_bundle_rule.__internal__.__test_bundle",
@@ -287,11 +314,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "TbParserTests_xros_simulator_bundle",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -303,9 +328,14 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "TbParserTests_xros_simulator",
+    timeout = "long",
     bundle = ":TbParserTests_xros_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "visionOS Simulator",
     developer_platform = "XRSimulator",
@@ -315,16 +345,13 @@ apple_simulator_test(
         "@platforms//os:visionos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "TbParserTests_xros_device_bundle_rule",
-    deps = [
-        ":TbParserTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -336,7 +363,11 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":TbParserTests_library",
+    ],
 )
+
 alias(
     name = "TbParserTests_xros_device_bundle",
     actual = ":TbParserTests_xros_device_bundle_rule.__internal__.__test_bundle",

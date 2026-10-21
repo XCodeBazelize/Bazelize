@@ -42,6 +42,7 @@ final class PluginApple: PluginBuiltin {
             toolchain = "@bazel_tools//tools/test:empty_toolchain",
             toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
         )
+
         toolchain(
             name = "visionos_simulator_test_toolchain",
             exec_compatible_with = ["@platforms//os:macos"],
@@ -52,6 +53,7 @@ final class PluginApple: PluginBuiltin {
             toolchain = "@bazel_tools//tools/test:empty_toolchain",
             toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
         )
+
         toolchain(
             name = "watchos_simulator_test_toolchain",
             exec_compatible_with = ["@platforms//os:macos"],

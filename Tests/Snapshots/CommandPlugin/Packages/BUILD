@@ -1,4 +1,3 @@
-
 filegroup(
     name = "plugins",
     # srcs = None,

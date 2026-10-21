@@ -107,9 +107,10 @@ import 只出現一次。`Targets/`、`Prebuilt/`、`Packages/` 由生成器管�
 | `bazel run //tools:list-trait` | 它的 package 宣告了哪些 trait、哪些是開的，以及切換各自要用哪個 `--config` |
 | `bazel run //tools:list-language` | 它的 package 與 target 帶了哪些 localization，以及挑一個要用哪個 `--config` |
 
-Lint、format、plugin 與清單指令都是產生出來的 target。`//:lint` 把固定版本的
-buildifier 快取在使用者的 cache 目錄；lint warning 會失敗，格式差異只回報，
-因為改寫格式是 `//:format` 的事。
+Lint、format、plugin 與清單指令都是產生出來的 target。Bazelize 會直接依照固定
+版本 buildifier 的標準格式寫出 Starlark。`//:lint` 把該 buildifier 快取在使用者
+的 cache 目錄；後續格式差異只回報、不會失敗，lint warning 則會失敗。
+`//:format` 可重寫生成後被修改的檔案。
 `//:plugins` 用 Bazel 建 host、plugin 與工具，接著完全從它們的 runfiles
 執行，不會再去 `PATH` 找 `bazelize`。清單答案來自產生 package rules 時使用的
 同一份 resolved workspace 與設定檔。產生的 `tools/bazel` wrapper 仍保留較短的

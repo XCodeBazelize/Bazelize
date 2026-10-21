@@ -107,9 +107,35 @@ extension CodeBuilder {
             .sorted()
             .map(\.statemenet)
 
-        let sections = loadsStatement + [.newLine] + statements
-        return sections
+        /// `load`s are one block, and so is a run of `bazel_dep`: buildifier
+        /// keeps those compact and puts a blank line between everything else
+        /// at the top level. A generated file written any other way is a
+        /// formatting report on every run.
+        let loaded = loadsStatement
             .map(\.text)
             .joined(separator: "\n")
+
+        var body = ""
+        var previous: Starlark.Statement?
+        for statement in statements where !statement.text.isEmpty {
+            if !body.isEmpty {
+                body += Self.compact(previous, statement) ? "\n" : "\n\n"
+            }
+            body += statement.text
+            previous = statement
+        }
+
+        return [loaded, body]
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n\n") + "\n"
+    }
+
+    /// Whether buildifier would leave these two statements on adjacent lines.
+    private static func compact(_ first: Starlark.Statement?, _ second: Starlark.Statement) -> Bool {
+        guard
+            case .call(let first)? = first,
+            case .call(let second) = second
+        else { return false }
+        return first.name == "bazel_dep" && second.name == "bazel_dep"
     }
 }

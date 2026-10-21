@@ -126,7 +126,7 @@ extension SwiftPM.Generator {
     /// `macos_bundle` synthesizes: this is a resource bundle, not a loadable
     /// plug-in.
     static let resourceBundleRule = """
-    'Materializes SwiftPM executable resource bundles as Bazel runfiles.'
+    "Materializes SwiftPM executable resource bundles as Bazel runfiles."
 
     def _swiftpm_resource_bundle_impl(ctx):
         archive = ctx.file.archive
