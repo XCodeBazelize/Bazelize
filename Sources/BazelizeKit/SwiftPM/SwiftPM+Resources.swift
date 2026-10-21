@@ -14,9 +14,11 @@ import Util
 extension SwiftPM.Generator {
     /// What a target's resources add to its own rule.
     struct ResourceBundle {
-        /// The rule the library carries as `data`, absent when the target's only
+        /// The rules the target carries as `data`: the bundle an Apple bundler
+        /// embeds, and for a library a program links, the materialized copy
+        /// that travels in the program's runfiles. Empty when the target's only
         /// resources are embedded in its code.
-        let label: String?
+        let labels: [String]
         /// Generated sources compiled into the library: the accessor a package's
         /// own code calls to reach its bundle, and the bytes of what it embeds.
         let accessors: [String]
@@ -99,7 +101,7 @@ extension SwiftPM.Generator {
         /// bundle rule without resources is an empty bundle.
         guard !resources.isEmpty || !structured.isEmpty else {
             return embeddedSource.map {
-                ResourceBundle(label: nil, accessors: [$0], header: nil)
+                ResourceBundle(labels: [], accessors: [$0], header: nil)
             }
         }
 
@@ -146,19 +148,16 @@ extension SwiftPM.Generator {
             ? resources.nonEmpty.map { self.files(matching: $0, allowEmpty: true) }
             : .build { groups.map { Starlark.Label.named(":\($0)") } }
 
-        let executableMinimumOS: String?
-        if case .executable = kind {
-            executableMinimumOS = deployment.required(package, platform: "macos")
-        } else {
-            executableMinimumOS = nil
-        }
-        emit(
+        let runfilesLabel = emit(
             ResourceRule(
                 name: name,
                 bundle: bundle,
                 plist: plist,
                 resources: resourceInputs),
-            executableMinimumOS: executableMinimumOS,
+            kind: kind,
+            macOSMinimum: deployment.required(package, platform: "macos"),
+            runfiles: executableReach.contains(
+                TargetKey(package: package.directory, target: target.name)),
             builder: builder)
 
         return try Self.resourceBundle(
@@ -167,6 +166,7 @@ extension SwiftPM.Generator {
                 package: package.directory,
                 bundle: bundle,
                 label: ":\(name)",
+                runfilesLabel: runfilesLabel,
                 root: root,
                 kind: kind,
                 embeddedSource: embeddedSource))
@@ -197,14 +197,22 @@ extension SwiftPM.Generator {
                     bundle: result.bundle,
                     runfilesPath: "Packages/\(result.package)/\(result.bundle).bundle"))
             return ResourceBundle(
-                label: result.label,
+                labels: [result.label],
                 accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
                 header: nil)
         case .swift, .test:
             let accessor = "Generated/\(result.target)ResourceBundleAccessor.swift"
-            try (result.root + accessor).write(swiftAccessor(bundle: result.bundle))
+            try (result.root + accessor).write(
+                swiftAccessor(
+                    bundle: result.bundle,
+                    /// A library a program links finds its bundle where that
+                    /// program's runfiles put it; an Apple consumer still finds
+                    /// the embedded copy through the candidates before it.
+                    runfilesPath: result.runfilesLabel.map { _ in
+                        "Packages/\(result.package)/\(result.bundle).bundle"
+                    }))
             return ResourceBundle(
-                label: result.label,
+                labels: [result.label] + (result.runfilesLabel.map { [$0] } ?? []),
                 accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
                 header: nil)
         case .clang:
@@ -215,7 +223,7 @@ extension SwiftPM.Generator {
             try (result.root + implementation).write(
                 objcAccessor(module: module, bundle: result.bundle))
             return ResourceBundle(
-                label: result.label,
+                labels: [result.label] + (result.runfilesLabel.map { [$0] } ?? []),
                 accessors: [header, implementation],
                 header: header)
         case .binary, .system, .macro, .unsupported:

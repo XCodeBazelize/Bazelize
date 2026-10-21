@@ -1,4 +1,5 @@
 import Foundation
+import ProbeSupport
 
 func contents(_ name: String, extension ext: String, subdirectory: String? = nil) throws -> String {
     guard
@@ -17,7 +18,8 @@ guard
     try contents("copied", extension: "txt", subdirectory: "Copied") == "copied",
     try contents("processed", extension: "txt") == "processed",
     Bundle.module.url(forResource: "PrivacyInfo", withExtension: "xcprivacy") != nil,
-    Bundle.module.url(forResource: "Assets", withExtension: "car") != nil
+    Bundle.module.url(forResource: "Assets", withExtension: "car") != nil,
+    try Support.text() == "support"
 else {
     fatalError("resource bundle contents differ from SwiftPM")
 }

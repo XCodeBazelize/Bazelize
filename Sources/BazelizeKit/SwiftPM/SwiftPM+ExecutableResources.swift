@@ -18,19 +18,28 @@ extension SwiftPM.Generator {
         let package: String
         let bundle: String
         let label: String
+        /// The materialized bundle a program carries, when this target is one a
+        /// program links.
+        let runfilesLabel: String?
         let root: Path
         let kind: TargetKind
         let embeddedSource: String?
     }
 
-    /// Emits either a propagated Apple resource provider or, for an executable,
-    /// a concrete bundle directory that can travel in runfiles.
+    /// Emits the rule a target's resources become.
+    ///
+    /// An Apple bundler collects `apple_resource_bundle` through providers and
+    /// embeds it. A plain executable has no bundler, so its own resources — and
+    /// those of every library it links — are built into a directory that can
+    /// travel in runfiles instead.
     func emit(
         _ rule: ResourceRule,
-        executableMinimumOS: String?,
-        builder: CodeBuilder)
+        kind: TargetKind,
+        macOSMinimum: String?,
+        runfiles: Bool,
+        builder: CodeBuilder) -> String?
     {
-        guard let executableMinimumOS else {
+        guard case .executable = kind else {
             builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
             builder.call(
                 Rules.Apple.Resources.Call.apple_resource_bundle(
@@ -39,12 +48,37 @@ extension SwiftPM.Generator {
                     infoplists: .build { [Starlark.Label.named(rule.plist)] },
                     resources: rule.resources,
                     tags: Self.manual))
-            return
+
+            /// Only for a library a program links: materializing one costs an
+            /// extra bundling action, and a library only an Apple target uses
+            /// has no runfiles to appear in.
+            guard runfiles, let macOSMinimum else { return nil }
+
+            let name = "\(rule.name)Runfiles"
+            materialize(
+                ResourceRule(
+                    name: name,
+                    bundle: rule.bundle,
+                    plist: rule.plist,
+                    resources: rule.resources),
+                macOSMinimum: macOSMinimum,
+                builder: builder)
+            return ":\(name)"
         }
 
-        /// `apple_resource_bundle` only propagates resources to another Apple
-        /// bundler and has no output of its own. A standalone program has no such
-        /// parent, so build an archive and expose its extracted directory.
+        guard let macOSMinimum else { return nil }
+        materialize(rule, macOSMinimum: macOSMinimum, builder: builder)
+        return nil
+    }
+
+    /// `apple_resource_bundle` only propagates resources to another Apple
+    /// bundler and has no output of its own. A standalone program has no such
+    /// parent, so build an archive and expose its extracted directory.
+    private func materialize(
+        _ rule: ResourceRule,
+        macOSMinimum: String,
+        builder: CodeBuilder)
+    {
         let archive = "\(rule.name)Archive"
         builder.load(.macos_bundle)
         builder.call(
@@ -54,7 +88,7 @@ extension SwiftPM.Generator {
                 bundle_id: "org.swift.\(rule.bundle)",
                 bundle_name: rule.bundle,
                 infoplists: .build { [Starlark.Label.named(rule.plist)] },
-                minimum_os_version: executableMinimumOS,
+                minimum_os_version: macOSMinimum,
                 resources: rule.resources,
                 tags: Self.manual))
 

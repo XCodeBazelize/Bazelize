@@ -203,6 +203,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
 | `.process` / `.copy` resources | `apple_resource_bundle` + `Generated/<Target>ResourceBundleAccessor.swift`；C 系 target 則是一組 `.h`/`.m` |
+| 被程式連結到的 target 的 resources | 同一份 bundle 另外建成一個目錄，放進該執行檔的 runfiles：`apple_resource_bundle` 只會傳給 Apple bundler，而 command line tool 沒有 |
 | `.embedInCode` resources | `Generated/<Target>EmbeddedResources.swift`：把 bytes 變成 `PackageResources`，bundle 裡什麼都不放 |
 | auto-discovered resources（xib／xcassets／metal／xcstrings／`.lproj`） | 同上；有 `.metal` 時該 target 的 header 也一起進 resource group，因為 bundler 會把它們當 Metal header 編 |
 | `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳；`.define("A", to: "1")` 是一個 flag：`-DA=1` |
