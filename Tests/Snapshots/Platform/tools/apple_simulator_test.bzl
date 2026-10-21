@@ -1,6 +1,6 @@
 # Generated using Bazelize 0.1.0 - https://github.com/XCodeBazelize/Bazelize
 
-'''Runs an Apple test bundle in its matching simulator.'''
+"""Runs an Apple test bundle in its matching simulator."""
 
 _RUNNER = r'''#!/usr/bin/env python3
 

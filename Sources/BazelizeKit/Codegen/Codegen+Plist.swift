@@ -41,11 +41,7 @@ extension Target {
             Rules.Plist.Call.plist_fragment(
                 name: "plist_file",
                 ext: "plist",
-                template: Starlark.custom("""
-                '''
-                \(plist)
-                '''
-                """),
+                template: Starlark.tripleQuoted(plist),
                 visibility: .private))
     }
 
@@ -306,11 +302,7 @@ extension Target {
             Rules.Plist.Call.plist_fragment(
                 name: "plist_auto",
                 ext: "plist",
-                template: Starlark.custom("""
-                '''
-                \(selectedSettings.generatedPlist.entries.withNewLine)
-                '''
-                """),
+                template: Starlark.tripleQuoted(selectedSettings.generatedPlist.entries.withNewLine),
                 visibility: .private))
     }
 
@@ -351,11 +343,7 @@ extension Target {
                 Rules.Plist.Call.plist_fragment(
                     name: "plist_default",
                     ext: "plist",
-                    template: Starlark.custom("""
-                    '''
-                    \(plist.withNewLine)
-                    '''
-                    """),
+                    template: Starlark.tripleQuoted(plist.withNewLine),
                     visibility: .private))
         }
     }

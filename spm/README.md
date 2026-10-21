@@ -124,8 +124,9 @@ needed at runtime.
 
 `bazel run //:lint` downloads the buildifier pinned for the host — `uname -s`
 and `uname -m`, so macOS and Linux on arm64 or x86_64 — verifies and caches it,
-then checks every generated Starlark file. Lint warnings fail; a formatting
-difference is reported, and `bazel run //:format` is what rewrites the files.
+then checks every generated Starlark file. Bazelize already writes those files
+in its canonical format. Later formatting differences are reported; lint
+warnings fail, and `bazel run //:format` rewrites files changed after generation.
 
 `bazel build --config=lang.<code>` bundles that localization and `Base`, and
 nothing else; a build that names none bundles every one of them, which is what

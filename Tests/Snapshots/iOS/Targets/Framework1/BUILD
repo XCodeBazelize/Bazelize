@@ -6,19 +6,14 @@ load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 
 swift_library(
     name = "Framework1_swift",
-    alwayslink = True,
+    testonly = False,
+    srcs = [
+        "Sources/Framework1/Test.swift",
+    ],
     copts = [
         "-swift-version",
         "5",
         "-enable-bare-slash-regex",
-    ],
-    module_name = "Framework1",
-    srcs = [
-        "Sources/Framework1/Test.swift",
-    ],
-    deps = [
-        "//Targets/Framework2:Framework2_library",
-        "//Targets/Static:Static_library",
     ],
     # data = None,
     defines = select({
@@ -30,15 +25,21 @@ swift_library(
     linkopts = [
         "-L$$(DT_TOOLCHAIN_DIR)/usr/lib/swift/iphoneos",
     ],
+    module_name = "Framework1",
     # swiftc_inputs = None,
     tags = [
         "manual",
     ],
-    testonly = False,
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        "//Targets/Framework2:Framework2_library",
+        "//Targets/Static:Static_library",
+    ],
+    alwayslink = True,
 )
+
 alias(
     name = "Framework1_library",
     actual = "Framework1_swift",
@@ -49,10 +50,11 @@ alias(
         "//visibility:public",
     ],
 )
+
 plist_fragment(
     name = "plist_file",
     extension = "plist",
-    template = '''
+    template = """
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleExecutable</key>
@@ -65,30 +67,29 @@ plist_fragment(
     <string>$(PRODUCT_NAME)</string>
     <key>CFBundlePackageType</key>
     <string>FMWK</string>
-    ''',
+    """,
     visibility = [
         "//visibility:private",
     ],
 )
+
 plist_fragment(
     name = "plist_default",
     extension = "plist",
-    template = '''
+    template = """
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
-    ''',
+    """,
     visibility = [
         "//visibility:private",
     ],
 )
+
 ios_framework(
     name = "Framework1",
     bundle_id = "com.bazel.Example.Framework1",
-    deps = [
-        ":Framework1_library",
-    ],
     families = [
         "iphone",
         "ipad",
@@ -102,5 +103,8 @@ ios_framework(
     # strings = None,
     visibility = [
         "//visibility:public",
+    ],
+    deps = [
+        ":Framework1_library",
     ],
 )

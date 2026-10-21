@@ -16,7 +16,7 @@ extension Bazel {
         let path: Path
 
         let code = #"""
-        '''Runs an Apple test bundle in its matching simulator.'''
+        """Runs an Apple test bundle in its matching simulator."""
 
         _RUNNER = r'''#!/usr/bin/env python3
 

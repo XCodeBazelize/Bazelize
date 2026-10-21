@@ -9,6 +9,14 @@ extension Starlark {
         .custom(value)
     }
 
+    /// A multi-line string literal: `"""`, the text, `"""`.
+    ///
+    /// Written the way buildifier writes one, which is the only way it will
+    /// leave it alone.
+    public static func tripleQuoted(_ value: String) -> Value {
+        .custom("\"\"\"\n\(Format.escaped(value, triple: true))\n\"\"\"")
+    }
+
     /// `allowEmpty` is for a directory something else writes into: the pattern
     /// stands for what will be there, and a package that cannot be loaded until
     /// it is cannot be the thing that puts it there.
@@ -139,14 +147,24 @@ extension Starlark {
             case .glob(let files, let exclude, let allowEmpty):
                 let asset = Value(files.sorted()) ?? .none
                 var arguments = [asset.text]
+                if allowEmpty {
+                    arguments.append("allow_empty = True")
+                }
                 if !exclude.isEmpty {
                     let excluded = Value(exclude.sorted()) ?? .none
                     arguments.append("exclude = \(excluded.text)")
                 }
-                if allowEmpty {
-                    arguments.append("allow_empty = True")
+                /// One argument stays on the call, the way buildifier leaves
+                /// `glob([...])`; more than one gets a line each, because that
+                /// is what it breaks them into.
+                guard arguments.count > 1 else {
+                    return "glob(\(arguments[0]))"
                 }
-                return "glob(\(arguments.joined(separator: ", ")))"
+                return """
+                glob(
+                \(arguments.map(\.withComma).withNewLine.indent(1))
+                )
+                """
             case .concat(let value):
                 let parts = value.filter { !$0.isEmptyValue }
                 guard let first = parts.first else { return Value.none.text }
@@ -178,6 +196,75 @@ extension Starlark {
             }
         }
 
+        /// The same value with every list of plain strings in buildifier's
+        /// order, duplicates dropped.
+        ///
+        /// A list of anything else is left alone: the order of a list that
+        /// holds a call or a dictionary is the order it was built in. A list
+        /// of lists is one list — that is how it is written out — so it sorts
+        /// as one. The lists either side of a `+` and the ones a `select` maps
+        /// to are reached too, which is as far as buildifier goes.
+        public var sortedStrings: Self {
+            switch self {
+            case .array:
+                guard let keyed = sortableStrings else { return self }
+
+                var seen: Set<String> = []
+                let sorted = keyed
+                    .sorted { Starlark.Format.precedes($0.key, $1.key) }
+                    .filter { seen.insert($0.key).inserted }
+                    .map(\.value)
+                return .array(sorted)
+            case .concat(let values):
+                return .concat(values.map(\.sortedStrings))
+            case .select(let select):
+                return .select(select.map(\.sortedStrings))
+            default:
+                return self
+            }
+        }
+
+        /// Every string this value writes out, in writing order, or nothing if
+        /// it writes anything else.
+        private var sortableStrings: [(key: String, value: Self)]? {
+            switch self {
+            case .string(let value):
+                return [(value, self)]
+            case .label(let value):
+                return [(value.value, self)]
+            case .array(let values):
+                var result: [(key: String, value: Self)] = []
+                for value in values {
+                    guard let strings = value.sortableStrings else { return nil }
+                    result += strings
+                }
+                return result
+            default:
+                return nil
+            }
+        }
+
+        /// The same value with every label written the short way.
+        ///
+        /// Reached as far as buildifier reaches: the value itself, the lists
+        /// either side of a `+`, and what a `select` maps its conditions to.
+        public var shortenedLabels: Self {
+            switch self {
+            case .string(let value):
+                return .string(Starlark.Format.shortened(label: value))
+            case .label(let value):
+                return .label(.init(Starlark.Format.shortened(label: value.value)))
+            case .array(let values):
+                return .array(values.map(\.shortenedLabels))
+            case .concat(let values):
+                return .concat(values.map(\.shortenedLabels))
+            case .select(let select):
+                return .select(select.map(\.shortenedLabels))
+            default:
+                return self
+            }
+        }
+
         // MARK: Private
 
         private var withComma: String {
@@ -191,18 +278,17 @@ extension Starlark {
             }
         }
 
-        /// A Starlark string literal.
+        /// A Starlark string literal, escaped the way buildifier writes one.
         ///
         /// Values come from Xcode build settings and from a package's own
         /// manifest, so they carry whatever was written there — a preprocessor
-        /// definition like `ID=@"com.example"`, a path with a backslash. Both
-        /// have to survive into the file as what they were.
+        /// definition like `ID=@"com.example"`, a path with a backslash, a
+        /// copyright sign. Both have to survive into the file as what they
+        /// were, and a BUILD file is read as Latin-1: every control and high
+        /// byte is octal, the way buildifier would rewrite it.
         private static func quoted(_ value: String) -> String {
-            let escaped = value
-                .replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "\"", with: "\\\"")
-            return """
-            "\(escaped)"
+            """
+            "\(Starlark.Format.escaped(value))"
             """
         }
     }
@@ -279,7 +365,6 @@ extension Starlark.Value: ExpressibleByDictionaryLiteral {
         self = .dictionary(Dictionary(uniqueKeysWithValues: elements))
     }
 }
-
 
 extension Array where Element == Starlark.Value {
     public var starlark: Starlark.Value {

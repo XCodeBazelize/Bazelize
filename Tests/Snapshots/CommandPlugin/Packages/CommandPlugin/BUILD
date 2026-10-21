@@ -1,4 +1,3 @@
-load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_unit_test")
 load("@build_bazel_rules_apple//apple:tvos.bzl", "tvos_unit_test")
@@ -7,9 +6,13 @@ load("@build_bazel_rules_apple//apple:watchos.bzl", "watchos_unit_test")
 load("@build_bazel_rules_swift//swift:swift_binary.bzl", "swift_binary")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 
 swift_binary(
     name = "Hello_plugin",
+    srcs = glob([
+        "Sources/Hello/**/*.swift",
+    ]),
     copts = [
         "-I",
         "__BAZEL_SWIFT_TOOLCHAIN_PATH__/usr/lib/swift/pm/PluginAPI",
@@ -24,9 +27,6 @@ swift_binary(
         "-Wl,-rpath,/var/db/xcode_select_link/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/pm/PluginAPI",
     ],
     module_name = "Hello",
-    srcs = glob([
-        "Sources/Hello/**/*.swift",
-    ]),
     tags = [
         "manual",
     ],
@@ -34,23 +34,35 @@ swift_binary(
         "//visibility:public",
     ],
 )
+
 sh_binary(
     name = "hello_command",
     srcs = [
         "Generated/hello.sh",
     ],
     data = [
-        ":Hello_plugin",
         "Generated/HelloCommand.json",
+        ":Hello_plugin",
         "//:_plugin_host",
     ],
     tags = [
         "manual",
     ],
 )
+
 swift_library(
     name = "Greeting",
-    alwayslink = True,
+    package_name = "CommandPlugin",
+    srcs = glob(
+        [
+            "Sources/Greeting/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/Greeting/**/*.docc/**",
+            "Sources/Greeting/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -58,34 +70,33 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "Greeting",
-    package_name = "CommandPlugin",
-    srcs = glob([
-        "Sources/Greeting/**/*.swift",
-    ], exclude = [
-        "Sources/Greeting/**/*.docc/**",
-        "Sources/Greeting/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 swift_binary(
     name = "HelloTool",
+    srcs = glob(
+        [
+            "Sources/HelloTool/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/HelloTool/**/*.docc/**",
+            "Sources/HelloTool/**/*.xcprivacy/**",
+        ],
+    ),
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
     ],
     module_name = "HelloTool",
-    srcs = glob([
-        "Sources/HelloTool/**/*.swift",
-    ], exclude = [
-        "Sources/HelloTool/**/*.docc/**",
-        "Sources/HelloTool/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
@@ -93,9 +104,21 @@ swift_binary(
         "//visibility:public",
     ],
 )
+
 swift_library(
     name = "GreetingTests_library",
-    alwayslink = True,
+    package_name = "CommandPlugin",
+    testonly = True,
+    srcs = glob(
+        [
+            "Sources/GreetingTests/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/GreetingTests/**/*.docc/**",
+            "Sources/GreetingTests/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -103,29 +126,20 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "GreetingTests",
-    package_name = "CommandPlugin",
-    srcs = glob([
-        "Sources/GreetingTests/**/*.swift",
-    ], exclude = [
-        "Sources/GreetingTests/**/*.docc/**",
-        "Sources/GreetingTests/**/*.xcprivacy/**",
-    ], allow_empty = True),
-    deps = [
-        ":Greeting",
-    ],
     tags = [
         "manual",
     ],
-    testonly = True,
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":Greeting",
+    ],
+    alwayslink = True,
 )
+
 macos_unit_test(
     name = "GreetingTests",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "12.0",
     target_compatible_with = [
         "@platforms//os:macos",
@@ -133,27 +147,29 @@ macos_unit_test(
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "GreetingTests_ios_simulator",
     deps = [
         ":GreetingTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "GreetingTests_ios_simulator",
+    timeout = "long",
     minimum_os_version = "15.0",
     target_compatible_with = [
         "@platforms//os:ios",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "GreetingTests_ios_device_bundle_rule",
     deps = [
         ":GreetingTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "GreetingTests_ios_device_bundle_rule",
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -165,7 +181,11 @@ ios_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 alias(
     name = "GreetingTests_ios_device_bundle",
     actual = ":GreetingTests_ios_device_bundle_rule.__internal__.__test_bundle",
@@ -176,11 +196,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "GreetingTests_tvos_simulator_bundle",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -192,9 +210,14 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "GreetingTests_tvos_simulator",
+    timeout = "long",
     bundle = ":GreetingTests_tvos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "tvOS Simulator",
     developer_platform = "AppleTVSimulator",
@@ -204,16 +227,13 @@ apple_simulator_test(
         "@platforms//os:tvos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "GreetingTests_tvos_device_bundle_rule",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "15.0",
     tags = [
         "manual",
@@ -225,7 +245,11 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 alias(
     name = "GreetingTests_tvos_device_bundle",
     actual = ":GreetingTests_tvos_device_bundle_rule.__internal__.__test_bundle",
@@ -236,11 +260,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "GreetingTests_watchos_simulator_bundle",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -252,9 +274,14 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "GreetingTests_watchos_simulator",
+    timeout = "long",
     bundle = ":GreetingTests_watchos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "watchOS Simulator",
     developer_platform = "WatchSimulator",
@@ -264,16 +291,13 @@ apple_simulator_test(
         "@platforms//os:watchos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "GreetingTests_watchos_device_bundle_rule",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -285,7 +309,11 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 alias(
     name = "GreetingTests_watchos_device_bundle",
     actual = ":GreetingTests_watchos_device_bundle_rule.__internal__.__test_bundle",
@@ -296,11 +324,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "GreetingTests_xros_simulator_bundle",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -312,9 +338,14 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "GreetingTests_xros_simulator",
+    timeout = "long",
     bundle = ":GreetingTests_xros_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "visionOS Simulator",
     developer_platform = "XRSimulator",
@@ -324,16 +355,13 @@ apple_simulator_test(
         "@platforms//os:visionos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "GreetingTests_xros_device_bundle_rule",
-    deps = [
-        ":GreetingTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -345,7 +373,11 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":GreetingTests_library",
+    ],
 )
+
 alias(
     name = "GreetingTests_xros_device_bundle",
     actual = ":GreetingTests_xros_device_bundle_rule.__internal__.__test_bundle",
@@ -356,6 +388,7 @@ alias(
         "//visibility:public",
     ],
 )
+
 alias(
     name = "hello",
     actual = ":HelloTool",

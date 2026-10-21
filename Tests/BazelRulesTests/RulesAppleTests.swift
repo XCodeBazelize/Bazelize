@@ -29,9 +29,6 @@ struct RulesAppleTests {
                 ios_application(
                     name = "App",
                     bundle_id = "com.example.app",
-                    deps = [
-                        ":App_library",
-                    ],
                     families = [
                         "iphone",
                     ],
@@ -47,6 +44,9 @@ struct RulesAppleTests {
                     ],
                     visibility = [
                         "//visibility:public",
+                    ],
+                    deps = [
+                        ":App_library",
                     ],
                 )
                 """)
@@ -68,9 +68,7 @@ struct RulesAppleTests {
                 == """
                 ios_unit_test(
                     name = "AppTests",
-                    deps = [
-                        ":AppTests_library",
-                    ],
+                    timeout = "long",
                     minimum_os_version = "18.0",
                     tags = [
                         "manual",
@@ -79,7 +77,9 @@ struct RulesAppleTests {
                         "@platforms//os:ios",
                     ],
                     test_host = "//App:App",
-                    timeout = "long",
+                    deps = [
+                        ":AppTests_library",
+                    ],
                 )
                 """)
     }
@@ -98,13 +98,13 @@ struct RulesAppleTests {
                 == """
                 ios_ui_test(
                     name = "AppUITests",
-                    deps = [
-                        ":AppUITests_library",
-                    ],
                     minimum_os_version = "18.0",
                     test_host = "//App:App",
                     visibility = [
                         "//visibility:public",
+                    ],
+                    deps = [
+                        ":AppUITests_library",
                     ],
                 )
                 """)
@@ -125,13 +125,13 @@ struct RulesAppleTests {
                 macos_command_line_application(
                     name = "CLI",
                     bundle_id = "com.example.cli",
-                    deps = [
-                        ":CLI_library",
-                    ],
                     infoplists = [
                         ":Info.plist",
                     ],
                     minimum_os_version = "15.0",
+                    deps = [
+                        ":CLI_library",
+                    ],
                 )
                 """)
     }
@@ -153,9 +153,6 @@ struct RulesAppleTests {
                 == """
                 tvos_unit_test(
                     name = "TVTests",
-                    deps = [
-                        ":TVTests_library",
-                    ],
                     minimum_os_version = "18.0",
                     tags = [
                         "manual",
@@ -163,6 +160,9 @@ struct RulesAppleTests {
                     target_compatible_with = [
                         "@platforms//os:tvos",
                         "@apple_support//constraints:simulator",
+                    ],
+                    deps = [
+                        ":TVTests_library",
                     ],
                 )
                 """)
@@ -185,9 +185,6 @@ struct RulesAppleTests {
                 == """
                 watchos_unit_test(
                     name = "WatchTests",
-                    deps = [
-                        ":WatchTests_library",
-                    ],
                     minimum_os_version = "11.0",
                     tags = [
                         "manual",
@@ -195,6 +192,9 @@ struct RulesAppleTests {
                     target_compatible_with = [
                         "@platforms//os:watchos",
                         "@apple_support//constraints:simulator",
+                    ],
+                    deps = [
+                        ":WatchTests_library",
                     ],
                 )
                 """)
@@ -217,9 +217,6 @@ struct RulesAppleTests {
                 == """
                 visionos_unit_test(
                     name = "VisionTests",
-                    deps = [
-                        ":VisionTests_library",
-                    ],
                     minimum_os_version = "2.0",
                     tags = [
                         "manual",
@@ -227,6 +224,9 @@ struct RulesAppleTests {
                     target_compatible_with = [
                         "@platforms//os:visionos",
                         "@apple_support//constraints:simulator",
+                    ],
+                    deps = [
+                        ":VisionTests_library",
                     ],
                 )
                 """)
@@ -246,10 +246,10 @@ struct RulesAppleTests {
                 watchos_application(
                     name = "WatchApp",
                     bundle_id = "com.example.watch",
+                    minimum_os_version = "11.0",
                     deps = [
                         ":WatchApp_library",
                     ],
-                    minimum_os_version = "11.0",
                 )
                 """)
     }
@@ -267,12 +267,12 @@ struct RulesAppleTests {
                 == """
                 apple_static_library(
                     name = "StaticLib",
-                    deps = [
-                        ":Core",
-                    ],
                     platform_type = "ios",
                     sdk_frameworks = [
                         "UIKit",
+                    ],
+                    deps = [
+                        ":Core",
                     ],
                 )
                 """)
@@ -312,12 +312,12 @@ struct RulesAppleTests {
                 == """
                 apple_dynamic_xcframework_import(
                     name = "XCFrameworkImport",
-                    xcframework_imports = glob([
-                        "Vendor/My.xcframework/**",
-                    ]),
                     visibility = [
                         "//visibility:public",
                     ],
+                    xcframework_imports = glob([
+                        "Vendor/My.xcframework/**",
+                    ]),
                 )
                 """)
     }
@@ -356,12 +356,12 @@ struct RulesAppleTests {
                 == """
                 apple_static_xcframework_import(
                     name = "XCFrameworkImport",
-                    xcframework_imports = glob([
-                        "Vendor/My.xcframework/**",
-                    ]),
                     visibility = [
                         "//visibility:public",
                     ],
+                    xcframework_imports = glob([
+                        "Vendor/My.xcframework/**",
+                    ]),
                 )
                 """)
     }
@@ -415,7 +415,7 @@ struct RulesAppleTests {
                 xcarchive(
                     name = "AppArchive",
                     bundle_name = "App",
-                    target = "//App:App",
+                    target = "//App",
                 )
                 """)
     }
@@ -436,15 +436,15 @@ struct RulesAppleTests {
                 ios_extension(
                     name = "ShareExt",
                     bundle_id = "com.example.share",
-                    deps = [
-                        ":ShareExt_library",
-                    ],
                     entitlements = "Sources/ShareExt/ShareExt.entitlements",
                     families = [
                         "iphone",
                         "ipad",
                     ],
                     minimum_os_version = "18.0",
+                    deps = [
+                        ":ShareExt_library",
+                    ],
                 )
                 """)
     }
@@ -529,10 +529,10 @@ struct RulesAppleTests {
                 ios_imessage_extension(
                     name = "StickerExt",
                     bundle_id = "com.example.stickers.ext",
+                    minimum_os_version = "18.0",
                     deps = [
                         ":StickerExt_library",
                     ],
-                    minimum_os_version = "18.0",
                 )
                 """)
     }
@@ -575,10 +575,10 @@ struct RulesAppleTests {
                     name = "Plugin",
                     bundle_extension = "prefPane",
                     bundle_id = "com.example.plugin",
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Plugin_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -597,10 +597,10 @@ struct RulesAppleTests {
                 macos_kernel_extension(
                     name = "Driver",
                     bundle_id = "com.example.driver",
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Driver_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -623,10 +623,10 @@ struct RulesAppleTests {
                         "//Targets/Helper:Helper": "Helpers",
                     },
                     bundle_id = "com.example.preview",
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Preview_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -645,10 +645,10 @@ struct RulesAppleTests {
                 macos_spotlight_importer(
                     name = "Importer",
                     bundle_id = "com.example.importer",
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Importer_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -667,10 +667,10 @@ struct RulesAppleTests {
                 ios_app_clip(
                     name = "Clip",
                     bundle_id = "com.example.app.Clip",
+                    minimum_os_version = "18.0",
                     deps = [
                         ":Clip_library",
                     ],
-                    minimum_os_version = "18.0",
                 )
                 """)
     }
@@ -689,10 +689,10 @@ struct RulesAppleTests {
                 tvos_extension(
                     name = "TopShelf",
                     bundle_id = "com.example.tv.TopShelf",
+                    minimum_os_version = "18.0",
                     deps = [
                         ":TopShelf_library",
                     ],
-                    minimum_os_version = "18.0",
                 )
                 """)
     }
@@ -711,10 +711,10 @@ struct RulesAppleTests {
                 watchos_extension(
                     name = "Complication",
                     bundle_id = "com.example.watch.Complication",
+                    minimum_os_version = "11.0",
                     deps = [
                         ":Complication_library",
                     ],
-                    minimum_os_version = "11.0",
                 )
                 """)
     }
@@ -733,10 +733,10 @@ struct RulesAppleTests {
                 macos_dylib(
                     name = "libHelper",
                     bundle_id = "com.example.helper",
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Helper_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -755,10 +755,10 @@ struct RulesAppleTests {
                 macos_dynamic_framework(
                     name = "Shared",
                     bundle_id = "com.example.shared",
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Shared_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -779,10 +779,10 @@ struct RulesAppleTests {
                     avoid_deps = [
                         ":Logging",
                     ],
+                    minimum_os_version = "15.0",
                     deps = [
                         ":Core_library",
                     ],
-                    minimum_os_version = "15.0",
                 )
                 """)
     }
@@ -800,14 +800,14 @@ struct RulesAppleTests {
                 == """
                 apple_static_xcframework(
                     name = "CoreKit",
-                    deps = [
-                        ":Core_library",
-                    ],
                     minimum_os_versions = {
                         "ios": "16.0",
                     },
                     public_hdrs = [
                         "include/Core.h",
+                    ],
+                    deps = [
+                        ":Core_library",
                     ],
                 )
                 """)

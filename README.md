@@ -51,11 +51,10 @@ bazel run //:format
 
 Both pick the buildifier pinned for the host — `uname -s` and `uname -m`, so
 macOS and Linux on arm64 or x86_64 — and download it into the user cache
-against its checksum. `//:lint` reports warnings and fails on them; `//:format`
-rewrites the generated `BUILD`, `WORKSPACE`, `*.bzl`, and `*.bazel` files the
-way buildifier formats them. Formatting is buildifier's job, so generation does
-not do it and `//:lint` reports a formatting difference rather than failing on
-it.
+against its checksum. Bazelize writes generated Starlark in that buildifier's
+canonical format. `//:lint` reports formatting differences without failing and
+fails on lint warnings; `//:format` remains available to rewrite generated
+`BUILD`, `WORKSPACE`, `*.bzl`, and `*.bazel` files after local edits.
 
 An Xcode target whose product type is `com.apple.product-type.bundle` is
 generated as a rules_apple `macos_bundle`.

@@ -4,10 +4,10 @@ load("@build_bazel_rules_apple//apple:apple.bzl", "apple_dynamic_xcframework_imp
 
 apple_dynamic_xcframework_import(
     name = "SVProgressHUD",
-    xcframework_imports = glob([
-        "SVProgressHUD.xcframework/**",
-    ]),
     visibility = [
         "//visibility:public",
     ],
+    xcframework_imports = glob([
+        "SVProgressHUD.xcframework/**",
+    ]),
 )

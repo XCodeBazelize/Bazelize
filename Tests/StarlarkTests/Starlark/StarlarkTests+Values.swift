@@ -140,6 +140,8 @@ extension StarlarkTests {
     func testQuotingEscapesABackslashAndADictionaryKey() {
         #expect(Starlark.Value.string(#"a\b"#).text == #""a\\b""#)
         #expect(Starlark.Value([#"a"b"#: "c"])?.text.contains(#""a\"b": "c","#) == true)
+        #expect(Starlark.Format.escaped("©") == #"\302\251"#)
+        #expect(Starlark.Format.escaped("a\nb", triple: true) == "a\nb")
     }
 
     /// An attribute given an empty list was given nothing: it reads as `None`
@@ -161,10 +163,10 @@ extension StarlarkTests {
             call.text
                 == """
                 rule(
-                    # deps = None,
                     srcs = [
                         "a.swift",
                     ],
+                    # deps = None,
                 )
                 """)
     }

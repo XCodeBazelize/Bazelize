@@ -13,30 +13,35 @@ string_flag(
         "Release",
     ],
 )
+
 config_setting(
     name = "Debug",
     flag_values = {
         ":mode": "Debug",
     },
 )
+
 config_setting(
     name = "Release",
     flag_values = {
         ":mode": "Release",
     },
 )
+
 sh_binary(
     name = "lint",
     srcs = [
         "lint.sh",
     ],
 )
+
 sh_binary(
     name = "format",
     srcs = [
         "format.sh",
     ],
 )
+
 swift_binary(
     name = "_plugin_host",
     srcs = [
@@ -49,20 +54,22 @@ swift_binary(
         "//visibility:public",
     ],
 )
+
 sh_binary(
     name = "plugins",
     srcs = [
         "plugins.sh",
     ],
     data = [
-        ":_plugin_host",
         "plugin-plan.json",
+        ":_plugin_host",
         "//Packages:plugins",
     ],
     tags = [
         "manual",
     ],
 )
+
 toolchain(
     name = "tvos_simulator_test_toolchain",
     exec_compatible_with = ["@platforms//os:macos"],
@@ -73,6 +80,7 @@ toolchain(
     toolchain = "@bazel_tools//tools/test:empty_toolchain",
     toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
 )
+
 toolchain(
     name = "visionos_simulator_test_toolchain",
     exec_compatible_with = ["@platforms//os:macos"],
@@ -83,6 +91,7 @@ toolchain(
     toolchain = "@bazel_tools//tools/test:empty_toolchain",
     toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
 )
+
 toolchain(
     name = "watchos_simulator_test_toolchain",
     exec_compatible_with = ["@platforms//os:macos"],
@@ -93,6 +102,7 @@ toolchain(
     toolchain = "@bazel_tools//tools/test:empty_toolchain",
     toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
 )
+
 xcodeproj(
     name = "xcodeproj",
     project_name = "Example",

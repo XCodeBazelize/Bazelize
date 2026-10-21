@@ -97,7 +97,8 @@ struct RoadmapTreeBuilderTests {
         #expect(exampleBuild.contains("//Prebuilt:SVProgressHUD"))
         /// A target depends on the package product, never on the repository that
         /// happens to implement it.
-        #expect(exampleBuild.contains("//Packages/AnyCodable:AnyCodable"))
+        #expect(exampleBuild.contains("\"//Packages/AnyCodable\","))
+        #expect(!exampleBuild.contains("//Packages/AnyCodable:AnyCodable"))
         #expect(exampleBuild.contains("//Packages/Local1:LocalLib1"))
         #expect(exampleBuild.contains("//Packages/Local1:LocalLib2"))
         #expect(!exampleBuild.contains("@swiftpkg_"))

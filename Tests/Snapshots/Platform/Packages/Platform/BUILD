@@ -1,4 +1,3 @@
-load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 load("@build_bazel_rules_apple//apple:ios.bzl", "ios_unit_test")
 load("@build_bazel_rules_apple//apple:macos.bzl", "macos_unit_test")
 load("@build_bazel_rules_apple//apple:resources.bzl", "apple_resource_bundle")
@@ -6,10 +5,21 @@ load("@build_bazel_rules_apple//apple:tvos.bzl", "tvos_unit_test")
 load("@build_bazel_rules_apple//apple:visionos.bzl", "visionos_unit_test")
 load("@build_bazel_rules_apple//apple:watchos.bzl", "watchos_unit_test")
 load("@build_bazel_rules_swift//swift:swift_library.bzl", "swift_library")
+load("//tools:apple_simulator_test.bzl", "apple_simulator_test")
 
 swift_library(
     name = "Platform",
-    alwayslink = True,
+    package_name = "Platform",
+    srcs = glob(
+        [
+            "Sources/Platform/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/Platform/**/*.docc/**",
+            "Sources/Platform/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -87,13 +97,12 @@ swift_library(
         ],
     }),
     module_name = "Platform",
-    package_name = "Platform",
-    srcs = glob([
-        "Sources/Platform/**/*.swift",
-    ], exclude = [
-        "Sources/Platform/**/*.docc/**",
-        "Sources/Platform/**/*.xcprivacy/**",
-    ], allow_empty = True),
+    tags = [
+        "manual",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = select({
         "//Packages:swiftpm_platform_ios": [
             ":IOSOnly",
@@ -120,16 +129,22 @@ swift_library(
             ":WatchOSOnly",
         ],
     }),
-    tags = [
-        "manual",
-    ],
-    visibility = [
-        "//visibility:public",
-    ],
+    alwayslink = True,
 )
+
 swift_library(
     name = "IOSOnly",
-    alwayslink = True,
+    package_name = "Platform",
+    srcs = glob(
+        [
+            "Sources/IOSOnly/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/IOSOnly/**/*.docc/**",
+            "Sources/IOSOnly/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -137,23 +152,28 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "IOSOnly",
-    package_name = "Platform",
-    srcs = glob([
-        "Sources/IOSOnly/**/*.swift",
-    ], exclude = [
-        "Sources/IOSOnly/**/*.docc/**",
-        "Sources/IOSOnly/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 swift_library(
     name = "MacCatalystOnly",
-    alwayslink = True,
+    package_name = "Platform",
+    srcs = glob(
+        [
+            "Sources/MacCatalystOnly/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/MacCatalystOnly/**/*.docc/**",
+            "Sources/MacCatalystOnly/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -161,23 +181,28 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "MacCatalystOnly",
-    package_name = "Platform",
-    srcs = glob([
-        "Sources/MacCatalystOnly/**/*.swift",
-    ], exclude = [
-        "Sources/MacCatalystOnly/**/*.docc/**",
-        "Sources/MacCatalystOnly/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 swift_library(
     name = "TVOSOnly",
-    alwayslink = True,
+    package_name = "Platform",
+    srcs = glob(
+        [
+            "Sources/TVOSOnly/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/TVOSOnly/**/*.docc/**",
+            "Sources/TVOSOnly/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -185,23 +210,28 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "TVOSOnly",
-    package_name = "Platform",
-    srcs = glob([
-        "Sources/TVOSOnly/**/*.swift",
-    ], exclude = [
-        "Sources/TVOSOnly/**/*.docc/**",
-        "Sources/TVOSOnly/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 swift_library(
     name = "VisionOSOnly",
-    alwayslink = True,
+    package_name = "Platform",
+    srcs = glob(
+        [
+            "Sources/VisionOSOnly/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/VisionOSOnly/**/*.docc/**",
+            "Sources/VisionOSOnly/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -209,23 +239,28 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "VisionOSOnly",
-    package_name = "Platform",
-    srcs = glob([
-        "Sources/VisionOSOnly/**/*.swift",
-    ], exclude = [
-        "Sources/VisionOSOnly/**/*.docc/**",
-        "Sources/VisionOSOnly/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 swift_library(
     name = "WatchOSOnly",
-    alwayslink = True,
+    package_name = "Platform",
+    srcs = glob(
+        [
+            "Sources/WatchOSOnly/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/WatchOSOnly/**/*.docc/**",
+            "Sources/WatchOSOnly/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
@@ -233,71 +268,72 @@ swift_library(
         "-DSWIFT_PACKAGE",
     ],
     module_name = "WatchOSOnly",
-    package_name = "Platform",
-    srcs = glob([
-        "Sources/WatchOSOnly/**/*.swift",
-    ], exclude = [
-        "Sources/WatchOSOnly/**/*.docc/**",
-        "Sources/WatchOSOnly/**/*.xcprivacy/**",
-    ], allow_empty = True),
     tags = [
         "manual",
     ],
     visibility = [
         "//visibility:public",
     ],
+    alwayslink = True,
 )
+
 apple_resource_bundle(
     name = "PlatformTestsResources",
     bundle_name = "Platform_PlatformTests",
     infoplists = [
         "Generated/PlatformTestsResourceBundle-Info.plist",
     ],
-    resources = glob([
-        "Sources/PlatformTests/Fixtures/**",
-    ], allow_empty = True),
+    resources = glob(
+        [
+            "Sources/PlatformTests/Fixtures/**",
+        ],
+        allow_empty = True,
+    ),
     tags = [
         "manual",
     ],
 )
+
 swift_library(
     name = "PlatformTests_library",
-    alwayslink = True,
+    package_name = "Platform",
+    testonly = True,
+    srcs = [
+        "Generated/PlatformTestsResourceBundleAccessor.swift",
+    ] + glob(
+        [
+            "Sources/PlatformTests/**/*.swift",
+        ],
+        allow_empty = True,
+        exclude = [
+            "Sources/PlatformTests/**/*.docc/**",
+            "Sources/PlatformTests/**/*.xcprivacy/**",
+        ],
+    ),
     always_include_developer_search_paths = True,
     copts = [
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
     ],
-    module_name = "PlatformTests",
-    package_name = "Platform",
-    srcs = [
-        "Generated/PlatformTestsResourceBundleAccessor.swift",
-    ] + glob([
-        "Sources/PlatformTests/**/*.swift",
-    ], exclude = [
-        "Sources/PlatformTests/**/*.docc/**",
-        "Sources/PlatformTests/**/*.xcprivacy/**",
-    ], allow_empty = True),
-    deps = [
-        ":Platform",
-    ],
     data = [
         ":PlatformTestsResources",
     ],
+    module_name = "PlatformTests",
     tags = [
         "manual",
     ],
-    testonly = True,
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":Platform",
+    ],
+    alwayslink = True,
 )
+
 macos_unit_test(
     name = "PlatformTests",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "13.0",
     target_compatible_with = [
         "@platforms//os:macos",
@@ -305,27 +341,29 @@ macos_unit_test(
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "PlatformTests_ios_simulator",
     deps = [
         ":PlatformTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "PlatformTests_ios_simulator",
+    timeout = "long",
     minimum_os_version = "16.0",
     target_compatible_with = [
         "@platforms//os:ios",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
-)
-ios_unit_test(
-    name = "PlatformTests_ios_device_bundle_rule",
     deps = [
         ":PlatformTests_library",
     ],
+)
+
+ios_unit_test(
+    name = "PlatformTests_ios_device_bundle_rule",
     minimum_os_version = "16.0",
     tags = [
         "manual",
@@ -337,7 +375,11 @@ ios_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 alias(
     name = "PlatformTests_ios_device_bundle",
     actual = ":PlatformTests_ios_device_bundle_rule.__internal__.__test_bundle",
@@ -348,11 +390,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "PlatformTests_tvos_simulator_bundle",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "16.0",
     tags = [
         "manual",
@@ -364,9 +404,14 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "PlatformTests_tvos_simulator",
+    timeout = "long",
     bundle = ":PlatformTests_tvos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "tvOS Simulator",
     developer_platform = "AppleTVSimulator",
@@ -376,16 +421,13 @@ apple_simulator_test(
         "@platforms//os:tvos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 tvos_unit_test(
     name = "PlatformTests_tvos_device_bundle_rule",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "16.0",
     tags = [
         "manual",
@@ -397,7 +439,11 @@ tvos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 alias(
     name = "PlatformTests_tvos_device_bundle",
     actual = ":PlatformTests_tvos_device_bundle_rule.__internal__.__test_bundle",
@@ -408,11 +454,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "PlatformTests_watchos_simulator_bundle",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -424,9 +468,14 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "PlatformTests_watchos_simulator",
+    timeout = "long",
     bundle = ":PlatformTests_watchos_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "watchOS Simulator",
     developer_platform = "WatchSimulator",
@@ -436,16 +485,13 @@ apple_simulator_test(
         "@platforms//os:watchos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 watchos_unit_test(
     name = "PlatformTests_watchos_device_bundle_rule",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "9.0",
     tags = [
         "manual",
@@ -457,7 +503,11 @@ watchos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 alias(
     name = "PlatformTests_watchos_device_bundle",
     actual = ":PlatformTests_watchos_device_bundle_rule.__internal__.__test_bundle",
@@ -468,11 +518,9 @@ alias(
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "PlatformTests_xros_simulator_bundle",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -484,9 +532,14 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 apple_simulator_test(
     name = "PlatformTests_xros_simulator",
+    timeout = "long",
     bundle = ":PlatformTests_xros_simulator_bundle.__internal__.__test_bundle",
     destination_platform = "visionOS Simulator",
     developer_platform = "XRSimulator",
@@ -496,16 +549,13 @@ apple_simulator_test(
         "@platforms//os:visionos",
         "@apple_support//constraints:simulator",
     ],
-    timeout = "long",
     visibility = [
         "//visibility:public",
     ],
 )
+
 visionos_unit_test(
     name = "PlatformTests_xros_device_bundle_rule",
-    deps = [
-        ":PlatformTests_library",
-    ],
     minimum_os_version = "1.0",
     tags = [
         "manual",
@@ -517,7 +567,11 @@ visionos_unit_test(
     visibility = [
         "//visibility:private",
     ],
+    deps = [
+        ":PlatformTests_library",
+    ],
 )
+
 alias(
     name = "PlatformTests_xros_device_bundle",
     actual = ":PlatformTests_xros_device_bundle_rule.__internal__.__test_bundle",

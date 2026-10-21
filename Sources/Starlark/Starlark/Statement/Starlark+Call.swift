@@ -20,7 +20,7 @@ extension Starlark.Statement {
                 return "\(name)()"
             }
 
-            let renderedArguments = arguments
+            let renderedArguments = Self.ordered(arguments, of: name)
                 .map(\.text)
                 .joined(separator: "\n")
                 .indent(1)
@@ -30,12 +30,59 @@ extension Starlark.Statement {
             )
             """
         }
+
+        /// The arguments in the order buildifier puts them: the trailing run of
+        /// named arguments sorts by priority, then name, and the strings given
+        /// to an attribute whose order means nothing sort too.
+        ///
+        /// Only the trailing run, because a positional argument or a comment
+        /// line stands where it was written and everything before it with it.
+        private static func ordered(_ arguments: [Argument], of rule: String) -> [Argument] {
+            var start = arguments.count
+            while start > 0, case .named = arguments[start - 1] {
+                start -= 1
+            }
+
+            let sorted = arguments[start...]
+                .enumerated()
+                .sorted { lhs, rhs in
+                    let left = Starlark.Format.priority(rule: rule, argument: lhs.element.name)
+                    let right = Starlark.Format.priority(rule: rule, argument: rhs.element.name)
+                    guard left == right else { return left < right }
+                    guard lhs.element.name == rhs.element.name else {
+                        return lhs.element.name < rhs.element.name
+                    }
+                    return lhs.offset < rhs.offset
+                }
+                .map(\.element)
+                .map { argument -> Argument in
+                    guard case .named(let name, let value) = argument else { return argument }
+                    /// Labels are canonicalised before the list is ordered, so
+                    /// the order is the one the short form sorts in.
+                    var result = value
+                    if Starlark.Format.isLabel(rule: rule, argument: name) {
+                        result = result.shortenedLabels
+                    }
+                    if Starlark.Format.sorts(rule: rule, argument: name) {
+                        result = result.sortedStrings
+                    }
+                    return .named(name, result)
+                }
+
+            return Array(arguments[..<start]) + sorted
+        }
     }
 
     public enum Argument: Sendable, Text {
         case comment(Starlark.Comment)
         case positional(Starlark.Value)
         case named(String, Starlark.Value)
+
+        /// The attribute this argument gives a value to, if it names one.
+        var name: String {
+            guard case .named(let name, _) = self else { return "" }
+            return name
+        }
 
         public static func named(_ name: String, @StarlarkBuilder builder: () -> Starlark.Value) -> Self {
             .named(name, builder())
