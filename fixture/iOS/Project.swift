@@ -10,6 +10,17 @@ func settings(_ values: SettingsDictionary = [:]) -> Settings {
         ].merging(values) { _, value in value })
 }
 
+/// `Static2.h` refuses to compile unless `BAZELIZE_OTHER_FLAGS` is defined, and
+/// only these two settings define it: `OTHER_CFLAGS` for a clang compile,
+/// `-Xcc` in `OTHER_SWIFT_FLAGS` for the clang importer Swift builds that
+/// module with. Every target that compiles the header — its own, and everyone
+/// who imports the module, directly or through another target — carries them,
+/// which is what Xcode requires of such a project too.
+let otherFlags: SettingsDictionary = [
+    "OTHER_CFLAGS": "-DBAZELIZE_OTHER_FLAGS",
+    "OTHER_SWIFT_FLAGS": "-Xcc -DBAZELIZE_OTHER_FLAGS",
+]
+
 func target(
     _ name: String,
     product: Product,
@@ -72,9 +83,7 @@ let project = Project(
             product: .staticLibrary,
             sources: ["Static2/**/*.m"],
             headers: .headers(public: ["Static2/**/*.h"]),
-            /// Only this setting defines the macro its header insists on, so a
-            /// generated rule that drops `OTHER_CFLAGS` does not compile.
-            settings: ["OTHER_CFLAGS": "-DBAZELIZE_OTHER_FLAGS"]),
+            settings: otherFlags),
         target(
             "StaticFramework1",
             product: .staticFramework,
@@ -117,20 +126,20 @@ let project = Project(
                 "Example/Preview Content/**",
                 "Example/*.lproj/**",
             ],
-            settings: [
+            settings: otherFlags.merging([
                 "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
                 "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
                 "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
                 "DEVELOPMENT_ASSET_PATHS": "\"Example/Preview Content\"",
-                /// `-D` reaches Swift as a condition; `-Xcc -D` reaches the
-                /// clang importer, which is what reads Static2's header.
+                /// `-D` reaches Swift as a condition, `-Xcc -D` the importer.
                 "OTHER_SWIFT_FLAGS": "-DYDebug -D A -Xcc -DBAZELIZE_OTHER_FLAGS",
-            ]),
+            ]) { _, value in value }),
         target(
             "ExampleTests",
             product: .unitTests,
             sources: ["ExampleTests/**/*.swift"],
-            dependencies: [.target(name: "Example")]),
+            dependencies: [.target(name: "Example")],
+            settings: otherFlags),
         target(
             "Framework1Tests",
             product: .unitTests,
@@ -138,7 +147,8 @@ let project = Project(
             dependencies: [
                 .target(name: "Example"),
                 .target(name: "Framework1"),
-            ]),
+            ],
+            settings: otherFlags),
         target(
             "Framework2Tests",
             product: .unitTests,
@@ -146,7 +156,8 @@ let project = Project(
             dependencies: [
                 .target(name: "Example"),
                 .target(name: "Framework2"),
-            ]),
+            ],
+            settings: otherFlags),
         target(
             "Framework3Tests",
             product: .unitTests,
@@ -154,7 +165,8 @@ let project = Project(
             dependencies: [
                 .target(name: "Example"),
                 .target(name: "Framework3"),
-            ]),
+            ],
+            settings: otherFlags),
         target(
             "ExampleUITests",
             product: .uiTests,
