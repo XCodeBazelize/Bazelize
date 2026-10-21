@@ -46,15 +46,18 @@ Every generated workspace also owns its Starlark commands:
 
 ```sh
 bazel run //:lint
+bazel run //:lint-ci
 bazel run //:format
 ```
 
-Both pick the buildifier pinned for the host — `uname -s` and `uname -m`, so
-macOS and Linux on arm64 or x86_64 — and download it into the user cache
+All three pick the buildifier pinned for the host — `uname -s` and `uname -m`,
+so macOS and Linux on arm64 or x86_64 — and download it into the user cache
 against its checksum. Bazelize writes generated Starlark in that buildifier's
-canonical format. `//:lint` reports formatting differences without failing and
-fails on lint warnings; `//:format` remains available to rewrite generated
-`BUILD`, `WORKSPACE`, `*.bzl`, and `*.bazel` files after local edits.
+canonical format. `//:lint` is the complete report. `//:lint-ci` enforces only
+the reviewed behavior-affecting categories: `constant-glob`, `duplicated-name`,
+`no-effect`, `return-value`, `uninitialized`, and `unreachable`. Formatting
+differences do not fail either check; `//:format` rewrites generated `BUILD`,
+`WORKSPACE`, `*.bzl`, and `*.bazel` files changed after generation.
 
 An Xcode target whose product type is `com.apple.product-type.bundle` is
 generated as a rules_apple `macos_bundle`.
@@ -118,13 +121,13 @@ generated workspace is self-contained — `MODULE.bazel`, not `WORKSPACE`:
 ```bash
 App/                        # --output
 ├── MODULE.bazel            # the bazel_dep pins this workspace needs
-├── BUILD                   # the `mode` flag, //:lint, //:format, //:plugins, //:xcodeproj
+├── BUILD                   # the mode flag, lint commands, //:plugins, //:xcodeproj
 ├── .bazelrc                # kept: user flags plus imports of the generated rc files
 ├── config.bazelrc          # generated: configurations and deployment floors
 ├── traits.bazelrc          # generated: SwiftPM trait selections
 ├── languages.bazelrc       # generated: one config per localization
 ├── .bazelignore            # keeps SwiftPM's .build out of the workspace
-├── lint.sh, format.sh      # the buildifier pinned for the host
+├── lint.sh, lint-ci.sh, format.sh  # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
 ├── .bazelversion
 ├── tools/                  # `bazel list config|trait|language`, asset_symbols.bzl

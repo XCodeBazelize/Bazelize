@@ -115,6 +115,88 @@ jobs:
           path: .build/apple/Products/Release/bazelize
           if-no-files-found: ignore # 'warn' or 'ignore' 
 
+  # Generated files are inspected independently of the lanes that build and
+  # test their products. One runner visits every local fixture so Bazel's
+  # repository cache and the pinned buildifier download are shared.
+  GeneratedStarlarkLint:
+    runs-on: macos-26
+    needs: [artifact]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v4
+
+      - name: Generate Xcode project
+        run: tuist generate --path fixture/iOS --no-open
+
+      - name: Bazel Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/bazel-disk
+            ~/bazel-repo
+            ~/.cache/bazelize/buildifier
+          key: ${{ runner.os }}-bazel-GeneratedStarlarkLint-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-bazel-GeneratedStarlarkLint-
+
+      - name: Bazel Cache Settings
+        run: |
+          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
+          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
+          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Generate Workspaces
+        run: |
+          chmod +x bazelize
+          ./bazelize \
+            --input fixture/iOS/Example.xcodeproj \
+            --output fixture/iOS/App
+
+          # The registry fixture carries the unpacked package a registry would
+          # serve. Generation deliberately preserves `.build`, so seed it
+          # before visiting every Swift package below.
+          mkdir -p spm/RegistryPackage/App/.build/registry/downloads
+          cp -R spm/RegistryPackage/Registry/. \
+            spm/RegistryPackage/App/.build/registry/downloads/
+
+          for manifest in spm/*/Package.swift; do
+            package=${manifest%/Package.swift}
+            PKG_CONFIG_PATH="$GITHUB_WORKSPACE/$package/vendor/pkgconfig" \
+              ./bazelize --input "$package" --output "$package/App"
+          done
+
+      # The complete buildifier report remains visible without turning style,
+      # documentation or migration advice into release policy.
+      - name: Report All Generated Starlark Warnings
+        run: |
+          for workspace in fixture/iOS/App spm/*/App; do
+            echo "::group::$workspace"
+            if ! (cd "$workspace" && bazel run //:lint); then
+              echo "::warning title=Generated Starlark lint::$workspace has non-blocking buildifier warnings"
+            fi
+            echo "::endgroup::"
+          done
+
+      # Only the reviewed allowlist of behavior-affecting warnings fails CI.
+      - name: Check Generated Starlark Behavior
+        run: |
+          status=0
+          for workspace in fixture/iOS/App spm/*/App; do
+            echo "::group::$workspace"
+            if ! (cd "$workspace" && bazel run //:lint-ci); then
+              echo "::error title=Generated Starlark behavior::$workspace has behavior-affecting buildifier warnings"
+              status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
+
   IntegrateIOS:
     runs-on: macos-26
     needs: [artifact]
@@ -166,14 +248,6 @@ jobs:
         run: |
           ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
-
-      # What buildifier says about the generated Starlark, reported rather than
-      # gated: formatting is `bazel run //:format`'s business, and a warning is
-      # read here instead of stopping a lane that otherwise builds and runs.
-      - name: Check Generated Starlark
-        continue-on-error: true
-        working-directory: fixture/iOS/App
-        run: bazel run //:lint
 
       - name: Build Products
         working-directory: fixture/iOS/App
@@ -848,11 +922,6 @@ jobs:
             echo "::error::the generator said something no fixture expects"
             exit 1
           fi
-
-      - name: Check Generated Starlark
-        continue-on-error: true
-        working-directory: spm/${{ matrix.name }}/App
-        run: bazel run //:lint
 
       # Nothing runs the plugins here: generation ends with `bazel run
       # //:plugins`, so a target whose sources a plugin generates compiles in

@@ -84,7 +84,8 @@ cd spm/<package>
 bazelize --input . --output App
 cd App
 bazel run //:plugins   # re-runs the build tool plugins; generation already ran them once
-bazel run //:lint      # downloads buildifier and checks generated Starlark
+bazel run //:lint      # reports every generated Starlark warning
+bazel run //:lint-ci   # fails only on reviewed behavior-affecting warnings
 bazel test //...
 bazel run //tools:list-config   # what `--config=<name>` the workspace defines
 bazel run //tools:list-trait    # which traits its packages declare, and which are on
@@ -124,9 +125,10 @@ needed at runtime.
 
 `bazel run //:lint` downloads the buildifier pinned for the host — `uname -s`
 and `uname -m`, so macOS and Linux on arm64 or x86_64 — verifies and caches it,
-then checks every generated Starlark file. Bazelize already writes those files
-in its canonical format. Later formatting differences are reported; lint
-warnings fail, and `bazel run //:format` rewrites files changed after generation.
+then reports every generated Starlark warning. `bazel run //:lint-ci` checks only
+the repository's reviewed behavior-affecting warning categories. Bazelize
+already writes generated files in canonical format; formatting differences fail
+neither command, and `bazel run //:format` rewrites files changed afterward.
 
 `bazel build --config=lang.<code>` bundles that localization and `Base`, and
 nothing else; a build that names none bundles every one of them, which is what
