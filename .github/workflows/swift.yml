@@ -870,6 +870,10 @@ jobs:
       # A package that is only a plugin has nothing to build either: SwiftPM
       # refuses the build rather than doing nothing, so it is skipped by what
       # its manifest declares.
+      #
+      # Which packages those are is read from the manifest rather than the
+      # directory tree: a test target names its own `path`, so `Tests/` being
+      # absent says nothing about whether there are tests to run.
 
       - name: SwiftPM Build And Test
         working-directory: spm/${{ matrix.name }}
@@ -881,13 +885,19 @@ jobs:
           while read -r manifest; do
             package=$(dirname "$manifest")
             echo "::group::$package"
-            if ! (cd "$package" && swift package dump-package |
-                    jq -e '[.targets[] | select(.type != "plugin")] | length > 0' > /dev/null); then
+            # One manifest answers both questions: whether anything here is
+            # built, and whether a test target exists wherever its `path` put
+            # it.
+            if ! model=$(cd "$package" && swift package dump-package); then
+              echo "::error::swift package dump-package failed for $package"
+              status=1
+            elif ! jq -e '[.targets[] | select(.type != "plugin")] | length > 0' <<< "$model" > /dev/null; then
               echo "only plugins here, nothing to build"
             elif ! (cd "$package" && swift build $ARGS); then
               echo "::error::swift build failed for $package"
               status=1
-            elif [ -d "$package/Tests" ] && ! (cd "$package" && swift test $ARGS); then
+            elif jq -e '[.targets[] | select(.type == "test")] | length > 0' <<< "$model" > /dev/null &&
+              ! (cd "$package" && swift test $ARGS); then
               echo "::error::swift test failed for $package"
               status=1
             fi
