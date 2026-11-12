@@ -62,6 +62,16 @@ differences do not fail either check; `//:format` rewrites generated `BUILD`,
 An Xcode target whose product type is `com.apple.product-type.bundle` is
 generated as a rules_apple `macos_bundle`.
 
+For targets with `GENERATE_INFOPLIST_FILE = YES`, generated Info.plist fragments
+preserve `INFOPLIST_KEY_CFBundleDisplayName`. App extensions require a non-empty
+display name to install in the iOS Simulator. After changing these settings or
+updating Bazelize, regenerate the workspace before running the application:
+
+```sh
+bazelize --input YOUR.xcodeproj --output App
+cd App && bazel run //Targets/YourApp
+```
+
 A command plugin becomes a target named after its verb, so `swift package
 hello` is:
 

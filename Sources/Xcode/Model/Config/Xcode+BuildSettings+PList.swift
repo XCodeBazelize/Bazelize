@@ -113,7 +113,8 @@ extension Xcode.BuildSettings {
 
         private func plistDecision(for key: String) -> PlistDecision {
             switch key {
-            case "INFOPLIST_KEY_UIMainStoryboardFile",
+            case "INFOPLIST_KEY_CFBundleDisplayName",
+                 "INFOPLIST_KEY_UIMainStoryboardFile",
                  "INFOPLIST_KEY_UILaunchStoryboardName":
                 return .string
             case "INFOPLIST_KEY_UISupportedInterfaceOrientations":
