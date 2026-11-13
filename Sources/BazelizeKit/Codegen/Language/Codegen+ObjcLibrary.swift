@@ -43,7 +43,7 @@ extension Target {
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + forceIncludeFlags).starlark,
+                ] + forceIncludeFlags + clangCopts(kit)).starlark,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
                 linkopts: sdkLinkopts?.starlark,

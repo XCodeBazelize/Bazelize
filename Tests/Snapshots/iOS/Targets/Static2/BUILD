@@ -18,6 +18,7 @@ objc_library(
         "-fPIC",
         "-fmodule-name=Static2",
         "-DDEBUG=1",
+        "-DBAZELIZE_OTHER_FLAGS",
     ],
     # data = None,
     enable_modules = True,

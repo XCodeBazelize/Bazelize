@@ -106,9 +106,12 @@ extension Target {
         return ["-default-isolation", isolation]
     }
 
-    /// The language mode and the features Xcode compiles the target with.
+    /// The language mode and the features Xcode compiles the target with,
+    /// followed by whatever else `OTHER_SWIFT_FLAGS` asks for: a flag written
+    /// there is the project's last word, so it comes after the flags the other
+    /// settings imply.
     var languageCopts: [String] {
-        prefer(\.swift.copts) ?? []
+        (prefer(\.swift.copts) ?? []) + (prefer(\.otherSwiftFlags) ?? [])
     }
 
     func swiftCopts(project: Project) -> [String]? {

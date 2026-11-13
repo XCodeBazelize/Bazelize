@@ -212,6 +212,30 @@ extension Target {
         return ["-x", "objective-c++"]
     }
 
+    /// `OTHER_CFLAGS`, and `OTHER_CPLUSPLUSFLAGS` when the target has nothing
+    /// that compiles as C.
+    ///
+    /// Xcode keeps one flag list per dialect; a Bazel C-family rule has a
+    /// single `copts` for all of them, and a C++ dialect flag reaching a C
+    /// compile is an error rather than a flag clang ignores. A target that
+    /// mixes the two is told what was left out.
+    func clangCopts(_ kit: Kit) -> [String] {
+        let flags = prefer(\.otherCFlags) ?? []
+        let cPlusPlusFlags = prefer(\.otherCPlusPlusFlags) ?? []
+        guard !cPlusPlusFlags.isEmpty else { return flags }
+
+        guard srcs_c.isEmpty, srcs_objc.isEmpty else {
+            kit.note("""
+            Target(\(name)) compiles C as well as C++: \
+            OTHER_CPLUSPLUSFLAGS (\(cPlusPlusFlags.joined(separator: " "))) is left out, \
+            because one rule compiles both and those flags reject a C file.
+            """)
+            return flags
+        }
+
+        return flags + cPlusPlusFlags
+    }
+
     // MARK: Private
 
     /// Workspace-relative directories holding the target's compiled sources.

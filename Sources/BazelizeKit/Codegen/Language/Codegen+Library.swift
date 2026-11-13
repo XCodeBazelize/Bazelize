@@ -71,7 +71,7 @@ extension Target {
                     "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
-                ] + clangDialectCopts + forceIncludeFlags).starlark,
+                ] + clangDialectCopts + forceIncludeFlags + clangCopts(kit)).starlark,
                 clang_srcs: .build {
                     srcs_c
                     srcs_cpp
