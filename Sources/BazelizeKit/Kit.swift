@@ -170,9 +170,38 @@ extension Kit {
         workspaceTips = workspace.notes
         packageTips = workspaceTips + generator.notes
         packageDirectoryByProduct(of: workspace)
+        /// A project decides its own deployment target, and a package that asks
+        /// for more than it provides is reported rather than allowed to raise
+        /// everything else. A package handed in directly has no project targets
+        /// to read, and then the graph's own floor is the only answer there is.
+        try generateConfig(packages: project.targets.isEmpty ? Self.floors(of: workspace) : [:])
 
         let count = workspace.packages.count
         Log.codeGenerate.info("Generate \(count, privacy: .public) Swift packages")
+    }
+
+    /// The deployment floor of the resolved graph, per platform.
+    ///
+    /// SwiftPM compiles every package of a graph at the highest version any of
+    /// them declares: a package that asks for more raises the floor for all of
+    /// them, which is why a graph it is part of is built against that.
+    private static func floors(of workspace: SwiftPM.Workspace) -> [String: String] {
+        var floors: [String: String] = [:]
+
+        for package in workspace.packages {
+            for platform in package.manifest.platforms {
+                guard let version = platform.version, !version.isEmpty else { continue }
+                guard let floor = floors[platform.platformName] else {
+                    floors[platform.platformName] = version
+                    continue
+                }
+                if SwiftPM.Deployment.isNewer(version, than: floor) {
+                    floors[platform.platformName] = version
+                }
+            }
+        }
+
+        return floors
     }
 
     /// Runs the build tool plugins of the packages this project owns, the way
@@ -290,7 +319,6 @@ extension Kit {
         try generateVersion()
         try generateModule()
         try generateBuild()
-        try generateConfig()
         try generatePrebuiltBuild()
         try generateWorkspaceRules()
         try generatePluginExtraFile()
@@ -336,8 +364,12 @@ extension Kit {
     }
 
     /// {WORKSPACE}/config.bazelrc and {WORKSPACE}/.bazelrc
-    private final func generateConfig() throws {
-        config.setup(config: project.config, targets: project.targets)
+    ///
+    /// Written once the package graph is resolved: a workspace generated from a
+    /// package has no project targets to read a deployment floor from, and the
+    /// graph's own is what SwiftPM compiles it at.
+    private final func generateConfig(packages: [String: String]) throws {
+        config.setup(config: project.config, targets: project.targets, packages: packages)
         try config.write()
         try rootRC.ensureImport()
 

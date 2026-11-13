@@ -24,13 +24,19 @@ extension Bazel {
         /// build:debug --//:mode=debug
         /// bazel build --config=debug [PACKAGE:RULE]
         mutating
-        func setup(config: [String : BuildSettings]?, targets: [Target]) {
+        func setup(
+            config: [String: BuildSettings]?,
+            targets: [Target],
+            packages: [String: String] = [:])
+        {
             let configs = config?.keys.map { $0 } ?? []
             let modes = configs.map { config in
                 "build:\(config) --//:mode=\(config)"
             }.sorted()
 
-            code = (Self.defaults + Self.minimumOSFlags(targets: targets) + modes).withNewLine
+            code = (Self.defaults
+                + Self.minimumOSFlags(targets: targets, packages: packages)
+                + modes).withNewLine
         }
 
         /// Clang finds an imported framework's module map inside the framework, which
@@ -44,19 +50,31 @@ extension Bazel {
         /// Xcode resolves deployment targets per target; Bazel needs a default for
         /// everything outside a bundle rule's transition, otherwise SwiftPM
         /// dependencies fail analysis against Bazel's own (much older) defaults.
-        private static func minimumOSFlags(targets: [Target]) -> [String] {
-            let platforms: [(flag: String, keyPath: KeyPath<BuildSettings, String?>)] = [
-                ("ios_minimum_os", \.platform.iOS),
-                ("macos_minimum_os", \.platform.macOS),
-                ("tvos_minimum_os", \.platform.tvOS),
-                ("watchos_minimum_os", \.platform.watchOS),
+        ///
+        /// The project's own targets decide it where there are any: a package
+        /// that asks for more than the project is reported rather than allowed
+        /// to raise everything else. A package graph handed in directly has no
+        /// project targets to read, and then the graph's own floor is the
+        /// answer — without one, every target compiles against the SDK's
+        /// default, where a back-port the graph still reaches is unavailable.
+        private static func minimumOSFlags(
+            targets: [Target],
+            packages: [String: String]) -> [String]
+        {
+            let platforms: [(flag: String, platform: String, keyPath: KeyPath<BuildSettings, String?>)] = [
+                ("ios_minimum_os", "ios", \.platform.iOS),
+                ("macos_minimum_os", "macos", \.platform.macOS),
+                ("tvos_minimum_os", "tvos", \.platform.tvOS),
+                ("watchos_minimum_os", "watchos", \.platform.watchOS),
             ]
 
             return platforms.compactMap { platform in
                 let versions = targets.compactMap { target in
                     target.prefer(platform.keyPath)
                 }
-                guard let highest = versions.max(by: Self.isOlder) else { return nil }
+                guard let highest = versions.max(by: Self.isOlder) ?? packages[platform.platform] else {
+                    return nil
+                }
                 return "build --\(platform.flag)=\(highest)"
             }
         }
