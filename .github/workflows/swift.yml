@@ -798,6 +798,9 @@ jobs:
             # test as well: the dependency behind it is linked only then.
             config: DependencyCondition.Extras
           - name: DependencyShape
+          # Its test target compiles the back-port, so `bazel test //...` is
+          # what says the graph's deployment floor reached the compile.
+          - name: DeploymentFloor
           - name: ExecutableResource
             programs: |
               //Packages/ExecutableResource:resource-probe
@@ -984,6 +987,18 @@ jobs:
           else
             echo "no Bazel tests, nothing to test"
           fi
+
+      # A test bundle carries its own `minimum_os_version` through the rule's
+      # platform transition, so it proves nothing about the floor every other
+      # compile gets. Building the library on its own is what reads the default
+      # the workspace wrote, and the back-port it compiles is `obsoleted:` above
+      # the package's floor.
+      - name: Build Package At Its Deployment Floor
+        if: matrix.name == 'DeploymentFloor'
+        working-directory: spm/DeploymentFloor/App
+        run: |
+          grep -q 'build --macos_minimum_os=13.0' config.bazelrc
+          bazel build //Packages/DeploymentFloor:FloorProbe
 
       - name: Boot Simulator for Platform Package
         if: matrix.name == 'Platform'

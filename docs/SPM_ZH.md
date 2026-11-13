@@ -66,7 +66,8 @@ App/
 ├── Package.swift             # 保留：重建 .build/checkouts 的唯一途徑
 ├── Package.resolved          # 保留：pin 的唯一來源
 ├── .bazelrc                  # 保留：使用者 flag 加上生成 rc 的 import
-├── config.bazelrc            # 生成：configuration 與 deployment floor
+├── config.bazelrc            # 生成：configuration，以及 deployment floor——由專案
+│                             # 自己的 target 決定；直接傳 package 時則取該 graph 的
 ├── traits.bazelrc            # 生成：每個 package trait 一個 config
 ├── languages.bazelrc         # 生成：每個 localization 一個 config
 ├── .bazelignore              # 把 SwiftPM 的工作目錄排除在 Bazel 之外
