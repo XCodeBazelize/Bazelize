@@ -79,6 +79,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     data = [
         ":TargetResourceResources",
@@ -131,6 +133,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     data = [
         ":TargetResourceTestsResources",

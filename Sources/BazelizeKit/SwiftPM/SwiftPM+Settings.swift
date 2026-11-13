@@ -64,13 +64,18 @@ extension SwiftPM.Generator {
             }
     }
 
-    /// `-swift-version` for a package that declares which language modes it
-    /// compiles in.
+    /// `-swift-version`: the language mode the package's targets compile in.
     ///
-    /// SwiftPM builds such a package in the newest mode it declares that its
-    /// own tools version reaches: swift-syntax declares 5 and 6 from a 5.8
-    /// manifest, and is compiled as Swift 5 — where `@retroactive` on a type of
-    /// the same package is a warning rather than an error.
+    /// SwiftPM builds a package that declares `swiftLanguageModes` in the
+    /// newest mode it declares that its own tools version reaches: swift-syntax
+    /// declares 5 and 6 from a 5.8 manifest, and is compiled as Swift 5 — where
+    /// `@retroactive` on a type of the same package is a warning rather than an
+    /// error.
+    ///
+    /// A package that declares none compiles in the mode its tools version
+    /// implies, which is not the compiler's own default: a 6.x manifest means
+    /// Swift 6 even when the compiler would have chosen 5. The flag is always
+    /// passed, because what rules_swift defaults to is not what SwiftPM decided.
     ///
     /// A target that names a mode of its own is compiled in that instead, so
     /// the package's is only passed when the target says nothing.
@@ -90,9 +95,19 @@ extension SwiftPM.Generator {
             .max { left, right in
                 version(left).lexicographicallyPrecedes(version(right))
             }
-        guard let newest else { return [] }
 
-        return ["-swift-version", newest]
+        return ["-swift-version", newest ?? defaultLanguageMode(toolsVersion: tools)]
+    }
+
+    /// The language mode SwiftPM compiles a manifest in when it names none:
+    /// the tools version's own major, down to the one minor that is a mode of
+    /// its own.
+    private static func defaultLanguageMode(toolsVersion: [Int]) -> String {
+        let major = toolsVersion.first ?? 4
+        if major >= 6 { return "6" }
+        if major >= 5 { return "5" }
+        if major == 4, toolsVersion.dropFirst().first ?? 0 >= 2 { return "4.2" }
+        return "4"
     }
 
     /// `6.1` as the numbers it compares by.

@@ -53,6 +53,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "PrebuildPlugin",
     tags = [
@@ -83,6 +85,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "PrebuildPluginTests",
     tags = [
