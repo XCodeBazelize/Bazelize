@@ -198,7 +198,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | binary target（artifact bundle） | `native_binary`，取 bundle 宣告的 triple 裡本機跑得動的那個 variant |
 | binary target（遠端 artifact） | SwiftPM 解壓到 `.build/artifacts`，bazelize 再連結成 `Artifacts/<Target>/`，然後同上 |
 | executable target | `swift_binary` |
-| 傳進來那個 package 的測試 target | `swift_library`（`<Target>_library`，testonly）+ macOS 與所有 Apple Simulator 的 runtime test variants，再加上 build-only 的 iOS／tvOS／watchOS／visionOS device bundles；各 variant 的 `minimum_os_version` 取該 package 對該平台要求的版本 |
+| 傳進來那個 package 的測試 target | 一個 testonly 的原始碼 library（`<Target>_library`）：`swift_library`，target 裡沒有 Swift 時則是 `objc_library`——再加上 macOS 與所有 Apple Simulator 的 runtime test variants，以及 build-only 的 iOS／tvOS／watchOS／visionOS device bundles；各 variant 的 `minimum_os_version` 取該 package 對該平台要求的版本 |
 | executable product | `alias` 指向該 target 的 binary |
 | library product，單一 target | `alias` |
 | library product，多個 target | `swift_library_group` |
