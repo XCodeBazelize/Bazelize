@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Xcode
 
@@ -98,6 +99,26 @@ struct BuildSettingsTests {
             ])
 
         #expect(settings.metadata.bundleID == "com.colliderli.iina")
+    }
+
+    @Test
+    func generatedPlistPreservesExtensionDisplayName() throws {
+        let settings = Xcode.BuildSettings(
+            name: "Release",
+            setting: [
+                "GENERATE_INFOPLIST_FILE": "YES",
+                "INFOPLIST_KEY_CFBundleDisplayName": "Ice Cubes",
+            ])
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <plist version="1.0"><dict>
+        \(settings.generatedPlist.entries.joined(separator: "\n"))
+        </dict></plist>
+        """
+        let plist = try #require(
+            PropertyListSerialization.propertyList(from: Data(xml.utf8), format: nil) as? [String: Any])
+
+        #expect(plist["CFBundleDisplayName"] as? String == "Ice Cubes")
     }
 
     @Test
