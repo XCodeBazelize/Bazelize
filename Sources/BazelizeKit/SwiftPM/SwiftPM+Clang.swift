@@ -117,6 +117,63 @@ extension SwiftPM.Generator {
                 visibility: .public))
     }
 
+    /// The library a C-family test target compiles into.
+    ///
+    /// A test module is linked into a bundle and imported by nothing, so it
+    /// needs neither a module map nor an interface directory: what it has is
+    /// its sources, the headers beside them, and whatever it was told to
+    /// compile with. SwiftPM compiles such a target like any other C-family
+    /// one, and a `swift_library` over no Swift sources is a rule Bazel
+    /// rejects — taking the whole package with it.
+    func buildClangTest(
+        _ target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        prefix: String,
+        name: String,
+        generated: [String],
+        resources: ResourceBundle?,
+        builder: CodeBuilder)
+    {
+        let extensions = extensions(of: target, in: package)
+        let compiled = Self.compileExtensions.filter { extensions.contains($0) }
+        /// Headers are matched against everything on disk, the way a regular
+        /// C-family target matches them: a header beside a test source is an
+        /// input of its compile.
+        let files = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
+
+        builder.load(loadableRule: Rules.Objc.objc_library)
+        builder.call(
+            Rules.Objc.Call.objc_library(
+                name: name,
+                srcs: sources(
+                    naming: resources?.accessors ?? [],
+                    globbing: matching(
+                        sources(of: target, prefix: prefix, extensions: compiled)
+                            + Self.headerExtensions.map { "\(prefix)/**/*.\($0)" },
+                        files)
+                        + generated,
+                    excluding: excludedClang(target, prefix: prefix)),
+                deps: deps(of: target, in: package),
+                data: resources?.labels.nonEmpty.map { labels in
+                    .build { labels.map { Starlark.Label.named($0) } }
+                },
+                /// A test case is discovered by the runtime rather than called,
+                /// so the linker must not drop it for having no references.
+                alwayslink: true,
+                copts: clangCopts(
+                    of: target,
+                    in: package,
+                    module: Self.moduleName(target.name),
+                    compiled: compiled,
+                    resources: resources),
+                enable_modules: true,
+                linkopts: linkopts(of: target, in: package),
+                module_name: Self.moduleName(target.name),
+                tags: Self.manual,
+                testonly: true,
+                visibility: .private))
+    }
+
     /// The files of a generated directory, named the way a glob pattern is.
     private static func relativeFiles(under directory: String, in root: Path) -> [String] {
         let base = root.normalize().string
