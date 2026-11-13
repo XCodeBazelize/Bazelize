@@ -209,7 +209,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `defines` | `-D` flag，不用 `defines` 屬性——那會往每個下游傳；`.define("A", to: "1")` 是一個 flag：`-DA=1` |
 | `headerSearchPath` | `includes`，而且該目錄被 `exclude` 丟掉時 header 仍然留作輸入 |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
-| `swiftLanguageMode` | `-swift-version` |
+| `swiftLanguageMode` | `-swift-version`；沒有宣告的 package 以其 tools version 推出的模式編譯——那是 SwiftPM 的行為，不是編譯器的預設值 |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
 | `defaultIsolation` | `-default-isolation <value>` |
 | `interoperabilityMode` | `.Cxx` 給 `-cxx-interoperability-mode=default`；`.C` 什麼都不給，那本來就是編譯器的行為 |

@@ -230,7 +230,7 @@ No test pins how a package's rules are produced either.
 | `defines` | `-D` flags, not the `defines` attribute, which would propagate to every dependent; `.define("A", to: "1")` is one flag, `-DA=1` |
 | `headerSearchPath` | `includes`, and the headers there stay inputs even when `exclude` drops the directory |
 | `linkedLibrary` / `linkedFramework` | `linkopts` |
-| `swiftLanguageMode` | `-swift-version` |
+| `swiftLanguageMode` | `-swift-version`; a package that declares none is compiled in the mode its tools version implies, which is what SwiftPM does and not what the compiler defaults to |
 | `enableUpcomingFeature` / `enableExperimentalFeature` | `-enable-upcoming-feature` / `-enable-experimental-feature` |
 | `defaultIsolation` | `-default-isolation <value>` |
 | `interoperabilityMode` | `-cxx-interoperability-mode=default` for `.Cxx`, nothing for `.C`, which is what the compiler does anyway |
