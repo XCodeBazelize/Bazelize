@@ -34,29 +34,42 @@ extension SwiftPM.Generator {
         let name = ruleName(of: target.name, in: package)
         let library = "\(name)_library"
 
-        builder.load(loadableRule: Rules.Swift.swift_library)
-        builder.call(
-            Rules.Swift.Call.swift_library(
+        /// SwiftPM does not let one target mix languages, so a test target
+        /// without Swift in it is a C-family one and compiles as such.
+        if extensions(of: target, in: package).contains("swift") {
+            builder.load(loadableRule: Rules.Swift.swift_library)
+            builder.call(
+                Rules.Swift.Call.swift_library(
+                    name: library,
+                    always_include_developer_search_paths: true,
+                    copts: copts(of: target, in: package),
+                    module_name: Self.moduleName(target.name),
+                    package_name: package.manifest.name,
+                    srcs: sources(
+                        naming: resources?.accessors ?? [],
+                        globbing: matching(
+                            sources(of: target, prefix: prefix, extensions: ["swift"]),
+                            relativeFiles(of: target, in: package, prefix: prefix))
+                            + generated,
+                        excluding: excluded(target, prefix: prefix)),
+                    deps: deps(of: target, in: package),
+                    data: resources?.labels.nonEmpty.map { labels in
+                        .build { labels.map { Starlark.Label.named($0) } }
+                    },
+                    linkopts: linkopts(of: target, in: package),
+                    tags: Self.manual,
+                    testonly: true,
+                    visibility: .private))
+        } else {
+            buildClangTest(
+                target,
+                in: package,
+                prefix: prefix,
                 name: library,
-                always_include_developer_search_paths: true,
-                copts: copts(of: target, in: package),
-                module_name: Self.moduleName(target.name),
-                package_name: package.manifest.name,
-                srcs: sources(
-                    naming: resources?.accessors ?? [],
-                    globbing: matching(
-                        sources(of: target, prefix: prefix, extensions: ["swift"]),
-                        relativeFiles(of: target, in: package, prefix: prefix))
-                        + generated,
-                    excluding: excluded(target, prefix: prefix)),
-                deps: deps(of: target, in: package),
-                data: resources?.labels.nonEmpty.map { labels in
-                    .build { labels.map { Starlark.Label.named($0) } }
-                },
-                linkopts: linkopts(of: target, in: package),
-                tags: Self.manual,
-                testonly: true,
-                visibility: .private))
+                generated: generated,
+                resources: resources,
+                builder: builder)
+        }
 
         builder.load(.ios_unit_test)
         builder.load(.macos_unit_test)
