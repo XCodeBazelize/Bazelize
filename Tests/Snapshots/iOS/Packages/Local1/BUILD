@@ -21,6 +21,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "5",
     ],
     module_name = "LocalTarget1",
     tags = [
@@ -53,6 +55,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "5",
     ],
     module_name = "LocalTarget2",
     tags = [

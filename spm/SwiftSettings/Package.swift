@@ -12,6 +12,9 @@ let package = Package(
     products: [
         .library(name: "SwiftSettings", targets: ["SwiftSettings"]),
     ],
+    dependencies: [
+        .package(path: "DefaultLanguageMode"),
+    ],
     targets: [
         .target(
             name: "SwiftSettings",
@@ -55,6 +58,10 @@ let package = Package(
             ]),
         .testTarget(
             name: "SwiftSettingsTests",
-            dependencies: ["LanguageModeOverride", "SwiftSettings"]),
+            dependencies: [
+                "LanguageModeOverride",
+                "SwiftSettings",
+                .product(name: "DefaultLanguageMode", package: "DefaultLanguageMode"),
+            ]),
     ],
     swiftLanguageModes: [.v5])

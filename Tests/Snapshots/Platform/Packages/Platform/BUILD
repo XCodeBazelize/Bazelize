@@ -25,6 +25,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ] + select({
         "//Packages:swiftpm_platform_ios_or_maccatalyst_or_macos_or_tvos_or_visionos_or_watchos": [
             "-DAPPLE_PLATFORM",
@@ -150,6 +152,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "IOSOnly",
     tags = [
@@ -179,6 +183,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "MacCatalystOnly",
     tags = [
@@ -208,6 +214,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "TVOSOnly",
     tags = [
@@ -237,6 +245,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "VisionOSOnly",
     tags = [
@@ -266,6 +276,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "WatchOSOnly",
     tags = [
@@ -315,6 +327,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     data = [
         ":PlatformTestsResources",

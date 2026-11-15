@@ -1,3 +1,4 @@
+import DefaultLanguageMode
 import LanguageModeOverride
 import SwiftSettings
 import Testing
@@ -23,4 +24,9 @@ func linkerUnsafeFlagsReachTheLink() {
 @Test @MainActor
 func aTargetsOwnLanguageModeWinsOverThePackages() {
     #expect(languageModeOverride == 6)
+}
+
+@Test @MainActor
+func aPackageDeclaringNoModeCompilesInItsToolsVersionMode() {
+    #expect(defaultLanguageMode == 6)
 }

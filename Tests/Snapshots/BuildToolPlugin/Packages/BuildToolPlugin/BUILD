@@ -51,6 +51,8 @@ swift_binary(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "TbCodeGenerater",
     tags = [
@@ -83,6 +85,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "TbParser",
     tags = [
@@ -114,6 +118,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "TbParserTests",
     tags = [

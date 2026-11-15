@@ -68,6 +68,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "Greeting",
     tags = [
@@ -95,6 +97,8 @@ swift_binary(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "HelloTool",
     tags = [
@@ -124,6 +128,8 @@ swift_library(
         "-DSWIFT_PACKAGE",
         "-Xcc",
         "-DSWIFT_PACKAGE",
+        "-swift-version",
+        "6",
     ],
     module_name = "GreetingTests",
     tags = [
