@@ -717,6 +717,26 @@ jobs:
             repo: https://github.com/pointfreeco/swift-dependencies
             rev: b476cc5761057d8d857de063fe7ac8daecf5c06b
             target: //Packages/swift-dependencies:Dependencies
+          # Two packages that each found a generator bug, kept so it cannot
+          # come back. Both pass `swift build` at these revisions, and both
+          # failed the generated build before the fix named beside them.
+          #
+          # A 6.2 manifest naming no `swiftLanguageModes`: compiled below
+          # Swift 6, `Backports.swift` takes the branch its `#if swift(>=6.3)`
+          # does not define. The one dependency floats (`swift-asn1 from
+          # 1.2.0`, no `Package.resolved`), so a resolution failure here is the
+          # package's and not the generator's.
+          - name: swift-crypto
+            repo: https://github.com/apple/swift-crypto
+            rev: 57de8e7cb840b1a608f0cc2221d8f2bda117606c
+            target: //Packages/swift-crypto:Crypto
+          # An Objective-C test target: generated as a `swift_library` with no
+          # sources, it made the whole package unloadable, so nothing in it
+          # built either.
+          - name: CocoaLumberjack
+            repo: https://github.com/CocoaLumberjack/CocoaLumberjack
+            rev: 788babb106c589aa5c3daf04361a737e7e0e6b95
+            target: //Packages/CocoaLumberjack:CocoaLumberjackSwift
     steps:
       - name: Bazel Cache
         uses: actions/cache@v5
