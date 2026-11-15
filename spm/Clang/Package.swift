@@ -43,6 +43,11 @@ let package = Package(
             swiftSettings: [
                 .interoperabilityMode(.Cxx),
             ]),
+        /// A test target written in Objective-C: SwiftPM compiles it the way it
+        /// compiles any C-family target, and so must the generated rules.
+        .testTarget(
+            name: "CObjectTests",
+            dependencies: ["CObject"]),
     ],
     cLanguageStandard: .c11,
     cxxLanguageStandard: .gnucxx17)

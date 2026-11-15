@@ -219,7 +219,7 @@ No test pins how a package's rules are produced either.
 | binary target (artifact bundle) | `native_binary` over the variant this machine can run, picked by the triples the bundle names |
 | binary target (remote artifact) | SwiftPM unpacks it under `.build/artifacts`; bazelize links it into `Artifacts/<Target>/` and imports it as above |
 | executable target | `swift_binary` |
-| test target of the package handed in | `swift_library` (`<Target>_library`, testonly) + runtime test variants for macOS and every Apple Simulator, plus build-only iOS/tvOS/watchOS/visionOS device bundles; each variant uses that platform's package `minimum_os_version` |
+| test target of the package handed in | a testonly library of its sources (`<Target>_library`): `swift_library`, or `objc_library` when the target holds no Swift — plus runtime test variants for macOS and every Apple Simulator, and build-only iOS/tvOS/watchOS/visionOS device bundles; each variant uses that platform's package `minimum_os_version` |
 | executable product | `alias` to the target's binary |
 | library product, one target | `alias` |
 | library product, several targets | `swift_library_group` |

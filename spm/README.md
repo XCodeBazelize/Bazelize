@@ -10,7 +10,7 @@ would not tell us anything.
 | `ArtifactBundle` | a binary target that ships a program: the plugin's tool comes out of an `.artifactbundle`, and the source it writes is what the target compiles |
 | `BinaryTarget` | a local zipped XCFramework, which links statically |
 | `BuildToolPlugin` | a build tool plugin and the tool it runs: the test target only compiles through a source the plugin generates |
-| `Clang` | the C-family shapes: Objective-C, Objective-C++, assembly, public headers somewhere of its own, a private header search path, defines with and without a value, a module map the package ships, C and C++ `unsafeFlags`, the package's language standards, C++ interoperability, the bundle a C target reaches without importing anything, and tests written in XCTest as well as swift-testing |
+| `Clang` | the C-family shapes: Objective-C, Objective-C++, assembly, public headers somewhere of its own, a private header search path, defines with and without a value, a module map the package ships, C and C++ `unsafeFlags`, the package's language standards, C++ interoperability, the bundle a C target reaches without importing anything, and tests written in XCTest as well as swift-testing — plus a test target written in Objective-C, which compiles as a C-family one |
 | `CommandPlugin` | a plugin that is run on demand rather than while building, with the permissions such a plugin asks for, which nothing in a build may grant it or try to run |
 | `ConfigurationCondition` | settings conditional on debug and release, which the build decides rather than the generator |
 | `DependencyCondition` | dependencies conditional on a platform and on a trait: what the condition excludes must not be built |
