@@ -45,6 +45,14 @@ bazel_dep(
     version = "4.2.2",
     repo_name = "build_bazel_rules_swift",
 )
+single_version_override(
+    module_name = "rules_swift",
+    patch_strip = 1,
+    patches = [
+        "//tools/rules_swift:framework_module_maps.patch",
+    ],
+    version = "4.2.2",
+)
 
 system_sdk = use_extension("@build_bazel_rules_swift//swift:extensions.bzl", "system_sdk")
 system_sdk.configure_sdks(
