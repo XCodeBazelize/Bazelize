@@ -737,6 +737,12 @@ jobs:
             repo: https://github.com/CocoaLumberjack/CocoaLumberjack
             rev: 788babb106c589aa5c3daf04361a737e7e0e6b95
             target: //Packages/CocoaLumberjack:CocoaLumberjackSwift
+          # External warning controls must not turn a dependency's diagnostics
+          # into errors for this consumer. The root still keeps its warnings.
+          - name: swift-composable-architecture
+            repo: https://github.com/pointfreeco/swift-composable-architecture
+            rev: bc2db5ba8ad3a47deba5db32fa340637ba6c9a76
+            target: //Packages/swift-composable-architecture:ComposableArchitecture
     steps:
       - name: Bazel Cache
         uses: actions/cache@v5
@@ -955,6 +961,10 @@ jobs:
             echo "::error::the generator said something no fixture expects"
             exit 1
           fi
+
+      - name: Check Package Warning Policy
+        if: matrix.name == 'SwiftSettings'
+        run: python3 .github/scripts/check-package-warnings.py ./bazelize
 
       # Nothing runs the plugins here: generation ends with `bazel run
       # //:plugins`, so a target whose sources a plugin generates compiles in

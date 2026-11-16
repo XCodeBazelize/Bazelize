@@ -18,7 +18,8 @@ extension SwiftPM.Generator {
     /// A conditional setting becomes a `select` on its platform, traits and
     /// build configuration, so the build decides it rather than this run.
     func copts(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Starlark.Value? {
-        grouped(
+        let suppressWarnings = !package.isRoot && !package.isLocal
+        return grouped(
             target.settings,
             in: package,
             /// `SWIFT_PACKAGE` is what a package's own sources test for; SwiftPM
@@ -30,12 +31,24 @@ extension SwiftPM.Generator {
             /// symbols, for one, switch on `SWIFT_PACKAGE`.
             always: Self.define("SWIFT_PACKAGE")
                 + Self.aliasFlags(of: target)
-                + Self.languageMode(of: target, in: package),
+                + Self.languageMode(of: target, in: package)
+                + (suppressWarnings ? ["-suppress-warnings"] : []),
             /// A trait is a compilation condition of the package that declares
             /// it: `#if Fast` is how a source asks. Swift only — SwiftPM does
             /// not hand it to clang, so neither is it handed to `-Xcc`.
             conditional: traitDefines(of: package),
-            flags: Self.swiftFlags)
+            flags: { setting in
+                // SwiftPM keeps diagnostics for root and local packages. External
+                // dependencies suppress them, and swiftc rejects combining that
+                // with warnings-as-errors, so their warning controls do not apply.
+                if
+                    suppressWarnings,
+                    setting.name == "treatAllWarnings" || setting.name == "treatWarning"
+                {
+                    return []
+                }
+                return Self.swiftFlags(setting)
+            })
     }
 
     /// `-D<Trait>` for every trait the package declares, each behind its own

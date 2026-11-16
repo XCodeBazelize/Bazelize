@@ -217,6 +217,7 @@ target 的 `deps` 需要改。測試也不釘 package 的規則是怎麼產生�
 | `cLanguageStandard` / `cxxLanguageStandard` | `-std=`，看 target 實際寫的是哪種語言；同時編 C 與 C++ 的 target 兩個都不給，並具名回報——一條規則只有一個 `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
+| 外部依賴的 Swift warning | `-suppress-warnings`，不套用該依賴的 `treatAllWarnings` / `treatWarning` 設定；root 與本地 path package 保留自己的 warning 控制，與 SwiftPM 一致 |
 | build tool plugin（自己的 package） | host、plugin 與工具都由 Bazel 建置並執行（`bazel run //:plugins`）；它寫出來的東西由規則 glob 進「要求它的那個 target」 |
 | build tool plugin（依賴的 package） | 不執行；結束時把該 plugin 的名字講出來 |
 | command plugin | 不處理：它是有人指名才跑，build 永遠用不到 |
