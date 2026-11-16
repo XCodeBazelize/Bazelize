@@ -16,6 +16,11 @@ mint install XCodeBazelize/Bazelize
 bazelize --input YOUR.xcodeproj --output App
 ```
 
+The `.xcodeproj` input can contain either the traditional `project.pbxproj` or
+Xcode 27.2's JSON-based `project.xcproj`. Pass the enclosing `.xcodeproj`
+directory to both `generate` and `dump`. CI builds and tests both formats,
+using Xcode's native converter to prepare the JSON project.
+
 Or a Swift package — the `Package.swift`, or the directory holding one:
 
 ```sh

@@ -84,7 +84,10 @@ struct FileLoader {
     var fileType: String? {
         /// `explicitFileType` is the override Xcode compiles with, e.g. a `.m` file
         /// declared as Objective-C++.
+        /// JSON projects omit types that Xcode infers from the path. Use the
+        /// same inference as synchronized files, after the declared overrides.
         ref?.explicitFileType ?? ref?.lastKnownFileType
+            ?? native.path.flatMap { KnownFileType(path: $0)?.rawValue }
     }
 
     var sourceTree: String {

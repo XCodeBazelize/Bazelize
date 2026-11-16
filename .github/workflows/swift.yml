@@ -198,6 +198,11 @@ jobs:
           exit $status
 
   IntegrateIOS:
+    name: IntegrateIOS (${{ matrix.format }})
+    strategy:
+      fail-fast: false
+      matrix:
+        format: [pbxproj, xcproj]
     runs-on: macos-26
     needs: [artifact]
     steps:
@@ -208,6 +213,14 @@ jobs:
       - name: Generate Xcode project
         run: tuist generate --path fixture/iOS --no-open
 
+      - name: Convert Xcode project to JSON
+        if: matrix.format == 'xcproj'
+        working-directory: fixture/iOS
+        run: |
+          xcodebuild -project Example.xcodeproj -convert-project "Xcode Project"
+          test -f Example.xcodeproj/project.xcproj
+          test ! -e Example.xcodeproj/project.pbxproj
+
       # Every `bazel` in this job reads these: the disk cache holds what the
       # build produced, the repository cache what it downloaded. Without the
       # second one a runner fetches rules_apple and the rest again every time.
@@ -217,8 +230,9 @@ jobs:
           path: |
             ~/bazel-disk
             ~/bazel-repo
-          key: ${{ runner.os }}-bazel-IntegrateIOS-${{ github.run_id }}
+          key: ${{ runner.os }}-bazel-IntegrateIOS-${{ matrix.format }}-${{ github.run_id }}
           restore-keys: |
+            ${{ runner.os }}-bazel-IntegrateIOS-${{ matrix.format }}-
             ${{ runner.os }}-bazel-IntegrateIOS-
 
       - name: Bazel Cache Settings
@@ -287,7 +301,7 @@ jobs:
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: iOS_Example.ipa
+          name: iOS_Example-${{ matrix.format }}.ipa
           path: fixture/iOS/Example.ipa
           if-no-files-found: ignore # 'warn' or 'ignore'
 
