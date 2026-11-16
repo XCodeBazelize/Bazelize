@@ -239,6 +239,7 @@ No test pins how a package's rules are produced either.
 | `cLanguageStandard` / `cxxLanguageStandard` | `-std=`, for the language the target is written in; a target that compiles both is named instead, because one rule takes one `-std` |
 | `strictMemorySafety` | `-strict-memory-safety` |
 | `unsafeFlags` | `copts` |
+| Swift warnings in an external dependency | `-suppress-warnings`; that dependency's `treatAllWarnings` / `treatWarning` settings do not apply. Root and local path packages keep their own warning controls, as in SwiftPM |
 | build tool plugin, own package | host, plugin and tools all built and run by Bazel (`bazel run //:plugins`); what it writes is globbed into the target that asked for it |
 | build tool plugin, dependency | not run; the plugin is named at the end of the run |
 | command plugin | nothing: it runs when someone asks for it by name, never during a build |

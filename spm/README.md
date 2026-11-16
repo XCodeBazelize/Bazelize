@@ -40,6 +40,16 @@ package beside the one bazelize is pointed at included: those are dependencies
 with sources of their own, and one that stopped building should be found here
 rather than in whatever it broke.
 
+The `SwiftSettings` CI lane also runs
+`python3 .github/scripts/check-package-warnings.py ./bazelize`. It creates a
+temporary Git dependency with warning-producing Swift sources and warning
+controls in its manifest. SwiftPM and the generated Bazel build must reject it
+as a root or local path package, while an external dependency's consumer must
+build and execute successfully. The external consumer is built in both debug
+and optimized configurations. The dependency is fetched from a local repository,
+and temporary packages are removed afterward. `IntegrateExternalPackage` also converts
+and builds the pinned `swift-composable-architecture` product that exposed #68.
+
 `.xcmappingmodel` is the one resource kind with no fixture: its source is a
 Core Data XML persistent store that only Xcode's modeler writes — a hand-written
 one is rejected by `mapc` — so there is nothing to check in. Nothing about it is
