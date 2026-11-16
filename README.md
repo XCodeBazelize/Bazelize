@@ -123,6 +123,10 @@ See [the configuration contract and v2 candidates](docs/Configuration.md).
 
 ## Bazel
 
+Generated workspaces pin Bazel **9.2.0**, `rules_apple` **5.4.0**,
+`rules_swift` **4.2.2**, `apple_support` **2.12.0**, and `rules_cc` **0.2.28**.
+The Apple rules use the versioned bundle layout for macOS frameworks.
+
 ### Project Hierarchy
 
 Everything is written under `--output`; the input tree is not modified. A
