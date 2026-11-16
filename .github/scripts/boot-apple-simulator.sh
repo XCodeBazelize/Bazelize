@@ -12,6 +12,7 @@ fresh=${3:-}
 import json
 import subprocess
 import sys
+from collections import Counter
 
 
 def simctl(*arguments):
@@ -30,8 +31,12 @@ runtimes = [
     for runtime in simctl("runtimes")["runtimes"]
     if runtime.get("platform") == platform and runtime.get("isAvailable")
 ]
+# The default Bazel runner identifies runtimes by version, not their identifier.
+# Device-specific runtimes can share a version while supporting different devices.
+versions = Counter(runtime["version"] for runtime in runtimes)
+runtimes = [runtime for runtime in runtimes if versions[runtime["version"]] == 1]
 if not runtimes:
-    raise RuntimeError(f"no available {platform} Simulator runtime")
+    raise RuntimeError(f"no uniquely addressable {platform} Simulator runtime")
 runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
 runtime = runtimes[-1]
 
