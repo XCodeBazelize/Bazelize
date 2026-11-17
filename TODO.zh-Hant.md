@@ -55,14 +55,16 @@ alias 或 `swift_library_group`，也沒有 note 說 SwiftPM 原本要求的是 
 目前還沒有決定完整的 dylib rule、product facade、transitive linking 與 packaging
 契約。只做一部分仍會讓 product 語意不清楚，因此先留下紀錄、不排程修正。
 
-### A5. 尚未決定：build tool plugin executable 的 resource runfiles 會遺失
+### A5. build tool plugin executable 讀得到自己的 resources —— 已完成，剩一種情況
 
-`//Packages:plugins` 是一個 `filegroup`，`srcs` 只有 plugin tool binaries，沒有轉發
-那些 binary 的 runfiles。帶 resource 的工具可以編得過、也能被 plugin host 找到，
-但執行期讀取 bundle 時會失敗。
+`bazel run //:plugins` 會把每個工具的 resource bundle 帶進 runner 的 runfiles，
+工具的 `Bundle.module` accessor 會在那裡找到它。實測方式：從乾淨的生成 workspace
+執行一個讀不到 resource 就失敗的工具。
 
-plugin entry point 與它需要的 runfiles 必須一起傳遞，但 provider 形狀與 fixture
-契約都尚未決定；先不過早承諾自訂 forwarding rule。
+還有一種情況不對，見 issue #81：同時列在 `exclude` 與 `resources` 的路徑，SwiftPM
+當成 resource，這裡卻當成被排除，所以 target 沒有 bundle 也沒有 accessor。
+`spm/BuildToolPlugin` 的工具正是這樣宣告，而且從不讀取自己的 resources，所以 fixture
+沒有發現。
 
 ### A6. 先不修：設定檔不能選 target，也不能關閉生成的功能
 
@@ -94,8 +96,9 @@ variants。`bazel test //...` 保留既有 macOS target 與 label；
 `spm/Platform` 證明 simulator execution 會使用 iOS-only dependency，並透過
 `Bundle.module` 讀取 test resource。
 
-tvOS、watchOS、visionOS、實體裝置與 Mac Catalyst 因 upstream runners 或 bundle rules
-尚未全部到位，繼續由 issue #43 追蹤。
+tvOS 與 watchOS Simulator variants 會透過生成的 runner 執行。visionOS Simulator
+variant 與所有實體裝置 variants 只建置、不執行，Mac Catalyst 則是 upstream 尚未提供；
+各自的原因記在 `docs/SPM.md` 與 `.github/workflows/swift.yml` 中該 lane 旁的註解。
 
 ### B2. `.xcmappingmodel` —— 不打算做
 
@@ -171,10 +174,9 @@ toolchain；`linkopts` 用 `__BAZEL_XCODE_DEVELOPER_DIR__`，由 `apple_support`
 `DependencyCondition/Extras`、`DependencyCondition/LinuxOnly`）同樣沒有自己的內容
 需要斷言。
 
-SwiftPM 這側仍有一個缺口：目錄判斷會漏掉自訂 test target path 的套件。
-`spm/TargetPath` 把測試放在 `Code/Tests`，所以它的 SwiftPM 測試從未在這條 lane
-執行，只有 Bazel 側有跑到。應改用 `swift package dump-package` 判斷 manifest
-是否有 test target，而不是假設一定存在頂層 `Tests` 目錄。
+SwiftPM 這側問的是 manifest 而不是目錄：lane 讀取 `swift package dump-package`，
+判斷套件有沒有東西要建置、有沒有 test target。`spm/TargetPath` 把測試放在
+`Code/Tests`，兩側都會執行。
 
 ### C2. lane 會因為沒人預期的 note 而失敗 —— 已完成
 
@@ -193,14 +195,14 @@ note 等於 lane 變紅，而不是多一行沒人看的字。
 實作了這條規則的 build system，而不是繼承 runner 當下附的那個；這也正是那條規則
 被拆成獨立套件的原因。
 
-### C4. generated Starlark lint 還沒有真正擋住 CI
+### C4. generated Starlark lint 會擋住 CI —— 已完成
 
-兩個 `Check Generated Starlark` step 都以 `continue-on-error: true` 執行
-`bazel run //:lint`，所以新 lint warning 只會被顯示，仍然放行。應移到一條便宜的
-lane：每個 fixture 只做 `generate` 再 `lint`，不 build、不 test；昂貴 integration
-lane 裡重複的檢查則移除。第一階段只擋 lint warning，格式類 `# reformat` 仍放過。
+`GeneratedStarlarkLint` 會生成每個本地 fixture，並在每個 workspace 執行兩個指令，
+不 build、不 test。`//:lint` 回報所有 buildifier warning，不會讓 job 失敗；
+`//:lint-ci` 遇到經審核、會改變行為或讓 workspace 無法載入的類別時讓 job 失敗。
+格式類 `# reformat` 仍會顯示，但不會失敗。
 
-### C5. 決定 generation 是否能 opt in 自動格式化
+### C5. 不打算做：讓 generation opt in 自動格式化
 
 目前契約是使用者顯式執行 `bazel run //:format`，generation 本身不格式化。若要讓
 generation 代跑，需在 `--format` flag 與持久設定鍵之間擇一。實作必須呼叫 workspace
@@ -209,3 +211,5 @@ generation 代跑，需在 `--format` flag 與持久設定鍵之間擇一。實�
 
 採用格式化後的生成物，需要重錄全部 generated workspace snapshots。完成後 lint gate
 才能同時擋格式差異與 lint warning。
+
+Issue #48 提過這個 opt-in，已以 not planned 關閉。

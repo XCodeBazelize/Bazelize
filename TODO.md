@@ -65,16 +65,17 @@ facade, transitive linking, and packaging behaviour. Partial handling would
 still leave the product contract unclear, so this remains documented and is
 not scheduled.
 
-### A5. Undecided: a build tool plugin's executable loses its resource runfiles
+### A5. A build tool plugin's executable reads its resources — done, one case open
 
-`//Packages:plugins` is a `filegroup` whose `srcs` are the plugin tool binaries.
-It does not forward the runfiles of those binaries. A tool with resources can
-compile and be found by the plugin host, then fail when it tries to load its
-bundle at run time.
+`bazel run //:plugins` carries each tool's resource bundle in the runner's
+runfiles, and the tool's `Bundle.module` accessor finds it there. Measured from
+a clean generated workspace with a tool that fails unless it reads its
+resource.
 
-The plugin entry point and the runfiles it needs must travel together, but the
-provider shape and fixture contract have not been chosen. Leave this undecided
-rather than committing to a custom forwarding rule prematurely.
+One case is still wrong, issue #81: a path listed in both `exclude` and
+`resources` is a resource to SwiftPM and excluded here, so the target gets no
+bundle and no accessor. `spm/BuildToolPlugin`'s tool is declared that way and
+never reads its resources, which is why the fixture does not notice.
 
 ### A6. Not fixing for now: configuration cannot select targets or disable generated features
 
@@ -114,8 +115,10 @@ and label; `--platforms=@apple_support//platforms:ios_sim_arm64` skips it and
 runs the iOS variant. `spm/Platform` proves the simulator execution reaches an
 iOS-only dependency and reads a test resource through `Bundle.module`.
 
-tvOS, watchOS, visionOS, physical devices, and Mac Catalyst remain in issue
-#43 because their upstream runners or bundle rules are not all available.
+The tvOS and watchOS Simulator variants run through the generated runner. The
+visionOS Simulator variant and every device variant are built and not
+executed, and Mac Catalyst is unavailable upstream; `docs/SPM.md` and the
+comments beside the lane in `.github/workflows/swift.yml` say why for each.
 
 ### B2. `.xcmappingmodel` — not planned
 
@@ -204,11 +207,10 @@ Thirteen sub-packages (`vendor-kit`, `Alt`, `Other`, `Stamping`, `Marking`,
 `DependencyCondition/Extras`, `DependencyCondition/LinuxOnly`) likewise have
 nothing of their own to assert.
 
-One SwiftPM-side gap remains: the directory check misses a package that
-declares a custom test target path. `spm/TargetPath` keeps its tests in
-`Code/Tests`, so its SwiftPM tests have never run in this lane even though the
-Bazel side does. Use `swift package dump-package` to ask whether the manifest
-has a test target instead of assuming a top-level `Tests` directory.
+The SwiftPM side asks the manifest rather than the directory tree: the lane
+reads `swift package dump-package` to decide whether a package has anything to
+build and whether it has a test target. `spm/TargetPath` keeps its tests in
+`Code/Tests`, and they run on both sides.
 
 ### C2. A lane fails on a note no fixture expects — done
 
@@ -231,16 +233,15 @@ has generated it all along. The lane names the build system that implements the
 rule rather than inheriting whichever the runner ships, which is why that rule
 has a package of its own.
 
-### C4. Generated Starlark lint does not gate CI
+### C4. Generated Starlark lint gates CI — done
 
-Both `Check Generated Starlark` steps run `bazel run //:lint` with
-`continue-on-error: true`, so a new lint warning is reported and ignored. Move
-this to a cheap lane that does only `generate` then `lint` for each fixture —
-no build and no test — and remove the duplicate checks from the expensive
-integration lanes. The first gate blocks lint warnings but continues to allow
-format-only `# reformat` reports.
+`GeneratedStarlarkLint` generates every local fixture and runs two commands in
+each workspace, with no build and no test. `//:lint` reports every buildifier
+warning and does not fail the job. `//:lint-ci` fails it on the reviewed
+categories that change behaviour or leave a workspace unloadable. Format-only
+`# reformat` reports stay visible and do not fail.
 
-### C5. Decide whether generation can opt into formatting
+### C5. Not planned: generation opting into formatting
 
 The current contract is explicit formatting with `bazel run //:format`;
 generation itself does not format. If generation gets an opt-in, decide between
@@ -251,3 +252,5 @@ verifies its checksum, rather than using an arbitrary executable from `PATH`.
 Adopting formatted generated output requires re-recording every generated
 workspace snapshot. Only after that can the lint gate reject format differences
 as well as lint warnings.
+
+Issue #48 proposed the opt-in and was closed as not planned.
