@@ -1,8 +1,11 @@
 extension BazelDep {
     /// https://github.com/bazelbuild/rules_cc
     enum RulesCC: String {
-        static let latest: RulesCC = .v0_2_25
+        static let latest: RulesCC = .v0_2_28
 
+        case v0_2_28 = "0.2.28"
+        case v0_2_27 = "0.2.27"
+        case v0_2_26 = "0.2.26"
         case v0_2_25 = "0.2.25"
         case v0_2_22 = "0.2.22"
         case v0_2_21 = "0.2.21"

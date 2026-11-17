@@ -107,10 +107,9 @@ extension CodeBuilder {
             .sorted()
             .map(\.statemenet)
 
-        /// `load`s are one block, and so is a run of `bazel_dep`: buildifier
-        /// keeps those compact and puts a blank line between everything else
-        /// at the top level. A generated file written any other way is a
-        /// formatting report on every run.
+        /// `load`s are one block, as are `bazel_dep`s and their overrides.
+        /// Buildifier keeps these compact and separates other top-level
+        /// statements with a blank line, so generation follows the same layout.
         let loaded = loadsStatement
             .map(\.text)
             .joined(separator: "\n")
@@ -136,6 +135,7 @@ extension CodeBuilder {
             case .call(let first)? = first,
             case .call(let second) = second
         else { return false }
-        return first.name == "bazel_dep" && second.name == "bazel_dep"
+        return first.name == "bazel_dep"
+            && (second.name == "bazel_dep" || second.name == "single_version_override")
     }
 }
