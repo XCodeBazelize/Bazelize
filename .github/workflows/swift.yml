@@ -297,7 +297,6 @@ jobs:
         run: |
           bazel test \
             --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="$SIMULATOR_DEVICE" \
-            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version="$SIMULATOR_VERSION" \
             --local_test_jobs=1 \
             --test_timeout=900 \
             --test_output=errors \
@@ -1067,7 +1066,6 @@ jobs:
         run: |
           bazel test \
             --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="$SIMULATOR_DEVICE" \
-            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_version="$SIMULATOR_VERSION" \
             --local_test_jobs=1 \
             --test_timeout=900 \
             --test_output=errors \

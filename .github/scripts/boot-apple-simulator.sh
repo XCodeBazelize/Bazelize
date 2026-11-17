@@ -12,7 +12,6 @@ fresh=${3:-}
 import json
 import subprocess
 import sys
-from collections import Counter
 
 
 def simctl(*arguments):
@@ -31,14 +30,45 @@ runtimes = [
     for runtime in simctl("runtimes")["runtimes"]
     if runtime.get("platform") == platform and runtime.get("isAvailable")
 ]
-# The default Bazel runner identifies runtimes by version, not their identifier.
-# Device-specific runtimes can share a version while supporting different devices.
-versions = Counter(runtime["version"] for runtime in runtimes)
-runtimes = [runtime for runtime in runtimes if versions[runtime["version"]] == 1]
 if not runtimes:
-    raise RuntimeError(f"no uniquely addressable {platform} Simulator runtime")
-runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
-runtime = runtimes[-1]
+    raise RuntimeError(f"no available {platform} Simulator runtime")
+
+
+def runtime_of_selected_sdk():
+    # The rules_apple iOS runner is told a device type and finds the runtime
+    # itself: the one the selected Xcode pairs with its SDK. This mirrors that
+    # choice, so the device type named to the runner is one its runtime
+    # supports. A version cannot name the runtime instead: two runtimes can
+    # share a version and support different devices.
+    sdk = subprocess.run(
+        ["xcrun", "--sdk", "iphoneos", "--show-sdk-version"],
+        capture_output=True,
+        check=True,
+        text=True,
+    ).stdout.strip()
+    matches = subprocess.run(
+        ["xcrun", "simctl", "runtime", "match", "list", "-j"],
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    build = json.loads(matches.stdout)[f"iphoneos{sdk}"]["chosenRuntimeBuild"]
+    for runtime in runtimes:
+        if runtime["buildversion"] == build:
+            return runtime
+    # The paired build is a preference and may not be installed; the runner
+    # then takes the first runtime of the SDK version.
+    for runtime in runtimes:
+        if runtime["version"] == sdk or runtime["version"].startswith(f"{sdk}."):
+            return runtime
+    raise RuntimeError(f"no Simulator runtime for the iphoneos{sdk} SDK")
+
+
+if platform == "iOS":
+    runtime = runtime_of_selected_sdk()
+else:
+    runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
+    runtime = runtimes[-1]
 
 devices = [
     device
@@ -79,7 +109,6 @@ PY
 
 echo "Simulator: $device, $runtime_platform $version ($udid)"
 printf 'SIMULATOR_DEVICE=%s\n' "$device" >> "${GITHUB_ENV:-/dev/null}"
-printf 'SIMULATOR_VERSION=%s\n' "$version" >> "${GITHUB_ENV:-/dev/null}"
 printf 'SIMULATOR_UDID=%s\n' "$udid" >> "${GITHUB_ENV:-/dev/null}"
 xcrun simctl boot "$udid" || true
 xcrun simctl bootstatus "$udid"

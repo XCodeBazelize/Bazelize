@@ -198,10 +198,11 @@ Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
 
-Simulator CI selects the newest available runtime with a unique version number.
-Bazel's default runner addresses runtimes by version; device-specific runtimes
-can share that version while supporting different devices, making the selection
-ambiguous. The CI boot helper excludes those versions before choosing a device.
+iOS Simulator tests name a device type and no OS version. The `rules_apple`
+runner then runs them on the runtime the selected Xcode pairs with its SDK, and
+the CI boot helper picks its device from that same runtime. A version is not
+passed because it cannot name a runtime: device-specific runtimes share a
+version with the general one while supporting different devices.
 
 CI also compares controlled bundles against their native builds. The
 `TargetResource` fixture compares SwiftPM's library and test resource bundles
