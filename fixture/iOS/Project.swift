@@ -107,6 +107,18 @@ let project = Project(
                 .target(name: "Static"),
             ],
             headers: .headers(public: ["Framework1/**/*.h"])),
+        /// Swift and Objective-C in one target, with a binary framework's type
+        /// in the Swift half's Objective-C interface: the Objective-C half
+        /// imports `Mixed-Swift.h`, and that header imports the framework's
+        /// module.
+        target(
+            "Mixed",
+            product: .framework,
+            sources: ["Mixed/**/*.swift", "Mixed/**/*.m"],
+            dependencies: [
+                .xcframework(path: "SVProgressHUD.xcframework"),
+            ],
+            headers: .headers(public: ["Mixed/**/*.h"])),
         target(
             "Example",
             product: .app,
@@ -114,6 +126,7 @@ let project = Project(
             dependencies: [
                 .target(name: "Framework1"),
                 .target(name: "Framework3"),
+                .target(name: "Mixed"),
                 .target(name: "Static2"),
                 .target(name: "StaticFramework1"),
                 .package(product: "AnyCodable"),

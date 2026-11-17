@@ -57,38 +57,34 @@ final class PluginSwift: PluginBuiltin {
         ]
     }
 
-    /// rules_swift 4.2.2 adds framework Modules directories to -I when exporting
-    /// generated Objective-C headers. Keep their module home at the framework
-    /// root; ordinary Clang module maps still need their include directories.
+    /// rules_swift 4.2.x and 4.3.0 add the directory of every dependency's
+    /// module map to `-I` when a generated Objective-C header is exported. For
+    /// a framework that directory is `X.framework/Modules`: Clang finds the
+    /// module there a second time, with another home, and rejects it
+    /// (rules_swift#2004).
+    ///
+    /// This is the upstream fix, rules_swift#2015, applied to 4.2.2. No release
+    /// has it yet; the patch goes when the pinned release does. The iOS
+    /// fixture's `Mixed` target builds only with it.
     private static let frameworkModuleMapsPatch = """
     --- a/swift/internal/compiling.bzl
     +++ b/swift/internal/compiling.bzl
-    @@ -1639,17 +1639,23 @@
-         # Generated headers can import Clang modules whose maps are carried only by
-         # SwiftInfo. Add maps from public direct dependencies as transitive
-         # compilation inputs.
-    -    module_maps = depset([
-    -        module.clang.module_map
-    +    clang_modules = [
-    +        module
-             for swift_info in swift_infos
-             for module in swift_info.direct_modules
+    @@ -1646,10 +1646,18 @@
              if module.clang and type(module.clang.module_map) == "File"
-    -    ]).to_list()
-    -    if module_maps:
-    +    ]
-    +    if clang_modules:
+         ]).to_list()
+         if module_maps:
+    +        # Framework module maps are already discoverable through the dependency's
+    +        # framework search paths. Adding their directory as a header search path
+    +        # makes Clang also find them as non-framework modules, with a conflicting
+    +        # module directory. Keep the maps as inputs, but omit those include paths.
              compilation_contexts = compilation_contexts + [
                  cc_common.create_compilation_context(
-    -                headers = depset(module_maps),
+                     headers = depset(module_maps),
     -                includes = depset([module_map.dirname for module_map in module_maps]),
-    +                headers = depset([module.clang.module_map for module in clang_modules]),
-    +                # Frameworks are discovered through -F. Adding their Modules
-    +                # directory to -I changes Clang's module home and invalidates PCMs.
     +                includes = depset([
-    +                    module.clang.module_map.dirname
-    +                    for module in clang_modules
-    +                    if not module.is_framework
+    +                    module_map.dirname
+    +                    for module_map in module_maps
+    +                    if ".framework/Modules" not in module_map.path
     +                ]),
                  ),
              ]

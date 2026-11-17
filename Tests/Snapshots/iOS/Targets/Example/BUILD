@@ -87,6 +87,7 @@ swift_library(
         "//Prebuilt:SVProgressHUD",
         "//Targets/Framework1:Framework1_library",
         "//Targets/Framework3:Framework3_library",
+        "//Targets/Mixed:Mixed_library",
         "//Targets/Static2:Static2_library",
         "//Targets/StaticFramework1:StaticFramework1_library",
     ],
@@ -182,6 +183,7 @@ ios_application(
         "//Targets/Framework1:Framework1",
         "//Targets/Framework2:Framework2",
         "//Targets/Framework3:Framework3",
+        "//Targets/Mixed:Mixed",
     ],
     infoplists = [
         ":plist_file",
@@ -202,6 +204,7 @@ ios_application(
         "//Prebuilt:SVProgressHUD",
         "//Targets/Framework1",
         "//Targets/Framework3",
+        "//Targets/Mixed",
         "//Targets/Static2",
         "//Targets/StaticFramework1",
     ],
