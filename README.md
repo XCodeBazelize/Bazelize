@@ -16,6 +16,11 @@ mint install XCodeBazelize/Bazelize
 bazelize --input YOUR.xcodeproj --output App
 ```
 
+The `.xcodeproj` input can contain either the traditional `project.pbxproj` or
+Xcode 27.2's JSON-based `project.xcproj`. Pass the enclosing `.xcodeproj`
+directory to both `generate` and `dump`. CI builds and tests both formats,
+using Xcode 27.2's native converter to prepare the JSON project.
+
 Or a Swift package — the `Package.swift`, or the directory holding one:
 
 ```sh
@@ -192,6 +197,11 @@ Maccy, whose revision runs on the `xcode-27` image because it needs that SDK.
 Exact revisions and measured exclusions live beside the matrix in
 `.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
 change rather than an update from an upstream default branch.
+
+Simulator CI selects the newest available runtime with a unique version number.
+Bazel's default runner addresses runtimes by version; device-specific runtimes
+can share that version while supporting different devices, making the selection
+ambiguous. The CI boot helper excludes those versions before choosing a device.
 
 CI also compares controlled bundles against their native builds. The
 `TargetResource` fixture compares SwiftPM's library and test resource bundles
