@@ -26,7 +26,7 @@ build: format
 
 .PHONY: test
 test:
-	swift test -v 2>&1 | xcpretty
+	swift test
 
 .PHONY: bazelize
 bazelize: install

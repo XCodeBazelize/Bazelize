@@ -171,7 +171,7 @@ struct RoadmapTreeBuilderTests {
         #expect(ignore.contains(".build"))
     }
 
-    @Test
+    @Test(.corpus("IceCubesApp/IceCubesApp.xcodeproj"))
     func applicationEmbedsExtensionsInsteadOfLinkingThemAsRegularDeps() async throws {
         let current = Path(#filePath)
             .parent()
@@ -198,7 +198,7 @@ struct RoadmapTreeBuilderTests {
         #expect(!appBuild.contains("//Targets/IceCubesShareExtension:IceCubesShareExtension_library"))
     }
 
-    @Test
+    @Test(.corpus("iina/IINA.xcodeproj"))
     func iinaTargetsGenerateSanitizedModuleNamesAndMacAppRules() async throws {
         let current = Path(#filePath)
             .parent()
