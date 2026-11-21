@@ -23,5 +23,51 @@ extension Xcode.BuildSettings {
         public var generatesSwiftSymbols: Bool {
             settings["ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS"] == "YES"
         }
+
+        /// `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`: the extra icons the
+        /// user can switch to. `nil` when the target does not state the setting;
+        /// an explicitly empty value is `[]`.
+        ///
+        /// Entries are whitespace-separated and may be quoted, because an icon
+        /// name can hold a space (`"Dark Mode"`).
+        public var alternateAppIconNames: [String]? {
+            guard let value = settings["ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES"] else { return nil }
+            return Self.tokens(value)
+        }
+
+        /// `ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS`: `true` for `YES`,
+        /// `false` for `NO`, `nil` when the target does not say.
+        public var includeAllAppIconAssets: Bool? {
+            switch settings["ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS"] {
+            case "YES": true
+            case "NO": false
+            default: nil
+            }
+        }
+
+        /// Whitespace-separated, quote-aware, without Xcode's `$(inherited)` marker.
+        private static func tokens(_ value: String) -> [String] {
+            var result: [String] = []
+            var current = ""
+            var quote: Character?
+            var started = false
+            for character in value {
+                if let open = quote {
+                    if character == open { quote = nil } else { current.append(character) }
+                } else if character == "\"" || character == "'" {
+                    quote = character
+                    started = true
+                } else if character.isWhitespace {
+                    if started { result.append(current) }
+                    current = ""
+                    started = false
+                } else {
+                    current.append(character)
+                    started = true
+                }
+            }
+            if started { result.append(current) }
+            return result.filter { !$0.isEmpty && $0 != "$(inherited)" }
+        }
     }
 }

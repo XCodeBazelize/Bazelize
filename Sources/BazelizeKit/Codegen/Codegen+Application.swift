@@ -69,11 +69,13 @@ extension Target {
 
     private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
         let project = kit.project
+        let icons = appIconSelection(project: project)
         builder.load(.ios_application)
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
-                app_icons: appIcons(project: kit.project),
+                app_icons: icons?.appIcons,
+                primary_app_icon: icons?.primaryAppIcon,
                 bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
@@ -159,21 +161,4 @@ extension Target {
                 },
                 visibility: .public))
     }
-
-    /// `app_icons` globs would fail analysis on a catalog without the icon set
-    /// (`glob` disallows empty matches), and targets commonly carry several
-    /// catalogs — SwiftUI previews add one.
-    func appIcons(project: Project?) -> Starlark.Value? {
-        guard let project, let iconName = prefer(\.assetCatalog.appIconName) else { return nil }
-
-        let workspace = Path(project.workspacePath)
-        let iconGlobs = assets.compactMap { asset -> String? in
-            let relative = asset.delete(prefix: "Sources/") ?? asset
-            guard (workspace + relative + "\(iconName).appiconset").exists else { return nil }
-            return "\(asset)/\(iconName).appiconset/**"
-        }
-
-        return iconGlobs.isEmpty ? nil : Starlark.glob(iconGlobs)
-    }
-
 }
