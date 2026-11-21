@@ -23,7 +23,7 @@ struct ProjectLoaderTests {
         #expect(merged.last?.name == "Local3")
     }
 
-    @Test
+    @Test(.corpus("IceCubesApp/IceCubesApp.xcodeproj"))
     func synchronizedExtensionTargetIncludesExpectedSourceFiles() throws {
         let current = Path(#filePath)
             .parent()
@@ -38,7 +38,7 @@ struct ProjectLoaderTests {
         #expect(!target.files.sources.isEmpty)
     }
 
-    @Test
+    @Test(.corpus("iina/IINA.xcodeproj"))
     func resolvesXCConfigSettingsForIINACommandLineTarget() throws {
         let current = Path(#filePath)
             .parent()
@@ -53,7 +53,7 @@ struct ProjectLoaderTests {
         #expect(target.prefer(\.platform.macOS) == "10.15")
     }
 
-    @Test
+    @Test(.corpus("iina/IINA.xcodeproj"))
     func classifiesIINAFrameworkDependencies() throws {
         let current = Path(#filePath)
             .parent()
