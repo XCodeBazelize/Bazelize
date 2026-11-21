@@ -102,6 +102,37 @@ struct BuildSettingsTests {
     }
 
     @Test
+    func assetCatalogReadsAlternateIconsAndIncludeAllFlag() {
+        let settings = Xcode.BuildSettings(
+            name: "Release",
+            setting: [
+                "EXTRA_ICON": "Dark Mode",
+                "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES":
+                    "$(inherited) Pride \"$(EXTRA_ICON)\" 'Tinted Icon' Plain",
+                "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "YES",
+            ])
+
+        #expect(settings.assetCatalog.alternateAppIconNames == ["Pride", "Dark Mode", "Tinted Icon", "Plain"])
+        #expect(settings.assetCatalog.includeAllAppIconAssets == true)
+    }
+
+    @Test
+    func assetCatalogDistinguishesAbsentFromExplicitlyDisabledIcons() {
+        let absent = Xcode.BuildSettings(name: "Release", setting: [:])
+        #expect(absent.assetCatalog.alternateAppIconNames == nil)
+        #expect(absent.assetCatalog.includeAllAppIconAssets == nil)
+
+        let disabled = Xcode.BuildSettings(
+            name: "Release",
+            setting: [
+                "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES": "",
+                "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "NO",
+            ])
+        #expect(disabled.assetCatalog.alternateAppIconNames == [])
+        #expect(disabled.assetCatalog.includeAllAppIconAssets == false)
+    }
+
+    @Test
     func generatedPlistPreservesExtensionDisplayName() throws {
         let settings = Xcode.BuildSettings(
             name: "Release",

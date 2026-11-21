@@ -188,6 +188,20 @@ configuration the target is built in — the project's own SDK is only the
 fallback for a build that carries no Apple platform constraint. CI diffs the
 result against the file Xcode writes into `DerivedSources`.
 
+### Application icons
+
+For iOS applications, `ASSETCATALOG_COMPILER_APPICON_NAME` selects the primary
+Icon Composer `.icon` bundle or legacy `.appiconset`. Explicit alternate icon
+names and `ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS=YES` select the
+target's alternate icons, including bundles in synchronized folders. A legacy
+set with the primary's name remains an input when supplied for older systems.
+
+The generated workspace patches its pinned rules_apple 5.4.0 to compile mixed
+Icon Composer and legacy inputs for deployment targets below 26. The actool
+wrapper materializes `.icon` files inside the consuming action, because a copy
+in a preceding action becomes symlinks again in the consumer's sandbox.
+actool generates the primary and alternate declarations in the final Info.plist.
+
 ### Integration corpus
 
 CI regenerates and builds pinned revisions of six public Swift packages:

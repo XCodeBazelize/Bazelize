@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Starlark
 
 // MARK: - PluginApple
 
@@ -18,6 +19,14 @@ final class PluginApple: PluginBuiltin {
             name: "rules_apple",
             version: dep.rawValue,
             repo_name: "build_bazel_rules_apple")
+        if dep == .v5_4_0 {
+            builder.call(.init("single_version_override") {
+                "module_name" => "rules_apple"
+                "version" => dep.rawValue
+                "patches" => ["//\(Self.mixedAppIconsPatchDirectory):mixed_app_icons.patch"]
+                "patch_strip" => 1
+            })
+        }
         builder.custom("""
         register_toolchains(
             "//:tvos_simulator_test_toolchain",
@@ -25,6 +34,18 @@ final class PluginApple: PluginBuiltin {
             "//:watchos_simulator_test_toolchain",
         )
         """)
+    }
+
+    override var custom: [PluginBuiltin.Custom]? {
+        guard dep == .v5_4_0 else { return nil }
+        return [
+            .init(
+                path: "\(Self.mixedAppIconsPatchDirectory)/BUILD",
+                content: "exports_files([\"mixed_app_icons.patch\"])\n"),
+            .init(
+                path: "\(Self.mixedAppIconsPatchDirectory)/mixed_app_icons.patch",
+                content: Self.mixedAppIconsPatch),
+        ]
     }
 
     /// Simulator tests compile for an Apple target platform but execute
