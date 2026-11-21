@@ -22,7 +22,6 @@ struct GeneratedWorkspaceSnapshotTests {
             snapshot: "iOS",
             files: [
                 "BUILD",
-                "MODULE.bazel",
                 "config.bazelrc",
                 "Prebuilt/BUILD",
                 "Targets/Example/BUILD",
@@ -40,7 +39,6 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "spm/TargetResource",
             snapshot: "TargetResource",
             files: [
-                "MODULE.bazel",
                 "Packages/TargetResource/BUILD"
             ])
     }
@@ -51,7 +49,6 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "spm/Platform",
             snapshot: "Platform",
             files: [
-                "MODULE.bazel",
                 "Packages/BUILD",
                 "Packages/Platform/BUILD",
                 "tools/apple_simulator_test.bzl",
@@ -67,7 +64,6 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "spm/BuildToolPlugin",
             snapshot: "BuildToolPlugin",
             files: [
-                "MODULE.bazel",
                 "Packages/BUILD",
                 "Packages/BuildToolPlugin/BUILD",
             ])
@@ -81,7 +77,6 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "spm/PrebuildPlugin",
             snapshot: "PrebuildPlugin",
             files: [
-                "MODULE.bazel",
                 "Packages/BUILD",
                 "Packages/PrebuildPlugin/BUILD",
             ])
@@ -96,7 +91,6 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "spm/CommandPlugin",
             snapshot: "CommandPlugin",
             files: [
-                "MODULE.bazel",
                 "Packages/BUILD",
                 "Packages/CommandPlugin/BUILD",
             ])

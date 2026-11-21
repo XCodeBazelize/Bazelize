@@ -101,10 +101,9 @@ extension Target {
     /// Resources another attribute of the same rule already carries: passing them
     /// twice makes rules_apple fail on a duplicated bundle path.
     ///
-    /// An Icon Composer `.icon` bundle is dropped for a different reason: `actool`
-    /// refuses one whose `icon.json` is a symlink, and every file a Bazel action
-    /// sees is a symlink. Leaving it in the resources also makes rules_apple reject
-    /// the `.appiconset` the same project still ships.
+    /// Selected Icon Composer bundles also belong to `app_icons`. The pinned
+    /// Apple rules materialize them inside the consuming actool action so their
+    /// `icon.json` and image files remain regular files in a Bazel sandbox.
     private static let ownedResourceExtensions: Set<String> = [
         "icon",
         "intentdefinition",
