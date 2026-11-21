@@ -221,14 +221,6 @@ jobs:
       - name: Generate Xcode project
         run: tuist generate --path fixture/iOS --no-open
 
-      - name: Convert Xcode project to JSON
-        if: matrix.format == 'xcproj'
-        working-directory: fixture/iOS
-        run: |
-          xcodebuild -project Example.xcodeproj -convert-project "Xcode Project"
-          test -f Example.xcodeproj/project.xcproj
-          test ! -e Example.xcodeproj/project.pbxproj
-
       # Every `bazel` in this job reads these: the disk cache holds what the
       # build produced, the repository cache what it downloaded. Without the
       # second one a runner fetches rules_apple and the rest again every time.
@@ -262,6 +254,25 @@ jobs:
           pwd
           chmod +x bazelize
 
+      # Both project formats describe one project, so both generate one
+      # workspace. The traditional file is still here before the conversion:
+      # what it generates is kept, to be compared with what the JSON file does.
+      - name: Generate From Traditional Project
+        if: matrix.format == 'xcproj'
+        working-directory: fixture/iOS
+        run: |
+          ../../bazelize --input Example.xcodeproj --output App
+          rsync -a --exclude .build App/ "$RUNNER_TEMP/generated-pbxproj/"
+          rm -rf App
+
+      - name: Convert Xcode project to JSON
+        if: matrix.format == 'xcproj'
+        working-directory: fixture/iOS
+        run: |
+          xcodebuild -project Example.xcodeproj -convert-project "Xcode Project"
+          test -f Example.xcodeproj/project.xcproj
+          test ! -e Example.xcodeproj/project.pbxproj
+
       # A plugin that did not run leaves the target missing the sources it
       # generates, and the compile error that follows names those sources rather
       # than the plugin. The run says so; the lane stops there.
@@ -270,6 +281,14 @@ jobs:
         run: |
           ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
+
+      # Files and symbolic links alike: a link is compared by where it points.
+      - name: Compare Generated Workspaces
+        if: matrix.format == 'xcproj'
+        working-directory: fixture/iOS
+        run: |
+          rsync -a --exclude .build App/ "$RUNNER_TEMP/generated-xcproj/"
+          git diff --no-index --exit-code "$RUNNER_TEMP/generated-pbxproj" "$RUNNER_TEMP/generated-xcproj"
 
       - name: Build Products
         working-directory: fixture/iOS/App
