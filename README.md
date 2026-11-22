@@ -133,10 +133,15 @@ Generated workspaces pin Bazel **9.2.0**, `rules_apple` **5.4.0**,
 The Apple rules use the versioned bundle layout for macOS frameworks.
 
 For `rules_swift` 4.2.2, generated workspaces include a source patch under
-`tools/rules_swift`, applied through `single_version_override`. It keeps framework
-module maps discoverable through `-F` without adding their `Modules/` directories
-to `-I`, so Objective-C consumers of generated Swift headers can import frameworks
-such as Sparkle. Non-framework Clang modules retain their include paths.
+`tools/rules_swift`, applied through `single_version_override`. It is the
+upstream fix [rules_swift#2015](https://github.com/bazelbuild/rules_swift/pull/2015),
+which no release carries yet (4.3.0 does not). It keeps framework module maps
+discoverable through `-F` without adding their `Modules/` directories to `-I`, so
+Objective-C consumers of generated Swift headers can import binary frameworks
+such as Sparkle or SVProgressHUD. Non-framework Clang modules retain their
+include paths. The iOS fixture's `Mixed` target is a Swift and Objective-C
+framework that fails to build without the patch; it is what tells a version bump
+whether the patch is still needed.
 
 ### Project Hierarchy
 
