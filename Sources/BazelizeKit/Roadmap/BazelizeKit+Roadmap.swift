@@ -34,9 +34,9 @@ extension Bazel {
             return notes
         }
 
-        /// A file the project declares and the disk does not have is left out
-        /// and named, never fatal: Xcode compiles what is there, and so does
-        /// the generated build.
+        /// A declared checkout input missing from disk is named and left out.
+        /// The loader retains its declaration for this note while omitting it
+        /// from the model's active build inputs.
         private func prepare(
             target: Target,
             project: Project,
@@ -258,7 +258,7 @@ extension Xcode.Target {
     /// either. What is left is what Xcode would have compiled or bundled.
     fileprivate var declaredRoadmapPaths: Set<String> {
         let phases = files.sources + files.headers + files.resources
-            + files.copyFiles + files.frameworks
+            + files.copyFiles + files.frameworks + files.missing
         let declared = phases
             /// A framework another target builds, and a framework the SDK
             /// ships, are both outside the checkout by definition — and so is

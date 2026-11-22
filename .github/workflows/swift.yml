@@ -393,6 +393,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+          xcodebuild \
+            -project Example.xcodeproj \
+            -scheme PerFileFlags \
+            -configuration Debug \
+            -sdk macosx \
+            -derivedDataPath "$RUNNER_TEMP/xcode" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          "$RUNNER_TEMP/xcode/Build/Products/Debug/PerFileFlags"
+
       - name: Build With Bazel
         run: |
           chmod +x bazelize
@@ -400,6 +410,7 @@ jobs:
           cd fixture/iOS/App
           bazel build //Targets/Example --config=Debug --ios_multi_cpus=sim_arm64
           bazel build //Targets/MacBundle --config=Debug
+          bazel run //Targets/PerFileFlags --config=Debug
           bundle=$(bazel cquery //Targets/MacBundle --config=Debug --output=files |
             grep 'MacBundle.zip$')
           mkdir -p "$RUNNER_TEMP/bazel"

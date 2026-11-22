@@ -5,42 +5,48 @@ import Testing
 @testable import Xcode
 
 struct RoadmapTreeBuilderTests {
-    /// A project that names a file the disk does not have still generates:
-    /// Xcode compiles what is there, so the rules are written without it and
-    /// the run says which file went missing.
-    @Test
-    func aFileTheProjectNamesAndTheDiskLacksIsReportedAndSkipped() async throws {
-        let current = Path(#filePath)
-            .parent()
-            .parent()
-            .parent()
-
-        let scratch = Path(NSTemporaryDirectory()) + UUID().uuidString
+    @Test(arguments: [false, true])
+    func missingInputsAreSeparatedUnderRealAndSymlinkRoots(linked: Bool) throws {
+        let scratch = Path(NSTemporaryDirectory()).realPath + UUID().uuidString
         defer { try? scratch.delete() }
-        try scratch.mkpath()
-        let project = scratch + "iOS"
-        try (current + "fixture/iOS").copy(project)
-        try (project + "Example/Test.swift").delete()
-
-        let output = scratch + "App"
-        let kit = try await Kit(project + "Example.xcodeproj", nil, outputPath: output)
-        try await kit.run()
-
-        #expect(kit.projectTips.contains { tip in
-            tip.contains("Example names Test.swift, which is not on disk")
-        })
-        /// A framework another target builds is not on disk either, and saying
-        /// so about one would make the report useless.
-        #expect(!kit.projectTips.contains { tip in
-            tip.contains("Framework1.framework")
-        })
-        #expect(!(output + "Targets/Example/Sources/Example/Test.swift").exists)
-        /// The target is still generated, with the sources that are there.
-        let build = try String(
-            contentsOfFile: (output + "Targets/Example/BUILD").string,
-            encoding: .utf8)
-        #expect(build.contains("Sources/Example/ExampleApp.swift"))
-        #expect(!build.contains("Sources/Example/Test.swift"))
+        let real = scratch + "real"
+        try (real + "Probe.xcodeproj").mkpath()
+        try (real + "Sources").mkpath()
+        try (real + "Sources/Present.swift").write("print(42)")
+        let json: [String: Any] = [
+            "default-configuration": "Debug", "configurations": ["Debug"],
+            "localizations": ["development": "en", "supported": ["en"]],
+            "packages": [],
+            "files": [
+                ["kind": "group", "path": "Sources", "children": [
+                    ["path": "Present.swift", "target-membership": ["Probe/compile-sources"]],
+                    ["path": "Missing.swift", "target-membership": ["Probe/compile-sources"]],
+                    ["path": "Missing.h", "target-membership": ["Probe/headers"]],
+                    ["path": "Missing.txt", "target-membership": ["Probe/resources"]],
+                ]],
+                ["kind": "group", "name": "Products", "children": [
+                    ["path": "<PRODUCTS>/Probe.app", "type": "wrapper.application", "id": "000000000000000000000120"],
+                ]],
+            ],
+            "targets": [["name": "Probe", "id": "000000000000000100000000", "product": "Products/Probe.app", "product-type": "application", "build-phases": ["compile-sources", "headers", "resources"]]],
+            "build-settings": ["SDKROOT": "macosx", "MACOSX_DEPLOYMENT_TARGET": "13.0"],
+        ]
+        try (real + "Probe.xcodeproj/project.xcproj").write(JSONSerialization.data(withJSONObject: json))
+        let root: Path
+        if linked {
+            root = scratch + "linked"
+            try FileManager.default.createSymbolicLink(atPath: root.string, withDestinationPath: real.string)
+        } else {
+            root = real
+        }
+        let project = try Xcode.Project.load(path: root + "Probe.xcodeproj", preferConfig: "Debug")
+        let target = try #require(project.targets.first)
+        #expect(target.srcs == ["Sources/Sources/Present.swift"])
+        #expect(target.headers.isEmpty)
+        #expect(target.resources.isEmpty)
+        #expect(Set(target.files.missing.compactMap(\.path)) == [
+            "Sources/Missing.swift", "Sources/Missing.h", "Sources/Missing.txt",
+        ])
     }
 
     @Test

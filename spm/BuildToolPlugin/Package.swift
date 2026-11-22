@@ -28,6 +28,7 @@ let package = Package(
             ],
             exclude: [
                 "tds",
+                "Excluded",
             ],
             resources: [
                 .copy("tds"),

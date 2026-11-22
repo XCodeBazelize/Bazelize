@@ -21,13 +21,11 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "fixture/iOS/Example.xcodeproj",
             snapshot: "iOS",
             files: [
-                "BUILD",
                 "config.bazelrc",
                 "Prebuilt/BUILD",
                 "Targets/Example/BUILD",
                 "Targets/MacBundle/BUILD",
                 "Targets/Framework1/BUILD",
-                "Targets/Static2/BUILD",
                 "Targets/StaticFramework1/BUILD",
                 "Packages/Local1/BUILD"
             ])
@@ -65,7 +63,6 @@ struct GeneratedWorkspaceSnapshotTests {
             snapshot: "BuildToolPlugin",
             files: [
                 "Packages/BUILD",
-                "Packages/BuildToolPlugin/BUILD",
             ])
     }
 

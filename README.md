@@ -182,6 +182,25 @@ each generated import once. `Targets/`, `Prebuilt/`, and `Packages/` are
 generator-owned and rebuilt as units, so rules that leave the input graph
 cannot remain part of `bazel build //...`.
 
+Declared checkout inputs missing from disk are named in generation notes and
+omitted from every generated input attribute. Resolving their nearest existing
+ancestor preserves the same relative path under a real or symlinked project root.
+
+### Per-file compiler flags
+
+C-family sources with `COMPILER_FLAGS` are grouped by their ordered arguments in
+private `objc_library` rules; the original public target still links the whole
+module and owns its published headers. ARC-only overrides use `non_arc_srcs`,
+including mixed Swift/Objective-C targets, so the remaining sources keep ARC.
+`fixture/iOS` includes a macOS `PerFileFlags` program that checks MRC destruction,
+default ARC, and a macro confined to one source at runtime.
+
+Swift per-file flags and general C-family overrides inside mixed Swift modules
+cannot be represented without changing the module. Generation names each file
+and omitted flag and still produces the workspace. Compiler flags containing
+unresolved build-setting references are also reported.
+
+
 ### Asset symbols
 
 `ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS` makes Xcode turn

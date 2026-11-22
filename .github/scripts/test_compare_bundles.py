@@ -1,6 +1,7 @@
 import json
 import os
 import plistlib
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -75,6 +76,19 @@ class CompareBundlesTests(unittest.TestCase):
         result = self.run_comparison()
 
         self.assertEqual(result.returncode, 0, result.stdout)
+
+    @unittest.skipUnless(shutil.which("plutil"), "OpenStep decoding needs plutil")
+    def test_compares_openstep_strings_by_localized_value(self):
+        reference = self.reference / "Localizable.strings"
+        generated = self.generated / "Localizable.strings"
+        reference.write_bytes(plistlib.dumps({"hello": "你好"}, fmt=plistlib.FMT_BINARY))
+        generated.write_text('"hello" = "你好";\n', encoding="utf-8")
+        equal = self.run_comparison()
+        self.assertEqual(equal.returncode, 0, equal.stdout)
+        generated.write_text('"hello" = "不同";\n', encoding="utf-8")
+        changed = self.run_comparison()
+        self.assertNotEqual(changed.returncode, 0)
+        self.assertIn("plist:Localizable.strings:/hello", changed.stdout)
 
     def test_ignores_asset_catalog_compiler_metadata(self):
         (self.reference / "Assets.car").write_bytes(b"reference")

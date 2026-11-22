@@ -1,5 +1,11 @@
 # TbCodeGenerater
 
+The tool reads `tds/OptParser.td` through `Bundle.module` on every invocation,
+including when the build tool plugin runs it. The manifest deliberately lists
+`tds` in both `exclude` and `resources`: the explicit resource declaration wins,
+as it does under SwiftPM. `Excluded/MustNotCompile.swift` is excluded without a
+resource declaration and must never be compiled.
+
 ## Not support
 
 * `OptionGroup`
