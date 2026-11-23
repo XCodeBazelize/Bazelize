@@ -63,13 +63,11 @@ extension BazelizeConfiguration {
         disk: String?, repository: String?, remote: String?, uploadLocalResults: Bool?) throws
         -> Self
     {
-        let overrides = try Cache(
-            disk: disk, repository: repository, remote: remote, uploadLocalResults: uploadLocalResults)
-        return Self(schema: schema, buildifier: buildifier, cache: try Cache(
-            disk: overrides.disk ?? cache.disk,
-            repository: overrides.repository ?? cache.repository,
-            remote: overrides.remote ?? cache.remote,
-            uploadLocalResults: overrides.uploadLocalResults ?? cache.uploadLocalResults))
+        Self(schema: schema, buildifier: buildifier, cache: try Cache(
+            disk: disk ?? cache.disk,
+            repository: repository ?? cache.repository,
+            remote: remote ?? cache.remote,
+            uploadLocalResults: uploadLocalResults ?? cache.uploadLocalResults))
     }
 }
 
