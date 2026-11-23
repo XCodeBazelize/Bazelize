@@ -68,8 +68,8 @@ alias 或 `swift_library_group`，也沒有 note 說 SwiftPM 原本要求的是 
 
 ### A6. 先不修：設定檔不能選 target，也不能關閉生成的功能
 
-v1 `bazelize.yaml` schema 只有 `schema` 與 buildifier release。必須排除某個 target
-的人，目前只能 fork input project 或 generator。
+v1 `bazelize.yaml` schema 可設定 buildifier release 與 cache 預設值。必須排除某個
+target 的人，目前只能 fork input project 或 generator。
 
 保守的 target-selection 契約是精確 target 名稱；若保留的 target 依賴被排除者就報錯。
 只有生成 surface 確實造成成本或不相容時才加入 feature switch，key 應描述使用者看得見

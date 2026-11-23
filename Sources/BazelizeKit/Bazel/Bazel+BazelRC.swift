@@ -8,6 +8,8 @@
 import Foundation
 import PathKit
 
+// MARK: - Bazel.BazelRC
+
 extension Bazel {
     /// [config](https://bazel.build/docs/configurable-attributes)
     /// [.bazelrc](https://bazel.build/run/bazelrc)
@@ -59,7 +61,8 @@ extension Bazel {
         /// default, where a back-port the graph still reaches is unavailable.
         private static func minimumOSFlags(
             targets: [Target],
-            packages: [String: String]) -> [String]
+            packages: [String: String])
+            -> [String]
         {
             let platforms: [(flag: String, platform: String, keyPath: KeyPath<BuildSettings, String?>)] = [
                 ("ios_minimum_os", "ios", \.platform.iOS),
@@ -91,6 +94,8 @@ extension Bazel {
     }
 }
 
+// MARK: - Bazel.RootRC
+
 extension Bazel {
     /// /.bazelrc
     ///
@@ -104,7 +109,9 @@ extension Bazel {
             "import %workspace%/config.bazelrc",
             "import %workspace%/traits.bazelrc",
             "import %workspace%/languages.bazelrc",
+            "import %workspace%/cache.bazelrc",
         ]
+        static let userImport = "try-import %workspace%/user.bazelrc"
 
         let path: Path
 
@@ -112,17 +119,23 @@ extension Bazel {
             path = root + ".bazelrc"
         }
 
-        /// Creates `.bazelrc` when missing and otherwise appends each import
-        /// once, because the file may be hand-written and carry unrelated
-        /// flags.
+        /// Keeps project-owned lines, normalizes owned imports once, and loads
+        /// optional user overrides after all generated settings.
         func ensureImport() throws {
             let existing = (try? String(contentsOfFile: path.string, encoding: .utf8)) ?? ""
             let lines = existing.components(separatedBy: .newlines)
-            let missing = Self.importLines.filter { !lines.contains($0) }
-            guard !missing.isEmpty else { return }
-
-            let separator = existing.hasSuffix("\n") || existing.isEmpty ? "" : "\n"
-            try path.write(existing + separator + missing.joined(separator: "\n") + "\n")
+            let generated = Set(Self.importLines)
+            var imported: Set<String> = []
+            let project = lines.filter { line in
+                let statement = line.trimmingCharacters(in: .whitespaces)
+                if statement == Self.userImport { return false }
+                return !generated.contains(statement) || imported.insert(statement).inserted
+            }.joined(separator: "\n")
+            let missing = Self.importLines.filter { !imported.contains($0) }
+            let imports = (missing + [Self.userImport]).joined(separator: "\n")
+            let separator = project.hasSuffix("\n") || project.isEmpty ? "" : "\n"
+            let updated = project + separator + imports + "\n"
+            if updated != existing { try path.write(updated) }
         }
     }
 }

@@ -3,6 +3,8 @@ import PathKit
 import Testing
 @testable import BazelizeKit
 
+// MARK: - BazelizeConfigurationTests
+
 struct BazelizeConfigurationTests {
     @Test
     func usesCompiledDefaultsWhenNoConfigurationExists() throws {
@@ -179,10 +181,76 @@ struct BazelizeConfigurationTests {
         #expect(try existing.read() == "keep me\n")
     }
 
+    @Test
+    func cachePathsFollowTheirConfigurationSourceAndCLIOverridesFields() throws {
+        let fixture = CacheFixture(root: try scratch())
+        defer { try? fixture.root.delete() }
+        try fixture.directory.mkpath()
+        try fixture.configuration.write("""
+        schema: 1
+        buildifier:
+          version: "10.1.0"
+        cache:
+          disk: "cache with spaces"
+          repository: downloads
+          remote: https://cache.example.test
+          upload-local-results: true
+        """)
+        let yaml = try BazelizeConfiguration.load(explicitPath: fixture.configuration, inputPath: fixture.root)
+        #expect(yaml.cache.disk == fixture.disk.absolute().string)
+        #expect(yaml.cache.repository == fixture.repository.absolute().string)
+        let overridden = try yaml.overridingCache(
+            disk: "cli cache", repository: nil, remote: "", uploadLocalResults: false)
+        #expect(overridden.cache.disk == (Path.current + "cli cache").absolute().string)
+        #expect(overridden.cache.repository == yaml.cache.repository)
+        #expect(overridden.cache.remote == "")
+        #expect(overridden.cache.uploadLocalResults == false)
+    }
+
+    @Test
+    func cacheRejectsUnknownKeysAndInvalidEndpointsWithoutEchoingCredentials() throws {
+        let fixture = CacheFixture(root: try scratch())
+        defer { try? fixture.root.delete() }
+        try fixture.directory.mkpath()
+        for entry in [
+            "remtoe: https://cache.example.test",
+            "remote: https://user:secret@cache.example.test",
+            "remote: not-a-url",
+        ] {
+            try fixture.configuration.write("schema: 1\nbuildifier:\n  version: \"10.1.0\"\ncache:\n  \(entry)\n")
+            do {
+                _ = try BazelizeConfiguration.load(explicitPath: fixture.configuration, inputPath: fixture.root)
+                Issue.record("Expected invalid cache configuration to fail")
+            } catch {
+                #expect(!error.localizedDescription.contains("secret"))
+            }
+        }
+    }
+
+    @Test
+    func cacheRejectsRCStatementInjection() throws {
+        #expect(throws: (any Error).self) {
+            try BazelizeConfiguration.default.overridingCache(
+                disk: "/tmp/cache\nbuild --remote_cache=https://wrong.example.test",
+                repository: nil, remote: nil, uploadLocalResults: nil)
+        }
+    }
+
     private func scratch() throws -> Path {
         let root = Path(NSTemporaryDirectory()) + "bazelize-config-\(UUID().uuidString)"
         try root.mkpath()
         try (root + "Package.swift").write("// swift-tools-version: 6.0\n")
         return root
     }
+}
+
+// MARK: - CacheFixture
+
+private struct CacheFixture {
+    let root: Path
+
+    var directory: Path { root + "config" }
+    var configuration: Path { directory + "cache.yaml" }
+    var disk: Path { directory + "cache with spaces" }
+    var repository: Path { directory + "downloads" }
 }
