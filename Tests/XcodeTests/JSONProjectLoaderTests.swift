@@ -44,6 +44,23 @@ struct JSONProjectLoaderTests {
         #expect(legacy.compilerFlags == "-fno-objc-arc")
     }
 
+    @Test
+    func sdkFrameworkPathsLinkByFrameworkName() throws {
+        let path = "<DEVELOPER>/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework"
+        let root = try fixture()
+        defer { try? root.delete() }
+        var model = try #require(JSONSerialization.jsonObject(with: Data(projectJSON.utf8)) as? [String: Any])
+        var files = try #require(model["files"] as? [[String: Any]])
+        files.append(["path": path, "target-membership": ["Probe/frameworks"]])
+        model["files"] = files
+        try (root + "Project.xcodeproj/project.xcproj").write(
+            String(decoding: JSONSerialization.data(withJSONObject: model), as: UTF8.self))
+
+        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
+        let target = try #require(project.targets.first { $0.name == "Probe" })
+        #expect(target.dependencies.sdkFrameworks == ["Foundation"])
+    }
+
     private func fixture() throws -> Path {
         let root = Path(NSTemporaryDirectory()) + UUID().uuidString
         try (root + "Project.xcodeproj").mkpath()

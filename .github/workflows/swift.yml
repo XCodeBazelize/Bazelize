@@ -72,6 +72,9 @@ jobs:
     - name: Test bundle comparison
       run: python3 .github/scripts/test_compare_bundles.py
 
+    - name: Test generated workspace comparison
+      run: python3 .github/scripts/test_compare_generated_workspaces.py
+
     - name: Build debug products
       run: make build
 
@@ -136,9 +139,7 @@ jobs:
         if: matrix.format == 'xcproj'
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --input Example.xcodeproj --output App
-          rsync -a --exclude .build App/ "$RUNNER_TEMP/generated-pbxproj/"
-          rm -rf App
+          ../../bazelize --input Example.xcodeproj --output App-pbxproj
 
       - name: Convert Xcode project to JSON
         if: matrix.format == 'xcproj'
@@ -158,21 +159,24 @@ jobs:
           ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
-      - name: Check Generated Starlark
-        working-directory: fixture/iOS/App
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
-
-      # Files and symbolic links alike: a link is compared by where it points.
+      # Workspace-local absolute links are relocated; external links retain their destinations.
       - name: Compare Generated Workspaces
         if: matrix.format == 'xcproj'
         working-directory: fixture/iOS
         run: |
-          rsync -a --exclude .build App/ "$RUNNER_TEMP/generated-xcproj/"
-          git diff --no-index --exit-code "$RUNNER_TEMP/generated-pbxproj" "$RUNNER_TEMP/generated-xcproj"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/compare-generated-workspaces.py" App-pbxproj App
+
+      - name: Check Generated Starlark
+        working-directory: fixture/iOS/App
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
 
       - name: Build Products
         working-directory: fixture/iOS/App
         run: bazel build //Targets/Example //Targets/MacBundle
+
+      - name: Run Per-File Flag Probe
+        working-directory: fixture/iOS/App
+        run: bazel run //Targets/PerFileFlags --config=Debug
 
       - name: Copy IPA
         working-directory: fixture/iOS/App

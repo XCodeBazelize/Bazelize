@@ -20,6 +20,8 @@ The `.xcodeproj` input can contain either the traditional `project.pbxproj` or
 Xcode 27.2's JSON-based `project.xcproj`. Pass the enclosing `.xcodeproj`
 directory to both `generate` and `dump`. CI builds and tests both formats,
 using Xcode 27.2's native converter to prepare the JSON project.
+SDK frameworks link by their framework name in either format, including
+SDK-relative references whose display names Xcode's JSON converter omits.
 
 Or a Swift package — the `Package.swift`, or the directory holding one:
 
@@ -235,6 +237,12 @@ jobs execute iOS, tvOS, and watchOS Simulator tests and compile visionOS Simulat
 and device bundles. Compile-only jobs do not claim runtime execution. Generated
 Starlark is checked in the workspaces these jobs already generated, without
 resolving the entire fixture graph again in a separate lint job.
+
+The Xcode-format parity check generates independent workspace roots and preserves
+both roots. It compares all generated files and executable bits, excluding only
+SwiftPM `.build` state. Absolute links into each workspace are relocated to one
+comparison root; external link destinations and link/file types remain distinct.
+Both formats also execute the per-file compiler-flag probe.
 
 The external corpus is eight applications and nine Swift packages at pinned
 revisions. It runs only through the **Compatibility** workflow's **Run workflow**
