@@ -39,12 +39,12 @@ on:
 permissions:
   contents: read
 
-# One run at a time per branch or pull request, never per repository: a shared
-# group let any other branch's push cancel a run that was proving a change, so
-# "CI passed" was a question of what else was pushed that hour.
+# Share hosted macOS capacity with Compatibility, one complete validation at a
+# time. Keep pending runs rather than replacing another PR's queued checks.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: macos-validation
+  cancel-in-progress: false
+  queue: max
 
 jobs:
   test:
@@ -371,6 +371,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         include:
           - name: ArtifactBundle
