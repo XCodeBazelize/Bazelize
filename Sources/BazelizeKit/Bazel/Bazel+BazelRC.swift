@@ -110,8 +110,8 @@ extension Bazel {
             "import %workspace%/traits.bazelrc",
             "import %workspace%/languages.bazelrc",
             "import %workspace%/cache.bazelrc",
-            "try-import %workspace%/user.bazelrc",
         ]
+        static let userImport = "try-import %workspace%/user.bazelrc"
 
         let path: Path
 
@@ -124,11 +124,17 @@ extension Bazel {
         func ensureImport() throws {
             let existing = (try? String(contentsOfFile: path.string, encoding: .utf8)) ?? ""
             let lines = existing.components(separatedBy: .newlines)
-            let managed = Set(Self.importLines)
-            let project = lines.filter { !managed.contains($0.trimmingCharacters(in: .whitespaces)) }
-                .joined(separator: "\n")
+            let generated = Set(Self.importLines)
+            var imported: Set<String> = []
+            let project = lines.filter { line in
+                let statement = line.trimmingCharacters(in: .whitespaces)
+                if statement == Self.userImport { return false }
+                return !generated.contains(statement) || imported.insert(statement).inserted
+            }.joined(separator: "\n")
+            let missing = Self.importLines.filter { !imported.contains($0) }
+            let imports = (missing + [Self.userImport]).joined(separator: "\n")
             let separator = project.hasSuffix("\n") || project.isEmpty ? "" : "\n"
-            let updated = project + separator + Self.importLines.joined(separator: "\n") + "\n"
+            let updated = project + separator + imports + "\n"
             if updated != existing { try path.write(updated) }
         }
     }
