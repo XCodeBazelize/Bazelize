@@ -230,6 +230,36 @@ configuration the target is built in — the project's own SDK is only the
 fallback for a build that carries no Apple platform constraint. CI diffs the
 result against the file Xcode writes into `DerivedSources`.
 
+### iOS product verification
+
+The controlled `ProductProbe` app embeds its own dynamic framework and a
+notification-service extension. CI compares the native Xcode and generated
+Bazel Simulator app trees, including icon declarations and decoded asset
+renditions, plist values, embedded products, Mach-O dependencies/exports/rpaths,
+and decoded signing entitlements. Each accepted difference is an exact entry
+in `bundle-differences.json`; new and stale differences fail. The validator
+also damages copies by removing the extension or resource, changing the app
+identifier, and corrupting an alternate icon declaration, requiring each copy
+to fail for the expected reason.
+
+CI replaces any previous controlled fixture installation, launches the generated
+app, and reads a fresh report from its data container. That report must contain the
+expected resource bytes, embedded extension identifier/extension point, primary
+and alternate icon names, and a value returned by the loaded dynamic framework. The controlled
+app uses explicit asset-symbol and accent-color settings so its inputs do not
+depend on Xcode defaults. Both project-format lanes build this app as well.
+
+After Tuist generation, CI runs `python3 .github/scripts/prepare-xcode-fixture.py`
+to make implicit empty copy-phase destinations explicit. Xcode 27.2's native
+JSON converter requires that field for the extension embed phase; the script
+preserves the traditional project format and the remaining properties.
+
+This proves Simulator packaging and startup. It does not send a push notification
+to execute the notification service, or validate physical-device provisioning.
+The native Simulator build is unsigned; the Bazel debug app/extension carry
+debugger entitlements. Those exact differences are documented rather than
+treated as device-signing equivalence.
+
 ### Application icons
 
 For iOS applications, `ASSETCATALOG_COMPILER_APPICON_NAME` selects the primary

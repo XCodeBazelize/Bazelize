@@ -66,6 +66,43 @@ let project = Project(
     settings: settings(),
     targets: [
         .target(
+            name: "ProductProbeFramework",
+            destinations: .iOS,
+            product: .framework,
+            bundleId: "com.bazel.ProductProbe.ProductProbeFramework",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .extendingDefault(with: [:]),
+            sources: ["ProductProbeFramework/**/*.m"],
+            headers: .headers(public: ["ProductProbeFramework/**/*.h"]),
+            settings: settings()),
+        .target(
+            name: "ProductProbeExtension",
+            destinations: .iOS,
+            product: .appExtension,
+            bundleId: "com.bazel.ProductProbe.Extension",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .extendingDefault(with: [
+                "CFBundleDisplayName": "Product Probe Extension",
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.usernotifications.service",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).NotificationService",
+                ],
+            ]),
+            sources: ["ProductProbeExtension/**/*.swift"],
+            settings: settings(["APPLICATION_EXTENSION_API_ONLY": "YES"])),
+        target(
+            "ProductProbe",
+            product: .app,
+            sources: ["ProductProbe/**/*.swift"],
+            dependencies: [.target(name: "ProductProbeFramework"), .target(name: "ProductProbeExtension")],
+            resources: ["ProductProbe/Probe.txt", "Example/Assets.xcassets", "ProductProbe/Assets.xcassets"],
+            settings: [
+                "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+                "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES": "AlternateIcon",
+                "ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS": "YES",
+                "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
+            ]),
+        .target(
             name: "PerFileFlags",
             destinations: .macOS,
             product: .commandLineTool,
