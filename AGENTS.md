@@ -5,6 +5,11 @@
 Any new feature or behavior change goes on its own branch and is delivered as a
 pull request. Never push such work directly to `master`.
 
+Open an issue before implementing a change. Prefer one issue and one pull request
+for each independently deliverable change. This is a default, not an absolute
+constraint: when splitting or combining work is necessary, explain why and link
+all affected issues and pull requests so their scope and completion remain clear.
+
 A branch is cut from the current `master` before the first edit, and the pull
 request names the issue it settles with a closing keyword — `Closes #44` — so
 merging the pull request closes it. Work that only investigates an issue, or
