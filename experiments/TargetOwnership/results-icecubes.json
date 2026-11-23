@@ -1,0 +1,194 @@
+{
+  "swift_version": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx27.2.0",
+  "host": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "cpu": "Apple M3 Max",
+  "project_revision": "b2db3033fbf67a97b54d25d6dac2df8a029b26b1",
+  "repository_revision": "b7d48287366b5b4eb431506eea0380856764b556",
+  "project_files_sha256": {
+    "project.pbxproj": "8cbe5ad304baed6ecef1fd53e57bed1cd6f517e0a936eaf120457c15fb5593b7"
+  },
+  "benchmark_source_sha256": "150754f4163aa4d4bb544ab9c6207e0f9305d3dbe7a8a40fa712155645e3f0ee",
+  "production_deployment": "macOS 14",
+  "benchmark_deployment": "macOS 27",
+  "probes": [
+    {
+      "probe": "Encoding",
+      "deployment": "14.0",
+      "command": [
+        "swiftc",
+        "-swift-version",
+        "6",
+        "-target",
+        "arm64-apple-macos14.0",
+        "-typecheck",
+        "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/Encoding.swift"
+      ],
+      "exit_code": 1,
+      "diagnostics": "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/Encoding.swift:4:8: error: type 'OwnedTarget' does not conform to protocol 'Copyable'\n2 | \n3 | // Encodable currently inherits Copyable, independently of the stored fields.\n4 | struct OwnedTarget: ~Copyable, Encodable {\n  |        `- error: type 'OwnedTarget' does not conform to protocol 'Copyable'\n5 |     let name: String\n6 | }\n\nSwift.Encodable:1:17: note: type 'OwnedTarget' does not conform to inherited protocol 'Copyable'\n1 | public protocol Encodable {\n  |                 `- note: type 'OwnedTarget' does not conform to inherited protocol 'Copyable'\n2 |     func encode(to encoder: any Encoder) throws\n3 | }\n"
+    },
+    {
+      "probe": "Array",
+      "deployment": "14.0",
+      "command": [
+        "swiftc",
+        "-swift-version",
+        "6",
+        "-target",
+        "arm64-apple-macos14.0",
+        "-typecheck",
+        "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/Array.swift"
+      ],
+      "exit_code": 1,
+      "diagnostics": "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/Array.swift:8:24: error: type 'OwnedTarget' does not conform to protocol 'Copyable'\n6 | \n7 | // Project.targets currently uses this standard-library collection contract.\n8 | func projectTargets(_: [OwnedTarget]) { }\n  |                        `- error: type 'OwnedTarget' does not conform to protocol 'Copyable'\n9 | \n"
+    },
+    {
+      "probe": "UniqueArray",
+      "deployment": "14.0",
+      "command": [
+        "swiftc",
+        "-swift-version",
+        "6",
+        "-target",
+        "arm64-apple-macos14.0",
+        "-typecheck",
+        "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/UniqueArray.swift"
+      ],
+      "exit_code": 1,
+      "diagnostics": "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/UniqueArray.swift:9:19: error: 'UniqueArray' is only available in macOS 27.0 or newer\n 6 | \n 7 | // Check this against both the production macOS 14 floor and macOS 27.\n 8 | func projectTargets() {\n   |      `- note: add '@available' attribute to enclosing global function\n 9 |     var targets = UniqueArray<OwnedTarget>()\n   |                   |- error: 'UniqueArray' is only available in macOS 27.0 or newer\n   |                   `- note: add 'if #available' version check\n10 |     targets.append(OwnedTarget(name: \"Probe\"))\n11 |     print(targets.count)\n\n/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/UniqueArray.swift:9:42: error: 'init()' is only available in macOS 27.0 or newer\n 6 | \n 7 | // Check this against both the production macOS 14 floor and macOS 27.\n 8 | func projectTargets() {\n   |      `- note: add '@available' attribute to enclosing global function\n 9 |     var targets = UniqueArray<OwnedTarget>()\n   |                                          |- error: 'init()' is only available in macOS 27.0 or newer\n   |                                          `- note: add 'if #available' version check\n10 |     targets.append(OwnedTarget(name: \"Probe\"))\n11 |     print(targets.count)\n\n/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/UniqueArray.swift:10:13: error: 'append' is only available in macOS 27.0 or newer\n 6 | \n 7 | // Check this against both the production macOS 14 floor and macOS 27.\n 8 | func projectTargets() {\n   |      `- note: add '@available' attribute to enclosing global function\n 9 |     var targets = UniqueArray<OwnedTarget>()\n10 |     targets.append(OwnedTarget(name: \"Probe\"))\n   |             |- error: 'append' is only available in macOS 27.0 or newer\n   |             `- note: add 'if #available' version check\n11 |     print(targets.count)\n12 | }\n\n/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/UniqueArray.swift:11:19: error: 'count' is only available in macOS 27.0 or newer\n 6 | \n 7 | // Check this against both the production macOS 14 floor and macOS 27.\n 8 | func projectTargets() {\n   |      `- note: add '@available' attribute to enclosing global function\n 9 |     var targets = UniqueArray<OwnedTarget>()\n10 |     targets.append(OwnedTarget(name: \"Probe\"))\n11 |     print(targets.count)\n   |                   |- error: 'count' is only available in macOS 27.0 or newer\n   |                   `- note: add 'if #available' version check\n12 | }\n13 | \n"
+    },
+    {
+      "probe": "UniqueArray",
+      "deployment": "27.0",
+      "command": [
+        "swiftc",
+        "-swift-version",
+        "6",
+        "-target",
+        "arm64-apple-macos27.0",
+        "-typecheck",
+        "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Probes/UniqueArray.swift"
+      ],
+      "exit_code": 0,
+      "diagnostics": ""
+    }
+  ],
+  "benchmark": {
+    "checksum": 773000000,
+    "iterations": 1000000,
+    "load_seconds": 0.841950291,
+    "owned_size_bytes": 312,
+    "project": "/private/tmp/bazelize-noncopyable-target/app/IceCubesApp/IceCubesApp.xcodeproj",
+    "projection_and_validation_seconds": 0.003855,
+    "samples": 12,
+    "target_count": 5,
+    "target_size_bytes": 312,
+    "timings": {
+      "array-borrowing": {
+        "median_seconds": 0.0409265625,
+        "min_seconds": 0.04060275,
+        "max_seconds": 0.041698917,
+        "samples_seconds": [
+          0.040851792,
+          0.040665958,
+          0.041330208,
+          0.041698917,
+          0.041544541,
+          0.041101084,
+          0.040632625,
+          0.041001333,
+          0.040761542,
+          0.04060275,
+          0.0406765,
+          0.041507625
+        ]
+      },
+      "array-default": {
+        "median_seconds": 0.042126916,
+        "min_seconds": 0.04050825,
+        "max_seconds": 0.057791417,
+        "samples_seconds": [
+          0.040610708,
+          0.042152291,
+          0.042101541,
+          0.041965458,
+          0.049843167,
+          0.057791417,
+          0.050869542,
+          0.044771709,
+          0.040819625,
+          0.040670167,
+          0.04050825,
+          0.047663084
+        ]
+      },
+      "unique-copyable": {
+        "median_seconds": 0.0416834165,
+        "min_seconds": 0.040774167,
+        "max_seconds": 0.042494083,
+        "samples_seconds": [
+          0.040960625,
+          0.04219675,
+          0.042494083,
+          0.042377541,
+          0.041898417,
+          0.041675458,
+          0.041275417,
+          0.04186875,
+          0.040774167,
+          0.040817292,
+          0.041002334,
+          0.041691375
+        ]
+      },
+      "unique-noncopyable": {
+        "median_seconds": 0.041684562999999994,
+        "min_seconds": 0.040842625,
+        "max_seconds": 0.043120667,
+        "samples_seconds": [
+          0.042218584,
+          0.042026917,
+          0.042267583,
+          0.041904833,
+          0.041633459,
+          0.043120667,
+          0.040850667,
+          0.040842625,
+          0.041735667,
+          0.04089325,
+          0.041103458,
+          0.041072083
+        ]
+      }
+    },
+    "kernel_sil_signatures": [
+      "sil private [noinline] @$s9Benchmark15defaultChecksum33_660B17FC0D89CECF71E836A6980231A8LLySi5XcodeADO6TargetVF : $@convention(thin) (@guaranteed Xcode.Target) -> Int {",
+      "sil private [noinline] @$s9Benchmark16borrowedChecksum33_660B17FC0D89CECF71E836A6980231A8LLySi5XcodeADO6TargetVF : $@convention(thin) (@guaranteed Xcode.Target) -> Int {",
+      "sil private [noinline] @$s9Benchmark13ownedChecksum33_660B17FC0D89CECF71E836A6980231A8LLySiAA11OwnedTargetACLLVF : $@convention(thin) (@guaranteed OwnedTarget) -> Int {"
+    ],
+    "compiler_arguments": [
+      "swiftc",
+      "-O",
+      "-swift-version",
+      "6",
+      "-parse-as-library",
+      "-target",
+      "arm64-apple-macos27.0",
+      "-module-cache-path",
+      "/private/tmp/bazelize-ownership-measurement/module-cache",
+      "-I",
+      "/private/tmp/bazelize-ownership-measurement/build/arm64-apple-macosx/release/Modules",
+      "/private/tmp/bazelize-noncopyable-target/experiments/TargetOwnership/Benchmark.swift"
+    ],
+    "linked_modules": [
+      "Xcode",
+      "PathKit",
+      "AnyCodable",
+      "XcodeProj",
+      "XcodeProjectFormat",
+      "AEXML"
+    ],
+    "scope": "Repeated read-only traversal; excludes model loading, projection, validation, compilation, and generation",
+    "caveat": "Array versus UniqueArray also changes the container; compare the two UniqueArray modes separately. The local experimental type and imported production type may optimize differently. No end-to-end speedup is established."
+  }
+}

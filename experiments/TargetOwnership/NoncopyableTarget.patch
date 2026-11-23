@@ -1,0 +1,12 @@
+diff --git a/Sources/Xcode/Model/Target/Xcode+Target.swift b/Sources/Xcode/Model/Target/Xcode+Target.swift
+--- a/Sources/Xcode/Model/Target/Xcode+Target.swift
++++ b/Sources/Xcode/Model/Target/Xcode+Target.swift
+@@ -3,7 +3,7 @@
+ // MARK: - Xcode.Target
+ 
+ extension Xcode {
+-    public struct Target: Encodable {
++    public struct Target: ~Copyable, Encodable {
+         public let name: String
+         public let productName: String?
+         public let productType: String?
