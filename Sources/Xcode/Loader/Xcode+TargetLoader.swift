@@ -79,6 +79,29 @@ struct TargetLoader {
                 file.category == .other && !knownPaths.contains(file.file.path ?? "")
             }.map(\.file)
 
+        var missing: [Xcode.File] = []
+        func present(_ files: [Xcode.File]) -> [Xcode.File] {
+            files.filter { file in
+                // SDK and sibling build products are not checkout inputs.
+                guard
+                    !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree),
+                    let path = file.fullPath,
+                    !path.contains("$("), !path.contains("${")
+                else { return true }
+                guard !FileManager.default.fileExists(atPath: path) else { return true }
+                missing.append(file)
+                return false
+            }
+        }
+        let inputs = Xcode.Files(
+            sources: present(sourceFiles),
+            headers: present(headerFiles),
+            resources: present(resourceFiles),
+            frameworks: present(frameworkFiles),
+            copyFiles: present(copyFiles),
+            others: present(unique(otherFiles) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }),
+            missing: missing)
+
         return Xcode.Target(
             name: name,
             productName: native.productName,
@@ -87,13 +110,7 @@ struct TargetLoader {
             configs: mergedConfig,
             metadata: metadata,
             buildPhases: buildPhases,
-            files: .init(
-                sources: sourceFiles,
-                headers: headerFiles,
-                resources: resourceFiles,
-                frameworks: frameworkFiles,
-                copyFiles: copyFiles,
-                others: unique(otherFiles) { "\($0.path ?? "")|\($0.buildPhase ?? "")" }),
+            files: inputs,
             dependencies: dependencies)
     }
 
@@ -148,8 +165,9 @@ struct TargetLoader {
                 return nil
             }
 
-            if let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
-               label.hasPrefix("//Prebuilt:")
+            if
+                let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
+                label.hasPrefix("//Prebuilt:")
             {
                 return label
             }

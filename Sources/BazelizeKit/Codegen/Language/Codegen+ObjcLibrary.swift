@@ -10,17 +10,44 @@ import Foundation
 import Starlark
 
 extension Target {
-    func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, aliasPublic: Bool = true) {
+    func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan, aliasPublic: Bool = true) {
         let project = kit.project
         builder.load(.objc_library)
+        let copts = ["-fblocks", "-fPIC", "-fmodule-name=\(codegenModuleName)"]
+            + clangDialectCopts + forceIncludeFlags + clangCopts(kit)
+        var groups: [String] = []
+        for (index, group) in fileFlags.groups.enumerated() {
+            let groupName = "\(name)_objc_flags_\(index)"
+            groups.append(":\(groupName)")
+            builder.call(Rules.Objc.Call.objc_library(
+                name: groupName,
+                srcs: .build {
+                    group.sources
+                    internalHeaderFiles(project: project)
+                    flattenedModuleHeaderFiles(project: project)
+                    prefixHeader
+                    definesHeader
+                },
+                deps: .build {
+                    linkedFrameworksLibrary(project: project)
+                    testHostLibraries(project: project)
+                },
+                copts: (copts + group.copts).starlark,
+                enable_modules: prefer(\.enableModules),
+                includes: headerIncludes(project: project),
+                non_arc_srcs: group.nonArcSources.nonEmpty.map { paths in .build { paths } },
+                sdk_dylibs: dylibsSDK,
+                sdk_frameworks: sdkFrameworks(project: project),
+                tags: manual,
+                testonly: isTest,
+                visibility: .private,
+                weak_sdk_frameworks: weakFrameworksSDK))
+        }
         builder.call(
             Rules.Objc.Call.objc_library(
                 name: "\(name)_objc",
                 srcs: .build {
-                    srcs_c
-                    srcs_cpp
-                    srcs_objc
-                    srcs_objcpp
+                    fileFlags.sources
                     internalHeaderFiles(project: project)
                     definesHeader
                 },
@@ -31,6 +58,7 @@ extension Target {
                 deps: .build {
                     linkedFrameworksLibrary(project: project)
                     testHostLibraries(project: project)
+                    groups
                 },
                 data: .build {
                     if !assets.isEmpty {
@@ -38,16 +66,12 @@ extension Target {
                     }
                     copiedResourceGroups(project: project)
                 },
-                copts: ([
-                    "-fblocks",
-                    "-fobjc-arc",
-                    "-fPIC",
-                    "-fmodule-name=\(codegenModuleName)",
-                ] + forceIncludeFlags + clangCopts(kit)).starlark,
+                copts: copts.starlark,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: project),
                 linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
+                non_arc_srcs: fileFlags.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: sdkFrameworks(project: project),
                 tags: manual,

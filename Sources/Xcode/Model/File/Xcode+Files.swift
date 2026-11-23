@@ -8,6 +8,9 @@ extension Xcode {
         public let frameworks: [File]
         public let copyFiles: [File]
         public let others: [File]
+        /// Declared local inputs omitted from generated rules because they are
+        /// absent. Kept separately so generation can still name each one.
+        public var missing: [File] = []
     }
 }
 

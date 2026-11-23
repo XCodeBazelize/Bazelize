@@ -28,8 +28,9 @@ func target(
     dependencies: [TargetDependency] = [],
     headers: Headers? = nil,
     resources: ResourceFileElements? = nil,
-    settings targetSettings: SettingsDictionary = [:]
-) -> Target {
+    settings targetSettings: SettingsDictionary = [:])
+    -> Target
+{
     .target(
         name: name,
         destinations: .iOS,
@@ -64,6 +65,20 @@ let project = Project(
     ],
     settings: settings(),
     targets: [
+        .target(
+            name: "PerFileFlags",
+            destinations: .macOS,
+            product: .commandLineTool,
+            bundleId: "com.bazel.PerFileFlags",
+            deploymentTargets: .macOS("13.0"),
+            infoPlist: nil,
+            sources: [
+                .glob("PerFileFlags/main.m"),
+                .glob("PerFileFlags/Legacy.m", compilerFlags: "-fno-objc-arc"),
+                .glob("PerFileFlags/Flagged.m", compilerFlags: "-DFILE_VALUE=73"),
+            ],
+            dependencies: [.sdk(name: "Foundation", type: .framework)],
+            settings: settings(["CLANG_ENABLE_OBJC_ARC": "YES", "CLANG_ENABLE_MODULES": "YES"])),
         .target(
             name: "MacBundle",
             destinations: .macOS,

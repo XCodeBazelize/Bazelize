@@ -4,6 +4,10 @@ on:
   push:
     branches: 
       - master
+      - main
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
     paths:
       - 'Sources/**'
       - 'Tests/**'
@@ -11,6 +15,10 @@ on:
       - '.github/workflows/**'
       - '.github/scripts/**'
       - 'Package.swift'
+      - 'Package.resolved'
+      - 'Makefile'
+      - 'Plugins/**'
+      - '.github/actions/**'
       - 'fixture/iOS/**'
       - 'mise.toml'
   pull_request:
@@ -21,51 +29,24 @@ on:
       - '.github/workflows/**'
       - '.github/scripts/**'
       - 'Package.swift'
+      - 'Package.resolved'
+      - 'Makefile'
+      - 'Plugins/**'
+      - '.github/actions/**'
       - 'fixture/iOS/**'
       - 'mise.toml'
+
+permissions:
+  contents: read
 
 # One run at a time per branch or pull request, never per repository: a shared
 # group let any other branch's push cancel a run that was proving a change, so
 # "CI passed" was a question of what else was pushed that hour.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: macos-26
-
-    steps:
-    - uses: actions/checkout@v6
-
-    - uses: jdx/mise-action@v4
-
-    - name: Generate iOS fixture
-      run: tuist generate --path fixture/iOS --no-open
-
-    - name: Check Xcode Version
-      run: |
-        xcodebuild -version
-        swift --version
-        swift package --version
-
-    - name: Get swift version
-      run: swift --version # Swift 5.3.3
-
-    - name: SPM Cache
-      uses: actions/cache@v5
-      with:
-        path: .build
-        key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}-macos-26-spm-
-
-    - name: Build
-      run: make build
-
-  # The unit suite resolves real package graphs, so it is slow and has nothing
-  # to do with whether the tool compiles: it gets its own job rather than
-  # holding the build's.
   test:
     runs-on: macos-26
 
@@ -73,129 +54,36 @@ jobs:
     - uses: actions/checkout@v6
 
     - uses: jdx/mise-action@v4
+      with:
+        install_args: tuist
+        cache_save: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
     # The snapshot tests read the generated fixture project.
     - name: Generate iOS fixture
       run: tuist generate --path fixture/iOS --no-open
 
     - name: SPM Cache
-      uses: actions/cache@v5
+      uses: ./.github/actions/swift-cache
       with:
+        group: root-debug
         path: .build
-        key: ${{ runner.os }}-macos-26-spm-${{ hashFiles('**/Package.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}-macos-26-spm-
+        dependencies: ${{ hashFiles('Package.resolved') }}
 
     - name: Test bundle comparison
       run: python3 .github/scripts/test_compare_bundles.py
+
+    - name: Test generated workspace comparison
+      run: python3 .github/scripts/test_compare_generated_workspaces.py
+
+    - name: Build debug products
+      run: make build
 
     - name: Run tests
       run: make test
 
   artifact:
-    runs-on: macos-26
-    steps:
-      - uses: actions/checkout@v6
+    uses: ./.github/workflows/build-bazelize.yml
 
-      - name: SPM Cache
-        uses: actions/cache@v5
-        with:
-          path: .build
-          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
-      - name: Build Bazelize
-        run: swift build -c release --arch arm64 --arch x86_64
-
-      - name: Upload Bazelize
-        uses: actions/upload-artifact@v7
-        with:
-          name: bazelize
-          path: .build/apple/Products/Release/bazelize
-          if-no-files-found: ignore # 'warn' or 'ignore' 
-
-  # Generated files are inspected independently of the lanes that build and
-  # test their products. One runner visits every local fixture so Bazel's
-  # repository cache and the pinned buildifier download are shared.
-  GeneratedStarlarkLint:
-    runs-on: macos-26
-    needs: [artifact]
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: jdx/mise-action@v4
-
-      - name: Generate Xcode project
-        run: tuist generate --path fixture/iOS --no-open
-
-      - name: Bazel Cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/bazel-disk
-            ~/bazel-repo
-            ~/.cache/bazelize/buildifier
-          key: ${{ runner.os }}-bazel-GeneratedStarlarkLint-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-GeneratedStarlarkLint-
-
-      - name: Bazel Cache Settings
-        run: |
-          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
-          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
-          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
-
-      - name: Download Bazelize
-        uses: actions/download-artifact@v8
-        with:
-          name: bazelize
-
-      - name: Generate Workspaces
-        run: |
-          chmod +x bazelize
-          ./bazelize \
-            --input fixture/iOS/Example.xcodeproj \
-            --output fixture/iOS/App
-
-          # The registry fixture carries the unpacked package a registry would
-          # serve. Generation deliberately preserves `.build`, so seed it
-          # before visiting every Swift package below.
-          mkdir -p spm/RegistryPackage/App/.build/registry/downloads
-          cp -R spm/RegistryPackage/Registry/. \
-            spm/RegistryPackage/App/.build/registry/downloads/
-
-          for manifest in spm/*/Package.swift; do
-            package=${manifest%/Package.swift}
-            PKG_CONFIG_PATH="$GITHUB_WORKSPACE/$package/vendor/pkgconfig" \
-              ./bazelize --input "$package" --output "$package/App"
-          done
-
-      # The complete buildifier report remains visible without turning style,
-      # documentation or migration advice into release policy.
-      - name: Report All Generated Starlark Warnings
-        run: |
-          for workspace in fixture/iOS/App spm/*/App; do
-            echo "::group::$workspace"
-            if ! (cd "$workspace" && bazel run //:lint); then
-              echo "::warning title=Generated Starlark lint::$workspace has non-blocking buildifier warnings"
-            fi
-            echo "::endgroup::"
-          done
-
-      # Only the reviewed allowlist of behavior-affecting warnings fails CI.
-      - name: Check Generated Starlark Behavior
-        run: |
-          status=0
-          for workspace in fixture/iOS/App spm/*/App; do
-            echo "::group::$workspace"
-            if ! (cd "$workspace" && bazel run //:lint-ci); then
-              echo "::error title=Generated Starlark behavior::$workspace has behavior-affecting buildifier warnings"
-              status=1
-            fi
-            echo "::endgroup::"
-          done
-          exit $status
 
   IntegrateIOS:
     name: IntegrateIOS (${{ matrix.format }})
@@ -213,6 +101,9 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: jdx/mise-action@v4
+        with:
+          install_args: tuist
+          cache_save: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
       - name: Select Xcode 27.2
         if: matrix.format == 'xcproj'
@@ -225,23 +116,10 @@ jobs:
       # build produced, the repository cache what it downloaded. Without the
       # second one a runner fetches rules_apple and the rest again every time.
       - name: Bazel Cache
-        uses: actions/cache@v5
+        uses: ./.github/actions/bazel-cache
         with:
-          path: |
-            ~/bazel-disk
-            ~/bazel-repo
-          key: ${{ runner.os }}-bazel-IntegrateIOS-${{ matrix.format }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-IntegrateIOS-${{ matrix.format }}-
-            ${{ runner.os }}-bazel-IntegrateIOS-
-
-      - name: Bazel Cache Settings
-        run: |
-          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
-          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
-          # A release download that answers 500 is GitHub having a moment, not
-          # a broken build: it is retried rather than failing a lane.
-          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
+          group: IntegrateIOS-${{ matrix.format }}
+          save-repository: ${{ matrix.format == 'pbxproj' }}
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -261,9 +139,7 @@ jobs:
         if: matrix.format == 'xcproj'
         working-directory: fixture/iOS
         run: |
-          ../../bazelize --input Example.xcodeproj --output App
-          rsync -a --exclude .build App/ "$RUNNER_TEMP/generated-pbxproj/"
-          rm -rf App
+          ../../bazelize --input Example.xcodeproj --output App-pbxproj
 
       - name: Convert Xcode project to JSON
         if: matrix.format == 'xcproj'
@@ -283,17 +159,24 @@ jobs:
           ../../bazelize --input Example.xcodeproj --output App | tee bazelize.log
           ! grep -q "did not run the" bazelize.log
 
-      # Files and symbolic links alike: a link is compared by where it points.
+      # Workspace-local absolute links are relocated; external links retain their destinations.
       - name: Compare Generated Workspaces
         if: matrix.format == 'xcproj'
         working-directory: fixture/iOS
         run: |
-          rsync -a --exclude .build App/ "$RUNNER_TEMP/generated-xcproj/"
-          git diff --no-index --exit-code "$RUNNER_TEMP/generated-pbxproj" "$RUNNER_TEMP/generated-xcproj"
+          python3 "$GITHUB_WORKSPACE/.github/scripts/compare-generated-workspaces.py" App-pbxproj App
+
+      - name: Check Generated Starlark
+        working-directory: fixture/iOS/App
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
 
       - name: Build Products
         working-directory: fixture/iOS/App
         run: bazel build //Targets/Example //Targets/MacBundle
+
+      - name: Run Per-File Flag Probe
+        working-directory: fixture/iOS/App
+        run: bazel run //Targets/PerFileFlags --config=Debug
 
       - name: Copy IPA
         working-directory: fixture/iOS/App
@@ -330,7 +213,7 @@ jobs:
         with:
           name: iOS_Example-${{ matrix.format }}.ipa
           path: fixture/iOS/Example.ipa
-          if-no-files-found: ignore # 'warn' or 'ignore'
+          if-no-files-found: error
 
   # A build that compiles says nothing about what it ships. Xcode and the
   # generated workspace build the same macOS product bundle; their complete
@@ -343,25 +226,17 @@ jobs:
       - uses: actions/checkout@v6
 
       - uses: jdx/mise-action@v4
+        with:
+          install_args: tuist
+          cache_save: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
       - name: Generate Xcode project
         run: tuist generate --path fixture/iOS --no-open
 
       - name: Bazel Cache
-        uses: actions/cache@v5
+        uses: ./.github/actions/bazel-cache
         with:
-          path: |
-            ~/bazel-disk
-            ~/bazel-repo
-          key: ${{ runner.os }}-bazel-CompareBundles-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-CompareBundles-
-
-      - name: Bazel Cache Settings
-        run: |
-          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
-          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
-          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
+          group: CompareBundles
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -393,6 +268,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+          xcodebuild \
+            -project Example.xcodeproj \
+            -scheme PerFileFlags \
+            -configuration Debug \
+            -sdk macosx \
+            -derivedDataPath "$RUNNER_TEMP/xcode" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+          "$RUNNER_TEMP/xcode/Build/Products/Debug/PerFileFlags"
+
       - name: Build With Bazel
         run: |
           chmod +x bazelize
@@ -400,6 +285,7 @@ jobs:
           cd fixture/iOS/App
           bazel build //Targets/Example --config=Debug --ios_multi_cpus=sim_arm64
           bazel build //Targets/MacBundle --config=Debug
+          bazel run //Targets/PerFileFlags --config=Debug
           bundle=$(bazel cquery //Targets/MacBundle --config=Debug --output=files |
             grep 'MacBundle.zip$')
           mkdir -p "$RUNNER_TEMP/bazel"
@@ -440,401 +326,6 @@ jobs:
           fi
           diff "$xcode" "$bazel"
 
-  # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
-  # lane clones what it measures at the revision it was measured against.
-  IntegrateApp:
-    name: IntegrateApp (${{ matrix.name }})
-    # An app whose revision needs a newer SDK than the default image ships names
-    # the image it is measured against; everything else stays on one image.
-    runs-on: ${{ matrix.runner || 'macos-26' }}
-    needs: [artifact]
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: stats
-            repo: https://github.com/exelban/stats
-            rev: b4251e2ba05511de6b51b296d7b9e98a9c6545f5
-            project: Stats.xcodeproj
-            target: //Targets/Stats
-          - name: MonitorControl
-            repo: https://github.com/MonitorControl/MonitorControl
-            rev: 71b8c5ae51955d17b05688371ea7b899b684bdbd
-            project: MonitorControl.xcodeproj
-            target: //Targets/MonitorControl
-          - name: SwiftBar
-            repo: https://github.com/swiftbar/SwiftBar
-            rev: 05cb6cb1123bc7227ee2b39f390f8bccb839fed0
-            project: SwiftBar.xcodeproj
-            target: //Targets/SwiftBar
-          - name: Rectangle
-            repo: https://github.com/rxhanson/Rectangle
-            rev: b4c9c47c00b4df9cbfb3489dc5eae2f1249ad24a
-            project: Rectangle.xcodeproj
-            target: //...
-          - name: VirtualBuddy
-            repo: https://github.com/insidegui/VirtualBuddy
-            rev: 088351b0fc67e0b24b83e7954ad48314dda4ce04
-            project: VirtualBuddy.xcodeproj
-            target: //Targets/VirtualBuddy
-          # iina links dylibs that are not in its repository, and the script it
-          # ships downloads whatever the feed serves today: at this revision
-          # 48 of the 71 libraries it names are no longer there, so the feed is
-          # pinned to the version whose file list this revision matches.
-          - name: iina
-            repo: https://github.com/iina/iina
-            rev: c111221ea027466b79b40bfca054772d4851e06f
-            project: iina.xcodeproj
-            target: //Targets/iina
-            setup: sed -i '' 's|dylibs/${ARCH}|dylibs/1.4.2/${ARCH}|' other/download_libs.sh && ./other/download_libs.sh --skip-plugins
-          # The one iOS app of the corpus, and the one that embeds several
-          # extensions in a product: a widget, a notification service, a share
-          # sheet and an action. Thirteen packages of its own repository, too.
-          # It needs no setup: the xcconfig its README has you copy is read by
-          # Xcode, not by what bazelize generates.
-          #
-          # The revision is pinned behind the app's head on purpose: the runner
-          # ships Xcode 26.6, and the app adopted iOS 27 API (`defaultTabBarPlacement`)
-          # in the commit after this one. This is the newest revision that
-          # builds against the SDK this lane has.
-          - name: IceCubesApp
-            repo: https://github.com/Dimillian/IceCubesApp
-            rev: b2db3033fbf67a97b54d25d6dac2df8a029b26b1
-            project: IceCubesApp.xcodeproj
-            target: //Targets/IceCubesApp
-
-          # Measured against Xcode 27 locally, and run on the `xcode-27` image
-          # because the revision needs it: `19c3d828` adopted SwiftUI's
-          # `.reorderable()` / `ReorderDifference`, which the macOS 26 SDK does
-          # not have, and the app's `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`
-          # sources are rejected by that older toolchain's concurrency checking.
-          # Its asset catalog holds filenames with spaces and parentheses, which
-          # is what shell-safe asset-symbol generation is measured against.
-          - name: Maccy
-            runner: xcode-27
-            repo: https://github.com/p0deje/Maccy
-            rev: 19c3d8282f50316779085964b5148b76d4bb88ce
-            project: Maccy.xcodeproj
-            target: //Targets/Maccy
-
-          # Three more apps were measured locally but do not meet the lane
-          # contract: NetNewsWire generates no application rule, Mastodon's
-          # pinned Nuke fails under Xcode 27, and Swiftfin fails during SwiftPM
-          # resolution. Their revisions stay recorded so a retry is reproducible.
-          # NetNewsWire: 383e46f28421f7f55934ee3869f431bfde1c6de3
-          # Mastodon: c52a63091abe557724a1e588149f3172466756e5
-          # Swiftfin: a088a83c4deb70d87f4077c7f9e42ecacd0fe8c7
-
-          # Apps measured for the corpus and kept out of it, with the reason
-          # each one was kept out. `xcodebuild` is the control: an app Xcode
-          # cannot build at the revision measured is not a lane, and nothing
-          # about the generated build is to blame. Measured against Xcode 27.0
-          # (SDK 27.0) — a newer revision of any of these may well be green,
-          # which is the point of writing down which one was tried.
-
-          # Carthage dependencies whose deployment targets are 10.9 to 10.15,
-          # below the 12.0 Xcode 27 accepts: `carthage bootstrap` fails on the
-          # first one and `Carthage/Build` is never written, so the app links
-          # nothing. No lane configuration fixes that.
-          # - name: MacPass
-          #   repo: https://github.com/MacPass/MacPass
-          #   rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
-          #   project: MacPass.xcodeproj
-          #   target: //Targets/MacPass
-          #   submodules: true
-          #   setup: carthage bootstrap --platform macOS --cache-builds
-
-          # `LanguageServerRowView.swift:40: 'self' used before all stored
-          # properties are initialized` — Swift 6.3 rejects what an older
-          # compiler accepted. xcodebuild fails the same way.
-          # - name: CodeEdit
-          #   repo: https://github.com/CodeEditApp/CodeEdit
-          #   rev: 05704cb7d2b19892ffcb9742b0ab3cc6116af165
-          #   project: CodeEdit.xcodeproj
-          #   target: //Targets/CodeEdit
-
-          # `MACOSX_DEPLOYMENT_TARGET is set to 11.3, but the range of
-          # supported deployment target versions is 12.0 to 27.0.x` for all
-          # five macOS targets. Its sysroot is built by `scripts/build_dependencies.sh`
-          # (QEMU, ANGLE, virglrenderer, MoltenVK from source) or downloaded
-          # from a logged-in GitHub Actions run, neither of which a lane can do.
-          # - name: UTM
-          #   repo: https://github.com/utmapp/UTM
-          #   rev: b6f7475be54f9cb542c46b131319454b83489ced
-          #   project: UTM.xcodeproj
-          #   target: //Targets/macOS
-
-          # No `Package.resolved` is committed, so every dependency floats to
-          # whatever is newest: resolution itself fails today on a manifest
-          # using `visionOS` against an older `PackageDescription`. A pinned
-          # revision would still resolve differently on every run, and its
-          # Carthage bootstrap is the mechanism MacPass was removed over.
-          # - name: PlayCover
-          #   repo: https://github.com/PlayCover/PlayCover
-          #   rev: a103786e03b7f6257b6b489dfc49ca6712423a2e
-          #   project: PlayCover.xcodeproj
-          #   target: //Targets/PlayCover
-
-          # The one kept out by us rather than by the toolchain: Xcode builds
-          # it in 64s, and the generated build does not. Access levels across
-          # the app target and its local packages (`property 'inlineDelimiters'
-          # must be declared public because it matches a requirement in public
-          # protocol`) and an expression the compiler gives up type-checking.
-          # Worth revisiting — it is a bug report, not a dead end.
-          # - name: CotEditor
-          #   repo: https://github.com/coteditor/CotEditor
-          #   rev: 545031e89383b7a20b1b2be4a846fca02dbf9c0f
-          #   project: CotEditor.xcodeproj
-          #   target: //Targets/CotEditor
-    steps:
-      # The disk cache holds what a build produced, the repository cache what it
-      # downloaded, and `.build` what SwiftPM resolved for the app's packages:
-      # generation resolves that graph before a single rule is written.
-      - name: Bazel Cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/bazel-disk
-            ~/bazel-repo
-          key: ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-${{ matrix.name }}-${{ matrix.rev }}-
-            ${{ runner.os }}-bazel-${{ matrix.name }}-
-
-      - name: Bazel Cache Settings
-        run: |
-          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
-          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
-          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
-
-      - name: Download Bazelize
-        uses: actions/download-artifact@v8
-        with:
-          name: bazelize
-
-      - name: Clone ${{ matrix.name }}
-        run: |
-          chmod +x bazelize
-          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
-          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
-
-      # After the clone: a restored cache would otherwise create the directory
-      # `git clone` insists on creating itself.
-      - name: SwiftPM Cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ matrix.name }}/App/.build
-          key: ${{ runner.os }}-spm-${{ matrix.name }}-${{ matrix.rev }}
-          restore-keys: |
-            ${{ runner.os }}-spm-${{ matrix.name }}-
-
-      - name: Check out submodules
-        if: matrix.submodules
-        working-directory: ${{ matrix.name }}
-        run: git submodule update --init --recursive
-
-      - name: Set up ${{ matrix.name }}
-        if: matrix.setup
-        working-directory: ${{ matrix.name }}
-        run: ${{ matrix.setup }}
-
-      - name: Bazel Generation
-        run: |
-          set -o pipefail
-          ./bazelize --input "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
-          ! grep -q "did not run the" bazelize.log
-
-      - name: Build Application
-        working-directory: ${{ matrix.name }}/App
-        run: |
-          bazel build ${{ matrix.target }} \
-            --build_event_json_file="$GITHUB_WORKSPACE/build-events.json"
-
-      # What the lane built, kept: a bundle that can be downloaded and opened
-      # is the only way to see what a generated build actually produces.
-      # rules_apple packages a macOS application as a `.zip` and an iOS one as
-      # an `.ipa`, and a lane that builds `//...` produces more than one.
-      #
-      # What the build produced is read out of its own event stream rather than
-      # asked for again: a bundle rule transitions its configuration, so the
-      # output is not under the `bazel-bin` symlink — which a multi-platform
-      # build deletes anyway — and a second `cquery` is a second analysis that
-      # can disagree with the build that just succeeded.
-      #
-      # A macOS application is re-packaged as a disk image. `upload-artifact`
-      # zips whatever it is given and follows symlinks doing it, which flattens
-      # the `Versions/Current` links every framework bundle is made of and
-      # breaks the signature with them: what comes back out is an application
-      # macOS refuses to open. A `.dmg` is one opaque file, so it arrives as it
-      # left.
-      #
-      # The signature is ad-hoc either way — no identity exists on a runner —
-      # so Gatekeeper still asks before the first launch. These are build
-      # artifacts to look at, not a release.
-      - name: Collect ${{ matrix.name }}
-        run: |
-          mkdir -p "$GITHUB_WORKSPACE/artifacts"
-          python3 - <<'PY'
-          import json, os, shutil
-
-          workspace = os.environ["GITHUB_WORKSPACE"]
-          wanted = (".ipa", ".zip")
-          produced = set()
-
-          with open(f"{workspace}/build-events.json") as events:
-              for line in events:
-                  files = json.loads(line).get("namedSetOfFiles", {}).get("files", [])
-                  for file in files:
-                      uri = file.get("uri", "")
-                      if not uri.startswith("file://") or not uri.endswith(wanted):
-                          continue
-                      if "__internal__" in uri:
-                          continue
-                      produced.add(uri[len("file://"):])
-
-          for path in sorted(produced):
-              shutil.copy(path, f"{workspace}/artifacts/")
-          PY
-
-          cd "$GITHUB_WORKSPACE/artifacts"
-          for archive in *.zip; do
-            [ -f "$archive" ] || continue
-            name="${archive%.zip}"
-            staging=$(mktemp -d)
-            unzip -q "$archive" -d "$staging"
-            # Only an application is worth a disk image; a framework or a test
-            # bundle stays the archive Bazel wrote.
-            if [ -d "$staging/$name.app" ]; then
-              hdiutil create -quiet -volname "$name" -srcfolder "$staging" \
-                -ov -format UDZO "$name.dmg"
-              rm -f "$archive"
-            fi
-            rm -rf "$staging"
-          done
-          ls -l "$GITHUB_WORKSPACE/artifacts"
-
-      - name: Upload ${{ matrix.name }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ matrix.name }}
-          path: artifacts
-          if-no-files-found: warn
-
-  # Real packages complement the focused fixtures below. Each revision is
-  # immutable; SwiftPM first proves the checkout builds, then Bazel proves the
-  # generated rule for its primary product builds. Upstream test suites are not
-  # used as the control because several encode host locale, timing, or compiler
-  # assumptions unrelated to generated build fidelity.
-  IntegrateExternalPackage:
-    name: IntegrateExternalPackage (${{ matrix.name }})
-    runs-on: macos-26
-    needs: [artifact]
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: swift-collections
-            repo: https://github.com/apple/swift-collections
-            rev: 3b69cedbaa49957e97c092ae400bb57602ef941f
-            target: //Packages/swift-collections:Collections
-          - name: SwiftFormat
-            repo: https://github.com/nicklockwood/SwiftFormat
-            rev: fbc07aca537317b8ecdde8fc22914cdd16d989a2
-            target: //Packages/SwiftFormat:swiftformat
-          - name: swift-protobuf
-            repo: https://github.com/apple/swift-protobuf
-            rev: ad92f08214402fae0e4ab1664fc65c76c1c0fa32
-            target: //Packages/swift-protobuf:SwiftProtobuf
-          - name: GRDB.swift
-            repo: https://github.com/groue/GRDB.swift
-            rev: 0d8cf958b4b66a0473ec6e6986eb9da462171da9
-            target: //Packages/GRDB.swift:GRDB
-          - name: swift-nio
-            repo: https://github.com/apple/swift-nio
-            rev: 6db9d9abd92ad7399b8a564cafbb87d3507245fa
-            target: //Packages/swift-nio:NIOCore
-          - name: swift-dependencies
-            repo: https://github.com/pointfreeco/swift-dependencies
-            rev: b476cc5761057d8d857de063fe7ac8daecf5c06b
-            target: //Packages/swift-dependencies:Dependencies
-          # Two packages that each found a generator bug, kept so it cannot
-          # come back. Both pass `swift build` at these revisions, and both
-          # failed the generated build before the fix named beside them.
-          #
-          # A 6.2 manifest naming no `swiftLanguageModes`: compiled below
-          # Swift 6, `Backports.swift` takes the branch its `#if swift(>=6.3)`
-          # does not define. The one dependency floats (`swift-asn1 from
-          # 1.2.0`, no `Package.resolved`), so a resolution failure here is the
-          # package's and not the generator's.
-          - name: swift-crypto
-            repo: https://github.com/apple/swift-crypto
-            rev: 57de8e7cb840b1a608f0cc2221d8f2bda117606c
-            target: //Packages/swift-crypto:Crypto
-          # An Objective-C test target: generated as a `swift_library` with no
-          # sources, it made the whole package unloadable, so nothing in it
-          # built either.
-          - name: CocoaLumberjack
-            repo: https://github.com/CocoaLumberjack/CocoaLumberjack
-            rev: 788babb106c589aa5c3daf04361a737e7e0e6b95
-            target: //Packages/CocoaLumberjack:CocoaLumberjackSwift
-          # External warning controls must not turn a dependency's diagnostics
-          # into errors for this consumer. The root still keeps its warnings.
-          - name: swift-composable-architecture
-            repo: https://github.com/pointfreeco/swift-composable-architecture
-            rev: bc2db5ba8ad3a47deba5db32fa340637ba6c9a76
-            target: //Packages/swift-composable-architecture:ComposableArchitecture
-    steps:
-      - name: Bazel Cache
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/bazel-disk
-            ~/bazel-repo
-          key: ${{ runner.os }}-bazel-package-${{ matrix.name }}-${{ matrix.rev }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-package-${{ matrix.name }}-${{ matrix.rev }}-
-            ${{ runner.os }}-bazel-package-${{ matrix.name }}-
-
-      - name: Bazel Cache Settings
-        run: |
-          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
-          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
-          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
-
-      - name: Download Bazelize
-        uses: actions/download-artifact@v8
-        with:
-          name: bazelize
-
-      # The checkout directory is the package directory the generated workspace
-      # files rules under, so it is named after the package rather than
-      # something generic.
-      - name: Clone ${{ matrix.name }}
-        run: |
-          chmod +x bazelize
-          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
-          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
-
-      - name: SwiftPM Cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ matrix.name }}/.build
-          key: ${{ runner.os }}-spm-package-${{ matrix.name }}-${{ matrix.rev }}
-          restore-keys: |
-            ${{ runner.os }}-spm-package-${{ matrix.name }}-
-
-      - name: SwiftPM Build
-        working-directory: ${{ matrix.name }}
-        run: swift build
-
-      - name: Bazel Generation
-        run: ./bazelize --input "${{ matrix.name }}" --output "${{ matrix.name }}/App"
-
-      - name: Build Package Product
-        working-directory: ${{ matrix.name }}/App
-        run: bazel build ${{ matrix.target }}
 
   # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
   # can do, and its tests only pass if that thing was generated correctly.
@@ -842,8 +333,6 @@ jobs:
     name: IntegratePackage (${{ matrix.name }})
     runs-on: macos-26
     needs: [artifact]
-    # Platform builds five SDK variants and executes four of them serially;
-    # cold hosted runners exceed one hour even when every command succeeds.
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -881,6 +370,8 @@ jobs:
               //Packages/Products:renamed-tool
               //Packages/Products:ProductSnippet
           - name: RemoteArtifactBundle
+          - name: RegistryPackage
+            notes: "swift package resolve failed"
           - name: RemoteXCFramework
           - name: SwiftSettings
           - name: SystemLibrary
@@ -909,20 +400,9 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Bazel Cache
-        uses: actions/cache@v5
+        uses: ./.github/actions/bazel-cache
         with:
-          path: |
-            ~/bazel-disk
-            ~/bazel-repo
-          key: ${{ runner.os }}-bazel-${{ matrix.name }}-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-bazel-${{ matrix.name }}-
-
-      - name: Bazel Cache Settings
-        run: |
-          echo "build --disk_cache=$HOME/bazel-disk" >> ~/.bazelrc
-          echo "build --repository_cache=$HOME/bazel-repo" >> ~/.bazelrc
-          echo "common --experimental_repository_downloader_retries=10" >> ~/.bazelrc
+          group: package-${{ matrix.name }}
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -947,6 +427,7 @@ jobs:
       # absent says nothing about whether there are tests to run.
 
       - name: SwiftPM Build And Test
+        if: matrix.name != 'RegistryPackage'
         working-directory: spm/${{ matrix.name }}
         env:
           PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
@@ -976,6 +457,12 @@ jobs:
           done < <(find . -name Package.swift -not -path "*/App/*" -not -path "*/.build/*" | sort)
           exit $status
 
+      - name: Seed Offline Registry Download
+        if: matrix.name == 'RegistryPackage'
+        run: |
+          mkdir -p spm/RegistryPackage/App/.build/registry/downloads
+          cp -R spm/RegistryPackage/Registry/. spm/RegistryPackage/App/.build/registry/downloads/
+
       # A package that wraps a system library is found through `pkg-config`,
       # and a fixture that ships its own `.pc` is only found when that file's
       # directory is on the path.
@@ -1004,6 +491,10 @@ jobs:
             echo "::error::the generator said something no fixture expects"
             exit 1
           fi
+
+      - name: Check Generated Starlark
+        working-directory: spm/${{ matrix.name }}/App
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
 
       - name: Check Package Warning Policy
         if: matrix.name == 'SwiftSettings'
@@ -1061,6 +552,17 @@ jobs:
             echo "no Bazel tests, nothing to test"
           fi
 
+      - name: Test Release Configuration
+        if: matrix.name == 'ConfigurationCondition'
+        working-directory: spm/ConfigurationCondition
+        run: |
+          swift test -c release
+          cd App
+          bazel test -c opt //...
+          actions=$(bazel aquery -c opt 'mnemonic("SwiftCompile", deps(//Packages/ConfigurationCondition:ConfigurationCondition))')
+          printf '%s' "$actions" | grep -q -- '-DRELEASE_ONLY'
+          ! printf '%s' "$actions" | grep -q -- '-DDEBUG_ONLY'
+
       # A test bundle carries its own `minimum_os_version` through the rule's
       # platform transition, so it proves nothing about the floor every other
       # compile gets. Building the library on its own is what reads the default
@@ -1073,75 +575,6 @@ jobs:
           grep -q 'build --macos_minimum_os=13.0' config.bazelrc
           bazel build //Packages/DeploymentFloor:FloorProbe
 
-      - name: Boot Simulator for Platform Package
-        if: matrix.name == 'Platform'
-        run: .github/scripts/boot-apple-simulator.sh
-
-      # The root package's test bundle follows the requested target platform.
-      # This fixture proves both platform-conditional dependencies and
-      # Bundle.module in a simulator process; building the library is not enough.
-      # Booting before Bazel starts the test keeps cold CI startup outside the
-      # test timeout, and the explicit device keeps rules_apple on that simulator.
-      - name: Test Package on iOS Simulator
-        if: matrix.name == 'Platform'
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          bazel test \
-            --@build_bazel_rules_apple//apple/build_settings:ios_simulator_device="$SIMULATOR_DEVICE" \
-            --local_test_jobs=1 \
-            --test_timeout=900 \
-            --test_output=errors \
-            --platforms=@apple_support//platforms:ios_sim_arm64 \
-            //...
-
-      # rules_apple can build these test bundles but its default runners reject
-      # every invocation. Bazelize's generated runner executes each bundle with
-      # xcodebuild on the matching Simulator runtime.
-      - name: Test Package on tvOS Simulator
-        if: matrix.name == 'Platform'
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          bazel test \
-            --test_timeout=900 \
-            --test_output=errors \
-            --platforms=@apple_support//platforms:tvos_sim_arm64 \
-            //Packages/Platform:PlatformTests_tvos_simulator
-
-      - name: Test Package on watchOS Simulator
-        if: matrix.name == 'Platform'
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          bazel test \
-            --test_timeout=900 \
-            --test_output=errors \
-            --platforms=@apple_support//platforms:watchos_arm64 \
-            //Packages/Platform:PlatformTests_watchos_simulator
-
-
-      # GitHub-hosted visionOS Simulators can remain stuck waiting for the
-      # system app indefinitely (actions/runner-images#13129). Compile that
-      # runtime target here without presenting it as an executed test. Hosted
-      # runners also have no provisioned physical devices, so compile and
-      # bundle every device variant without claiming runtime execution.
-      - name: Build Remaining Apple Test Variants
-        if: matrix.name == 'Platform'
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          bazel build \
-            --platforms=@apple_support//platforms:visionos_sim_arm64 \
-            //Packages/Platform:PlatformTests_xros_simulator
-          bazel build \
-            --platforms=@apple_support//platforms:ios_arm64 \
-            //Packages/Platform:PlatformTests_ios_device_bundle
-          bazel build \
-            --platforms=@apple_support//platforms:tvos_arm64 \
-            //Packages/Platform:PlatformTests_tvos_device_bundle
-          bazel build \
-            --platforms=@apple_support//platforms:watchos_device_arm64 \
-            //Packages/Platform:PlatformTests_watchos_device_bundle
-          bazel build \
-            --platforms=@apple_support//platforms:visionos_arm64 \
-            //Packages/Platform:PlatformTests_xros_device_bundle
 
       # SwiftPM's macOS resource bundle is wrapped in Contents/Resources while
       # apple_resource_bundle is flat. Compare their logical resource roots,
@@ -1256,3 +689,100 @@ jobs:
           bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.none
           bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.all -- Alternative Leaf Middle Top
           bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.default -- Leaf Middle Top
+
+  # Host tests and SwiftPM controls remain in IntegratePackage (Platform).
+  # Each additional SDK has its own result; compile-only variants never claim
+  # execution on a physical device or a hosted visionOS Simulator.
+  PlatformVariants:
+    name: Platform (${{ matrix.mode }} ${{ matrix.name }})
+    runs-on: macos-26
+    needs: [artifact]
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - name: iOS Simulator
+            mode: test
+            platform: ios_sim_arm64
+            target: PlatformTests_ios_simulator
+          - name: tvOS Simulator
+            mode: test
+            platform: tvos_sim_arm64
+            target: PlatformTests_tvos_simulator
+          - name: watchOS Simulator
+            mode: test
+            platform: watchos_arm64
+            target: PlatformTests_watchos_simulator
+          - name: visionOS Simulator
+            mode: build
+            platform: visionos_sim_arm64
+            target: PlatformTests_xros_simulator
+          - name: iOS Device
+            mode: build
+            platform: ios_arm64
+            target: PlatformTests_ios_device_bundle
+          - name: tvOS Device
+            mode: build
+            platform: tvos_arm64
+            target: PlatformTests_tvos_device_bundle
+          - name: watchOS Device
+            mode: build
+            platform: watchos_device_arm64
+            target: PlatformTests_watchos_device_bundle
+          - name: visionOS Device
+            mode: build
+            platform: visionos_arm64
+            target: PlatformTests_xros_device_bundle
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bazel Cache
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: Platform-${{ matrix.platform }}
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Generate Platform Workspace
+        run: |
+          chmod +x bazelize
+          ./bazelize --input spm/Platform --output spm/Platform/App
+
+      - name: Boot iOS Simulator
+        if: matrix.platform == 'ios_sim_arm64'
+        run: .github/scripts/boot-apple-simulator.sh
+
+      - name: Execute Simulator Tests
+        if: matrix.mode == 'test'
+        working-directory: spm/Platform/App
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          simulator=()
+          if [ "$PLATFORM" = ios_sim_arm64 ]; then
+            simulator+=("--@build_bazel_rules_apple//apple/build_settings:ios_simulator_device=$SIMULATOR_DEVICE")
+          fi
+          bazel test \
+            "${simulator[@]}" \
+            --local_test_jobs=1 \
+            --test_timeout=900 \
+            --test_output=errors \
+            "--platforms=@apple_support//platforms:$PLATFORM" \
+            "//Packages/Platform:$TARGET"
+
+      - name: Compile Test Bundle
+        if: matrix.mode == 'build'
+        working-directory: spm/Platform/App
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          bazel build \
+            "--platforms=@apple_support//platforms:$PLATFORM" \
+            "//Packages/Platform:$TARGET"

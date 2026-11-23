@@ -43,11 +43,18 @@ extension SwiftPM.Generator {
         root: Path,
         kind: TargetKind,
         generated: [String],
-        builder: CodeBuilder) throws -> ResourceBundle?
+        builder: CodeBuilder) throws
+        -> ResourceBundle?
     {
         guard let directory = sourceDirectory(of: target, in: package) else { return nil }
 
-        let files = relativeFiles(of: target, in: package, prefix: prefix)
+        // Explicit resources take precedence over exclude, as in SwiftPM.
+        // Undeclared resources still obey the target's exclusions.
+        let files = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
+        let excludedPaths = target.exclude.map { Path("\(prefix)/\($0)").normalize().string }
+        let implicitFiles = files.filter { file in
+            !excludedPaths.contains { file == $0 || file.hasPrefix($0 + "/") }
+        }
 
         /// `.copy` keeps the item's own name and inner structure and nothing above
         /// it, which is a structured resource with the path above the item stripped;
@@ -71,11 +78,11 @@ extension SwiftPM.Generator {
         }
 
         Self.copyUndeclaredPrivacyManifests(
-            in: files,
+            in: implicitFiles,
             excluding: explicitlyDeclared,
             into: &copied)
         resources = matching(resources, files)
-            + matching(Self.discoveredResources(prefix: prefix), files)
+            + matching(Self.discoveredResources(prefix: prefix), implicitFiles)
             /// A plugin's output is named as it was found on disk, so it needs no
             /// matching against the target's own files.
             + generated
@@ -242,7 +249,8 @@ extension SwiftPM.Generator {
         of target: SwiftPM.PackageTarget,
         in directory: Path,
         root: Path,
-        kind: TargetKind) throws -> String?
+        kind: TargetKind) throws
+        -> String?
     {
         guard !paths.isEmpty else { return nil }
         switch kind {

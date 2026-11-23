@@ -1,0 +1,35 @@
+name: Build Bazelize
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  artifact:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: SPM Cache
+        uses: ./.github/actions/swift-cache
+        with:
+          group: root-universal-release
+          path: .build
+          dependencies: ${{ hashFiles('Package.resolved') }}
+
+      - name: Build Bazelize
+        id: build
+        run: |
+          swift build -c release --arch arm64 --arch x86_64
+          binary="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/bazelize"
+          test -x "$binary"
+          echo "binary=$binary" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Bazelize
+        uses: actions/upload-artifact@v7
+        with:
+          name: bazelize
+          path: ${{ steps.build.outputs.binary }}
+          if-no-files-found: error

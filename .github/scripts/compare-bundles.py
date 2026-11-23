@@ -91,6 +91,19 @@ def load_plist(path: Path) -> tuple[bool, Any]:
             ValueError,
         ):
             pass
+    if path.suffix == ".strings":
+        # Xcode may emit an OpenStep strings table while Bazel retains another
+        # valid encoding. plutil understands these tables; plistlib does not.
+        try:
+            result = subprocess.run(
+                ["plutil", "-convert", "xml1", "-o", "-", str(path)],
+                capture_output=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                return True, plistlib.loads(result.stdout)
+        except (OSError, ExpatError, plistlib.InvalidFileException, ValueError):
+            pass
     return False, None
 
 

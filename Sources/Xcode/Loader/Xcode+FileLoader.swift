@@ -100,8 +100,9 @@ struct FileLoader {
     }
 
     var sdkFrameworkName: String? {
-        guard isSDKFramework else { return nil }
-        return frameworkName
+        guard isSDKFramework, let name else { return nil }
+        // JSON projects can omit the display name and retain an SDK-relative path.
+        return Path(name).lastComponentWithoutExtension
     }
 
     var sdkDylibName: String? {
@@ -334,7 +335,7 @@ extension String {
 
 extension String {
     /// Directories Xcode treats as one resource, whatever they contain.
-    fileprivate static let resourceWrapperExtensions: Set<String> = [
+    fileprivate static let resourceWrapperExtensions: Set = [
         "bundle",
         "docc",
         "icon",
@@ -342,7 +343,7 @@ extension String {
         "scnassets",
         "xcassets",
         "xcdatamodeld",
-        "xcstickers"
+        "xcstickers",
     ]
 
     fileprivate var isInsideResourceWrapper: Bool {

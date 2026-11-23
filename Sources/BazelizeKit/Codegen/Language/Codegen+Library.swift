@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import Util
 import Starlark
+import Util
 
 extension Target {
     /// The Swift module name, which is also what the generated Objective-C
@@ -33,6 +33,7 @@ extension Target {
     func generateLibrary(_ builder: CodeBuilder, _ kit: Kit) {
         let name = name
         let cFamily = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
+        let fileFlags = fileCompilerPlan(kit)
 
         generateAssets(builder, kit)
         generateResources(builder, kit)
@@ -41,15 +42,15 @@ extension Target {
         case (true, false):
             generateSwiftLibrary(builder, kit)
         case (false, true):
-            generateObjcLibrary(builder, kit)
+            generateObjcLibrary(builder, kit, fileFlags: fileFlags)
         case (false, false):
-            generateMixedLanguageLibrary(builder, kit)
+            generateMixedLanguageLibrary(builder, kit, fileFlags: fileFlags)
         case (true, true):
             Log.codeGenerate.warning("Target(\(name, privacy: .public)) can't happen")
         }
     }
 
-    private func generateMixedLanguageLibrary(_ builder: CodeBuilder, _ kit: Kit) {
+    private func generateMixedLanguageLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan) {
         let project = kit.project
         let plugin = kit.plugins.compactMap {
             $0[name]
@@ -68,15 +69,11 @@ extension Target {
                 name: "\(name)_mixed",
                 clang_copts: ([
                     "-fblocks",
-                    "-fobjc-arc",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",
                 ] + clangDialectCopts + forceIncludeFlags + clangCopts(kit)).starlark,
                 clang_srcs: .build {
-                    srcs_c
-                    srcs_cpp
-                    srcs_objc
-                    srcs_objcpp
+                    fileFlags.sources
                     internalHeaderFiles(project: project)
                     definesHeader
                 },
@@ -98,6 +95,7 @@ extension Target {
                 includes: headerIncludes(project: project),
                 linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
+                non_arc_srcs: fileFlags.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,
                 sdk_frameworks: sdkFrameworks(project: project),
                 swift_copts: moduleSwiftCopts(project: project)?.starlark,
@@ -125,5 +123,4 @@ extension Target {
                 tags: manual,
                 visibility: .public))
     }
-
 }

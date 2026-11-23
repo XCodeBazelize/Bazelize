@@ -14,9 +14,16 @@ extension String {
     /// Not `resolvingSymlinksInPath()`: that one drops a leading `/private`,
     /// which is the prefix `/tmp` resolves to.
     var realPath: String {
-        guard let resolved = realpath(self, nil) else { return self }
-        defer { free(resolved) }
-        return String(cString: resolved)
+        if let resolved = realpath(self, nil) {
+            defer { free(resolved) }
+            return String(cString: resolved)
+        }
+        // realpath requires the leaf to exist. Resolve the nearest existing
+        // ancestor so a missing file keeps its project-relative path too.
+        let path = Path(self).normalize()
+        let parent = path.parent()
+        guard parent != path else { return path.string }
+        return (Path(parent.string.realPath) + path.lastComponent).string
     }
 }
 

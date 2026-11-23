@@ -18,15 +18,19 @@ coherent:
 
 .PHONY: format
 format:
-	swiftformat .
+	python3 scripts/format-swift.py
 
 .PHONY: build
-build: format
+build:
 	swift build
 
 .PHONY: test
 test:
 	swift test
+
+.PHONY: install-hooks
+install-hooks:
+	git config --local core.hooksPath .githooks
 
 .PHONY: bazelize
 bazelize: install

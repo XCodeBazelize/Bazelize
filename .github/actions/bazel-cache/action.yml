@@ -1,0 +1,68 @@
+name: Mainline Bazel cache
+description: Restore shared mainline downloads and toolchain-specific action outputs; save only on the default branch.
+inputs:
+  group:
+    description: Fixture or SDK whose action outputs this job produces.
+    required: true
+  save-repository:
+    description: Designated download-cache writer for this workflow.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Identify toolchain
+      id: identity
+      shell: bash
+      run: |
+        toolchain=$( { xcodebuild -version; swift --version; } | shasum -a 256 | cut -d ' ' -f 1)
+        echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
+
+    # The new namespace excludes old PR-local snapshots. Compatible keys contain
+    # no branch name; GitHub then falls back to the default branch on restore.
+    - name: Restore shared downloads
+      if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch) || inputs.save-repository != 'true'
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          ~/bazel-repo
+          ~/.cache/bazelize/buildifier
+        key: bazel-downloads-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Sources/BazelizeKit/BazelDep/*.swift') }}-${{ github.sha }}
+        restore-keys: |
+          bazel-downloads-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Sources/BazelizeKit/BazelDep/*.swift') }}-
+
+    - name: Update shared downloads on mainline
+      if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && inputs.save-repository == 'true'
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/bazel-repo
+          ~/.cache/bazelize/buildifier
+        key: bazel-downloads-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Sources/BazelizeKit/BazelDep/*.swift') }}-${{ github.sha }}
+        restore-keys: |
+          bazel-downloads-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Sources/BazelizeKit/BazelDep/*.swift') }}-
+
+    - name: Restore mainline action outputs
+      if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/bazel-disk
+        key: bazel-actions-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-${{ github.sha }}
+        restore-keys: |
+          bazel-actions-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-
+
+    # actions/cache saves in its post-job step, after Bazel has produced outputs.
+    - name: Update action outputs on mainline
+      if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      uses: actions/cache@v5
+      with:
+        path: ~/bazel-disk
+        key: bazel-actions-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-${{ github.sha }}
+        restore-keys: |
+          bazel-actions-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-
+
+    - name: Configure Bazel caches
+      shell: bash
+      run: |
+        echo "build --disk_cache=$HOME/bazel-disk" >> "$HOME/.bazelrc"
+        echo "build --repository_cache=$HOME/bazel-repo" >> "$HOME/.bazelrc"
+        echo "common --experimental_repository_downloader_retries=10" >> "$HOME/.bazelrc"
