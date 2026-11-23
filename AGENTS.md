@@ -27,6 +27,21 @@ Install the local staged-content check with `make install-hooks`. It never
 rewrites the index or working tree. Do not run SwiftFormat in CI or as a build
 dependency. Preserve fixture compatibility with each manifest's Swift version.
 
+Prefer declarative path definitions. Initialize a path owned by an object in
+its initializer, or store the root and expose fixed derived paths as computed
+properties. This applies to tests too: avoid a temporary `destination` local
+whose only purpose is `root + "config/custom.yaml"`; give that location a named
+property on the fixture instead. Keep local values when they represent a real
+intermediate result or a runtime choice.
+
+```swift
+init(_ root: Path) {
+    path = root + "config.bazelrc"
+}
+
+var foo: Path { root + "Foo" }
+```
+
 ## Issue language
 
 Every issue this repository files carries both English and 中文, in that order,
