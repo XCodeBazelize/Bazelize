@@ -284,6 +284,18 @@ and device bundles. Compile-only jobs do not claim runtime execution. Generated
 Starlark is checked in the workspaces these jobs already generated, without
 resolving the entire fixture graph again in a separate lint job.
 
+Swift and Compatibility share one workflow-level `macos-validation` queue.
+Only one complete validation runs at a time across PRs, branch pushes, version
+tags, and manual corpus runs; later validations wait instead of cancelling it.
+`queue: max` retains up to 100 pending runs. Setting only
+`cancel-in-progress: false` would still let a newer submission replace the one
+pending run. If that queue is full, GitHub cancels additional whole runs.
+
+Within the active workflow, the local SwiftPM fixture matrix runs at most four
+jobs together, and each external corpus matrix at most two. Every existing
+fixture and SDK check remains scheduled. These limits reduce hosted macOS arm64
+runner pressure; they do not guarantee GitHub's external runner availability.
+
 The Xcode-format parity check generates independent workspace roots and preserves
 both roots. It compares all generated files and executable bits, excluding only
 SwiftPM `.build` state. Absolute links into each workspace are relocated to one
