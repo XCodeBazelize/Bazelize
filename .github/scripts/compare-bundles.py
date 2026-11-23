@@ -423,6 +423,18 @@ def compare_entries(
     return differences
 
 
+def entitlements(path: Path) -> dict:
+    result = subprocess.run(
+        ["codesign", "--display", "--entitlements", ":-", str(path)],
+        capture_output=True,
+    )
+    if result.returncode:
+        if b"not signed at all" in result.stderr:
+            return {}
+        raise RuntimeError(result.stderr.decode())
+    return plistlib.loads(result.stdout) if result.stdout.strip() else {}
+
+
 def load_baseline(path: Path | None, bundle: str) -> dict[str, str]:
     if path is None:
         return {}
@@ -460,6 +472,10 @@ def main() -> int:
         type=Path,
         help="documented differences accepted for this bundle",
     )
+    parser.add_argument(
+        "--entitlements", action="store_true",
+        help="also compare decoded code-signing entitlements (unsigned objects have none)",
+    )
     arguments = parser.parse_args()
 
     for bundle in (arguments.reference, arguments.generated):
@@ -491,6 +507,13 @@ def main() -> int:
         generated = entries_below(arguments.generated)
 
     differences += compare_entries(reference, generated)
+    if arguments.entitlements:
+        for path in sorted(reference.keys() & generated.keys()):
+            left, right = reference[path], generated[path]
+            if left.is_file() and right.is_file() and not left.is_symlink() and not right.is_symlink():
+                if is_macho(left) and is_macho(right):
+                    differences += plist_differences(
+                        f"entitlements:{path}", entitlements(left), entitlements(right))
 
     try:
         baseline = load_baseline(arguments.baseline, bundle_name)

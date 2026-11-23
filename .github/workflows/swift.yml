@@ -60,7 +60,9 @@ jobs:
 
     # The snapshot tests read the generated fixture project.
     - name: Generate iOS fixture
-      run: tuist generate --path fixture/iOS --no-open
+      run: |
+        tuist generate --path fixture/iOS --no-open
+        python3 .github/scripts/prepare-xcode-fixture.py
 
     - name: SPM Cache
       uses: ./.github/actions/swift-cache
@@ -110,7 +112,9 @@ jobs:
         run: sudo xcode-select --switch /Applications/Xcode_27.2.app/Contents/Developer
 
       - name: Generate Xcode project
-        run: tuist generate --path fixture/iOS --no-open
+        run: |
+          tuist generate --path fixture/iOS --no-open
+          python3 .github/scripts/prepare-xcode-fixture.py
 
       # Every `bazel` in this job reads these: the disk cache holds what the
       # build produced, the repository cache what it downloaded. Without the
@@ -172,7 +176,7 @@ jobs:
 
       - name: Build Products
         working-directory: fixture/iOS/App
-        run: bazel build //Targets/Example //Targets/MacBundle
+        run: bazel build //Targets/Example //Targets/MacBundle //Targets/ProductProbe
 
       - name: Run Per-File Flag Probe
         working-directory: fixture/iOS/App
@@ -231,7 +235,9 @@ jobs:
           cache_save: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
       - name: Generate Xcode project
-        run: tuist generate --path fixture/iOS --no-open
+        run: |
+          tuist generate --path fixture/iOS --no-open
+          python3 .github/scripts/prepare-xcode-fixture.py
 
       - name: Bazel Cache
         uses: ./.github/actions/bazel-cache
@@ -258,6 +264,16 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ENABLE_DEBUG_DYLIB=NO \
             build
+
+          xcodebuild \
+            -project Example.xcodeproj \
+            -scheme ProductProbe \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/xcode" \
+            CODE_SIGNING_ALLOWED=NO ENABLE_DEBUG_DYLIB=NO \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
 
           xcodebuild \
             -project Example.xcodeproj \
@@ -290,6 +306,11 @@ jobs:
             grep 'MacBundle.zip$')
           mkdir -p "$RUNNER_TEMP/bazel"
           unzip -q "$bundle" -d "$RUNNER_TEMP/bazel"
+          bazel build //Targets/ProductProbe --config=Debug --ios_multi_cpus=sim_arm64 --remote_download_outputs=all
+          ios_bundle=$(bazel cquery //Targets/ProductProbe --config=Debug --ios_multi_cpus=sim_arm64 --output=files |
+            grep 'ProductProbe.ipa$')
+          mkdir -p "$RUNNER_TEMP/bazel-ios"
+          unzip -q "$ios_bundle" -d "$RUNNER_TEMP/bazel-ios"
 
       - name: Compare Product Bundle
         run: |
@@ -297,6 +318,17 @@ jobs:
             --reference "$RUNNER_TEMP/xcode/Build/Products/Debug/MacBundle.bundle" \
             --generated "$RUNNER_TEMP/bazel/MacBundle.bundle" \
             --baseline .github/scripts/bundle-differences.json
+
+      - name: Boot Simulator for product proof
+        run: .github/scripts/boot-apple-simulator.sh
+
+      - name: Compare iOS products and observe installed app
+        run: |
+          python3 .github/scripts/verify-ios-products.py \
+            --reference "$RUNNER_TEMP/xcode/Build/Products/Debug-iphonesimulator/ProductProbe.app" \
+            --generated "$RUNNER_TEMP/bazel-ios/Payload/ProductProbe.app" \
+            --baseline .github/scripts/bundle-differences.json \
+            --simulator "$SIMULATOR_UDID"
 
       # The symbols a catalog becomes are source the target compiles, so they are
       # compared as source: Xcode writes its copy into DerivedSources, and the two
