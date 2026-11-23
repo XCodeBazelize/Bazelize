@@ -75,6 +75,9 @@ jobs:
     - name: Test generated workspace comparison
       run: python3 .github/scripts/test_compare_generated_workspaces.py
 
+    - name: Test release eligibility
+      run: python3 .github/scripts/test_release.py
+
     - name: Build debug products
       run: make build
 
