@@ -16,12 +16,14 @@ final class ProjectLoader {
     private let native: PBXProj
     private let path: Path
     let preferConfig: String?
+    let toolchain: Toolchain
 
-    init(path: Path, preferConfig: String?) throws {
+    init(path: Path, preferConfig: String?) async throws {
         self.path = path
         self.preferConfig = preferConfig
         xcodeProj = try XcodeProj(path: path)
         native = xcodeProj.pbxproj
+        toolchain = await Toolchain.load()
     }
 
     var rootProject: PBXProject? {

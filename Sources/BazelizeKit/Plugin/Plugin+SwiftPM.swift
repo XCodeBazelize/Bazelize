@@ -235,16 +235,27 @@ final class PluginSwiftPM: PluginBuiltin {
     override func build(_ builder: CodeBuilder) {
         guard hasPackages else { return }
 
-        builder.load(loadableRule: Rules.Swift.swift_binary)
+        builder.load(loadableRule: Rules.Swift.swift_library)
+        builder.load(.macos_command_line_application)
         builder.load(loadableRule: Rules.Shell.sh_binary)
         builder.call(
-            Rules.Swift.Call.swift_binary(
-                name: "_plugin_host",
+            Rules.Swift.Call.swift_library(
+                name: "_plugin_host_library",
+                copts: ["-swift-version", "6"],
                 srcs: ["plugin-host.swift"],
-                tags: ["manual"],
-                /// A command plugin's own target runs it too, and that target
-                /// belongs to the package the plugin came from.
-                visibility: .public))
+                deps: ["@bazelize_subprocess//:Subprocess"],
+                tags: ["manual"]))
+        // The runtime requires macOS 13 even when the consumer targets older
+        // systems. The native tool rule transitions the whole host dependency
+        // closure without raising the application's deployment target.
+        builder.call(
+            Rules.Apple.MacOS.macos_command_line_application.call {
+                "name" => "_plugin_host"
+                "deps" => [":_plugin_host_library"]
+                "minimum_os_version" => "13.0"
+                "tags" => ["manual"]
+                "visibility" => ["//visibility:public"]
+            })
         builder.call(
             Rules.Shell.Call.sh_binary(
                 name: "plugins",

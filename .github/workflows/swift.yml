@@ -527,6 +527,13 @@ jobs:
           ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
           ! unzip -Z1 "$bundle" | grep -q "de.lproj"
 
+      # The subprocess runtime needs macOS 13 while the consumer may target 12.
+      # Building only the host isolates this from the fixture plugin's own APIs.
+      - name: Build Plugin Host For Older Consumer
+        if: matrix.name == 'PrebuildPlugin'
+        working-directory: spm/PrebuildPlugin/App
+        run: bazel build //:_plugin_host --macos_minimum_os=12.0
+
       # A command plugin is not run by a build: it is a verb someone types, and
       # running it is the only proof it is there. The fixture also has an
       # executable product named `hello`, so the command target is disambiguated

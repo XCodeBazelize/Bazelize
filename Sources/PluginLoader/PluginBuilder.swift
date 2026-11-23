@@ -8,7 +8,6 @@
 import Foundation
 @preconcurrency import PathKit
 import Subprocess
-import System
 import Util
 
 // MARK: - PluginCompiler
@@ -71,12 +70,12 @@ enum PluginCompiler {
     private static func build(plugin: PluginInfo) async throws {
         let repo = git + plugin.user_repo
         if !repo.exists {
-            try await run("git", "clone", plugin.url, plugin.user_repo, cwd: git)
+            try await Commands.clonePluginRepository(url: plugin.url, name: plugin.user_repo, in: git)
         }
 
-        try await run("git", "checkout", plugin.tag, cwd: repo)
+        try await Commands.checkoutPluginRevision(plugin.tag, in: repo)
 
-        try await run("swift", "build", "-c", "release", cwd: repo)
+        try await Commands.buildReleasePlugin(in: repo)
 
         let release = repo + ".build" + "release"
 
@@ -91,37 +90,12 @@ enum PluginCompiler {
     }
 }
 
-extension PluginCompiler {
-    fileprivate static func run(
-        _ executable: String,
-        _ arguments: String...,
-        cwd: Path)
-        async throws
-    {
-        Log.pluginLoader.info("""
-        \(cwd.string)> \(executable) \(arguments.joined(separator: " "))
-        """)
-
-        let result = try await Subprocess.run(
-            .name(executable),
-            arguments: Arguments(arguments),
-            workingDirectory: FilePath(cwd.string),
-            output: .discarded,
-            error: .currentStandardError)
-
-        guard result.terminationStatus.isSuccess else {
-            throw CommandError(
-                command: "\(executable) \(arguments.joined(separator: " "))",
-                status: result.terminationStatus)
-        }
-    }
-}
 
 // MARK: - CommandError
 
 struct CommandError: Error, CustomStringConvertible {
     let command: String
-    let status: TerminationStatus
+    let status: Subprocess.TerminationStatus
 
     var description: String {
         "`\(command)` failed with \(status)"

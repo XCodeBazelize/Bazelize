@@ -15,6 +15,7 @@ public final class Kit {
     let project: Project
     let outputRoot: Path
     let configuration: BazelizeConfiguration
+    private let sdkFrameworkNames: [String: Set<String>]
 
     private lazy var roadmap = Bazel.Roadmap(output: outputRoot, project: project)
     lazy var version = Bazel.Version(outputRoot)
@@ -41,6 +42,7 @@ public final class Kit {
         PluginApple(self),
         PluginSwift(self),
         PluginXcodeProj(self),
+        PluginSubprocess(self),
         PluginPlistFragment(self),
         PluginLinker(self),
     ]
@@ -51,13 +53,19 @@ public final class Kit {
         _ projPath: Path,
         _ preferConfig: String?,
         outputPath: Path? = nil,
-        configuration: BazelizeConfiguration = .default) async throws {
+        configuration: BazelizeConfiguration = .default) async throws
+    {
         self.configuration = configuration
-        project = try Project.load(path: projPath, preferConfig: preferConfig)
+        project = try await Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
         plugins = []
+        sdkFrameworkNames = await SDKFrameworks.load(targets: project.targets)
 
         try await pluginSPM.loadPackageNames(projPath: projPath)
+    }
+
+    func availableFrameworks(for target: Target) -> Set<String> {
+        sdkFrameworkNames[SDKFrameworks.sdkName(for: target.platformSDK)] ?? []
     }
 
     // MARK: Public
@@ -225,8 +233,8 @@ extension Kit {
         }
 
         do {
-            try await SwiftPM.PluginHost.runPlugins(in: outputRoot)
-            try generator.refreshPluginPackages()
+            try await Commands.runBuildToolPlugins(in: outputRoot)
+            try await generator.refreshPluginPackages()
         } catch {
             generator.note("""
             `bazel run //:plugins` did not run the build tool plugins: \(error). \

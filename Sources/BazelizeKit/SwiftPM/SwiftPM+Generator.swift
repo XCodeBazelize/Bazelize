@@ -78,7 +78,7 @@ extension SwiftPM {
             self.deployment = deployment
         }
 
-        func generate(locals: [Path] = []) async throws {
+        func generate(locals _: [Path] = []) async throws {
             for package in workspace.packages {
                 kinds[package.directory] = try supportedTargets(of: package)
                 report(deploymentOf: package)
@@ -99,7 +99,7 @@ extension SwiftPM {
             try preparePackagesRoot()
 
             for package in workspace.packages {
-                try generate(package)
+                try await generate(package)
             }
 
             try writePluginRunner()
@@ -124,9 +124,9 @@ extension SwiftPM {
         /// extension at all — is only known from what landed there. The rules
         /// are written once more with that in hand, so the first run of a
         /// workspace says the same thing every later one does.
-        func refreshPluginPackages() throws {
+        func refreshPluginPackages() async throws {
             for package in workspace.packages where pluginPackages.contains(package.directory) {
-                try generate(package)
+                try await generate(package)
             }
         }
 
@@ -221,7 +221,7 @@ extension SwiftPM {
             try (packagesRoot + "swiftpm_resource_bundle.bzl").write(Self.resourceBundleRule + "\n")
         }
 
-        private func generate(_ package: Package) throws {
+        private func generate(_ package: Package) async throws {
             let root = packagesRoot + package.directory
             try root.mkpath()
 
@@ -259,12 +259,13 @@ extension SwiftPM {
                 guard let prefix = try materialize(target, in: package, at: root) else { continue }
 
                 if case .system = kind {
-                    if !buildSystemLibrary(
-                        target,
-                        in: package,
-                        prefix: prefix,
-                        root: root,
-                        builder: builder)
+                    if
+                        await !buildSystemLibrary(
+                            target,
+                            in: package,
+                            prefix: prefix,
+                            root: root,
+                            builder: builder)
                     {
                         emitted[target.name] = nil
                     }

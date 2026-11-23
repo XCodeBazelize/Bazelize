@@ -314,6 +314,22 @@ configuration. It never rewrites the working tree or index, so partially staged
 edits remain separate. Generated workspaces and external checkouts are excluded
 by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
 
+Swift child processes belong to module-local `Commands` operations named for
+their purpose. Their only execution backend is `swift-subprocess`; callers
+await discovery and execution rather than block a thread. Toolchain and SDK
+framework discovery share immutable results across concurrent generations.
+
+The generated macOS plugin host also uses `swift-subprocess`. Its pinned source
+archive and C shims are declared in Bazel under `tools/subprocess`, independently
+of the consumer's SwiftPM graph. The host requires macOS 13; its native command
+line rule applies that deployment floor only to the host and its dependencies.
+Plugin protocol messages remain binary, and build commands retain their
+arguments, environment overrides, working directory, and failure diagnostics.
+
+Repository dependency catalogs are regenerated with `swift run RepoEnumGenerator`
+or `make update-repo-enums`. This replaces the forwarding `repo-enum` package
+plugin: SwiftPM command plugins cannot import the subprocess library.
+
 ### Unsupported targets
 
 A target whose product type — or, for an application, whose platform — has no

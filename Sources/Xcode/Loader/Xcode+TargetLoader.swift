@@ -34,7 +34,7 @@ struct TargetLoader {
                 ///
                 /// The platform is resolved rather than read: `SDKROOT` is
                 /// optional, and `auto` names no SDK at all.
-                .with(defaults: Toolchain
+                .with(defaults: project.toolchain
                     .settings(sdk: settings.platform.resolvedSDK?.rawValue)
                     .merging(["CONFIGURATION": settings.name]) { _, new in new })
         }

@@ -50,8 +50,9 @@ generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
 
 ### Release catalog
 
-`BazelDep+Buildifier.swift` 由 `repo-enum` package plugin 依 `RepoSources.yml`
-產生，內含 GitHub release API 回報的各 asset SHA-256 digest。
+`BazelDep+Buildifier.swift` 由 `swift run RepoEnumGenerator`（亦可執行
+`make update-repo-enums`）依 `RepoSources.yml` 產生，內含 GitHub release API
+回報的各 asset SHA-256 digest。
 
 只有同時滿足以下兩點的 release 才會被產生：
 

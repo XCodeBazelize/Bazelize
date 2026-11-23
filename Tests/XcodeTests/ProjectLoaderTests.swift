@@ -24,14 +24,14 @@ struct ProjectLoaderTests {
     }
 
     @Test(.corpus("IceCubesApp/IceCubesApp.xcodeproj"))
-    func synchronizedExtensionTargetIncludesExpectedSourceFiles() throws {
+    func synchronizedExtensionTargetIncludesExpectedSourceFiles() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "app/IceCubesApp/IceCubesApp.xcodeproj"
 
-        let project = try Xcode.Project.load(path: projectPath, preferConfig: nil)
+        let project = try await Xcode.Project.load(path: projectPath, preferConfig: nil)
         let target = try #require(project.targets.first { $0.name == "IceCubesShareExtension" })
 
         #expect(target.files.sources.contains { $0.path == "IceCubesShareExtension/ShareViewController.swift" })
@@ -39,14 +39,14 @@ struct ProjectLoaderTests {
     }
 
     @Test(.corpus("iina/IINA.xcodeproj"))
-    func resolvesXCConfigSettingsForIINACommandLineTarget() throws {
+    func resolvesXCConfigSettingsForIINACommandLineTarget() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "app/iina/IINA.xcodeproj"
 
-        let project = try Xcode.Project.load(path: projectPath, preferConfig: "Release")
+        let project = try await Xcode.Project.load(path: projectPath, preferConfig: "Release")
         let target = try #require(project.targets.first { $0.name == "iina-cli" })
 
         #expect(target.prefer(\.platform.sdk) == .macOS)
@@ -54,14 +54,14 @@ struct ProjectLoaderTests {
     }
 
     @Test(.corpus("iina/IINA.xcodeproj"))
-    func classifiesIINAFrameworkDependencies() throws {
+    func classifiesIINAFrameworkDependencies() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "app/iina/IINA.xcodeproj"
 
-        let project = try Xcode.Project.load(path: projectPath, preferConfig: "Release")
+        let project = try await Xcode.Project.load(path: projectPath, preferConfig: "Release")
         let target = try #require(project.targets.first { $0.name == "iina" })
 
         #expect(target.dependencies.sdkFrameworks.contains("CoreDisplay"))
