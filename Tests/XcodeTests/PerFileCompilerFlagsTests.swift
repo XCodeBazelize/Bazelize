@@ -16,15 +16,25 @@ struct PerFileCompilerFlagsTests {
             "localizations": ["development": "en", "supported": ["en"]],
             "packages": [],
             "files": [
-                ["kind": "folder", "path": "Sources", "target-membership": ["Probe"],
-                 "membership-exceptions": [["target": "Probe", "compiler-flags": [
-                    "main.swift": "-DUNSUPPORTED_PER_FILE -warnings-as-errors",
-                 ]]]],
+                [
+                    "kind": "folder",
+                    "path": "Sources",
+                    "target-membership": ["Probe"],
+                    "membership-exceptions": [["target": "Probe", "compiler-flags": [
+                        "main.swift": "-DUNSUPPORTED_PER_FILE -warnings-as-errors",
+                    ]]],
+                ],
                 ["kind": "group", "name": "Products", "children": [
                     ["path": "<PRODUCTS>/Probe.app", "type": "wrapper.application", "id": "000000000000000000000120"],
                 ]],
             ],
-            "targets": [["name": "Probe", "id": "000000000000000100000000", "product": "Products/Probe.app", "product-type": "application", "build-phases": ["compile-sources"]]],
+            "targets": [[
+                "name": "Probe",
+                "id": "000000000000000100000000",
+                "product": "Products/Probe.app",
+                "product-type": "application",
+                "build-phases": ["compile-sources"],
+            ]],
             "build-settings": ["SDKROOT": "macosx", "MACOSX_DEPLOYMENT_TARGET": "13.0"],
         ]
         try (root + "Probe.xcodeproj/project.xcproj").write(JSONSerialization.data(withJSONObject: json))

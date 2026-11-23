@@ -43,7 +43,8 @@ extension SwiftPM.Generator {
         root: Path,
         kind: TargetKind,
         generated: [String],
-        builder: CodeBuilder) throws -> ResourceBundle?
+        builder: CodeBuilder) throws
+        -> ResourceBundle?
     {
         guard let directory = sourceDirectory(of: target, in: package) else { return nil }
 
@@ -248,7 +249,8 @@ extension SwiftPM.Generator {
         of target: SwiftPM.PackageTarget,
         in directory: Path,
         root: Path,
-        kind: TargetKind) throws -> String?
+        kind: TargetKind) throws
+        -> String?
     {
         guard !paths.isEmpty else { return nil }
         switch kind {

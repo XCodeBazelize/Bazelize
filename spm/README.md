@@ -33,7 +33,7 @@ would not tell us anything.
 | `TargetExclude` | `exclude:` naming a directory and a single file, neither of which may be compiled — in a package that declares no products at all |
 | `TargetEmbed` | `.embedInCode`, the one rule with no bundle at all: the file's bytes are a generated source |
 | `TargetResource` | every other resource rule: `.copy` of a directory and of a single file, `.process`, an explicit localization, two `.lproj` directories, an asset catalogue, a xib, a storyboard, a data model with two versions, a shader that includes a header, a string catalogue, a privacy manifest, a test target's own resources, and the `.docc` SwiftPM ignores |
-| `RegistryPackage` | a dependency named by registry identity (`.package(id:)`), unpacked where SwiftPM unpacks a registry download — see below, it is not a CI lane |
+| `RegistryPackage` | a dependency named by registry identity (`.package(id:)`), unpacked where SwiftPM unpacks a registry download — CI builds/tests the generated workspace using the offline download below |
 
 Every package of a fixture builds and — where it has tests — passes them, the
 package beside the one bazelize is pointed at included: those are dependencies
@@ -47,8 +47,17 @@ controls in its manifest. SwiftPM and the generated Bazel build must reject it
 as a root or local path package, while an external dependency's consumer must
 build and execute successfully. The external consumer is built in both debug
 and optimized configurations. The dependency is fetched from a local repository,
-and temporary packages are removed afterward. `IntegrateExternalPackage` also converts
-and builds the pinned `swift-composable-architecture` product that exposed #68.
+and temporary packages are removed afterward. The manual/tag `Compatibility`
+workflow also converts and builds the pinned `swift-composable-architecture`
+product that exposed #68.
+
+`ConfigurationCondition` runs native debug/release and Bazel default/optimized
+tests, including checking that the release compilation selects only its release
+define. `Platform` keeps its native/macOS control and condition checks in the
+fixture lane; separate SDK jobs execute iOS/tvOS/watchOS Simulator tests and
+compile visionOS Simulator and physical-device bundles. These compile-only jobs
+do not claim runtime coverage. Every fixture's generated Starlark is checked
+after its existing generation rather than generated again solely for lint.
 
 `.xcmappingmodel` is the one resource kind with no fixture: its source is a
 Core Data XML persistent store that only Xcode's modeler writes — a hand-written
@@ -60,12 +69,12 @@ on: both versions in the bundle, with a mapping derivable between them.
 
 ## The registry fixture
 
-`RegistryPackage` is the one fixture no lane runs, because no registry is
-reachable from this repository. A registry dependency reaches a build as an
-archive SwiftPM unpacked under
-`App/.build/registry/downloads/<scope>/<name>/<version>`, and that directory is
-all generation reads, so the fixture carries what a registry would have served
-under `Registry/` and whoever runs it puts that where SwiftPM would have:
+`RegistryPackage` has an offline Bazel build/test lane. No registry is reachable
+from this repository, so the native root build is deliberately not used as a
+control. A registry dependency reaches a build as an archive SwiftPM unpacked
+under `App/.build/registry/downloads/<scope>/<name>/<version>`, and that directory
+is all generation reads. CI seeds the checked-in `Registry/` contents there
+before generation, using the same setup as the unit test:
 
 ```sh
 cd spm/RegistryPackage
@@ -77,8 +86,9 @@ cd App && bazel test //...
 
 `swift build` on this package does not work without a registry configured for
 the `bazelize` scope, and neither does `swift package resolve` — generation
-says so and carries on with what is unpacked. `Tests/XcodeTests/RegistryPackageTests.swift`
-is the same thing as a test.
+says so and carries on with what is unpacked. CI requires that note, then runs
+the generated Bazel tests. `Tests/XcodeTests/RegistryPackageTests.swift` separately
+checks the generated dependency identity and the expected resolution note.
 
 What that leaves uncovered is resolution itself: fetching, checksum
 verification and version selection are SwiftPM's, happen before anything here

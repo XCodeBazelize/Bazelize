@@ -1,5 +1,7 @@
 import Foundation
 
+// MARK: - FileCompilerPlan
+
 /// A target keeps its public module and label; private C-family groups only
 /// contribute objects. ARC-only overrides use the rules' non_arc_srcs instead.
 struct FileCompilerPlan {
@@ -35,7 +37,9 @@ extension Target {
                 || flags.contains { $0.contains("$(") || $0.contains("${") }
             if unsupported {
                 for flag in flags {
-                    kit.note("\(name): \(path): per-file compiler flag \(flag) is not representable in this module and is left out.")
+                    kit
+                        .note(
+                            "\(name): \(path): per-file compiler flag \(flag) is not representable in this module and is left out.")
                 }
                 continue
             }

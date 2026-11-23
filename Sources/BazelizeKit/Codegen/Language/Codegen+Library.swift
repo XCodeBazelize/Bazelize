@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import Util
 import Starlark
+import Util
 
 extension Target {
     /// The Swift module name, which is also what the generated Objective-C
@@ -123,5 +123,4 @@ extension Target {
                 tags: manual,
                 visibility: .public))
     }
-
 }

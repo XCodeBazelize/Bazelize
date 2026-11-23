@@ -1,0 +1,390 @@
+name: Compatibility
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: read
+
+# Manual runs and version tags are independent of the ordinary PR checks.
+concurrency:
+  group: compatibility-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  artifact:
+    uses: ./.github/workflows/build-bazelize.yml
+
+  # The corpus is not in this repository: `app/` and `spm/` are ignored, so each
+  # lane clones what it measures at the revision it was measured against.
+  IntegrateApp:
+    name: IntegrateApp (${{ matrix.name }})
+    # An app whose revision needs a newer SDK than the default image ships names
+    # the image it is measured against; everything else stays on one image.
+    runs-on: ${{ matrix.runner || 'macos-26' }}
+    needs: [artifact]
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: stats
+            repo: https://github.com/exelban/stats
+            rev: b4251e2ba05511de6b51b296d7b9e98a9c6545f5
+            project: Stats.xcodeproj
+            target: //Targets/Stats
+          - name: MonitorControl
+            repo: https://github.com/MonitorControl/MonitorControl
+            rev: 71b8c5ae51955d17b05688371ea7b899b684bdbd
+            project: MonitorControl.xcodeproj
+            target: //Targets/MonitorControl
+          - name: SwiftBar
+            repo: https://github.com/swiftbar/SwiftBar
+            rev: 05cb6cb1123bc7227ee2b39f390f8bccb839fed0
+            project: SwiftBar.xcodeproj
+            target: //Targets/SwiftBar
+          - name: Rectangle
+            repo: https://github.com/rxhanson/Rectangle
+            rev: b4c9c47c00b4df9cbfb3489dc5eae2f1249ad24a
+            project: Rectangle.xcodeproj
+            target: //...
+          - name: VirtualBuddy
+            repo: https://github.com/insidegui/VirtualBuddy
+            rev: 088351b0fc67e0b24b83e7954ad48314dda4ce04
+            project: VirtualBuddy.xcodeproj
+            target: //Targets/VirtualBuddy
+          # iina links dylibs that are not in its repository, and the script it
+          # ships downloads whatever the feed serves today: at this revision
+          # 48 of the 71 libraries it names are no longer there, so the feed is
+          # pinned to the version whose file list this revision matches.
+          - name: iina
+            repo: https://github.com/iina/iina
+            rev: c111221ea027466b79b40bfca054772d4851e06f
+            project: iina.xcodeproj
+            target: //Targets/iina
+            setup: sed -i '' 's|dylibs/${ARCH}|dylibs/1.4.2/${ARCH}|' other/download_libs.sh && ./other/download_libs.sh --skip-plugins
+          # The one iOS app of the corpus, and the one that embeds several
+          # extensions in a product: a widget, a notification service, a share
+          # sheet and an action. Thirteen packages of its own repository, too.
+          # It needs no setup: the xcconfig its README has you copy is read by
+          # Xcode, not by what bazelize generates.
+          #
+          # The revision is pinned behind the app's head on purpose: the runner
+          # ships Xcode 26.6, and the app adopted iOS 27 API (`defaultTabBarPlacement`)
+          # in the commit after this one. This is the newest revision that
+          # builds against the SDK this lane has.
+          - name: IceCubesApp
+            repo: https://github.com/Dimillian/IceCubesApp
+            rev: b2db3033fbf67a97b54d25d6dac2df8a029b26b1
+            project: IceCubesApp.xcodeproj
+            target: //Targets/IceCubesApp
+
+          # Measured against Xcode 27 locally, and run on the `xcode-27` image
+          # because the revision needs it: `19c3d828` adopted SwiftUI's
+          # `.reorderable()` / `ReorderDifference`, which the macOS 26 SDK does
+          # not have, and the app's `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`
+          # sources are rejected by that older toolchain's concurrency checking.
+          # Its asset catalog holds filenames with spaces and parentheses, which
+          # is what shell-safe asset-symbol generation is measured against.
+          - name: Maccy
+            runner: xcode-27
+            repo: https://github.com/p0deje/Maccy
+            rev: 19c3d8282f50316779085964b5148b76d4bb88ce
+            project: Maccy.xcodeproj
+            target: //Targets/Maccy
+
+          # Three more apps were measured locally but do not meet the lane
+          # contract: NetNewsWire generates no application rule, Mastodon's
+          # pinned Nuke fails under Xcode 27, and Swiftfin fails during SwiftPM
+          # resolution. Their revisions stay recorded so a retry is reproducible.
+          # NetNewsWire: 383e46f28421f7f55934ee3869f431bfde1c6de3
+          # Mastodon: c52a63091abe557724a1e588149f3172466756e5
+          # Swiftfin: a088a83c4deb70d87f4077c7f9e42ecacd0fe8c7
+
+          # Apps measured for the corpus and kept out of it, with the reason
+          # each one was kept out. `xcodebuild` is the control: an app Xcode
+          # cannot build at the revision measured is not a lane, and nothing
+          # about the generated build is to blame. Measured against Xcode 27.0
+          # (SDK 27.0) — a newer revision of any of these may well be green,
+          # which is the point of writing down which one was tried.
+
+          # Carthage dependencies whose deployment targets are 10.9 to 10.15,
+          # below the 12.0 Xcode 27 accepts: `carthage bootstrap` fails on the
+          # first one and `Carthage/Build` is never written, so the app links
+          # nothing. No lane configuration fixes that.
+          # - name: MacPass
+          #   repo: https://github.com/MacPass/MacPass
+          #   rev: 3256bc93ea94eb20b618c155e6a1b08e6fabe663
+          #   project: MacPass.xcodeproj
+          #   target: //Targets/MacPass
+          #   submodules: true
+          #   setup: carthage bootstrap --platform macOS --cache-builds
+
+          # `LanguageServerRowView.swift:40: 'self' used before all stored
+          # properties are initialized` — Swift 6.3 rejects what an older
+          # compiler accepted. xcodebuild fails the same way.
+          # - name: CodeEdit
+          #   repo: https://github.com/CodeEditApp/CodeEdit
+          #   rev: 05704cb7d2b19892ffcb9742b0ab3cc6116af165
+          #   project: CodeEdit.xcodeproj
+          #   target: //Targets/CodeEdit
+
+          # `MACOSX_DEPLOYMENT_TARGET is set to 11.3, but the range of
+          # supported deployment target versions is 12.0 to 27.0.x` for all
+          # five macOS targets. Its sysroot is built by `scripts/build_dependencies.sh`
+          # (QEMU, ANGLE, virglrenderer, MoltenVK from source) or downloaded
+          # from a logged-in GitHub Actions run, neither of which a lane can do.
+          # - name: UTM
+          #   repo: https://github.com/utmapp/UTM
+          #   rev: b6f7475be54f9cb542c46b131319454b83489ced
+          #   project: UTM.xcodeproj
+          #   target: //Targets/macOS
+
+          # No `Package.resolved` is committed, so every dependency floats to
+          # whatever is newest: resolution itself fails today on a manifest
+          # using `visionOS` against an older `PackageDescription`. A pinned
+          # revision would still resolve differently on every run, and its
+          # Carthage bootstrap is the mechanism MacPass was removed over.
+          # - name: PlayCover
+          #   repo: https://github.com/PlayCover/PlayCover
+          #   rev: a103786e03b7f6257b6b489dfc49ca6712423a2e
+          #   project: PlayCover.xcodeproj
+          #   target: //Targets/PlayCover
+
+          # The one kept out by us rather than by the toolchain: Xcode builds
+          # it in 64s, and the generated build does not. Access levels across
+          # the app target and its local packages (`property 'inlineDelimiters'
+          # must be declared public because it matches a requirement in public
+          # protocol`) and an expression the compiler gives up type-checking.
+          # Worth revisiting — it is a bug report, not a dead end.
+          # - name: CotEditor
+          #   repo: https://github.com/coteditor/CotEditor
+          #   rev: 545031e89383b7a20b1b2be4a846fca02dbf9c0f
+          #   project: CotEditor.xcodeproj
+          #   target: //Targets/CotEditor
+    steps:
+      - uses: actions/checkout@v6
+
+      # The disk cache holds what a build produced, the repository cache what it
+      # downloaded, and `.build` what SwiftPM resolved for the app's packages:
+      # generation resolves that graph before a single rule is written.
+      - name: Bazel Cache
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: app-${{ matrix.name }}-${{ matrix.rev }}
+          save-repository: ${{ matrix.name == 'SwiftBar' }}
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Clone ${{ matrix.name }}
+        run: |
+          chmod +x bazelize
+          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
+          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+
+      # After the clone: a restored cache would otherwise create the directory
+      # `git clone` insists on creating itself.
+      - name: SwiftPM Cache
+        uses: ./.github/actions/swift-cache
+        with:
+          group: app-${{ matrix.name }}
+          path: ${{ matrix.name }}/App/.build
+          dependencies: ${{ matrix.rev }}
+
+      - name: Set up ${{ matrix.name }}
+        if: matrix.setup
+        working-directory: ${{ matrix.name }}
+        run: ${{ matrix.setup }}
+
+      - name: Bazel Generation
+        run: |
+          set -o pipefail
+          ./bazelize --input "${{ matrix.name }}/${{ matrix.project }}" --output "${{ matrix.name }}/App" | tee bazelize.log
+          ! grep -q "did not run the" bazelize.log
+
+      - name: Build Application
+        working-directory: ${{ matrix.name }}/App
+        run: |
+          bazel build ${{ matrix.target }} \
+            --build_event_json_file="$GITHUB_WORKSPACE/build-events.json"
+
+      # What the lane built, kept: a bundle that can be downloaded and opened
+      # is the only way to see what a generated build actually produces.
+      # rules_apple packages a macOS application as a `.zip` and an iOS one as
+      # an `.ipa`, and a lane that builds `//...` produces more than one.
+      #
+      # What the build produced is read out of its own event stream rather than
+      # asked for again: a bundle rule transitions its configuration, so the
+      # output is not under the `bazel-bin` symlink — which a multi-platform
+      # build deletes anyway — and a second `cquery` is a second analysis that
+      # can disagree with the build that just succeeded.
+      #
+      # A macOS application is re-packaged as a disk image. `upload-artifact`
+      # zips whatever it is given and follows symlinks doing it, which flattens
+      # the `Versions/Current` links every framework bundle is made of and
+      # breaks the signature with them: what comes back out is an application
+      # macOS refuses to open. A `.dmg` is one opaque file, so it arrives as it
+      # left.
+      #
+      # The signature is ad-hoc either way — no identity exists on a runner —
+      # so Gatekeeper still asks before the first launch. These are build
+      # artifacts to look at, not a release.
+      - name: Collect ${{ matrix.name }}
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/artifacts"
+          python3 - <<'PY'
+          import json, os, shutil
+
+          workspace = os.environ["GITHUB_WORKSPACE"]
+          wanted = (".ipa", ".zip")
+          produced = set()
+
+          with open(f"{workspace}/build-events.json") as events:
+              for line in events:
+                  files = json.loads(line).get("namedSetOfFiles", {}).get("files", [])
+                  for file in files:
+                      uri = file.get("uri", "")
+                      if not uri.startswith("file://") or not uri.endswith(wanted):
+                          continue
+                      if "__internal__" in uri:
+                          continue
+                      produced.add(uri[len("file://"):])
+
+          for path in sorted(produced):
+              shutil.copy(path, f"{workspace}/artifacts/")
+          PY
+
+          cd "$GITHUB_WORKSPACE/artifacts"
+          for archive in *.zip; do
+            [ -f "$archive" ] || continue
+            name="${archive%.zip}"
+            staging=$(mktemp -d)
+            unzip -q "$archive" -d "$staging"
+            # Only an application is worth a disk image; a framework or a test
+            # bundle stays the archive Bazel wrote.
+            if [ -d "$staging/$name.app" ]; then
+              hdiutil create -quiet -volname "$name" -srcfolder "$staging" \
+                -ov -format UDZO "$name.dmg"
+              rm -f "$archive"
+            fi
+            rm -rf "$staging"
+          done
+          ls -l "$GITHUB_WORKSPACE/artifacts"
+
+      - name: Upload ${{ matrix.name }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.name }}
+          path: artifacts
+          if-no-files-found: error
+
+  # Real packages complement the focused fixtures below. Each revision is
+  # immutable; SwiftPM first proves the checkout builds, then Bazel proves the
+  # generated rule for its primary product builds. Upstream test suites are not
+  # used as the control because several encode host locale, timing, or compiler
+  # assumptions unrelated to generated build fidelity.
+  IntegrateExternalPackage:
+    name: IntegrateExternalPackage (${{ matrix.name }})
+    runs-on: macos-26
+    needs: [artifact]
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: swift-collections
+            repo: https://github.com/apple/swift-collections
+            rev: 3b69cedbaa49957e97c092ae400bb57602ef941f
+            target: //Packages/swift-collections:Collections
+          - name: SwiftFormat
+            repo: https://github.com/nicklockwood/SwiftFormat
+            rev: fbc07aca537317b8ecdde8fc22914cdd16d989a2
+            target: //Packages/SwiftFormat:swiftformat
+          - name: swift-protobuf
+            repo: https://github.com/apple/swift-protobuf
+            rev: ad92f08214402fae0e4ab1664fc65c76c1c0fa32
+            target: //Packages/swift-protobuf:SwiftProtobuf
+          - name: GRDB.swift
+            repo: https://github.com/groue/GRDB.swift
+            rev: 0d8cf958b4b66a0473ec6e6986eb9da462171da9
+            target: //Packages/GRDB.swift:GRDB
+          - name: swift-nio
+            repo: https://github.com/apple/swift-nio
+            rev: 6db9d9abd92ad7399b8a564cafbb87d3507245fa
+            target: //Packages/swift-nio:NIOCore
+          - name: swift-dependencies
+            repo: https://github.com/pointfreeco/swift-dependencies
+            rev: b476cc5761057d8d857de063fe7ac8daecf5c06b
+            target: //Packages/swift-dependencies:Dependencies
+          # Two packages that each found a generator bug, kept so it cannot
+          # come back. Both pass `swift build` at these revisions, and both
+          # failed the generated build before the fix named beside them.
+          #
+          # A 6.2 manifest naming no `swiftLanguageModes`: compiled below
+          # Swift 6, `Backports.swift` takes the branch its `#if swift(>=6.3)`
+          # does not define. The one dependency floats (`swift-asn1 from
+          # 1.2.0`, no `Package.resolved`), so a resolution failure here is the
+          # package's and not the generator's.
+          - name: swift-crypto
+            repo: https://github.com/apple/swift-crypto
+            rev: 57de8e7cb840b1a608f0cc2221d8f2bda117606c
+            target: //Packages/swift-crypto:Crypto
+          # An Objective-C test target: generated as a `swift_library` with no
+          # sources, it made the whole package unloadable, so nothing in it
+          # built either.
+          - name: CocoaLumberjack
+            repo: https://github.com/CocoaLumberjack/CocoaLumberjack
+            rev: 788babb106c589aa5c3daf04361a737e7e0e6b95
+            target: //Packages/CocoaLumberjack:CocoaLumberjackSwift
+          # External warning controls must not turn a dependency's diagnostics
+          # into errors for this consumer. The root still keeps its warnings.
+          - name: swift-composable-architecture
+            repo: https://github.com/pointfreeco/swift-composable-architecture
+            rev: bc2db5ba8ad3a47deba5db32fa340637ba6c9a76
+            target: //Packages/swift-composable-architecture:ComposableArchitecture
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bazel Cache
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: external-package-${{ matrix.name }}-${{ matrix.rev }}
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      # The checkout directory is the package directory the generated workspace
+      # files rules under, so it is named after the package rather than
+      # something generic.
+      - name: Clone ${{ matrix.name }}
+        run: |
+          chmod +x bazelize
+          git clone --filter=blob:none "${{ matrix.repo }}" "${{ matrix.name }}"
+          git -C "${{ matrix.name }}" checkout --detach "${{ matrix.rev }}"
+
+      - name: SwiftPM Cache
+        uses: ./.github/actions/swift-cache
+        with:
+          group: external-package-${{ matrix.name }}
+          path: ${{ matrix.name }}/.build
+          dependencies: ${{ matrix.rev }}
+
+      - name: SwiftPM Build
+        working-directory: ${{ matrix.name }}
+        run: swift build
+
+      - name: Bazel Generation
+        run: ./bazelize --input "${{ matrix.name }}" --output "${{ matrix.name }}/App"
+
+      - name: Build Package Product
+        working-directory: ${{ matrix.name }}/App
+        run: bazel build ${{ matrix.target }}

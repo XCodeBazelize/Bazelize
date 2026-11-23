@@ -83,9 +83,10 @@ struct TargetLoader {
         func present(_ files: [Xcode.File]) -> [Xcode.File] {
             files.filter { file in
                 // SDK and sibling build products are not checkout inputs.
-                guard !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree),
-                      let path = file.fullPath,
-                      !path.contains("$("), !path.contains("${")
+                guard
+                    !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree),
+                    let path = file.fullPath,
+                    !path.contains("$("), !path.contains("${")
                 else { return true }
                 guard !FileManager.default.fileExists(atPath: path) else { return true }
                 missing.append(file)
@@ -164,8 +165,9 @@ struct TargetLoader {
                 return nil
             }
 
-            if let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
-               label.hasPrefix("//Prebuilt:")
+            if
+                let label = wrapped.label(buildPhase: BuildPhase.frameworks.rawValue),
+                label.hasPrefix("//Prebuilt:")
             {
                 return label
             }

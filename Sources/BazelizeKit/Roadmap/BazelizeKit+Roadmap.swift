@@ -40,7 +40,8 @@ extension Bazel {
         private func prepare(
             target: Target,
             project: Project,
-            targetsRoot: Path) throws -> [String]
+            targetsRoot: Path) throws
+            -> [String]
         {
             let targetRoot = targetsRoot + target.name
             let sourcesRoot = targetRoot + "Sources"
@@ -277,7 +278,8 @@ extension Xcode.Target {
 
     fileprivate func pathsForRoadmapTree(project: Project) -> [String] {
         let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
-        let candidates = (allFiles.compactMap(\.roadmapRelativePath) + settingReferencedPaths + headerSearchPaths(project: project)).sorted {
+        let candidates = (allFiles
+            .compactMap(\.roadmapRelativePath) + settingReferencedPaths + headerSearchPaths(project: project)).sorted {
             let lhsDepth = $0.split(separator: "/").count
             let rhsDepth = $1.split(separator: "/").count
             if lhsDepth == rhsDepth {

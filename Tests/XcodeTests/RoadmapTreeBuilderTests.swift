@@ -28,7 +28,13 @@ struct RoadmapTreeBuilderTests {
                     ["path": "<PRODUCTS>/Probe.app", "type": "wrapper.application", "id": "000000000000000000000120"],
                 ]],
             ],
-            "targets": [["name": "Probe", "id": "000000000000000100000000", "product": "Products/Probe.app", "product-type": "application", "build-phases": ["compile-sources", "headers", "resources"]]],
+            "targets": [[
+                "name": "Probe",
+                "id": "000000000000000100000000",
+                "product": "Products/Probe.app",
+                "product-type": "application",
+                "build-phases": ["compile-sources", "headers", "resources"],
+            ]],
             "build-settings": ["SDKROOT": "macosx", "MACOSX_DEPLOYMENT_TARGET": "13.0"],
         ]
         try (real + "Probe.xcodeproj/project.xcproj").write(JSONSerialization.data(withJSONObject: json))

@@ -11,6 +11,17 @@ merging the pull request closes it. Work that only investigates an issue, or
 that changes the issue's own description, uses `Refs #44` instead: an
 investigation is not a fix.
 
+## Swift code style
+
+Use nicklockwood/SwiftFormat, pinned in `mise.toml`, with the repository's
+`.swiftformat` rules. Run `make format` before committing changed Swift files,
+then review and stage the intended changes. Before opening a PR, also format
+files changed since its base with
+`python3 scripts/format-swift.py --base origin/master` (use the actual base).
+Install the local staged-content check with `make install-hooks`. It never
+rewrites the index or working tree. Do not run SwiftFormat in CI or as a build
+dependency. Preserve fixture compatibility with each manifest's Swift version.
+
 ## Issue language
 
 Every issue this repository files carries both English and 中文, in that order,

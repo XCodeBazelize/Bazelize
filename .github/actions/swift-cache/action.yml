@@ -1,0 +1,41 @@
+name: Mainline Swift cache
+description: Reuse SwiftPM state from the default branch without saving PR or tag snapshots.
+inputs:
+  group:
+    description: Package and build configuration.
+    required: true
+  path:
+    description: SwiftPM build directory.
+    required: true
+  dependencies:
+    description: Dependency lockfile hash or pinned external revision.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Identify toolchain
+      id: identity
+      shell: bash
+      run: |
+        toolchain=$( { xcodebuild -version; swift --version; } | shasum -a 256 | cut -d ' ' -f 1)
+        echo "toolchain=$toolchain" >> "$GITHUB_OUTPUT"
+
+    - name: Restore mainline SwiftPM state
+      if: github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ inputs.path }}
+        key: swift-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-${{ inputs.dependencies }}-${{ github.sha }}
+        restore-keys: |
+          swift-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-${{ inputs.dependencies }}-
+          swift-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-
+
+    - name: Update SwiftPM state on mainline
+      if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+      uses: actions/cache@v5
+      with:
+        path: ${{ inputs.path }}
+        key: swift-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-${{ inputs.dependencies }}-${{ github.sha }}
+        restore-keys: |
+          swift-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-${{ inputs.dependencies }}-
+          swift-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-${{ inputs.group }}-

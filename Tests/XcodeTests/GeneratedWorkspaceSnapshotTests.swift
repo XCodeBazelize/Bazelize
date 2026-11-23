@@ -27,7 +27,7 @@ struct GeneratedWorkspaceSnapshotTests {
                 "Targets/MacBundle/BUILD",
                 "Targets/Framework1/BUILD",
                 "Targets/StaticFramework1/BUILD",
-                "Packages/Local1/BUILD"
+                "Packages/Local1/BUILD",
             ])
     }
 
@@ -37,7 +37,7 @@ struct GeneratedWorkspaceSnapshotTests {
             input: "spm/TargetResource",
             snapshot: "TargetResource",
             files: [
-                "Packages/TargetResource/BUILD"
+                "Packages/TargetResource/BUILD",
             ])
     }
 

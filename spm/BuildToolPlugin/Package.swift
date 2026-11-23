@@ -32,25 +32,21 @@ let package = Package(
             ],
             resources: [
                 .copy("tds"),
-            ]
-        ),
+            ]),
         .target(name: "TbParser"),
-        
+
         .plugin(
             name: "GenerateTbTestCode",
             capability: .buildTool(),
             dependencies: [
                 "TbCodeGenerater",
-            ]
-        ),
+            ]),
         .testTarget(
             name: "TbParserTests",
             dependencies: [
-                "TbParser"
+                "TbParser",
             ],
             plugins: [
                 "GenerateTbTestCode",
-            ]
-        )
-    ]
-)
+            ]),
+    ])

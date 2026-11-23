@@ -1,0 +1,30 @@
+name: Build Bazelize
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  artifact:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: SPM Cache
+        uses: ./.github/actions/swift-cache
+        with:
+          group: root-universal-release
+          path: .build
+          dependencies: ${{ hashFiles('Package.resolved') }}
+
+      - name: Build Bazelize
+        run: swift build -c release --arch arm64 --arch x86_64
+
+      - name: Upload Bazelize
+        uses: actions/upload-artifact@v7
+        with:
+          name: bazelize
+          path: .build/apple/Products/Release/bazelize
+          if-no-files-found: error

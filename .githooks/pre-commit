@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+exec python3 scripts/format-swift.py --staged-check

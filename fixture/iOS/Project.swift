@@ -28,8 +28,9 @@ func target(
     dependencies: [TargetDependency] = [],
     headers: Headers? = nil,
     resources: ResourceFileElements? = nil,
-    settings targetSettings: SettingsDictionary = [:]
-) -> Target {
+    settings targetSettings: SettingsDictionary = [:])
+    -> Target
+{
     .target(
         name: name,
         destinations: .iOS,

@@ -1,0 +1,4 @@
+# Additional runner image already used by the Xcode 27 integration lanes.
+self-hosted-runner:
+  labels:
+    - xcode-27

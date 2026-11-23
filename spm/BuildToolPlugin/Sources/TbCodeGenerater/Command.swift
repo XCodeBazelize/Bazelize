@@ -1,30 +1,30 @@
-import Foundation
 import ArgumentParser
+import Foundation
 import TbParser
+
+// MARK: - Command
 
 @main
 struct Command: AsyncParsableCommand {
     @Option(
         name: [.short],
-        help: "Input .tb file"
-    )
+        help: "Input .tb file")
     var input: URL
-    
+
     @Option(
         name: [.short],
-        help: "Output .swift file"
-    )
+        help: "Output .swift file")
     var output: URL
-    
+
     @Option(
         name: [.customLong("name")],
-        help: "Output enum name"
-    )
+        help: "Output enum name")
     var name: String
-    
+
     func run() async throws {
-        guard let definitions = Bundle.module.url(
-            forResource: "OptParser", withExtension: "td", subdirectory: "tds")
+        guard
+            let definitions = Bundle.module.url(
+                forResource: "OptParser", withExtension: "td", subdirectory: "tds")
         else {
             throw ValidationError("Missing bundled tds/OptParser.td")
         }
@@ -37,6 +37,8 @@ struct Command: AsyncParsableCommand {
         try result.write(to: output, atomically: true, encoding: .utf8)
     }
 }
+
+// MARK: - URL + @retroactive ExpressibleByArgument
 
 extension URL: @retroactive ExpressibleByArgument {
     public init?(argument: String) {

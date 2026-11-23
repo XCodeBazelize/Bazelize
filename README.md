@@ -228,13 +228,42 @@ actool generates the primary and alternate declarations in the final Info.plist.
 
 ### Integration corpus
 
-CI regenerates and builds pinned revisions of six public Swift packages:
-swift-collections, SwiftFormat, swift-protobuf, GRDB.swift, swift-nio, and
-swift-dependencies. It also builds pinned application projects, including
-Maccy, whose revision runs on the `xcode-27` image because it needs that SDK.
-Exact revisions and measured exclusions live beside the matrix in
-`.github/workflows/swift.yml`; changing a pin is therefore a deliberate corpus
-change rather than an update from an upstream default branch.
+Ordinary PR checks and pushes to `master`/`main` run the Swift suite, every local
+SwiftPM fixture, both Xcode project formats, and native/generated product
+comparisons. Platform host tests stay with the local fixture; separate matrix
+jobs execute iOS, tvOS, and watchOS Simulator tests and compile visionOS Simulator
+and device bundles. Compile-only jobs do not claim runtime execution. Generated
+Starlark is checked in the workspaces these jobs already generated, without
+resolving the entire fixture graph again in a separate lint job.
+
+The external corpus is eight applications and nine Swift packages at pinned
+revisions. It runs only through the **Compatibility** workflow's **Run workflow**
+button, or when a version tag such as `0.1.0` or `v0.1.0` is pushed. There is no
+nightly schedule and no external corpus on ordinary PR or branch pushes. Manual
+runs select a branch or tag; both manual and tag runs build their own matching
+Bazelize binary. The workflow must first exist on the default branch before
+GitHub enables manual dispatch. Once available, a PR branch can be checked with:
+
+```sh
+gh workflow run compatibility.yml --ref YOUR_BRANCH
+```
+
+Run it before merging changes to project loading, SwiftPM resolution, plugins,
+code generation, or toolchain/rules pins. The PR checklist links to the workflow
+so this step is visible. Tag validation checks the tagged commit after the tag
+is pushed; it does not publish a release or replace pre-merge validation. Exact
+external revisions and measured exclusions live in
+`.github/workflows/compatibility.yml`; they never follow upstream branch heads.
+
+Bazel downloads and action outputs use separate caches. Only the repository's
+default branch writes shared caches; PRs and tags restore that mainline baseline.
+Action-output archives are partitioned by selected Xcode/Swift toolchain, runner
+architecture, and fixture/SDK. Download archives are shared across compatible
+jobs, with one designated writer per workflow. SwiftPM build state is similarly
+partitioned by toolchain and package/configuration. Cache snapshots are immutable
+and refreshed per mainline commit; GitHub's normal storage and eviction policy
+still applies. PR-local cache entries are not a source for other PRs. No remote
+cache service or paid storage increase is configured.
 
 iOS Simulator tests name a device type and no OS version. The `rules_apple`
 runner then runs them on the runtime the selected Xcode pairs with its SDK, and
@@ -252,6 +281,30 @@ The fixture's `MacBundle.bundle` similarly compares the complete Xcode and
 platform, dependencies, exported symbols, and rpaths. Known differences are
 named in a checked-in baseline; a new difference or one that disappears fails
 CI until the baseline is updated.
+
+### Swift code style
+
+Use [nicklockwood/SwiftFormat](https://github.com/nicklockwood/SwiftFormat), pinned
+in `mise.toml`, with `.swiftformat` as the shared rule set:
+
+```sh
+mise install swiftformat
+make install-hooks
+make format
+```
+
+`make format` formats only changed project Swift files, including new files that
+are not ignored; it never stages them. Review the result and stage the intended
+changes. Before opening a PR, include files changed since the actual base:
+
+```sh
+python3 scripts/format-swift.py --base origin/master
+```
+
+The local pre-commit hook checks staged blobs with the staged `.swiftformat`
+configuration. It never rewrites the working tree or index, so partially staged
+edits remain separate. Generated workspaces and external checkouts are excluded
+by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
 
 ### Unsupported targets
 
