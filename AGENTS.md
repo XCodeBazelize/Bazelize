@@ -42,6 +42,21 @@ init(_ root: Path) {
 var foo: Path { root + "Foo" }
 ```
 
+Declare external command operations as purpose-named static methods in
+extensions of an `enum Commands { }` namespace in the owning module. Callers
+should express intent, such as `Commands.showSDK(sdk:)`, and receive a useful
+result type, such as `Path`, parsed values, or `Void`, rather than assemble
+executable names and argument arrays at each callsite. Command methods own
+argument construction, working directories, output capture, and exit-status
+handling; use `async throws` for asynchronous operations that can fail.
+
+Swift child-process execution MUST consistently use `swift-subprocess`
+(`Subprocess.run`). Do not introduce parallel execution paths through
+`Foundation.Process`, hand-managed `Pipe` instances, or other process-launch
+APIs. Keep any shared execution helper behind the semantic command methods.
+Group operations in `Commands`; do not build a full wrapper type or framework
+for every CLI.
+
 ## Issue language
 
 Every issue this repository files carries both English and 中文, in that order,
