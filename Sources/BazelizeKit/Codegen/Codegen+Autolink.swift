@@ -48,9 +48,12 @@ actor SDKFrameworks {
     private var cache: [String: Task<Set<String>, Never>] = [:]
 
     static func load(targets: [Target]) async -> [String: Set<String>] {
-        let names = Set(targets.filter {
-            !$0.srcs_c.isEmpty || !$0.srcs_objc.isEmpty || !$0.srcs_cpp.isEmpty || !$0.srcs_objcpp.isEmpty
-        }.map { sdkName(for: $0.platformSDK) })
+        var names: Set<String> = []
+        for target in targets where !target.srcs_c.isEmpty || !target.srcs_objc.isEmpty
+            || !target.srcs_cpp.isEmpty || !target.srcs_objcpp.isEmpty
+        {
+            names.insert(sdkName(for: target.platformSDK))
+        }
         var result: [String: Set<String>] = [:]
         for sdk in names.sorted() {
             result[sdk] = await shared.names(for: sdk)
