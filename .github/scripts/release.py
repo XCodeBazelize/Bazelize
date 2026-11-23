@@ -86,7 +86,8 @@ def package(args):
         info.mode = 0o755
         with binary.open("rb") as source:
             output.addfile(info, source)
-    digest = hashlib.file_digest(archive.open("rb"), "sha256").hexdigest()
+    with archive.open("rb") as source:
+        digest = hashlib.file_digest(source, "sha256").hexdigest()
     (args.output / "SHA256SUMS").write_text(f"{digest}  {archive.name}\n")
     print(f"Packaged {args.tag}: {archive}")
     return {}
@@ -101,7 +102,7 @@ def notes(args):
                "-f", f"tag_name={args.tag}", "-f", f"target_commitish={args.sha}",
                "-f", f"previous_tag_name={previous}", "-f",
                "configuration_file_path=.github/release.yml", "--jq", ".body")
-    args.output.write_text(body + f"\n\nValidated commit: `{args.sha}`. Both Swift and Compatibility tag workflows passed.\n")
+    args.output.write_text(body + f"\n\nSource commit: `{args.sha}`.\n")
     print(f"Generated notes from {previous} to {args.tag}")
     return {}
 
