@@ -30,8 +30,8 @@ bazelize config init -o config/custom.yaml   # then `generate --config-file`
 Missing directories are created. An existing file is an error and is never
 overwritten.
 
-Only the buildifier release is configurable in v1. Bazel and BCR dependency
-versions are generator-owned pins and MUST NOT be copied into
+The buildifier release and optional cache defaults are configurable in v1. Bazel
+and BCR dependency versions are generator-owned pins and MUST NOT be copied into
 `bazelize.yaml`.
 
 ### Selection
@@ -52,6 +52,49 @@ merge an explicit file with an automatically discovered file.
 - `buildifier.version` is required.
 - A buildifier version MUST exist in Bazelize's release catalog because the
   catalog owns the platform checksums used by generated lint commands.
+
+### Caches and local overrides
+
+Existing schema-1 files continue to work. Add only the cache fields you need:
+
+```yaml
+cache:
+  disk: ../cache/build
+  repository: ../cache/downloads
+  remote: https://cache.example.com
+  upload-local-results: false
+```
+
+`--disk-cache`, `--repository-cache`, `--remote-cache`, and
+`--remote-upload-local-results true|false` override their corresponding YAML
+field independently. YAML paths are relative to the selected YAML file; CLI
+paths are relative to the invocation directory. Paths are written as quoted
+absolute rc arguments, including spaces, quotes, and backslashes. An empty
+string disables a path or endpoint inherited from YAML. Remote endpoints use
+HTTP(S) or gRPC(S); embedded username/password and control characters are rejected
+before generation changes the output. Put authentication in user/CI settings,
+never in the shared YAML or endpoint URL.
+
+Every generation replaces `cache.bazelrc` from the current CLI/YAML values.
+Omitting a CLI option on a later run does not retain its old generated value.
+The project-owned `.bazelrc` keeps its unrelated lines; generated imports occur
+once, followed by `try-import %workspace%/user.bazelrc`. The optional
+`user.bazelrc` is never generated or overwritten. Ignore that file in version
+control when it contains local paths or credentials.
+
+Precedence for an ordinary build is generated settings, then `user.bazelrc`,
+then flags passed directly to Bazel. For example:
+
+```sh
+bazelize --input Example.xcodeproj --output App \
+  --disk-cache '/Users/me/Library/Caches/bazel outputs' \
+  --remote-cache https://cache.example.com --remote-upload-local-results false
+```
+
+Disk cache stores action outputs, repository cache stores dependency downloads,
+and remote cache shares action outputs across machines. Configure uploading
+explicitly for your team; `false` consumes remote results without uploading local
+results. When omitted, Bazel's own upload policy applies.
 
 ### Release catalog
 

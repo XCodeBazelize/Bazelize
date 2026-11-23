@@ -179,6 +179,63 @@ struct BazelizeConfigurationTests {
         #expect(try existing.read() == "keep me\n")
     }
 
+    @Test
+    func cachePathsFollowTheirConfigurationSourceAndCLIOverridesFields() throws {
+        let root = try scratch()
+        defer { try? root.delete() }
+        let directory = root + "config"
+        try directory.mkpath()
+        let path = directory + "cache.yaml"
+        try path.write("""
+        schema: 1
+        buildifier:
+          version: "10.1.0"
+        cache:
+          disk: "cache with spaces"
+          repository: downloads
+          remote: https://cache.example.test
+          upload-local-results: true
+        """)
+        let yaml = try BazelizeConfiguration.load(explicitPath: path, inputPath: root)
+        #expect(yaml.cache.disk == (directory + "cache with spaces").absolute().string)
+        #expect(yaml.cache.repository == (directory + "downloads").absolute().string)
+        let overridden = try yaml.overridingCache(
+            disk: "cli cache", repository: nil, remote: "", uploadLocalResults: false)
+        #expect(overridden.cache.disk == (Path.current + "cli cache").absolute().string)
+        #expect(overridden.cache.repository == yaml.cache.repository)
+        #expect(overridden.cache.remote == "")
+        #expect(overridden.cache.uploadLocalResults == false)
+    }
+
+    @Test
+    func cacheRejectsUnknownKeysAndInvalidEndpointsWithoutEchoingCredentials() throws {
+        let root = try scratch()
+        defer { try? root.delete() }
+        let path = root + "cache.yaml"
+        for entry in [
+            "remtoe: https://cache.example.test",
+            "remote: https://user:secret@cache.example.test",
+            "remote: not-a-url",
+        ] {
+            try path.write("schema: 1\nbuildifier:\n  version: \"10.1.0\"\ncache:\n  \(entry)\n")
+            do {
+                _ = try BazelizeConfiguration.load(explicitPath: path, inputPath: root)
+                Issue.record("Expected invalid cache configuration to fail")
+            } catch {
+                #expect(!error.localizedDescription.contains("secret"))
+            }
+        }
+    }
+
+    @Test
+    func cacheRejectsRCStatementInjection() throws {
+        #expect(throws: (any Error).self) {
+            try BazelizeConfiguration.default.overridingCache(
+                disk: "/tmp/cache\nbuild --remote_cache=https://wrong.example.test",
+                repository: nil, remote: nil, uploadLocalResults: nil)
+        }
+    }
+
     private func scratch() throws -> Path {
         let root = Path(NSTemporaryDirectory()) + "bazelize-config-\(UUID().uuidString)"
         try root.mkpath()

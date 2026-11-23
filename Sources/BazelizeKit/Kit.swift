@@ -51,7 +51,8 @@ public final class Kit {
         _ projPath: Path,
         _ preferConfig: String?,
         outputPath: Path? = nil,
-        configuration: BazelizeConfiguration = .default) async throws {
+        configuration: BazelizeConfiguration = .default) async throws
+    {
         self.configuration = configuration
         project = try Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
@@ -319,6 +320,7 @@ extension Kit {
         try generateVersion()
         try generateModule()
         try generateBuild()
+        try (outputRoot + "cache.bazelrc").write(configuration.cache.rc)
         try generatePrebuiltBuild()
         try generateWorkspaceRules()
         try generatePluginExtraFile()

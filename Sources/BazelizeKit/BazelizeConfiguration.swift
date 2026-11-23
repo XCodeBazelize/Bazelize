@@ -2,6 +2,8 @@ import Foundation
 import PathKit
 import Yams
 
+// MARK: - BazelizeConfiguration
+
 public struct BazelizeConfiguration: Equatable, Sendable {
     public static let fileName = "bazelize.yaml"
 
@@ -47,10 +49,12 @@ public struct BazelizeConfiguration: Equatable, Sendable {
 
     public let schema: Int
     public let buildifier: Buildifier
+    public let cache: Cache
 
-    private init(schema: Int, buildifier: Buildifier) {
+    init(schema: Int, buildifier: Buildifier, cache: Cache = .init()) {
         self.schema = schema
         self.buildifier = buildifier
+        self.cache = cache
     }
 
     /// Writes the example at `destination`: inside it when that names a
@@ -102,7 +106,13 @@ public struct BazelizeConfiguration: Equatable, Sendable {
                 throw DocumentError.unsupportedBuildifier(document.buildifier.version)
             }
             let buildifier = Buildifier(release: release)
-            return BazelizeConfiguration(schema: document.schema, buildifier: buildifier)
+            let cache = try Cache(
+                disk: document.cache?.disk,
+                repository: document.cache?.repository,
+                remote: document.cache?.remote,
+                uploadLocalResults: document.cache?.uploadLocalResults,
+                relativeTo: path.parent())
+            return BazelizeConfiguration(schema: document.schema, buildifier: buildifier, cache: cache)
         } catch {
             throw BazelizeConfigurationError.invalidFile(
                 path.string,
@@ -124,13 +134,13 @@ public struct BazelizeConfiguration: Equatable, Sendable {
     private static func description(of error: Error) -> String {
         let context: DecodingError.Context?
         switch error {
-        case let DecodingError.dataCorrupted(value):
+        case DecodingError.dataCorrupted(let value):
             context = value
-        case let DecodingError.keyNotFound(_, value):
+        case DecodingError.keyNotFound(_, let value):
             context = value
-        case let DecodingError.typeMismatch(_, value):
+        case DecodingError.typeMismatch(_, let value):
             context = value
-        case let DecodingError.valueNotFound(_, value):
+        case DecodingError.valueNotFound(_, let value):
             context = value
         default:
             context = nil
@@ -146,6 +156,8 @@ public struct BazelizeConfiguration: Equatable, Sendable {
     }
 }
 
+// MARK: - BazelizeConfigurationError
+
 public enum BazelizeConfigurationError: Error, LocalizedError {
     case fileAlreadyExists(String)
     case fileNotFound(String)
@@ -153,34 +165,52 @@ public enum BazelizeConfigurationError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case let .fileAlreadyExists(path):
+        case .fileAlreadyExists(let path):
             return "Configuration file already exists: \(path)"
-        case let .fileNotFound(path):
+        case .fileNotFound(let path):
             return "Configuration file not found: \(path)"
-        case let .invalidFile(path, reason):
+        case .invalidFile(let path, let reason):
             return "Invalid configuration file at \(path): \(reason)"
         }
     }
 }
 
-private extension BazelizeConfiguration {
-    struct Document: Decodable {
+extension BazelizeConfiguration {
+    fileprivate struct Document: Decodable {
         let schema: Int
         let buildifier: BuildifierDocument
+        let cache: CacheDocument?
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: ConfigurationKey.self)
-            try rejectUnknownKeys(in: container, allowed: ["schema", "buildifier"])
+            try rejectUnknownKeys(in: container, allowed: ["schema", "buildifier", "cache"])
 
             schema = try container.decode(Int.self, forKey: ConfigurationKey("schema"))
             guard schema == 1 else { throw DocumentError.unsupportedSchema(schema) }
             buildifier = try container.decode(
                 BuildifierDocument.self,
                 forKey: ConfigurationKey("buildifier"))
+            cache = try container.decodeIfPresent(CacheDocument.self, forKey: ConfigurationKey("cache"))
         }
     }
 
-    struct BuildifierDocument: Decodable {
+    fileprivate struct CacheDocument: Decodable {
+        let disk: String?
+        let repository: String?
+        let remote: String?
+        let uploadLocalResults: Bool?
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: ConfigurationKey.self)
+            try rejectUnknownKeys(in: container, allowed: ["disk", "repository", "remote", "upload-local-results"])
+            disk = try container.decodeIfPresent(String.self, forKey: ConfigurationKey("disk"))
+            repository = try container.decodeIfPresent(String.self, forKey: ConfigurationKey("repository"))
+            remote = try container.decodeIfPresent(String.self, forKey: ConfigurationKey("remote"))
+            uploadLocalResults = try container.decodeIfPresent(Bool.self, forKey: ConfigurationKey("upload-local-results"))
+        }
+    }
+
+    fileprivate struct BuildifierDocument: Decodable {
         let version: String
 
         init(from decoder: Decoder) throws {
@@ -190,13 +220,15 @@ private extension BazelizeConfiguration {
         }
     }
 
-    static func rejectUnknownKeys(
+    fileprivate static func rejectUnknownKeys(
         in container: KeyedDecodingContainer<ConfigurationKey>,
-        allowed: Set<String>) throws {
-        guard let key = container.allKeys
-            .filter({ !allowed.contains($0.stringValue) })
-            .sorted(by: { $0.stringValue < $1.stringValue })
-            .first
+        allowed: Set<String>) throws
+    {
+        guard
+            let key = container.allKeys
+                .filter({ !allowed.contains($0.stringValue) })
+                .sorted(by: { $0.stringValue < $1.stringValue })
+                .first
         else { return }
 
         let path = (container.codingPath + [key])
@@ -205,6 +237,8 @@ private extension BazelizeConfiguration {
         throw DocumentError.unknownProperty(path)
     }
 }
+
+// MARK: - ConfigurationKey
 
 private struct ConfigurationKey: CodingKey, Hashable {
     let stringValue: String
@@ -219,9 +253,11 @@ private struct ConfigurationKey: CodingKey, Hashable {
     }
 
     init?(intValue _: Int) {
-        return nil
+        nil
     }
 }
+
+// MARK: - DocumentError
 
 private enum DocumentError: Error, LocalizedError {
     case unknownProperty(String)
@@ -230,11 +266,11 @@ private enum DocumentError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case let .unknownProperty(path):
+        case .unknownProperty(let path):
             return "Unknown property '\(path)'."
-        case let .unsupportedSchema(schema):
+        case .unsupportedSchema(let schema):
             return "Unsupported schema \(schema); expected 1."
-        case let .unsupportedBuildifier(version):
+        case .unsupportedBuildifier(let version):
             return "Unsupported buildifier version '\(version)'."
         }
     }

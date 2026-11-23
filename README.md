@@ -124,6 +124,20 @@ them. The buildifier version must be in Bazelize's checksum catalog. Bazel and
 BCR dependency pins remain generator-owned and are not configuration
 properties.
 
+Common cache settings are available as CLI options and optional YAML defaults:
+
+```sh
+bazelize --input YOUR.xcodeproj --output App \
+  --disk-cache '/Users/me/Library/Caches/bazel outputs' \
+  --repository-cache /Users/me/Library/Caches/bazel-downloads \
+  --remote-cache https://cache.example.com --remote-upload-local-results false
+```
+
+CLI values override individual YAML cache fields. Each run replaces
+`cache.bazelrc`; local paths and authentication can live in an optional,
+user-owned `user.bazelrc`, imported after generated settings and preserved on
+regeneration. Keep credentials out of shared configuration and version control.
+
 See [the configuration contract and v2 candidates](docs/Configuration.md).
 
 ---
@@ -158,6 +172,8 @@ App/                        # --output
 ├── config.bazelrc          # generated: configurations and deployment floors
 ├── traits.bazelrc          # generated: SwiftPM trait selections
 ├── languages.bazelrc       # generated: one config per localization
+├── cache.bazelrc           # generated: current CLI/YAML cache settings
+├── user.bazelrc            # optional, kept: local overrides and authentication
 ├── .bazelignore            # keeps SwiftPM's .build out of the workspace
 ├── lint.sh, lint-ci.sh, format.sh  # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json

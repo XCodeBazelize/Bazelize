@@ -53,8 +53,10 @@ The root rc files have distinct ownership:
 
 - `.bazelrc` is project-owned. Preserve its existing content and ensure each
   generated import occurs exactly once.
-- `config.bazelrc`, `traits.bazelrc`, and `languages.bazelrc` are generated and
-  may be overwritten on every run.
+- `config.bazelrc`, `traits.bazelrc`, `languages.bazelrc`, and `cache.bazelrc`
+  are generated and may be overwritten on every run.
+- `user.bazelrc` is user-owned and optional. Preserve it and ensure its
+  `try-import` occurs once after the generated imports so local overrides win.
 
 Keep `.build/`, `Package.resolved`, `MODULE.bazel.lock`, `bazel-*`, and unrelated
 root files intact. When changing regeneration behavior, cover both sides of the
