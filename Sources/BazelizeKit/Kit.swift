@@ -327,6 +327,7 @@ extension Kit {
         try generateVersion()
         try generateModule()
         try generateBuild()
+        try (outputRoot + "cache.bazelrc").write(configuration.cache.rc)
         try generatePrebuiltBuild()
         try generateWorkspaceRules()
         try generatePluginExtraFile()

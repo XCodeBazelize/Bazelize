@@ -124,6 +124,30 @@ printf '[{"Authoring Tool":"%s","StorageVersion":17,"Timestamp":%s},{"AssetType"
         self.assertNotEqual(different.returncode, 0)
         self.assertIn("asset:Assets.car", different.stdout)
 
+    @unittest.skipUnless(shutil.which("codesign") and shutil.which("clang"), "Mach-O signing needs Apple tools")
+    def test_compares_decoded_entitlements_instead_of_signature_bytes(self):
+        reference = self.reference / "program"
+        generated = self.generated / "program"
+        subprocess.run(["clang", "-x", "c", "-", "-o", str(reference)],
+                       input="int main(void) { return 0; }", text=True, check=True,
+                       capture_output=True)
+        shutil.copy2(reference, generated)
+        entitlement_file = self.root / "entitlements.plist"
+
+        def sign(binary, enabled):
+            entitlement_file.write_bytes(plistlib.dumps({"com.apple.security.get-task-allow": enabled}))
+            subprocess.run(["codesign", "--force", "--sign", "-", "--entitlements",
+                            str(entitlement_file), str(binary)], check=True, capture_output=True)
+
+        sign(reference, True)
+        sign(generated, True)
+        equal = self.run_comparison("--entitlements")
+        self.assertEqual(equal.returncode, 0, equal.stdout + equal.stderr)
+        sign(generated, False)
+        changed = self.run_comparison("--entitlements")
+        self.assertNotEqual(changed.returncode, 0)
+        self.assertIn("plist:entitlements:program:/com.apple.security.get-task-allow", changed.stdout)
+
     def test_accepts_only_observed_baseline_differences(self):
         (self.reference / "resource.txt").write_text("reference")
         (self.generated / "resource.txt").write_text("generated")

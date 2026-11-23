@@ -56,6 +56,25 @@
       "macho:Contents/MacOS/MacBundle:dependencies:extra:/usr/lib/libc++.1.dylib": "rules_swift links libc++ in addition to the libraries selected by Xcode",
       "macho:Contents/MacOS/MacBundle:rpaths:extra:$DEVELOPER_DIR/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-$VERSION/macosx": "rules_swift adds its selected toolchain Swift library search path",
       "macho:Contents/MacOS/MacBundle:rpaths:extra:@executable_path/../Frameworks": "rules_swift adds the conventional embedded Frameworks search path"
+    },
+    "ProductProbe.app": {
+      "executable:AppIcon60x60@2x.png": "rules_apple archives compiled icon output as executable while Xcode records it as data",
+      "executable:AppIcon76x76@2x~ipad.png": "rules_apple archives compiled icon output as executable while Xcode records it as data",
+      "executable:Assets.car": "rules_apple archives the compiled catalog as executable while Xcode records it as data",
+      "executable:Frameworks/ProductProbeFramework.framework/Info.plist": "rules_apple archives the framework plist as executable while Xcode records it as data",
+      "executable:Info.plist": "rules_apple archives the application plist as executable while Xcode records it as data",
+      "executable:PkgInfo": "rules_apple archives package metadata as executable while Xcode records it as data",
+      "executable:PlugIns/ProductProbeExtension.appex/Info.plist": "rules_apple archives the extension plist as executable while Xcode records it as data",
+      "macho:Frameworks/ProductProbeFramework.framework/ProductProbeFramework:dependencies:extra:/System/Library/Frameworks/UIKit.framework/UIKit": "rules_apple's iOS framework links UIKit in addition to the frameworks selected by Xcode",
+      "macho:Frameworks/ProductProbeFramework.framework/ProductProbeFramework:dependencies:extra:/usr/lib/libc++.1.dylib": "the generated framework links the C++ runtime in addition to Xcode's selected libraries",
+      "macho:Frameworks/ProductProbeFramework.framework/ProductProbeFramework:exports:missing:_ProductProbeFrameworkVersionNumber": "Xcode's apple-generic versioning emits a version-number global; the generated framework does not emit that versioning source",
+      "macho:Frameworks/ProductProbeFramework.framework/ProductProbeFramework:exports:missing:_ProductProbeFrameworkVersionString": "Xcode's apple-generic versioning emits a version-string global; the generated framework does not emit that versioning source",
+      "macho:PlugIns/ProductProbeExtension.appex/ProductProbeExtension:dependencies:extra:/System/Library/Frameworks/UIKit.framework/UIKit": "rules_swift's iOS extension links UIKit in addition to Xcode's selected frameworks",
+      "macho:PlugIns/ProductProbeExtension.appex/ProductProbeExtension:dependencies:extra:/usr/lib/libc++.1.dylib": "the generated extension links the C++ runtime in addition to Xcode's selected libraries",
+      "macho:ProductProbe:dependencies:extra:/usr/lib/libc++.1.dylib": "the generated application links the C++ runtime in addition to Xcode's selected libraries",
+      "plist:Info.plist:/NSAccentColorName": "Xcode records ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME; the generated bundle does not emit that metadata",
+      "plist:entitlements:PlugIns/ProductProbeExtension.appex/ProductProbeExtension:/com.apple.security.get-task-allow": "the native Simulator extension is unsigned; rules_apple's ad-hoc debug signature grants debugger access",
+      "plist:entitlements:ProductProbe:/com.apple.security.get-task-allow": "the native Simulator app is unsigned; rules_apple's ad-hoc debug signature grants debugger access"
     }
   }
 }

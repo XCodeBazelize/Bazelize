@@ -124,6 +124,20 @@ them. The buildifier version must be in Bazelize's checksum catalog. Bazel and
 BCR dependency pins remain generator-owned and are not configuration
 properties.
 
+Common cache settings are available as CLI options and optional YAML defaults:
+
+```sh
+bazelize --input YOUR.xcodeproj --output App \
+  --disk-cache '/Users/me/Library/Caches/bazel outputs' \
+  --repository-cache /Users/me/Library/Caches/bazel-downloads \
+  --remote-cache https://cache.example.com --remote-upload-local-results false
+```
+
+CLI values override individual YAML cache fields. Each run replaces
+`cache.bazelrc`; local paths and authentication can live in an optional,
+user-owned `user.bazelrc`, imported after generated settings and preserved on
+regeneration. Keep credentials out of shared configuration and version control.
+
 See [the configuration contract and v2 candidates](docs/Configuration.md).
 
 ---
@@ -158,6 +172,8 @@ App/                        # --output
 ├── config.bazelrc          # generated: configurations and deployment floors
 ├── traits.bazelrc          # generated: SwiftPM trait selections
 ├── languages.bazelrc       # generated: one config per localization
+├── cache.bazelrc           # generated: current CLI/YAML cache settings
+├── user.bazelrc            # optional, kept: local overrides and authentication
 ├── .bazelignore            # keeps SwiftPM's .build out of the workspace
 ├── lint.sh, lint-ci.sh, format.sh  # the buildifier pinned for the host
 ├── plugins.sh, plugin-host.swift, plugin-plan.json
@@ -214,6 +230,36 @@ configuration the target is built in — the project's own SDK is only the
 fallback for a build that carries no Apple platform constraint. CI diffs the
 result against the file Xcode writes into `DerivedSources`.
 
+### iOS product verification
+
+The controlled `ProductProbe` app embeds its own dynamic framework and a
+notification-service extension. CI compares the native Xcode and generated
+Bazel Simulator app trees, including icon declarations and decoded asset
+renditions, plist values, embedded products, Mach-O dependencies/exports/rpaths,
+and decoded signing entitlements. Each accepted difference is an exact entry
+in `bundle-differences.json`; new and stale differences fail. The validator
+also damages copies by removing the extension or resource, changing the app
+identifier, and corrupting an alternate icon declaration, requiring each copy
+to fail for the expected reason.
+
+CI replaces any previous controlled fixture installation, launches the generated
+app, and reads a fresh report from its data container. That report must contain the
+expected resource bytes, embedded extension identifier/extension point, primary
+and alternate icon names, and a value returned by the loaded dynamic framework. The controlled
+app uses explicit asset-symbol and accent-color settings so its inputs do not
+depend on Xcode defaults. Both project-format lanes build this app as well.
+
+After Tuist generation, CI runs `python3 .github/scripts/prepare-xcode-fixture.py`
+to make implicit empty copy-phase destinations explicit. Xcode 27.2's native
+JSON converter requires that field for the extension embed phase; the script
+preserves the traditional project format and the remaining properties.
+
+This proves Simulator packaging and startup. It does not send a push notification
+to execute the notification service, or validate physical-device provisioning.
+The native Simulator build is unsigned; the Bazel debug app/extension carry
+debugger entitlements. Those exact differences are documented rather than
+treated as device-signing equivalence.
+
 ### Application icons
 
 For iOS applications, `ASSETCATALOG_COMPILER_APPICON_NAME` selects the primary
@@ -259,9 +305,11 @@ gh workflow run compatibility.yml --ref YOUR_BRANCH
 Run it before merging changes to project loading, SwiftPM resolution, plugins,
 code generation, or toolchain/rules pins. The PR checklist links to the workflow
 so this step is visible. Tag validation checks the tagged commit after the tag
-is pushed; it does not publish a release or replace pre-merge validation. Exact
-external revisions and measured exclusions live in
-`.github/workflows/compatibility.yml`; they never follow upstream branch heads.
+is pushed and does not replace pre-merge validation. Once both Swift and
+Compatibility succeed for that exact tag and commit, the Release workflow
+publishes the verified binary. Exact external revisions and measured exclusions
+live in `.github/workflows/compatibility.yml`; they never follow upstream branch
+heads.
 
 Bazel downloads and action outputs use separate caches. Only the repository's
 default branch writes shared caches; PRs and tags restore that mainline baseline.
@@ -289,6 +337,41 @@ The fixture's `MacBundle.bundle` similarly compares the complete Xcode and
 platform, dependencies, exported symbols, and rpaths. Known differences are
 named in a checked-in baseline; a new difference or one that disappears fails
 CI until the baseline is updated.
+
+### Releases
+
+Stable tags use `MAJOR.MINOR.PATCH`, optionally prefixed with `v`. Before tagging,
+update `Sources/BazelizeKit/Bazel/Version.swift` and `Makefile` to the same numeric
+version through a reviewed PR, and merge it into `master`. Push the tag only
+after the intended changes are merged. A tag must point to a commit in `master`.
+
+Both Swift and Compatibility run on the tag. Their completion triggers Release,
+which requires the latest push run of each workflow for the exact tag and SHA
+to succeed. Missing, pending, failed, or cancelled validation cannot publish.
+Release downloads the universal binary from that verified Swift run, checks
+both architectures and `--version`, and packages it with a SHA-256 checksum.
+It downloads the draft release's assets and verifies the checksum and executable
+before making the release public. A failed download or smoke check leaves the
+release as a draft. Re-running either required tag workflow retries publication;
+an already published release is not overwritten.
+
+The assets are `bazelize-macos-universal.tar.gz` and `SHA256SUMS`. To verify and
+extract a download, place both files in the same directory and run:
+
+```sh
+shasum -a 256 -c SHA256SUMS
+tar -xzf bazelize-macos-universal.tar.gz
+./bazelize --version
+```
+
+GitHub generates the release notes from the latest lower numeric ancestor tag;
+temporary and unrelated tags are excluded. `.github/release.yml` groups merged
+PRs by `breaking-change`, `enhancement`, `bug`, `dependencies`, and `documentation`
+labels, with a catch-all category. `skip-release-notes` excludes a PR. Add a
+human explanation of migration requirements and known limitations to the PR
+description so the release can link to it. Version choice and tag creation stay
+explicit; no bot bumps or tags the next version. The first numeric release
+requires manual setup if no previous numeric ancestor tag exists.
 
 ### Swift code style
 

@@ -53,10 +53,15 @@ struct WorkspaceRegenerationTests {
         try (package + "Sources/Root/Root.swift").write("public let root = 1\n")
         try write(manifest: [], in: package)
         try output.mkpath()
-        try (output + ".bazelrc").write("build --color=no\n")
+        try (output + ".bazelrc").write("build --color=no\nimport %workspace%/cache.bazelrc\nimport %workspace%/cache.bazelrc\n")
+        try (output + "user.bazelrc").write("build --remote_cache=https://user.example.test\n")
+        let cached = try BazelizeConfiguration.default.overridingCache(
+            disk: "cache with spaces", repository: nil, remote: nil, uploadLocalResults: false)
 
+        try await Kit(package, nil, outputPath: output, configuration: cached).run()
         try await Kit(package, nil, outputPath: output).run()
-        try await Kit(package, nil, outputPath: output).run()
+        #expect(try (output + "cache.bazelrc").read() == "")
+        #expect(try (output + "user.bazelrc").read() == "build --remote_cache=https://user.example.test\n")
 
         let contents: String = try (output + ".bazelrc").read()
         #expect(contents.contains("build --color=no"))
@@ -64,6 +69,8 @@ struct WorkspaceRegenerationTests {
             "import %workspace%/config.bazelrc",
             "import %workspace%/traits.bazelrc",
             "import %workspace%/languages.bazelrc",
+            "import %workspace%/cache.bazelrc",
+            "try-import %workspace%/user.bazelrc",
         ] {
             #expect(contents.components(separatedBy: line).count == 2)
         }

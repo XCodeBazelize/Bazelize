@@ -27,8 +27,8 @@ bazelize config init -o config/custom.yaml   # 之後用 `generate --config-file
 
 不存在的目錄會自動建立。既有的檔案會造成錯誤，絕不覆寫。
 
-v1 只允許設定 buildifier release。Bazel 與 BCR dependencies 的版本屬於
-generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
+v1 可設定 buildifier release 與選填的 cache 預設值。Bazel 與 BCR dependencies
+的版本屬於 generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
 
 ### 選擇順序
 
@@ -47,6 +47,42 @@ generator 管理的 pins，MUST NOT 複製到 `bazelize.yaml`。
 - `buildifier.version` 必填。
 - buildifier version MUST 存在於 Bazelize 的 release catalog；catalog 保存產生
   lint command 時所需的各平台 checksum。
+
+### Cache 與本機覆寫
+
+既有 schema-1 設定仍可使用，只需加入需要的 cache 欄位：
+
+```yaml
+cache:
+  disk: ../cache/build
+  repository: ../cache/downloads
+  remote: https://cache.example.com
+  upload-local-results: false
+```
+
+`--disk-cache`、`--repository-cache`、`--remote-cache` 與
+`--remote-upload-local-results true|false` 分別覆寫對應的 YAML 欄位。
+YAML 相對路徑以被選用的 YAML 所在目錄為基準，CLI 相對路徑以執行目錄為基準。
+寫入 rc 時使用引號包住的絕對路徑，支援空白、引號及反斜線。空字串可停用從 YAML
+繼承的路徑或 endpoint。遠端 endpoint 支援 HTTP(S)／gRPC(S)；內嵌帳號密碼或控制
+字元會在修改生成目錄前被拒絕。認證請放在使用者／CI 設定，不要放入共享 YAML 或 URL。
+
+每次生成都依本次 CLI／YAML 覆寫 `cache.bazelrc`；下次省略 CLI 選項時不沿用舊值。
+專案擁有的 `.bazelrc` 保留其他內容，每個生成 import 只出現一次，最後加入
+`try-import %workspace%/user.bazelrc`。`user.bazelrc` 可不存在，產生器不建立也不覆寫它。
+包含本機路徑或認證時，請將它加入版本控制的忽略清單。
+
+一般建置的優先順序是生成設定、`user.bazelrc`，再由直接傳給 Bazel 的參數覆寫。例如：
+
+```sh
+bazelize --input Example.xcodeproj --output App \
+  --disk-cache '/Users/me/Library/Caches/bazel outputs' \
+  --remote-cache https://cache.example.com --remote-upload-local-results false
+```
+
+Disk cache 保存 action 產物，repository cache 保存下載的依賴，remote cache 跨機器共享
+action 產物。依團隊政策明確設定是否上傳；`false` 只讀取遠端產物、不上傳本機結果。
+省略時沿用 Bazel 自身的上傳政策。
 
 ### Release catalog
 

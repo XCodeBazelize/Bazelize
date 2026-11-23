@@ -57,13 +57,29 @@ struct GenerateCommand: AsyncParsableCommand {
     @Option(name: [.short], help: "Preferred Xcode build configuration.")
     var config = "Release"
 
+    @Option(help: "Local build-output cache directory. Relative to the current directory.")
+    var diskCache: String?
+
+    @Option(help: "Dependency download cache directory. Relative to the current directory.")
+    var repositoryCache: String?
+
+    @Option(help: "HTTP(S) or gRPC(S) cache endpoint. Keep credentials in user.bazelrc or CI.")
+    var remoteCache: String?
+
+    @Option(help: "Upload local build results to the remote cache (true or false).")
+    var remoteUploadLocalResults: Bool?
+
     func run() async throws {
         let path = Path.current + input
         let outputPath = Path.current + output
         let explicitConfigPath = configFile.map { Path.current + $0 }
         let configuration = try BazelizeConfiguration.load(
             explicitPath: explicitConfigPath,
-            inputPath: path)
+            inputPath: path).overridingCache(
+            disk: diskCache,
+            repository: repositoryCache,
+            remote: remoteCache,
+            uploadLocalResults: remoteUploadLocalResults)
         let kit = try await Kit(
             path,
             config,

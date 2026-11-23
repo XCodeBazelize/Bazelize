@@ -79,7 +79,7 @@ never reads its resources, which is why the fixture does not notice.
 
 ### A6. Not fixing for now: configuration cannot select targets or disable generated features
 
-The v1 `bazelize.yaml` schema has only `schema` and the buildifier release.
+The v1 `bazelize.yaml` schema configures the buildifier release and cache defaults.
 Someone who must leave a target out cannot express that without forking the
 input project or the generator.
 
