@@ -20,11 +20,16 @@ jobs:
           dependencies: ${{ hashFiles('Package.resolved') }}
 
       - name: Build Bazelize
-        run: swift build -c release --arch arm64 --arch x86_64
+        id: build
+        run: |
+          swift build -c release --arch arm64 --arch x86_64
+          binary="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/bazelize"
+          test -x "$binary"
+          echo "binary=$binary" >> "$GITHUB_OUTPUT"
 
       - name: Upload Bazelize
         uses: actions/upload-artifact@v7
         with:
           name: bazelize
-          path: .build/apple/Products/Release/bazelize
+          path: ${{ steps.build.outputs.binary }}
           if-no-files-found: error
