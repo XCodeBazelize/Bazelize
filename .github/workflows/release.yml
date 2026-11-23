@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: [Swift, Compatibility]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: macos-26
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event.workflow_run.head_branch }}
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Each completed workflow wakes this job. The first completion waits;
+      # the second publishes only after both runs for this exact tag pass.
+      - name: Require successful tag validation
+        id: gate
+        run: |
+          python3 .github/scripts/release.py gate \
+            --tag "$RELEASE_TAG" --sha "$RELEASE_SHA" \
+            --repository "$GITHUB_REPOSITORY"
+
+      - name: Download the validated universal binary
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+          path: validated
+          run-id: ${{ steps.gate.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verify version and prepare assets and notes
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          chmod +x validated/bazelize
+          python3 .github/scripts/release.py package \
+            --tag "$RELEASE_TAG" --binary validated/bazelize --output dist
+          python3 .github/scripts/release.py notes \
+            --tag "$RELEASE_TAG" --sha "$RELEASE_SHA" \
+            --repository "$GITHUB_REPOSITORY" --output dist/notes.md
+
+      - name: Verify downloadable assets before publishing
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          if existing=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft); then
+            if [ "$existing" = false ]; then
+              echo "Release already published"
+              exit 0
+            fi
+            gh release upload "$RELEASE_TAG" \
+              dist/bazelize-macos-universal.tar.gz dist/SHA256SUMS --clobber
+            gh release edit "$RELEASE_TAG" --notes-file dist/notes.md
+          else
+            gh release create "$RELEASE_TAG" --draft --verify-tag \
+              --target "$RELEASE_SHA" --title "$RELEASE_TAG" \
+              --notes-file dist/notes.md \
+              dist/bazelize-macos-universal.tar.gz dist/SHA256SUMS
+          fi
+          gh release download "$RELEASE_TAG" --dir downloaded \
+            --pattern bazelize-macos-universal.tar.gz --pattern SHA256SUMS
+          (
+            cd downloaded
+            shasum -a 256 -c SHA256SUMS
+            tar -xzf bazelize-macos-universal.tar.gz
+            test "$(./bazelize --version)" = "${RELEASE_TAG#v}"
+          )
+          gh release edit "$RELEASE_TAG" --draft=false --latest
