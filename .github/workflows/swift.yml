@@ -116,20 +116,6 @@ jobs:
         if: matrix.format == 'xcproj'
         run: sudo xcode-select --switch /Applications/Xcode_27.2.app/Contents/Developer
 
-      # A simulator test on a runner pays for booting the simulator, and four of
-      # them booting at once pay for it four times over: the first test took
-      # 247s here and the last timed out at 302s having never started. The tests
-      # run one at a time so they share one simulator, the one the rules_apple
-      # runner reuses. It boots here in the background under another name and
-      # takes that name once ready, so generating and building overlap the
-      # boot, and tests served from cache never wait for it.
-      #
-      # Which simulator is the runner's business, not ours: it has whatever
-      # runtime its Xcode ships, which is not the one this repository is
-      # developed against. It is chosen after Xcode is.
-      - name: Boot Simulator
-        run: .github/scripts/boot-apple-simulator.sh
-
       - name: Generate Xcode project
         run: |
           tuist generate --path fixture/iOS --no-open
@@ -189,6 +175,24 @@ jobs:
         run: |
           python3 "$GITHUB_WORKSPACE/.github/scripts/compare-generated-workspaces.py" App-pbxproj App
 
+      # A simulator test on a runner pays for booting the simulator, and four of
+      # them booting at once pay for it four times over: the first test took
+      # 247s here and the last timed out at 302s having never started. The tests
+      # run one at a time so they share one simulator, the one the rules_apple
+      # runner reuses. It boots in the background under another name and takes
+      # that name once ready, so tests served from cache never wait for it.
+      #
+      # It boots only after every step that runs Xcode's tools or restores a
+      # cache: a fresh image's first boot migrates data for minutes, and beside
+      # it `tuist generate` went from 25-53s to 285-394s and bazelize from 15-28s
+      # to 302s. The Bazel analysis and builds that follow overlap it unslowed.
+      #
+      # Which simulator is the runner's business, not ours: it has whatever
+      # runtime its Xcode ships, which is not the one this repository is
+      # developed against. It is chosen after Xcode is.
+      - name: Boot Simulator
+        run: .github/scripts/boot-apple-simulator.sh
+
       - name: Check Generated Starlark
         working-directory: fixture/iOS/App
         run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
@@ -235,9 +239,6 @@ jobs:
     needs: [artifact]
     steps:
       - uses: actions/checkout@v6
-
-      - name: Boot Simulator for product proof
-        run: .github/scripts/boot-apple-simulator.sh
 
       - uses: jdx/mise-action@v4
         with:
@@ -303,6 +304,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
           "$RUNNER_TEMP/xcode/Build/Products/Debug/PerFileFlags"
+
+      # After Xcode's build, not beside it: a first boot slows Xcode's tools
+      # severalfold (see IntegrateIOS). The Bazel build overlaps it instead.
+      - name: Boot Simulator for product proof
+        run: .github/scripts/boot-apple-simulator.sh
 
       - name: Build With Bazel
         run: |
@@ -788,10 +794,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Boot iOS Simulator
-        if: matrix.platform == 'ios_sim_arm64'
-        run: .github/scripts/boot-apple-simulator.sh
-
       - name: Bazel Cache
         uses: ./.github/actions/bazel-cache
         with:
@@ -806,6 +808,10 @@ jobs:
         run: |
           chmod +x bazelize
           ./bazelize --input spm/Platform --output spm/Platform/App
+
+      - name: Boot iOS Simulator
+        if: matrix.platform == 'ios_sim_arm64'
+        run: .github/scripts/boot-apple-simulator.sh
 
       - name: Execute Simulator Tests
         if: matrix.mode == 'test'
