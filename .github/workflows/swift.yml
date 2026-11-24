@@ -118,10 +118,11 @@ jobs:
 
       # A simulator test on a runner pays for booting the simulator, and four of
       # them booting at once pay for it four times over: the first test took
-      # 247s here and the last timed out at 302s having never started. One
-      # simulator, the one the rules_apple runner reuses, is booted here in the
-      # background, so generating and building overlap the boot, and the tests
-      # run one at a time so they share it.
+      # 247s here and the last timed out at 302s having never started. The tests
+      # run one at a time so they share one simulator, the one the rules_apple
+      # runner reuses. It boots here in the background under another name and
+      # takes that name once ready, so generating and building overlap the
+      # boot, and tests served from cache never wait for it.
       #
       # Which simulator is the runner's business, not ours: it has whatever
       # runtime its Xcode ships, which is not the one this repository is
@@ -204,9 +205,6 @@ jobs:
         working-directory: fixture/iOS/App
         run: |
           cp "$(bazel cquery //Targets/Example --output=files | grep '\.ipa$')" ../Example.ipa
-
-      - name: Wait for Simulator
-        run: .github/scripts/wait-apple-simulator.sh
 
       - name: Unit Test
         working-directory: fixture/iOS/App
@@ -808,10 +806,6 @@ jobs:
         run: |
           chmod +x bazelize
           ./bazelize --input spm/Platform --output spm/Platform/App
-
-      - name: Wait for iOS Simulator
-        if: matrix.platform == 'ios_sim_arm64'
-        run: .github/scripts/wait-apple-simulator.sh
 
       - name: Execute Simulator Tests
         if: matrix.mode == 'test'

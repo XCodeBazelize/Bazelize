@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-# Waits for the boot boot-apple-simulator.sh started in the background.
+# Waits for the boot boot-apple-simulator.sh started in the background, for a
+# step that needs the device itself rather than a test that may come from
+# cache, and gives the ready device the name the rules_apple runner reuses.
 udid=${SIMULATOR_UDID:?boot-apple-simulator.sh did not run}
 started=$(date +%s)
 
@@ -27,6 +29,9 @@ if ! xcrun simctl bootstatus "$udid" -b; then
         Booting | Booted) xcrun simctl bootstatus "$udid" || status=$? ;;
         *) status=1 ;;
     esac
+fi
+if [ "$status" -eq 0 ] && [ -n "${SIMULATOR_NAME:-}" ]; then
+    xcrun simctl rename "$udid" "$SIMULATOR_NAME"
 fi
 
 if [ -n "${SIMULATOR_BOOT_LOG:-}" ] && [ -f "$SIMULATOR_BOOT_LOG" ]; then

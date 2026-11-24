@@ -9,7 +9,7 @@ device_prefix=${2:-iPhone}
 # /bin/bash (3.2) parses this heredoc as part of the substitution around it,
 # so an unpaired quote in the Python below, even in a comment, breaks the
 # script.
-{ read -r device; read -r version; read -r udid; } < <(
+{ read -r device; read -r version; read -r udid; read -r name; read -r ready; } < <(
     python3 - "$runtime_platform" "$device_prefix" <<'PY'
 import json
 import subprocess
@@ -96,19 +96,36 @@ device_type = kinds[kind]
 # The rules_apple runner reuses a simulator by name alone,
 # BAZEL_TEST_<device type>_<runtime version>, the first one on the runtime it
 # selected. Any other device, booted or not, is passed over, and the first test
-# creates and boots one of its own on its own clock. Booting that very device
-# here keeps the boot out of every test.
+# creates and boots one of its own on its own clock.
+#
+# The device reports Booted long before it is ready, and the runner does not
+# wait on a device in that state. So it boots under another name and takes the
+# name the runner reuses only once it is ready: a test that starts before then
+# boots its own, and a test served from cache waits for nothing.
 name = f"BAZEL_TEST_{device_type}_{runtime['version']}"
-named = [device for device in devices if device["name"] == name]
-if named:
-    udid = named[0]["udid"]
+hidden = f"{name}_booting"
+
+
+def rename(udid, to):
+    subprocess.run(["xcrun", "simctl", "rename", udid, to], check=True)
+
+
+ready = [device for device in devices if device["name"] == name]
+booting = [device for device in devices if device["name"] == hidden]
+if ready and ready[0]["state"] == "Booted":
+    udid, state = ready[0]["udid"], "ready"
+elif ready:
+    udid, state = ready[0]["udid"], "boot"
+    rename(udid, hidden)
+elif booting:
+    udid, state = booting[0]["udid"], "boot"
 else:
     created = subprocess.run(
         [
             "xcrun",
             "simctl",
             "create",
-            name,
+            hidden,
             kind,
             runtime["identifier"],
         ],
@@ -116,25 +133,34 @@ else:
         check=True,
         text=True,
     )
-    udid = created.stdout.strip()
+    udid, state = created.stdout.strip(), "boot"
 
 print(device_type)
 print(runtime["version"])
 print(udid)
+print(name)
+print(state)
 PY
 )
 
 echo "Simulator: $device, $runtime_platform $version ($udid)"
 printf 'SIMULATOR_DEVICE=%s\n' "$device" >> "${GITHUB_ENV:-/dev/null}"
 printf 'SIMULATOR_UDID=%s\n' "$udid" >> "${GITHUB_ENV:-/dev/null}"
+printf 'SIMULATOR_NAME=%s\n' "$name" >> "${GITHUB_ENV:-/dev/null}"
+
+if [ "$ready" = ready ]; then
+    echo "$name is already booted"
+    exit 0
+fi
 
 # A fresh image spends minutes migrating data on a runtime's first boot. The
-# boot runs in the background so the job's next steps overlap it, and
-# wait-apple-simulator.sh waits for it right before the device is needed: the
-# device reports `Booted` long before it is ready, and the rules_apple runner
-# does not wait on a device in that state. Output goes to a file so the
-# background process holds none of this step's pipes.
+# boot runs in the background so the job's next steps overlap it. Output goes
+# to a file so the background process holds none of this step's pipes.
 log="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/simulator-boot-$udid.log"
-nohup xcrun simctl bootstatus "$udid" -b > "$log" 2>&1 < /dev/null &
+(
+    xcrun simctl bootstatus "$udid" -b &&
+        xcrun simctl rename "$udid" "$name" &&
+        echo "Ready as $name"
+) > "$log" 2>&1 < /dev/null &
 printf 'SIMULATOR_BOOT_LOG=%s\n' "$log" >> "${GITHUB_ENV:-/dev/null}"
 echo "Booting in the background; log: $log"
