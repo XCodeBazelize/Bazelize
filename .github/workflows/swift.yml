@@ -48,7 +48,9 @@ concurrency:
 
 jobs:
   test:
-    runs-on: macos-26
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
 
     steps:
     - uses: actions/checkout@v6
@@ -366,7 +368,9 @@ jobs:
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
     name: IntegratePackage (${{ matrix.name }})
-    runs-on: macos-26
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     needs: [artifact]
     timeout-minutes: 120
     strategy:
@@ -731,7 +735,9 @@ jobs:
   # execution on a physical device or a hosted visionOS Simulator.
   PlatformVariants:
     name: Platform (${{ matrix.mode }} ${{ matrix.name }})
-    runs-on: macos-26
+    runs-on: ${{ matrix.runner || 'macos-26-intel' }}
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     needs: [artifact]
     timeout-minutes: 60
     strategy:
@@ -741,14 +747,17 @@ jobs:
         include:
           - name: iOS Simulator
             mode: test
+            runner: macos-26
             platform: ios_sim_arm64
             target: PlatformTests_ios_simulator
           - name: tvOS Simulator
             mode: test
+            runner: macos-26
             platform: tvos_sim_arm64
             target: PlatformTests_tvos_simulator
           - name: watchOS Simulator
             mode: test
+            runner: macos-26
             platform: watchos_arm64
             target: PlatformTests_watchos_simulator
           - name: visionOS Simulator

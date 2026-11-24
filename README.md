@@ -293,8 +293,17 @@ pending run. If that queue is full, GitHub cancels additional whole runs.
 
 Within the active workflow, the local SwiftPM fixture matrix runs at most four
 jobs together, and each external corpus matrix at most two. Every existing
-fixture and SDK check remains scheduled. These limits reduce hosted macOS arm64
-runner pressure; they do not guarantee GitHub's external runner availability.
+fixture and SDK check remains scheduled. Workflow queueing does not reserve
+hosted runners: GitHub can still cancel a job before any steps run if its
+runner pool is exhausted.
+
+Host tests, universal artifact builds, local SwiftPM fixtures, and compile-only
+SDK variants use `macos-26-intel` with Xcode 26.6 selected explicitly. The
+artifact is checked for both arm64 and x86_64 slices before upload. ARM Simulator
+execution, controlled bundle comparison, and the Xcode 27 JSON lane retain their
+ARM runners. Shared caches include the runner architecture and toolchain, so an
+Intel job does not restore ARM build outputs. This moves portable work off the
+constrained hosted ARM pool without dropping fixture or SDK coverage.
 
 The Xcode-format parity check generates independent workspace roots and preserves
 both roots. It compares all generated files and executable bits, excluding only

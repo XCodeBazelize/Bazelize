@@ -8,7 +8,9 @@ permissions:
 
 jobs:
   artifact:
-    runs-on: macos-26
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
       - uses: actions/checkout@v6
 
@@ -25,6 +27,7 @@ jobs:
           swift build -c release --arch arm64 --arch x86_64
           binary="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/bazelize"
           test -x "$binary"
+          lipo -verify_arch arm64 x86_64 "$binary"
           echo "binary=$binary" >> "$GITHUB_OUTPUT"
 
       - name: Upload Bazelize
