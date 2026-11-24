@@ -439,10 +439,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # The downloads cache is keyed by architecture and saved only by its
+      # designated writer. IntegrateIOS writes the ARM one; this is the only
+      # Intel writer, and Platform builds for macOS and iOS, so it fetches the
+      # rules every other Intel lane shares. Without it each Intel job fetches
+      # them from the network on every run.
       - name: Bazel Cache
         uses: ./.github/actions/bazel-cache
         with:
           group: package-${{ matrix.name }}
+          save-repository: ${{ matrix.name == 'Platform' }}
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
