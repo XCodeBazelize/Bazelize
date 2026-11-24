@@ -124,5 +124,14 @@ PY
 echo "Simulator: $device, $runtime_platform $version ($udid)"
 printf 'SIMULATOR_DEVICE=%s\n' "$device" >> "${GITHUB_ENV:-/dev/null}"
 printf 'SIMULATOR_UDID=%s\n' "$udid" >> "${GITHUB_ENV:-/dev/null}"
-xcrun simctl boot "$udid" || true
-xcrun simctl bootstatus "$udid"
+
+# A fresh image spends minutes migrating data on a runtime's first boot. The
+# boot runs in the background so the job's next steps overlap it, and
+# wait-apple-simulator.sh waits for it right before the device is needed: the
+# device reports `Booted` long before it is ready, and the rules_apple runner
+# does not wait on a device in that state. Output goes to a file so the
+# background process holds none of this step's pipes.
+log="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/simulator-boot-$udid.log"
+nohup xcrun simctl bootstatus "$udid" -b > "$log" 2>&1 < /dev/null &
+printf 'SIMULATOR_BOOT_LOG=%s\n' "$log" >> "${GITHUB_ENV:-/dev/null}"
+echo "Booting in the background; log: $log"
