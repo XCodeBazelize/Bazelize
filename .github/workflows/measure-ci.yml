@@ -1,0 +1,122 @@
+# Investigation only (Refs #106, #108); lives on measure/* branches, never on master.
+name: Measure CI
+
+on:
+  push:
+    branches:
+      - 'measure/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-validation
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  artifact:
+    uses: ./.github/workflows/build-bazelize.yml
+
+  # Does a second workspace on the same runner pay the cold first command again?
+  # Analysis only, so cache misses in one fixture's actions cannot skew it.
+  Warmup:
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    needs: [artifact]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bazel Cache
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: package-TargetExclude
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Analyze Fixtures In Turn
+        run: |
+          chmod +x bazelize
+          mkdir -p "$RUNNER_TEMP/profiles"
+          echo "| fixture | first command (s) | second command, -c opt (s) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          for fixture in TargetExclude Trait BinaryTarget DependencyShape; do
+            echo "::group::$fixture"
+            ./bazelize --input "spm/$fixture" --output "spm/$fixture/App"
+            cd "spm/$fixture/App"
+            start=$(date +%s)
+            bazel build --nobuild --profile="$RUNNER_TEMP/profiles/$fixture.profile.gz" //...
+            first=$(( $(date +%s) - start ))
+            start=$(date +%s)
+            bazel build --nobuild -c opt //...
+            second=$(( $(date +%s) - start ))
+            bazel shutdown
+            cd "$GITHUB_WORKSPACE"
+            echo "::endgroup::"
+            echo "$fixture: first ${first}s, second ${second}s"
+            echo "| $fixture | $first | $second |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload Profiles
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: warmup-profiles
+          path: ${{ runner.temp }}/profiles
+
+  # Does an uncached iOS simulator test reuse the device the boot step booted?
+  SimulatorReuse:
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    needs: [artifact]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Boot iOS Simulator
+        run: .github/scripts/boot-apple-simulator.sh
+
+      - name: Bazel Cache
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: Platform-ios_sim_arm64
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Build iOS Simulator Tests
+        run: |
+          chmod +x bazelize
+          ./bazelize --input spm/Platform --output spm/Platform/App
+          cd spm/Platform/App
+          bazel build --platforms=@apple_support//platforms:ios_sim_arm64 //Packages/Platform:PlatformTests_ios_simulator
+
+      - name: Wait for iOS Simulator
+        run: .github/scripts/wait-apple-simulator.sh
+
+      - name: Test iOS Simulator Uncached
+        working-directory: spm/Platform/App
+        run: |
+          bazel test \
+            "--@build_bazel_rules_apple//apple/build_settings:ios_simulator_device=$SIMULATOR_DEVICE" \
+            --nocache_test_results \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:ios_sim_arm64 \
+            //Packages/Platform:PlatformTests_ios_simulator
+
+      - name: Check Simulator Reuse
+        if: ${{ !cancelled() }}
+        working-directory: spm/Platform/App
+        run: |
+          grep -hE "(Existing|Created new) simulator" bazel-testlogs/Packages/Platform/PlatformTests_ios_simulator/test.log
+          xcrun simctl list devices | grep BAZEL_TEST_ || true
+          count=$(xcrun simctl list devices -j | jq '[.devices[][] | select(.name | startswith("BAZEL_TEST_"))] | length')
+          echo "BAZEL_TEST_ devices: $count; boot step booted $SIMULATOR_UDID"
+          test "$count" -eq 1
+          grep -q "Existing simulator .*($SIMULATOR_UDID)" bazel-testlogs/Packages/Platform/PlatformTests_ios_simulator/test.log
