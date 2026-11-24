@@ -366,15 +366,18 @@ update `Sources/BazelizeKit/Bazel/Version.swift` and `Makefile` to the same nume
 version through a reviewed PR, and merge it into `master`. Push the tag only
 after the intended changes are merged. A tag must point to a commit in `master`.
 
-Both Swift and Compatibility run on the tag. Their completion triggers Release,
-which requires the latest push run of each workflow for the exact tag and SHA
-to succeed. Missing, pending, failed, or cancelled validation cannot publish.
+Pushing a version tag starts Swift, Compatibility, and one Release workflow.
+Ordinary branch pushes and CI completions do not trigger Release. Release waits
+on an Ubuntu runner for the latest push run of each required workflow for the
+exact tag and SHA to succeed, then starts macOS packaging. Missing or pending
+validation waits until it completes or the six-hour gate timeout expires; failed
+or cancelled validation fails the gate and cannot publish.
 Release downloads the universal binary from that verified Swift run, checks
 both architectures and `--version`, and packages it with a SHA-256 checksum.
 It downloads the draft release's assets and verifies the checksum and executable
 before making the release public. A failed download or smoke check leaves the
-release as a draft. Re-running either required tag workflow retries publication;
-an already published release is not overwritten.
+release as a draft. After fixing or re-running failed tag CI, re-run Release to
+retry publication; an already published release is not overwritten.
 
 The assets are `bazelize-macos-universal.tar.gz` and `SHA256SUMS`. To verify and
 extract a download, place both files in the same directory and run:
