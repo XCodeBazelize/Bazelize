@@ -16,7 +16,7 @@ public final class Kit {
     let outputRoot: Path
     let configuration: BazelizeConfiguration
 
-    private lazy var roadmap = Bazel.Roadmap(output: outputRoot, project: project)
+    private lazy var roadmap = Bazel.Roadmap(output: outputRoot)
     lazy var version = Bazel.Version(outputRoot)
     lazy var module = Bazel.Module(outputRoot)
     lazy var build = Bazel.RootBuild(outputRoot)
@@ -25,8 +25,8 @@ public final class Kit {
     lazy var prebuilt = Bazel.PrebuiltBuild(outputRoot)
     lazy var assetSymbols = Bazel.AssetSymbols(outputRoot)
     lazy var appleSimulatorTest = Bazel.AppleSimulatorTest(outputRoot)
-    lazy var targetsBuild = project.targets.map { target in
-        Bazel.TargetBuild(outputRoot, target)
+    lazy var targetsBuild = project.targets.indices.map { index in
+        Bazel.TargetBuild(outputRoot, project.targets[index], at: index)
     }
 
     /// plugins...
@@ -279,7 +279,7 @@ extension Kit {
         var floors: [String: String] = [:]
         var platforms: Set<String> = []
 
-        for target in project.targets {
+        project.forEachTarget { target in
             if let platform = target.platformSDK.flatMap(SwiftPM.Deployment.platform(of:)) {
                 platforms.insert(platform)
             }
@@ -335,7 +335,7 @@ extension Kit {
     }
 
     private func generateRoadmap() throws {
-        try roadmap.prepare().forEach(note)
+        try roadmap.prepare(project: project).forEach(note)
     }
 
     private func generateVersion() throws {
@@ -371,7 +371,7 @@ extension Kit {
     /// package has no project targets to read a deployment floor from, and the
     /// graph's own is what SwiftPM compiles it at.
     private final func generateConfig(packages: [String: String]) throws {
-        config.setup(config: project.config, targets: project.targets, packages: packages)
+        config.setup(project: project, packages: packages)
         try config.write()
         try rootRC.ensureImport()
 

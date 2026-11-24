@@ -5,7 +5,6 @@ import Foundation
 extension Bazel {
     struct Roadmap {
         let output: Path
-        let project: Project
 
         /// Only the directories bazelize owns are wiped.
         ///
@@ -15,7 +14,7 @@ extension Bazel {
         ///
         /// What it returns is what the run has to say about the tree: a file
         /// the project names and the disk does not have.
-        func prepare() throws -> [String] {
+        func prepare(project: borrowing Project) throws -> [String] {
             let targetsRoot = output + "Targets"
             let prebuiltRoot = output + "Prebuilt"
 
@@ -28,8 +27,8 @@ extension Bazel {
             try targetsRoot.mkpath()
 
             var notes: [String] = []
-            for target in project.targets {
-                notes += try prepare(target: target, project: project, targetsRoot: targetsRoot)
+            for index in project.targets.indices {
+                notes += try prepare(target: project.targets[index], project: project, targetsRoot: targetsRoot)
             }
             return notes
         }
@@ -38,8 +37,8 @@ extension Bazel {
         /// The loader retains its declaration for this note while omitting it
         /// from the model's active build inputs.
         private func prepare(
-            target: Target,
-            project: Project,
+            target: borrowing Target,
+            project: borrowing Project,
             targetsRoot: Path) throws
             -> [String]
         {
@@ -99,7 +98,7 @@ extension Bazel {
         /// Files a copy phase places in the bundle, staged under the destination the
         /// phase names: the rules address a resource by its path, and Xcode copies
         /// the same file name to more than one destination.
-        private func prepareCopiedFiles(target: Target, project: Project, targetRoot: Path) throws {
+        private func prepareCopiedFiles(target: borrowing Target, project: borrowing Project, targetRoot: Path) throws {
             let workspace = Path(project.workspacePath)
 
             for group in target.copiedFileGroups(project: project) {
@@ -118,7 +117,7 @@ extension Bazel {
 
         /// The entitlements Xcode signs with, expanded: rules_apple substitutes no
         /// build setting, and its `plisttool` fails on a variable it cannot resolve.
-        private func prepareEntitlements(target: Target, project: Project, targetRoot: Path) throws {
+        private func prepareEntitlements(target: borrowing Target, project: borrowing Project, targetRoot: Path) throws {
             guard
                 let relativePath = target.entitlementsPath,
                 let content = target.entitlementsContent(project: project)
@@ -132,7 +131,7 @@ extension Bazel {
         }
 
         /// `GCC_PREPROCESSOR_DEFINITIONS` as a header the compiles force-include.
-        private func prepareDefinesHeader(target: Target, targetRoot: Path) throws {
+        private func prepareDefinesHeader(target: borrowing Target, targetRoot: Path) throws {
             guard let relativePath = target.definesHeader else { return }
 
             let definitions = target.headerDefinitions.map { definition in
@@ -153,8 +152,8 @@ extension Bazel {
         /// the product, which is what makes `#import <Module/Any.h>` work regardless
         /// of where the header lives. The generated tree mirrors that directory.
         private func prepareModuleHeaders(
-            target: Target,
-            project: Project,
+            target: borrowing Target,
+            project: borrowing Project,
             targetRoot: Path) throws
         {
             let workspace = Path(project.workspacePath)
@@ -178,8 +177,8 @@ extension Bazel {
         /// file name, even when it belongs to no build phase. Bazel needs the file
         /// declared, so headers next to the target's compiled sources come along.
         private func prepareSiblingHeaders(
-            target: Target,
-            project: Project,
+            target: borrowing Target,
+            project: borrowing Project,
             sourcesRoot: Path) throws
         {
             let workspace = Path(project.workspacePath)
@@ -195,7 +194,7 @@ extension Bazel {
             }
         }
 
-        private func preparePrebuiltFiles(project: Xcode.Project) throws {
+        private func preparePrebuiltFiles(project: borrowing Xcode.Project) throws {
             let prebuiltRoot = output + "Prebuilt"
             try prebuiltRoot.mkpath()
 
@@ -211,7 +210,7 @@ extension Bazel {
             }
         }
 
-        private func linkPackageResolvedIfPresent(project: Xcode.Project) throws {
+        private func linkPackageResolvedIfPresent(project: borrowing Xcode.Project) throws {
             let source = Path(project.workspacePath) + "Package.resolved"
             guard source.exists else { return }
 
@@ -276,7 +275,7 @@ extension Xcode.Target {
                 .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "/")) })
     }
 
-    fileprivate func pathsForRoadmapTree(project: Project) -> [String] {
+    fileprivate func pathsForRoadmapTree(project: borrowing Project) -> [String] {
         let allFiles = files.sources + files.headers + files.resources + files.copyFiles + files.others
         let candidates = (allFiles
             .compactMap(\.roadmapRelativePath) + settingReferencedPaths + headerSearchPaths(project: project)).sorted {
@@ -319,9 +318,9 @@ extension Xcode.Target {
 
 extension Xcode.Project {
     fileprivate var prebuiltFiles: [Xcode.File] {
-        let all = targets.flatMap { target in
+        let all = mapTargets { target in
             target.files.frameworks.filter { $0.label?.hasPrefix("//Prebuilt:") == true }
-        }
+        }.flatMap { $0 }
 
         var seen = Set<String>()
         return all.filter { file in

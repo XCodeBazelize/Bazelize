@@ -27,17 +27,16 @@ extension Bazel {
         /// bazel build --config=debug [PACKAGE:RULE]
         mutating
         func setup(
-            config: [String: BuildSettings]?,
-            targets: [Target],
+            project: borrowing Project,
             packages: [String: String] = [:])
         {
-            let configs = config?.keys.map { $0 } ?? []
+            let configs = project.config?.keys.map { $0 } ?? []
             let modes = configs.map { config in
                 "build:\(config) --//:mode=\(config)"
             }.sorted()
 
             code = (Self.defaults
-                + Self.minimumOSFlags(targets: targets, packages: packages)
+                + Self.minimumOSFlags(project: project, packages: packages)
                 + modes).withNewLine
         }
 
@@ -60,7 +59,7 @@ extension Bazel {
         /// answer — without one, every target compiles against the SDK's
         /// default, where a back-port the graph still reaches is unavailable.
         private static func minimumOSFlags(
-            targets: [Target],
+            project: borrowing Project,
             packages: [String: String])
             -> [String]
         {
@@ -72,9 +71,9 @@ extension Bazel {
             ]
 
             return platforms.compactMap { platform in
-                let versions = targets.compactMap { target in
+                let versions = project.mapTargets { target in
                     target.prefer(platform.keyPath)
-                }
+                }.compactMap { $0 }
                 guard let highest = versions.max(by: Self.isOlder) ?? packages[platform.platform] else {
                     return nil
                 }

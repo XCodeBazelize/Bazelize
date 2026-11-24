@@ -5,6 +5,7 @@
 //  Created by Yume on 2026/3/29.
 //
 
+import BasicContainers
 import Foundation
 import PathKit
 import XcodeProj
@@ -38,7 +39,12 @@ final class ProjectLoader {
     }
 
     func model() throws -> Xcode.Project {
-        Xcode.Project(
+        var models = UniqueArray<Xcode.Target>(minimumCapacity: targets.count)
+        for target in targets {
+            models.append(target.model)
+        }
+
+        return Xcode.Project(
             name: name,
             workspacePath: workspacePath.string,
             projectPath: path.string,
@@ -47,7 +53,7 @@ final class ProjectLoader {
             packages: .init(
                 remote: remotePackages,
                 local: localPackages),
-            targets: targets.map(\.model))
+            targets: models)
     }
 
     private lazy var allFiles: [PBXFileElement] = (try? native.rootGroup()?.flatten()) ?? []
@@ -159,7 +165,7 @@ extension ProjectLoader {
         for package in localPackages {
             let packageRoot = workspacePath + package.relativePath
             let manifest = packageRoot + "Package.swift"
-            guard let content = try? String(contentsOfFile: manifest.string) else { continue }
+            guard let content = try? String(contentsOfFile: manifest.string, encoding: .utf8) else { continue }
 
             for product in content.swiftPackageProductNames {
                 result[product] = package.relativePath

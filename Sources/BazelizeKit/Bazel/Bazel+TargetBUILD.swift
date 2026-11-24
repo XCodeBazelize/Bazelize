@@ -8,15 +8,17 @@ extension Bazel {
     struct TargetBuild: BazelFile {
         // MARK: Lifecycle
 
-        init(_ root: Path, _ target: Target) {
-            self.target = target
+        /// The target stays owned by `kit.project`; the file keeps its position
+        /// and borrows it again when the code is generated.
+        init(_ root: Path, _ target: borrowing Target, at index: Int) {
+            targetIndex = index
             targetPath = root + "Targets" + target.name
             path = targetPath + "BUILD"
         }
 
         // MARK: Internal
 
-        let target: Target
+        let targetIndex: Int
 
         let path: Path
         let targetPath: Path
@@ -25,7 +27,7 @@ extension Bazel {
 
         mutating
         func setup(_ kit: Kit) throws {
-            code = try target.generateCode(kit)
+            code = try kit.project.targets[targetIndex].generateCode(kit)
         }
 
         func mkpath() throws {

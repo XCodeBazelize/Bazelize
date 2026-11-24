@@ -1,8 +1,8 @@
 import Foundation
 import PathKit
 import Testing
-@testable import BazelizeKit
 import Xcode
+@testable import BazelizeKit
 
 struct AppIconSelectionTests {
     @Test
@@ -50,14 +50,16 @@ struct AppIconSelectionTests {
         let root = try fixture(settings: ["ASSETCATALOG_COMPILER_APPICON_NAME": "Missing"])
         defer { try? root.delete() }
         let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
-        let target = try #require(project.targets.first)
-        #expect(target.appIconSelection(project: project) == nil)
+        let index = try #require(project.targets.indices.first)
+        let selection = project.targets[index].appIconSelection(project: project)
+        #expect(selection == nil)
     }
 
     private func selection(_ root: Path) throws -> AppIconSelection {
         let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
-        let target = try #require(project.targets.first)
-        return try #require(target.appIconSelection(project: project))
+        let index = try #require(project.targets.indices.first)
+        let selection = project.targets[index].appIconSelection(project: project)
+        return try #require(selection)
     }
 
     private func fixture(settings: [String: String]) throws -> Path {
@@ -73,7 +75,11 @@ struct AppIconSelectionTests {
             try file.parent().mkpath()
             try file.write("{}")
         }
-        var buildSettings = ["SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "18.5", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"]
+        var buildSettings = [
+            "SDKROOT": "iphoneos",
+            "IPHONEOS_DEPLOYMENT_TARGET": "18.5",
+            "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        ]
         buildSettings.merge(settings) { _, value in value }
         let json: [String: Any] = [
             "default-configuration": "Release", "configurations": ["Release"],
@@ -83,12 +89,28 @@ struct AppIconSelectionTests {
                 ["path": "Assets.xcassets", "type": "folder.assetcatalog", "target-membership": ["Probe/resources"]],
                 ["path": "AppIcon.icon", "type": "folder.iconcomposer.icon", "target-membership": ["Probe/resources"]],
                 ["kind": "folder", "path": "AlternateIcons", "target-membership": ["Probe"]],
-                ["kind": "group", "name": "Products", "children": [["path": "<PRODUCTS>/Probe.app", "type": "wrapper.application", "id": "000000000000000000000120"]]],
+                [
+                    "kind": "group",
+                    "name": "Products",
+                    "children": [[
+                        "path": "<PRODUCTS>/Probe.app",
+                        "type": "wrapper.application",
+                        "id": "000000000000000000000120",
+                    ]],
+                ],
             ],
-            "targets": [["name": "Probe", "id": "000000000000000100000000", "product": "Products/Probe.app", "product-type": "application", "build-phases": ["resources"]]],
+            "targets": [[
+                "name": "Probe",
+                "id": "000000000000000100000000",
+                "product": "Products/Probe.app",
+                "product-type": "application",
+                "build-phases": ["resources"],
+            ]],
             "build-settings": buildSettings,
         ]
-        try (root + "Project.xcodeproj/project.xcproj").write(JSONSerialization.data(withJSONObject: json, options: [.sortedKeys]))
+        try (root + "Project.xcodeproj/project.xcproj").write(JSONSerialization.data(
+            withJSONObject: json,
+            options: [.sortedKeys]))
         return root
     }
 }

@@ -6,7 +6,7 @@ import Xcode
 extension Target {
     /// What the rule declares: the frameworks the project links plus the ones its
     /// Objective-C sources import.
-    func sdkFrameworks(project: Project) -> [String]? {
+    func sdkFrameworks(project: borrowing Project) -> [String]? {
         let all = Set(frameworksSDK).union(autolinkedFrameworks(project: project))
             .subtracting(weakFrameworksSDK)
         return all.isEmpty ? nil : all.sorted()
@@ -18,7 +18,7 @@ extension Target {
     /// directive for every framework module it imports. Bazel compiles with
     /// `-fno-autolink` — it wants the dependency declared — so the imports are read
     /// out of the sources instead, exactly the set clang would have recorded.
-    func autolinkedFrameworks(project: Project) -> [String] {
+    func autolinkedFrameworks(project: borrowing Project) -> [String] {
         let available = SDKFrameworks.names(for: platformSDK)
         guard !available.isEmpty else { return [] }
 
@@ -40,6 +40,8 @@ extension Target {
         return result.sorted()
     }
 }
+
+// MARK: - SDKFrameworks
 
 /// The frameworks an SDK ships, which is what makes an import autolinkable.
 private enum SDKFrameworks {
@@ -88,7 +90,7 @@ private enum SDKFrameworks {
 
         let roots = [
             Path(output) + "System/Library/Frameworks",
-            Path(output) + "System/iOSSupport/System/Library/Frameworks"
+            Path(output) + "System/iOSSupport/System/Library/Frameworks",
         ]
 
         var names = Set<String>()
@@ -109,7 +111,7 @@ extension String {
     fileprivate var importedModuleNames: [String] {
         let patterns = [
             #"@import\s+([A-Za-z_][A-Za-z0-9_]*)"#,
-            #"#\s*(?:import|include)\s+<([A-Za-z_][A-Za-z0-9_]*)/"#
+            #"#\s*(?:import|include)\s+<([A-Za-z_][A-Za-z0-9_]*)/"#,
         ]
 
         return patterns.flatMap { pattern -> [String] in

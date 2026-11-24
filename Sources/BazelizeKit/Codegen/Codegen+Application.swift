@@ -68,8 +68,7 @@ extension Target {
     }
 
     private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
-        let project = kit.project
-        let icons = appIconSelection(project: project)
+        let icons = appIconSelection(project: kit.project)
         builder.load(.ios_application)
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
@@ -79,11 +78,11 @@ extension Target {
                 bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
-                    linkedFrameworks(project: project)
+                    linkedFrameworks(project: kit.project)
                 },
-                entitlements: entitlementsLabel(project: project),
-                extensions: embeddedExtensions(project: project),
-                frameworks: embeddedFrameworks(project: project),
+                entitlements: entitlementsLabel(project: kit.project),
+                extensions: embeddedExtensions(project: kit.project),
+                frameworks: embeddedFrameworks(project: kit.project),
                 families: deviceFamilies,
                 infoplists: .build {
                     plistFile(kit)
@@ -93,7 +92,7 @@ extension Target {
                 // "launch_storyboard" => ":Base.lproj/LaunchScreen.storyboard"
                 minimum_os_version: prefer(\.platform.iOS),
                 resources: .build {
-                    bundleResources(project: project)
+                    bundleResources(project: kit.project)
                 },
                 sdk_frameworks: frameworksSDK,
                 strings: .build {

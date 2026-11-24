@@ -10,6 +10,8 @@ Bazelize generates Bazel workspaces from Xcode projects and Swift packages.
 mint install XCodeBazelize/Bazelize
 ```
 
+Bazelize runs on macOS 26 or later and builds with Swift 6.2 or later.
+
 ## Usage
 
 ```sh
@@ -396,26 +398,6 @@ The local pre-commit hook checks staged blobs with the staged `.swiftformat`
 configuration. It never rewrites the working tree or index, so partially staged
 edits remain separate. Generated workspaces and external checkouts are excluded
 by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
-
-### Target ownership experiment
-
-`experiments/TargetOwnership` probes the `Encodable`, `Array`, and native owning
-container contracts, then benchmarks read-only traversal of real loaded
-`Xcode.Target` values against explicit borrowing and a field-equivalent
-noncopyable model. Setup and equivalence checks are excluded from timing; raw
-samples and optimized SIL parameter conventions are recorded.
-
-```sh
-python3 experiments/TargetOwnership/run.py --probes-only
-python3 experiments/TargetOwnership/run.py --project fixture/iOS/Example.xcodeproj --output /tmp/ownership.json
-```
-
-The native `UniqueArray` comparison requires macOS 27 and Swift 6.4. Production
-models and the macOS 14 deployment floor are unchanged. The checked-in raw
-results are traversal measurements, not end-to-end generation speedups.
-`NoncopyableTarget.patch` reproduces the actual model declaration trial in a
-disposable checkout; compiling that trial currently exposes the existing
-encoding, array, mapping, and key-path constraints.
 
 ### Unsupported targets
 

@@ -8,7 +8,6 @@ extension Target {
         _ kit: Kit,
         extraDeps: [Starlark.Label] = [])
     {
-        let project = kit.project
         let plugin = kit.plugins.compactMap {
             $0[name]
         }.flatMap(\.deps)
@@ -24,7 +23,7 @@ extension Target {
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",
-                copts: swiftCopts(project: project)?.starlark,
+                copts: swiftCopts(project: kit.project)?.starlark,
                 module_name: codegenModuleName,
                 srcs: .build {
                     srcs_swift
@@ -34,8 +33,8 @@ extension Target {
                 },
                 deps: .build {
                     extraDeps
-                    linkedFrameworksLibrary(project: project)
-                    testHostLibraries(project: project)
+                    linkedFrameworksLibrary(project: kit.project)
+                    testHostLibraries(project: kit.project)
                     plugin
                     builtins
                 },
@@ -43,9 +42,9 @@ extension Target {
                     if !assets.isEmpty {
                         ":Assets"
                     }
-                    copiedResourceGroups(project: project)
+                    copiedResourceGroups(project: kit.project)
                 },
-                defines: defines(project: project),
+                defines: defines(project: kit.project),
                 linkopts: sdkLinkopts?.starlark,
                 swiftc_inputs: .build {
                     bridgingHeader
@@ -114,7 +113,7 @@ extension Target {
         (prefer(\.swift.copts) ?? []) + (prefer(\.otherSwiftFlags) ?? [])
     }
 
-    func swiftCopts(project: Project) -> [String]? {
+    func swiftCopts(project: borrowing Project) -> [String]? {
         var copts = languageCopts + (bridgingHeaderCopts ?? []) + parseAsLibraryCopts + defaultIsolationCopts
         if bridgingHeader != nil {
             copts += swiftIncludeCopts(project: project) + forceIncludeCopts()
@@ -125,7 +124,7 @@ extension Target {
     /// Same flags minus the bridging header: a mixed-language target exposes those
     /// declarations through its own clang module instead. The module's headers can
     /// still reach for the target's include paths, so `swiftc` needs them too.
-    func moduleSwiftCopts(project: Project) -> [String]? {
+    func moduleSwiftCopts(project: borrowing Project) -> [String]? {
         let copts = languageCopts + parseAsLibraryCopts + defaultIsolationCopts
             + swiftIncludeCopts(project: project) + forceIncludeCopts()
         return copts.isEmpty ? nil : copts
@@ -152,8 +151,7 @@ extension Target {
 
     // MARK: Private
 
-    func defines(project: Project) -> Starlark.Value {
+    func defines(project: borrowing Project) -> Starlark.Value {
         select(\.swiftDefines, project: project).starlark
     }
-
 }

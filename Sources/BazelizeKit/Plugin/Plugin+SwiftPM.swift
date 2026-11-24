@@ -99,7 +99,7 @@ final class PluginSwiftPM: PluginBuiltin {
     }
 
     override var target: [String : [String]]? {
-        kit.project.targets.map { target -> (String, [String]) in
+        kit.project.mapTargets { target -> (String, [String]) in
             let labels = target.dependencies.packageProducts
                 .compactMap(facadeProduct)
                 .map { product in

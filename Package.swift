@@ -1,12 +1,15 @@
-// swift-tools-version:6.0
+// swift-tools-version:6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "Bazelize",
+    /// `Xcode.Target` is noncopyable and kept in swift-collections' `UniqueArray`,
+    /// which needs `libswiftCompatibilitySpan`. macOS ships it from 26 on; an older
+    /// floor makes the standalone binary load a library only an app bundle carries.
     platforms: [
-        .macOS(.v14),
+        .macOS(.v26),
     ],
     products: [
         .executable(name: "bazelize", targets: ["Bazelize"]),
@@ -18,6 +21,7 @@ let package = Package(
         .package(url: "https://github.com/Flight-School/AnyCodable", from: "0.6.7"),
         .package(url: "https://github.com/jpsim/Yams", from: "6.2.2"),
         .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
+        .package(url: "https://github.com/apple/swift-collections", from: "1.7.5"),
 
         .package(url: "https://github.com/swiftlang/swift-subprocess", from: "1.0.0"),
 
@@ -114,6 +118,7 @@ let package = Package(
                 "PathKit",
                 "AnyCodable",
 
+                .product(name: "BasicContainers", package: "swift-collections"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         .testTarget(

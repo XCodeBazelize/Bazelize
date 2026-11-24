@@ -9,15 +9,16 @@ struct JSONProjectLoaderTests {
         let root = try fixture()
         defer { try? root.delete() }
         let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Debug")
-        let target = try #require(project.targets.first { $0.name == "Probe" })
+        let probeIndex = project.targetIndex(named: "Probe")
+        let probe = try #require(probeIndex)
 
-        #expect(target.productType == "com.apple.product-type.application")
-        #expect(target.configs["Debug"]?.swiftVersion == "6.0")
-        #expect(target.configs["Release"]?.swiftVersion == "5.0")
-        #expect(target.prefer(\.platform.iOS) == "16.0")
+        #expect(project.targets[probe].productType == "com.apple.product-type.application")
+        #expect(project.targets[probe].configs["Debug"]?.swiftVersion == "6.0")
+        #expect(project.targets[probe].configs["Release"]?.swiftVersion == "5.0")
+        #expect(project.targets[probe].prefer(\.platform.iOS) == "16.0")
         #expect(project.packages.remote.map(\.repositoryURL) == ["https://github.com/apple/swift-collections"])
         #expect(project.packages.local.map(\.relativePath) == ["Packages/Local"])
-        #expect(target.dependencies.packageProducts.map(\.productName) == ["Collections"])
+        #expect(project.targets[probe].dependencies.packageProducts.map(\.productName) == ["Collections"])
     }
 
     @Test
@@ -25,22 +26,25 @@ struct JSONProjectLoaderTests {
         let root = try fixture()
         defer { try? root.delete() }
         let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
-        let target = try #require(project.targets.first { $0.name == "Probe" })
+        let probeFiles = project.withTarget(named: "Probe") { $0.files }
+        let probeFrameworks = project.withTarget(named: "Probe") { $0.dependencies.frameworks }
+        let files = try #require(probeFiles)
+        let frameworks = try #require(probeFrameworks)
 
-        #expect(Set(target.files.sources.compactMap(\.path)) == [
+        #expect(Set(files.sources.compactMap(\.path)) == [
             "Sources/Main.swift", "Sources/Interop.m", "Synced/Included.swift", "Synced/Legacy.m",
         ])
-        #expect(Set(target.files.resources.compactMap(\.path)) == [
+        #expect(Set(files.resources.compactMap(\.path)) == [
             "Resources/Greeting.txt", "Synced/Localizable.strings",
         ])
-        #expect(target.files.headers.compactMap(\.path) == ["Sources/Public.h"])
-        let header = try #require(target.files.headers.first)
+        #expect(files.headers.compactMap(\.path) == ["Sources/Public.h"])
+        let header = try #require(files.headers.first)
         #expect(header.attributes.contains("Public"))
         #expect(header.fileType == "sourcecode.c.h")
-        let interop = try #require(target.files.sources.first { $0.path == "Sources/Interop.m" })
+        let interop = try #require(files.sources.first { $0.path == "Sources/Interop.m" })
         #expect(interop.fileType == "sourcecode.cpp.objcpp")
-        #expect(target.dependencies.frameworks == ["//Prebuilt:Vendor"])
-        let legacy = try #require(target.files.sources.first { $0.path == "Synced/Legacy.m" })
+        #expect(frameworks == ["//Prebuilt:Vendor"])
+        let legacy = try #require(files.sources.first { $0.path == "Synced/Legacy.m" })
         #expect(legacy.compilerFlags == "-fno-objc-arc")
     }
 
@@ -57,8 +61,9 @@ struct JSONProjectLoaderTests {
             String(decoding: JSONSerialization.data(withJSONObject: model), as: UTF8.self))
 
         let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
-        let target = try #require(project.targets.first { $0.name == "Probe" })
-        #expect(target.dependencies.sdkFrameworks == ["Foundation"])
+        let probeSDKFrameworks = project.withTarget(named: "Probe") { $0.dependencies.sdkFrameworks }
+        let sdkFrameworks = try #require(probeSDKFrameworks)
+        #expect(sdkFrameworks == ["Foundation"])
     }
 
     private func fixture() throws -> Path {

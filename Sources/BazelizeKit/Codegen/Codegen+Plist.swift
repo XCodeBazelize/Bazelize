@@ -49,7 +49,7 @@ extension Target {
     ///
     /// Read from the fragment rather than the source `Info.plist`, so a key dropped
     /// for being unresolvable still gets its build-setting default.
-    func infoPlistKeys(project: Project?) -> Set<String> {
+    func infoPlistKeys(project: borrowing Project) -> Set<String> {
         guard let content = plistContent(project: project) else { return [] }
         guard let regex = try? NSRegularExpression(pattern: #"<key>([^<]+)</key>"#) else { return [] }
 
@@ -64,7 +64,7 @@ extension Target {
 
     /// One resolved value out of the target's own `Info.plist`, which outranks the
     /// build setting a default would fall back to.
-    func infoPlistString(_ key: String, project: Project?) -> String? {
+    func infoPlistString(_ key: String, project: borrowing Project) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
         let settings = selectedSettings
@@ -86,8 +86,7 @@ extension Target {
         return nil
     }
 
-    private func infoPlistNodes(project: Project?) -> [XMLNode]? {
-        guard let project else { return nil }
+    private func infoPlistNodes(project: borrowing Project) -> [XMLNode]? {
         guard let plistPath = prefer(\.plist.infoPlist) else { return nil }
 
         let path = Path(project.workspacePath) + plistPath
@@ -100,7 +99,7 @@ extension Target {
             .children
     }
 
-    private func plistContent(project: Project?) -> String? {
+    private func plistContent(project: borrowing Project) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
         /// Keys `plisttool` cannot resolve for this product are as unusable in the
@@ -109,7 +108,7 @@ extension Target {
         var dropped = unsupportedDefaultPlistKeys
         dropped.formUnion(appIcons(project: project) == nil ? [] : Self.iconKeys)
         /// The version an embedded bundle declares has to give way to its parent's.
-        if embeddingBundle(project: project) != nil {
+        if embeddingBundleIndex(project: project) != nil {
             dropped.formUnion(Self.versionPatterns.keys)
         }
         return entries(nodes, dropping: dropped).withNewLine.escapedForPlistFragment
@@ -117,7 +116,7 @@ extension Target {
 
     /// `macos_application`/`ios_application` derive these from `app_icons`, and
     /// `plisttool` fails the build when a fragment disagrees with what it wrote.
-    private static let iconKeys: Set<String> = [
+    private static let iconKeys: Set = [
         "CFBundleIconFile",
         "CFBundleIconFiles",
         "CFBundleIconName",
@@ -130,6 +129,8 @@ extension Target {
     /// dropped as well: `plisttool` fails the build on a variable it cannot
     /// substitute, e.g. Xcode built-ins like `$(SDK_VERSION)`.
     private func entries(_ nodes: [XMLNode], dropping keys: Set<String>) -> [String] {
+        /// The log message escapes, and a borrowed target cannot go with it.
+        let name = name
         let settings = selectedSettings
         var result: [String] = []
         var pendingKey: (name: String, xml: String)?
@@ -212,7 +213,7 @@ extension String {
 
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
-    static let plistToolVariables: Set<String> = [
+    static let plistToolVariables: Set = [
         "BUNDLE_NAME",
         "DEVELOPMENT_LANGUAGE",
         "EXECUTABLE_NAME",
@@ -313,9 +314,8 @@ extension Target {
         return settings.generatedPlist.enabled && !settings.generatedPlist.entries.isEmpty
     }
 
-    private func isGeneratePlistAuto(project: Project?) -> Bool {
-        guard project != nil else { return false }
-        return hasGeneratedPlistEntries
+    private func isGeneratePlistAuto(project _: borrowing Project) -> Bool {
+        hasGeneratedPlistEntries
     }
 }
 
@@ -350,9 +350,8 @@ extension Target {
 
     // MARK: Private
 
-    private func isGeneratePlistDefault(project: Project?) -> Bool {
-        guard project != nil else { return false }
-        return !defaultPlistFragments(for: selectedSettings, project: project).isEmpty
+    private func isGeneratePlistDefault(project: borrowing Project) -> Bool {
+        !defaultPlistFragments(for: selectedSettings, project: project).isEmpty
     }
 
     /// `plisttool` substitutes only a handful of variables, so a default whose value
@@ -378,20 +377,20 @@ extension Target {
     /// rejects two fragments that disagree on one key.
     private func defaultPlistFragments(
         for settings: BuildSettings,
-        project: Project?,
+        project: borrowing Project,
         skipping existing: Set<String> = [])
         -> [String]
     {
         /// rules_apple requires an embedded bundle to carry the version of the bundle
         /// that embeds it — Apple's own rule, which Xcode never enforces.
-        let parent = embeddingBundle(project: project)
-        let currentVersion = parent.map { bundle in
-            bundle.infoPlistString("CFBundleVersion", project: project)
-                ?? bundle.prefer(\.generatedPlist.currentProjectVersion)
+        let parent = embeddingBundleIndex(project: project)
+        let currentVersion = parent.map { index in
+            project.targets[index].infoPlistString("CFBundleVersion", project: project)
+                ?? project.targets[index].prefer(\.generatedPlist.currentProjectVersion)
         } ?? settings.generatedPlist.currentProjectVersion
-        let shortVersion = parent.map { bundle in
-            bundle.infoPlistString("CFBundleShortVersionString", project: project)
-                ?? bundle.prefer(\.generatedPlist.marketingVersion)
+        let shortVersion = parent.map { index in
+            project.targets[index].infoPlistString("CFBundleShortVersionString", project: project)
+                ?? project.targets[index].prefer(\.generatedPlist.marketingVersion)
         } ?? settings.generatedPlist.marketingVersion
 
         let defaults = [

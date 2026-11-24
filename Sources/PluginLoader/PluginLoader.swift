@@ -36,12 +36,12 @@ enum PluginLoader {
     /// }
     ///
     /// final class YourPluginBuilder: PluginBuilder {
-    ///     override final func build(_ proj: Xcode.Project) async throws -> Plugin? {
+    ///     override final func build(_ proj: borrowing Xcode.Project) async throws -> Plugin? {
     ///         try await YourPlugin.load(proj)
     ///     }
     /// }
     /// ```
-    static func load(at path: String, proj: Xcode.Project) async throws -> Plugin? {
+    static func load(at path: String, proj: borrowing Xcode.Project) async throws -> Plugin? {
         let openRes = dlopen(path, RTLD_NOW|RTLD_LOCAL)
         if openRes != nil {
             defer {

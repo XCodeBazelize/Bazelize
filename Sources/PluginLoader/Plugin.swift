@@ -14,7 +14,7 @@ import Xcode
 open class PluginBuilder {
     public init() { }
 
-    open func build(_: Xcode.Project) async throws -> Plugin? {
+    open func build(_: borrowing Xcode.Project) async throws -> Plugin? {
         fatalError("You have to override this method.")
     }
 }
@@ -27,7 +27,7 @@ public protocol Plugin: AnyObject, Sendable {
     var version: String { get }
     var url: String { get }
 
-    static func load(_ proj: Xcode.Project) async throws -> Self?
+    static func load(_ proj: borrowing Xcode.Project) async throws -> Self?
 
     subscript(_: String) -> PluginTarget? { get }
 

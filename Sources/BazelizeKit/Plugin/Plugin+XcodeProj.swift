@@ -26,9 +26,8 @@ final class PluginXcodeProj: PluginBuiltin {
     /// top level target at its default environment: building for a device needs a
     /// provisioning profile, which no Xcode project hands over.
     override func build(_ builder: CodeBuilder) {
-        let labels = kit.project.targets
-            .filter(\.hasSources)
-            .map(\.name)
+        let labels = kit.project.mapTargets { target in target.hasSources ? target.name : nil }
+            .compactMap { $0 }
             .sorted()
             .map { name in
                 Starlark.Label.named("//Targets/\(name):\(name)")
