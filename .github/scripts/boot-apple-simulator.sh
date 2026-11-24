@@ -5,7 +5,10 @@ set -euo pipefail
 runtime_platform=${1:-iOS}
 device_prefix=${2:-iPhone}
 
-# A device name has spaces in it, so emit one field per line.
+# A device name has spaces in it, so emit one field per line. The macOS
+# /bin/bash (3.2) parses this heredoc as part of the substitution around it,
+# so an unpaired quote in the Python below, even in a comment, breaks the
+# script.
 { read -r device; read -r version; read -r udid; } < <(
     python3 - "$runtime_platform" "$device_prefix" <<'PY'
 import json
@@ -77,7 +80,7 @@ kinds = {
 if not kinds:
     raise RuntimeError(f"no {prefix} device supports the {runtime['name']} runtime")
 
-# The image's own device of this runtime says which type to test on; without
+# A device the image ships on this runtime says which type to test on; without
 # one, the last supported type does.
 devices = simctl("devices")["devices"].get(runtime["identifier"], [])
 shipped = [
@@ -90,8 +93,8 @@ shipped = [
 kind = shipped[-1] if shipped else list(kinds)[-1]
 device_type = kinds[kind]
 
-# The rules_apple runner reuses a simulator by name alone:
-# `BAZEL_TEST_<device type>_<runtime version>`, the first one on the runtime it
+# The rules_apple runner reuses a simulator by name alone,
+# BAZEL_TEST_<device type>_<runtime version>, the first one on the runtime it
 # selected. Any other device, booted or not, is passed over, and the first test
 # creates and boots one of its own on its own clock. Booting that very device
 # here keeps the boot out of every test.
