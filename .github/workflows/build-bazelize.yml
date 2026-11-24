@@ -27,7 +27,10 @@ jobs:
           swift build -c release --arch arm64 --arch x86_64
           binary="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/bazelize"
           test -x "$binary"
-          lipo -verify_arch arm64 x86_64 "$binary"
+          case "$(lipo -archs "$binary")" in
+            "arm64 x86_64"|"x86_64 arm64") ;;
+            *) echo "Expected arm64 and x86_64 CLI slices" >&2; exit 1 ;;
+          esac
           echo "binary=$binary" >> "$GITHUB_OUTPUT"
 
       - name: Upload Bazelize
