@@ -13,6 +13,8 @@ extension SwiftPM.Generator {
     /// speaks the plugin wire protocol and runs the commands returned over it.
     static let pluginRunnerSource = #"""
     import Foundation
+    import Subprocess
+    import System
 
     private struct Invocation: Decodable {
         let package: String
@@ -30,11 +32,6 @@ extension SwiftPM.Generator {
         let request: String
     }
 
-    private struct ProcessResult {
-        let status: Int32
-        let output: Data
-        let error: String
-    }
 
     private struct RunnerError: Error, CustomStringConvertible {
         let description: String
@@ -42,16 +39,16 @@ extension SwiftPM.Generator {
 
     @main
     private enum PluginHost {
-        static func main() {
+        static func main() async {
             do {
-                try run()
+                try await run()
             } catch {
                 FileHandle.standardError.write(Data("plugin host: \(error)\n".utf8))
                 exit(1)
             }
         }
 
-        private static func run() throws {
+        private static func run() async throws {
             var arguments = Array(CommandLine.arguments.dropFirst())
 
             if arguments.first == "--command" {
@@ -61,7 +58,7 @@ extension SwiftPM.Generator {
                 }
                 let request = URL(fileURLWithPath: arguments[0])
                 let runfiles = arguments[1]
-                try perform(
+                try await perform(
                     try JSONDecoder().decode(CommandInvocation.self, from: Data(contentsOf: request)),
                     runfiles: runfiles,
                     arguments: Array(arguments.dropFirst(2)))
@@ -78,7 +75,7 @@ extension SwiftPM.Generator {
 
             for invocation in invocations {
                 do {
-                    try run(invocation, runfiles: runfiles)
+                    try await run(invocation, runfiles: runfiles)
                 } catch {
                     let subject = "\(invocation.package)/\(invocation.target)"
                     let reason = "did not run the \(invocation.plugin) plugin: \(error)."
@@ -95,7 +92,7 @@ extension SwiftPM.Generator {
         private static func perform(
             _ invocation: CommandInvocation,
             runfiles: String,
-            arguments: [String]) throws
+            arguments: [String]) async throws
         {
             guard let encoded = Data(base64Encoded: invocation.request) else {
                 throw RunnerError(description: "the generated request is not base64")
@@ -118,7 +115,7 @@ extension SwiftPM.Generator {
             input.append(payload)
 
             let executable = URL(fileURLWithPath: runfiles).appendingPathComponent(invocation.executable).path
-            let result = try process(executable: executable, input: input)
+            let result = try await Commands.runPlugin(executable: executable, input: input)
             /// What the plugin printed. `PackagePlugin` keeps the wire protocol
             /// on standard output and sends the plugin's own printing to
             /// standard error; `swift package <verb>` shows it on standard
@@ -148,12 +145,12 @@ extension SwiftPM.Generator {
                 }
             }
 
-            guard result.status == 0 else {
+            guard result.succeeded else {
                 throw RunnerError(description: errors(result.error))
             }
         }
 
-        private static func run(_ invocation: Invocation, runfiles: String) throws {
+        private static func run(_ invocation: Invocation, runfiles: String) async throws {
             let files = FileManager.default
             if invocation.resetOutput, files.fileExists(atPath: invocation.output) {
                 try files.removeItem(atPath: invocation.output)
@@ -173,16 +170,16 @@ extension SwiftPM.Generator {
             input.append(payload)
 
             let executable = URL(fileURLWithPath: runfiles).appendingPathComponent(invocation.executable).path
-            let result = try process(executable: executable, input: input)
+            let result = try await Commands.runPlugin(executable: executable, input: input)
             let responses = try messages(in: result.output)
             let commands = try handle(responses)
 
-            if result.status != 0, commands.isEmpty {
+            if !result.succeeded, commands.isEmpty {
                 throw RunnerError(description: errors(result.error))
             }
 
             for command in commands {
-                try execute(command)
+                try await Commands.runBuildCommand(command)
             }
         }
 
@@ -338,91 +335,63 @@ extension SwiftPM.Generator {
             return commands
         }
 
-        private static func execute(_ command: [String: Any]) throws {
-            guard let executable = command["executable"] as? String else {
-                throw RunnerError(description: "a plugin command has no executable")
-            }
 
-            let arguments = (command["arguments"] as? [String] ?? []).map(filePath)
-            var environment = ProcessInfo.processInfo.environment
-            for (key, value) in command["environment"] as? [String: String] ?? [:] {
-                environment[key] = value
-            }
-            let workingDirectory = (command["workingDirectory"] as? String).map(filePath)
-            let result = try process(
-                executable: filePath(executable),
-                arguments: arguments,
-                environment: environment,
-                workingDirectory: workingDirectory)
-
-            guard result.status == 0 else {
-                let name = command["displayName"] as? String
-                    ?? URL(fileURLWithPath: filePath(executable)).lastPathComponent
-                throw RunnerError(description: "\(name): \(errors(result.error))")
-            }
-        }
-
-        private static func process(
-            executable: String,
-            arguments: [String] = [],
-            environment: [String: String]? = nil,
-            workingDirectory: String? = nil,
-            input: Data? = nil) throws -> ProcessResult
-        {
-            let directory = FileManager.default.temporaryDirectory
-                .appendingPathComponent("bazelize-plugin-host-\(UUID().uuidString)", isDirectory: true)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            defer { try? FileManager.default.removeItem(at: directory) }
-
-            let inputURL = directory.appendingPathComponent("stdin")
-            let outputURL = directory.appendingPathComponent("stdout")
-            let errorURL = directory.appendingPathComponent("stderr")
-            try (input ?? Data()).write(to: inputURL)
-            FileManager.default.createFile(atPath: outputURL.path, contents: nil)
-            FileManager.default.createFile(atPath: errorURL.path, contents: nil)
-
-            let inputHandle = try FileHandle(forReadingFrom: inputURL)
-            let outputHandle = try FileHandle(forWritingTo: outputURL)
-            let errorHandle = try FileHandle(forWritingTo: errorURL)
-            defer {
-                try? inputHandle.close()
-                try? outputHandle.close()
-                try? errorHandle.close()
-            }
-
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: executable)
-            process.arguments = arguments
-            process.environment = environment
-            if let workingDirectory {
-                process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory, isDirectory: true)
-            }
-            process.standardInput = inputHandle
-            process.standardOutput = outputHandle
-            process.standardError = errorHandle
-
-            try process.run()
-            process.waitUntilExit()
-            try outputHandle.close()
-            try errorHandle.close()
-
-            let output = try Data(contentsOf: outputURL)
-            let error = String(data: try Data(contentsOf: errorURL), encoding: .utf8) ?? ""
-            return .init(status: process.terminationStatus, output: output, error: error)
-        }
-
-        private static func filePath(_ value: String) -> String {
+        static func filePath(_ value: String) -> String {
             guard value.hasPrefix("file://") else { return value }
             return URL(string: value)?.path ?? value
         }
 
-        private static func errors(_ output: String) -> String {
+        static func errors(_ output: String) -> String {
             let lines = output.split(separator: "\n").map {
                 $0.trimmingCharacters(in: .whitespaces)
             }
             let reasons = lines.filter { $0.lowercased().hasPrefix("error:") }.suffix(3)
             if !reasons.isEmpty { return reasons.joined(separator: " ") }
             return String(output.suffix(400)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+    }
+
+    private enum Commands {
+        struct PluginResult {
+            let succeeded: Bool
+            let output: Data
+            let error: String
+        }
+
+        static func runPlugin(executable: String, input: Data) async throws -> PluginResult {
+            let result = try await Subprocess.run(
+                .path(FilePath(executable)),
+                input: .data(input),
+                output: .data(limit: Int.max),
+                error: .data(limit: Int.max))
+            return .init(
+                succeeded: result.terminationStatus.isSuccess,
+                output: result.standardOutput,
+                error: String(data: result.standardError, encoding: .utf8) ?? "")
+        }
+
+        static func runBuildCommand(_ command: [String: Any]) async throws {
+            guard let executable = command["executable"] as? String else {
+                throw RunnerError(description: "a plugin command has no executable")
+            }
+            let arguments = (command["arguments"] as? [String] ?? []).map(PluginHost.filePath)
+            let overrides = command["environment"] as? [String: String] ?? [:]
+            let environment = Dictionary<Environment.Key, String?>(uniqueKeysWithValues:
+                overrides.map { (.init(stringLiteral: $0.key), $0.value) })
+            let directory = (command["workingDirectory"] as? String).map(PluginHost.filePath)
+            let result = try await Subprocess.run(
+                .path(FilePath(PluginHost.filePath(executable))),
+                arguments: Arguments(arguments),
+                environment: .inherit.updating(environment),
+                workingDirectory: directory.map { FilePath($0) },
+                output: .discarded,
+                error: .data(limit: Int.max))
+            guard result.terminationStatus.isSuccess else {
+                let name = command["displayName"] as? String
+                    ?? URL(fileURLWithPath: PluginHost.filePath(executable)).lastPathComponent
+                let error = String(data: result.standardError, encoding: .utf8) ?? ""
+                throw RunnerError(description: "\(name): \(PluginHost.errors(error))")
+            }
         }
     }
     """#

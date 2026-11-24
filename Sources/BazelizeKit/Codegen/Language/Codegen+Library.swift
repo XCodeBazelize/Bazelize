@@ -97,7 +97,7 @@ extension Target {
                 module_name: codegenModuleName,
                 non_arc_srcs: fileFlags.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,
-                sdk_frameworks: sdkFrameworks(project: project),
+                sdk_frameworks: sdkFrameworks(project: project, available: kit.availableFrameworks(for: self)),
                 swift_copts: moduleSwiftCopts(project: project)?.starlark,
                 swift_defines: defines(project: project),
                 swift_srcs: .build {

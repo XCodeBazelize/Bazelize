@@ -6,8 +6,8 @@ import Xcode
 extension Target {
     /// What the rule declares: the frameworks the project links plus the ones its
     /// Objective-C sources import.
-    func sdkFrameworks(project: Project) -> [String]? {
-        let all = Set(frameworksSDK).union(autolinkedFrameworks(project: project))
+    func sdkFrameworks(project: Project, available: Set<String>) -> [String]? {
+        let all = Set(frameworksSDK).union(autolinkedFrameworks(project: project, available: available))
             .subtracting(weakFrameworksSDK)
         return all.isEmpty ? nil : all.sorted()
     }
@@ -18,8 +18,7 @@ extension Target {
     /// directive for every framework module it imports. Bazel compiles with
     /// `-fno-autolink` — it wants the dependency declared — so the imports are read
     /// out of the sources instead, exactly the set clang would have recorded.
-    func autolinkedFrameworks(project: Project) -> [String] {
-        let available = SDKFrameworks.names(for: platformSDK)
+    func autolinkedFrameworks(project: Project, available: Set<String>) -> [String] {
         guard !available.isEmpty else { return [] }
 
         let workspace = Path(project.workspacePath)
@@ -41,23 +40,37 @@ extension Target {
     }
 }
 
+// MARK: - SDKFrameworks
+
 /// The frameworks an SDK ships, which is what makes an import autolinkable.
-private enum SDKFrameworks {
-    static func names(for platform: SDK?) -> Set<String> {
-        let sdk = sdkName(for: platform)
+actor SDKFrameworks {
+    private static let shared = SDKFrameworks()
+    private var cache: [String: Task<Set<String>, Never>] = [:]
 
-        if let cached = cache[sdk] {
-            return cached
+    static func load(targets: [Target]) async -> [String: Set<String>] {
+        var names: Set<String> = []
+        for target in targets where !target.srcs_c.isEmpty || !target.srcs_objc.isEmpty
+            || !target.srcs_cpp.isEmpty || !target.srcs_objcpp.isEmpty
+        {
+            names.insert(sdkName(for: target.platformSDK))
         }
-
-        let names = read(sdk: sdk)
-        cache[sdk] = names
-        return names
+        var result: [String: Set<String>] = [:]
+        for sdk in names.sorted() {
+            result[sdk] = await shared.names(for: sdk)
+        }
+        return result
     }
 
-    private nonisolated(unsafe) static var cache: [String: Set<String>] = [:]
+    private func names(for sdk: String) async -> Set<String> {
+        if let task = cache[sdk] { return await task.value }
+        // Cache the in-flight query before awaiting it; concurrent generations
+        // share discovery without sharing mutable framework sets.
+        let task = Task { await Self.read(sdk: sdk) }
+        cache[sdk] = task
+        return await task.value
+    }
 
-    private static func sdkName(for platform: SDK?) -> String {
+    static func sdkName(for platform: SDK?) -> String {
         switch platform {
         case .iOS: return "iphoneos"
         case .tvOS: return "appletvos"
@@ -66,29 +79,11 @@ private enum SDKFrameworks {
         }
     }
 
-    private static func read(sdk: String) -> Set<String> {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-        process.arguments = ["--sdk", sdk, "--show-sdk-path"]
-
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-
-        guard (try? process.run()) != nil else { return [] }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-
-        guard
-            let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !output.isEmpty
-        else {
-            return []
-        }
-
+    private static func read(sdk: String) async -> Set<String> {
+        guard let root = try? await Commands.showSDK(sdk: sdk) else { return [] }
         let roots = [
-            Path(output) + "System/Library/Frameworks",
-            Path(output) + "System/iOSSupport/System/Library/Frameworks"
+            root + "System/Library/Frameworks",
+            root + "System/iOSSupport/System/Library/Frameworks",
         ]
 
         var names = Set<String>()
@@ -109,7 +104,7 @@ extension String {
     fileprivate var importedModuleNames: [String] {
         let patterns = [
             #"@import\s+([A-Za-z_][A-Za-z0-9_]*)"#,
-            #"#\s*(?:import|include)\s+<([A-Za-z_][A-Za-z0-9_]*)/"#
+            #"#\s*(?:import|include)\s+<([A-Za-z_][A-Za-z0-9_]*)/"#,
         ]
 
         return patterns.flatMap { pattern -> [String] in

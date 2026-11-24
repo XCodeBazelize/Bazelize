@@ -14,10 +14,10 @@ import Foundation
 /// package graph and takes some ten seconds per target, so the values are read
 /// from the toolchain directly: two commands for a whole run, both of which
 /// answer for every platform at once.
-enum Toolchain {
+struct Toolchain: Sendable {
     /// What Xcode would set for a target built against `sdk`, which is the
     /// project's `SDKROOT`.
-    static func settings(sdk: String?) -> [String: String] {
+    func settings(sdk: String?) -> [String: String] {
         guard let platform = canonical(sdk), let sdk = sdks[platform] else { return xcode }
 
         return xcode.merging([
@@ -29,7 +29,7 @@ enum Toolchain {
 
     // MARK: Private
 
-    private struct SDK: Decodable {
+    struct SDK: Decodable, Sendable {
         let canonicalName: String
         let sdkVersion: String
         let platform: String
@@ -38,7 +38,7 @@ enum Toolchain {
     /// `SDKROOT` is a platform name (`macosx`), a canonical SDK name
     /// (`macosx26.0`), `auto`, or a path. Only a name identifies a platform
     /// without building the target first.
-    private static func canonical(_ sdk: String?) -> String? {
+    private func canonical(_ sdk: String?) -> String? {
         guard
             let sdk = sdk?.lowercased(),
             !sdk.isEmpty,
@@ -51,14 +51,26 @@ enum Toolchain {
         return sdks[sdk] != nil ? sdk : sdks.first { _, value in value.name == sdk }?.key
     }
 
-    /// Every installed SDK, by platform: one `xcodebuild -showsdks` answers for
-    /// all of them, and the newest of a platform is the one Xcode builds with.
-    private static let sdks: [String: (name: String, version: String)] = {
-        guard
-            let output = run("xcodebuild", ["-showsdks", "-json"]),
-            let sdks = try? JSONDecoder().decode([SDK].self, from: Data(output.utf8))
+    private let sdks: [String: (name: String, version: String)]
+    private let xcode: [String: String]
+
+    // One immutable discovery shared by concurrent project loads. A cancelled
+    // consumer must not cancel discovery used by another consumer.
+    private static let installed = Task { await discover() }
+
+    static func load() async -> Self {
+        await installed.value
+    }
+
+    private static func discover() async -> Self {
+        async let sdkQuery = try? Commands.installedSDKs()
+        async let versionQuery = try? Commands.xcodeVersion()
+        let (sdks, output) = await (sdkQuery, versionQuery)
+        let version = output?.split(separator: "\n").first?.split(separator: " ").last
+        let xcode = version.map { settings(xcodeVersion: String($0)) } ?? [:]
+        guard let sdks
         else {
-            return [:]
+            return .init(sdks: [:], xcode: xcode)
         }
 
         var result: [String: (name: String, version: String)] = [:]
@@ -70,8 +82,8 @@ enum Toolchain {
             result[sdk.platform] = (name: sdk.canonicalName, version: sdk.sdkVersion)
         }
 
-        return result
-    }()
+        return .init(sdks: result, xcode: xcode)
+    }
 
     /// How Xcode spells its own version: a four digit number, so 27.0 is `2700`
     /// and 14.3.1 is `1431`. `MAJOR` keeps only the major, `MINOR` drops the
@@ -87,41 +99,5 @@ enum Toolchain {
             "XCODE_VERSION_MAJOR": "\(major * 100)",
             "XCODE_VERSION_MINOR": "\(major * 100 + minor * 10)",
         ]
-    }
-
-    /// `xcodebuild -version` says `Xcode 27.0` on its first line.
-    private static let xcode: [String: String] = {
-        guard
-            let output = run("xcodebuild", ["-version"]),
-            let version = output.split(separator: "\n").first?.split(separator: " ").last
-        else {
-            return [:]
-        }
-
-        return settings(xcodeVersion: String(version))
-    }()
-
-    /// A toolchain that cannot be asked leaves the settings unset, which is what
-    /// they already were.
-    private static func run(_ executable: String, _ arguments: [String]) -> String? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = arguments
-
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-        } catch {
-            return nil
-        }
-
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return nil }
-
-        return String(data: data, encoding: .utf8)
     }
 }

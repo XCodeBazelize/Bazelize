@@ -1,18 +1,18 @@
 import Foundation
 import PathKit
 import Testing
-@testable import BazelizeKit
 import Xcode
+@testable import BazelizeKit
 
 struct AppIconSelectionTests {
     @Test
-    func composerPrimaryKeepsItsLegacyFallbackAndExplicitAlternates() throws {
+    func composerPrimaryKeepsItsLegacyFallbackAndExplicitAlternates() async throws {
         let root = try fixture(settings: [
             "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES": "\"Dark Mode\"",
             "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "NO",
         ])
         defer { try? root.delete() }
-        let selection = try selection(root)
+        let selection = try await selection(root)
         #expect(selection.primary == "AppIcon")
         #expect(Set(selection.patterns) == [
             "Sources/AppIcon.icon/**",
@@ -22,10 +22,10 @@ struct AppIconSelectionTests {
     }
 
     @Test
-    func includeAllDiscoversSynchronizedComposerAndLegacyAlternates() throws {
+    func includeAllDiscoversSynchronizedComposerAndLegacyAlternates() async throws {
         let root = try fixture(settings: ["ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "YES"])
         defer { try? root.delete() }
-        let selection = try selection(root)
+        let selection = try await selection(root)
         #expect(Set(selection.patterns) == [
             "Sources/AppIcon.icon/**",
             "Sources/Assets.xcassets/AppIcon.appiconset/**",
@@ -36,26 +36,26 @@ struct AppIconSelectionTests {
     }
 
     @Test(arguments: [false, true])
-    func aLegacyPrimaryDoesNotSelectUnrequestedAlternateIcons(includeSetting: Bool) throws {
+    func aLegacyPrimaryDoesNotSelectUnrequestedAlternateIcons(includeSetting: Bool) async throws {
         let root = try fixture(settings: includeSetting ? ["ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "NO"] : [:])
         defer { try? root.delete() }
         try (root + "AppIcon.icon").delete()
-        let selection = try selection(root)
+        let selection = try await selection(root)
         #expect(selection.patterns == ["Sources/Assets.xcassets/AppIcon.appiconset/**"])
         #expect(selection.primaryAppIcon == nil)
     }
 
     @Test
-    func aMissingPrimaryDoesNotGenerateAnEmptyIconGlob() throws {
+    func aMissingPrimaryDoesNotGenerateAnEmptyIconGlob() async throws {
         let root = try fixture(settings: ["ASSETCATALOG_COMPILER_APPICON_NAME": "Missing"])
         defer { try? root.delete() }
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
         let target = try #require(project.targets.first)
         #expect(target.appIconSelection(project: project) == nil)
     }
 
-    private func selection(_ root: Path) throws -> AppIconSelection {
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
+    private func selection(_ root: Path) async throws -> AppIconSelection {
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
         let target = try #require(project.targets.first)
         return try #require(target.appIconSelection(project: project))
     }
@@ -73,7 +73,11 @@ struct AppIconSelectionTests {
             try file.parent().mkpath()
             try file.write("{}")
         }
-        var buildSettings = ["SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "18.5", "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"]
+        var buildSettings = [
+            "SDKROOT": "iphoneos",
+            "IPHONEOS_DEPLOYMENT_TARGET": "18.5",
+            "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
+        ]
         buildSettings.merge(settings) { _, value in value }
         let json: [String: Any] = [
             "default-configuration": "Release", "configurations": ["Release"],
@@ -83,12 +87,28 @@ struct AppIconSelectionTests {
                 ["path": "Assets.xcassets", "type": "folder.assetcatalog", "target-membership": ["Probe/resources"]],
                 ["path": "AppIcon.icon", "type": "folder.iconcomposer.icon", "target-membership": ["Probe/resources"]],
                 ["kind": "folder", "path": "AlternateIcons", "target-membership": ["Probe"]],
-                ["kind": "group", "name": "Products", "children": [["path": "<PRODUCTS>/Probe.app", "type": "wrapper.application", "id": "000000000000000000000120"]]],
+                [
+                    "kind": "group",
+                    "name": "Products",
+                    "children": [[
+                        "path": "<PRODUCTS>/Probe.app",
+                        "type": "wrapper.application",
+                        "id": "000000000000000000000120",
+                    ]],
+                ],
             ],
-            "targets": [["name": "Probe", "id": "000000000000000100000000", "product": "Products/Probe.app", "product-type": "application", "build-phases": ["resources"]]],
+            "targets": [[
+                "name": "Probe",
+                "id": "000000000000000100000000",
+                "product": "Products/Probe.app",
+                "product-type": "application",
+                "build-phases": ["resources"],
+            ]],
             "build-settings": buildSettings,
         ]
-        try (root + "Project.xcodeproj/project.xcproj").write(JSONSerialization.data(withJSONObject: json, options: [.sortedKeys]))
+        try (root + "Project.xcodeproj/project.xcproj").write(JSONSerialization.data(
+            withJSONObject: json,
+            options: [.sortedKeys]))
         return root
     }
 }

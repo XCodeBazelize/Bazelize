@@ -22,7 +22,8 @@ extension SwiftPM.Generator {
         in package: SwiftPM.Package,
         prefix: String,
         root: Path,
-        builder: CodeBuilder) -> Bool
+        builder: CodeBuilder) async
+        -> Bool
     {
         let moduleMap = "\(prefix)/module.modulemap"
         guard (root + moduleMap).exists else {
@@ -36,7 +37,7 @@ extension SwiftPM.Generator {
         let name = ruleName(of: target.name, in: package)
         let hint = "\(name)_interop"
         let files = relativeFiles(of: target, in: package, prefix: prefix)
-        let pkgConfig = self.pkgConfig(of: target, in: package)
+        let pkgConfig = await pkgConfig(of: target, in: package)
         /// An include path of the machine's is linked into the workspace, so
         /// what the module needs is a directory of this build rather than a
         /// path only this machine has — and `includes` reaches whoever imports
@@ -81,7 +82,8 @@ extension SwiftPM.Generator {
     private func materialize(
         includePaths: [String],
         of target: SwiftPM.PackageTarget,
-        at root: Path) throws -> [String]
+        at root: Path) throws
+        -> [String]
     {
         guard !includePaths.isEmpty else { return [] }
 
@@ -135,12 +137,14 @@ extension SwiftPM.Generator {
     /// what installs it, so that is what the note says.
     private func pkgConfig(
         of target: SwiftPM.PackageTarget,
-        in package: SwiftPM.Package) -> PkgConfig
+        in package: SwiftPM.Package) async
+        -> PkgConfig
     {
         guard let name = target.pkgConfig else { return .none }
 
-        guard let compilerFlags = Self.pkgConfig(["--cflags", name]),
-              let linkerFlags = Self.pkgConfig(["--libs", name])
+        guard
+            let compilerFlags = try? await Commands.pkgConfigCFlags(package: name),
+            let linkerFlags = try? await Commands.pkgConfigLinkerFlags(package: name)
         else {
             let installs = target.providers
                 .map { "\($0.manager) \($0.packages.joined(separator: " "))" }
@@ -190,30 +194,6 @@ extension SwiftPM.Generator {
         static let none = PkgConfig()
     }
 
-    /// One `pkg-config` question, or `nil` when it cannot be answered.
-    private static func pkgConfig(_ arguments: [String]) -> [String]? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = ["pkg-config"] + arguments
-
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = Pipe()
-
-        do {
-            try process.run()
-        } catch {
-            return nil
-        }
-
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return nil }
-
-        return String(data: data, encoding: .utf8)?
-            .split(whereSeparator: \.isWhitespace)
-            .map(String.init) ?? []
-    }
 
     /// `link "z"` and `link framework "Cocoa"` in a module map are what the module
     /// needs at link time; nothing else in the manifest says so.

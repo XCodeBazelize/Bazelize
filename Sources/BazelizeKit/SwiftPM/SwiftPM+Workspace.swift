@@ -7,8 +7,6 @@
 
 import Foundation
 @preconcurrency import PathKit
-import Subprocess
-import System
 import Util
 
 extension SwiftPM {
@@ -91,7 +89,7 @@ extension SwiftPM {
         if let input, (input + "Package.swift").exists {
             packageScratch = input + ".build"
             do {
-                try await resolve(output: input)
+                try await Commands.resolvePackage(in: input)
             } catch {
                 notes.append("""
                 swift package resolve failed (\(error)): the packages it had not \
@@ -101,7 +99,7 @@ extension SwiftPM {
         } else {
             packageScratch = nil
             do {
-                try await resolve(output: output)
+                try await Commands.resolvePackage(in: output)
             } catch {
                 notes.append("""
                 swift package resolve failed (\(error)): the packages it had not \
@@ -176,7 +174,8 @@ extension SwiftPM {
     /// further traits, so the set is closed over that.
     static func enabledTraits(
         of manifests: [(identity: String, manifest: Manifest)],
-        directoryByIdentity: [String: String]) -> [String: Set<String>]
+        directoryByIdentity: [String: String])
+        -> [String: Set<String>]
     {
         /// A dependency names the package by SwiftPM's identity for it, which is
         /// not always the directory the package is filed under.
@@ -286,31 +285,12 @@ extension SwiftPM {
 
     // MARK: Private
 
-    /// `swift package resolve` fetches what `Package.resolved` pins; without it
-    /// there are no checkouts to read.
-    private static func resolve(output: Path) async throws {
-        Log.codeGenerate.info("swift package resolve at \(output.string, privacy: .public)")
-
-        let result = try await Subprocess.run(
-            .name("swift"),
-            arguments: Arguments(["package", "resolve"]),
-            workingDirectory: FilePath(output.string),
-            output: .discarded,
-            error: .currentStandardError)
-
-        guard result.terminationStatus.isSuccess else {
-            throw SwiftPMError.resolveFailed(status: "\(result.terminationStatus)")
-        }
-    }
 
     private static func manifest(at root: Path) async throws -> Manifest? {
-        let result = try await Subprocess.run(
-            .name("swift"),
-            arguments: Arguments(["package", "dump-package", "--package-path", root.string]),
-            output: .data(limit: 32 * 1024 * 1024),
-            error: .discarded)
-
-        guard result.terminationStatus.isSuccess else {
+        let data: Data
+        do {
+            data = try await Commands.packageManifest(at: root)
+        } catch is Commands.Failure {
             Log.codeGenerate.warning("""
             No manifest for \(root.lastComponent, privacy: .public): dump-package failed
             """)
@@ -318,7 +298,7 @@ extension SwiftPM {
         }
 
         do {
-            return try JSONDecoder().decode(Manifest.self, from: Data(result.standardOutput))
+            return try JSONDecoder().decode(Manifest.self, from: data)
         } catch {
             Log.codeGenerate.warning("""
             Cannot read the manifest of \(root.lastComponent, privacy: .public): \
