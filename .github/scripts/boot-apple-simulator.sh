@@ -4,11 +4,10 @@ set -euo pipefail
 
 runtime_platform=${1:-iOS}
 device_prefix=${2:-iPhone}
-fresh=${3:-}
 
 # A device name has spaces in it, so emit one field per line.
 { read -r device; read -r version; read -r udid; } < <(
-    python3 - "$runtime_platform" "$device_prefix" "$fresh" <<'PY'
+    python3 - "$runtime_platform" "$device_prefix" <<'PY'
 import json
 import subprocess
 import sys
@@ -24,7 +23,7 @@ def simctl(*arguments):
     return json.loads(listed.stdout)
 
 
-platform, prefix, fresh = sys.argv[1:]
+platform, prefix = sys.argv[1:]
 runtimes = [
     runtime
     for runtime in simctl("runtimes")["runtimes"]
@@ -70,29 +69,44 @@ else:
     runtimes.sort(key=lambda runtime: [int(part) for part in runtime["version"].split(".")])
     runtime = runtimes[-1]
 
-devices = [
-    device
-    for device in simctl("devices", "available")["devices"].get(runtime["identifier"], [])
-    if device.get("isAvailable") and device["name"].startswith(prefix)
+kinds = {
+    kind["identifier"]: kind["name"]
+    for kind in runtime["supportedDeviceTypes"]
+    if kind["name"].startswith(prefix)
+}
+if not kinds:
+    raise RuntimeError(f"no {prefix} device supports the {runtime['name']} runtime")
+
+# The image's own device of this runtime says which type to test on; without
+# one, the last supported type does.
+devices = simctl("devices")["devices"].get(runtime["identifier"], [])
+shipped = [
+    device["deviceTypeIdentifier"]
+    for device in devices
+    if device.get("isAvailable")
+    and device["name"].startswith(prefix)
+    and device.get("deviceTypeIdentifier") in kinds
 ]
-if devices and not fresh:
-    name, udid = devices[-1]["name"], devices[-1]["udid"]
+kind = shipped[-1] if shipped else list(kinds)[-1]
+device_type = kinds[kind]
+
+# The rules_apple runner reuses a simulator by name alone:
+# `BAZEL_TEST_<device type>_<runtime version>`, the first one on the runtime it
+# selected. Any other device, booted or not, is passed over, and the first test
+# creates and boots one of its own on its own clock. Booting that very device
+# here keeps the boot out of every test.
+name = f"BAZEL_TEST_{device_type}_{runtime['version']}"
+named = [device for device in devices if device["name"] == name]
+if named:
+    udid = named[0]["udid"]
 else:
-    kinds = [
-        kind
-        for kind in runtime["supportedDeviceTypes"]
-        if kind["name"].startswith(prefix)
-    ]
-    if not kinds:
-        raise RuntimeError(f"no {prefix} device supports the {runtime['name']} runtime")
-    name = kinds[-1]["name"]
     created = subprocess.run(
         [
             "xcrun",
             "simctl",
             "create",
             name,
-            kinds[-1]["identifier"],
+            kind,
             runtime["identifier"],
         ],
         capture_output=True,
@@ -101,7 +115,7 @@ else:
     )
     udid = created.stdout.strip()
 
-print(name)
+print(device_type)
 print(runtime["version"])
 print(udid)
 PY
