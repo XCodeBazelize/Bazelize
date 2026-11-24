@@ -731,62 +731,32 @@ jobs:
           bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.default -- Leaf Middle Top
 
   # Host tests and SwiftPM controls remain in IntegratePackage (Platform).
-  # Each additional SDK has its own result; compile-only variants never claim
-  # execution on a physical device or a hosted visionOS Simulator.
-  PlatformVariants:
-    name: Platform (${{ matrix.mode }} ${{ matrix.name }})
-    runs-on: ${{ matrix.runner || 'macos-26-intel' }}
+  # Each additional SDK has its own step and its own result; compile-only
+  # variants never claim execution on a physical device or a hosted visionOS
+  # Simulator.
+  #
+  # Every variant reads one generated workspace, and the first Bazel command on
+  # a fresh runner spends minutes setting it up while later ones, under any
+  # configuration, take seconds. So the variants share a job per runner they
+  # need instead of each paying that start. Each step runs after an earlier
+  # variant failed, and any failure fails the job.
+  #
+  # Each job keeps the cache group one of its variants already saved under, so
+  # mainline's outputs keep serving it.
+  PlatformSimulators:
+    name: Platform (simulator tests)
+    runs-on: macos-26
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     needs: [artifact]
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      max-parallel: 2
-      matrix:
-        include:
-          - name: iOS Simulator
-            mode: test
-            runner: macos-26
-            platform: ios_sim_arm64
-            target: PlatformTests_ios_simulator
-          - name: tvOS Simulator
-            mode: test
-            runner: macos-26
-            platform: tvos_sim_arm64
-            target: PlatformTests_tvos_simulator
-          - name: watchOS Simulator
-            mode: test
-            runner: macos-26
-            platform: watchos_arm64
-            target: PlatformTests_watchos_simulator
-          - name: visionOS Simulator
-            mode: build
-            platform: visionos_sim_arm64
-            target: PlatformTests_xros_simulator
-          - name: iOS Device
-            mode: build
-            platform: ios_arm64
-            target: PlatformTests_ios_device_bundle
-          - name: tvOS Device
-            mode: build
-            platform: tvos_arm64
-            target: PlatformTests_tvos_device_bundle
-          - name: watchOS Device
-            mode: build
-            platform: watchos_device_arm64
-            target: PlatformTests_watchos_device_bundle
-          - name: visionOS Device
-            mode: build
-            platform: visionos_arm64
-            target: PlatformTests_xros_device_bundle
     steps:
       - uses: actions/checkout@v6
 
       - name: Bazel Cache
         uses: ./.github/actions/bazel-cache
         with:
-          group: Platform-${{ matrix.platform }}
+          group: Platform-ios_sim_arm64
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -794,40 +764,112 @@ jobs:
           name: bazelize
 
       - name: Generate Platform Workspace
+        id: generate
         run: |
           chmod +x bazelize
           ./bazelize --input spm/Platform --output spm/Platform/App
 
-      - name: Boot iOS Simulator
-        if: matrix.platform == 'ios_sim_arm64'
-        run: .github/scripts/boot-apple-simulator.sh
-
-      - name: Execute Simulator Tests
-        if: matrix.mode == 'test'
+      - name: Test tvOS Simulator
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
         working-directory: spm/Platform/App
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          TARGET: ${{ matrix.target }}
         run: |
-          simulator=()
-          if [ "$PLATFORM" = ios_sim_arm64 ]; then
-            simulator+=("--@build_bazel_rules_apple//apple/build_settings:ios_simulator_device=$SIMULATOR_DEVICE")
-          fi
           bazel test \
-            "${simulator[@]}" \
             --local_test_jobs=1 \
             --test_timeout=900 \
             --test_output=errors \
-            "--platforms=@apple_support//platforms:$PLATFORM" \
-            "//Packages/Platform:$TARGET"
+            --platforms=@apple_support//platforms:tvos_sim_arm64 \
+            //Packages/Platform:PlatformTests_tvos_simulator
 
-      - name: Compile Test Bundle
-        if: matrix.mode == 'build'
+      - name: Test watchOS Simulator
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
         working-directory: spm/Platform/App
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          TARGET: ${{ matrix.target }}
+        run: |
+          bazel test \
+            --local_test_jobs=1 \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:watchos_arm64 \
+            //Packages/Platform:PlatformTests_watchos_simulator
+
+      - name: Boot iOS Simulator
+        id: boot
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        run: .github/scripts/boot-apple-simulator.sh
+
+      - name: Test iOS Simulator
+        if: ${{ !cancelled() && steps.boot.outcome == 'success' }}
+        working-directory: spm/Platform/App
+        run: |
+          bazel test \
+            "--@build_bazel_rules_apple//apple/build_settings:ios_simulator_device=$SIMULATOR_DEVICE" \
+            --local_test_jobs=1 \
+            --test_timeout=900 \
+            --test_output=errors \
+            --platforms=@apple_support//platforms:ios_sim_arm64 \
+            //Packages/Platform:PlatformTests_ios_simulator
+
+  PlatformBuilds:
+    name: Platform (compile-only builds)
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    needs: [artifact]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Bazel Cache
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: Platform-visionos_sim_arm64
+
+      - name: Download Bazelize
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: Generate Platform Workspace
+        id: generate
+        run: |
+          chmod +x bazelize
+          ./bazelize --input spm/Platform --output spm/Platform/App
+
+      - name: Build visionOS Simulator
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        working-directory: spm/Platform/App
         run: |
           bazel build \
-            "--platforms=@apple_support//platforms:$PLATFORM" \
-            "//Packages/Platform:$TARGET"
+            --platforms=@apple_support//platforms:visionos_sim_arm64 \
+            //Packages/Platform:PlatformTests_xros_simulator
+
+      - name: Build iOS Device
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        working-directory: spm/Platform/App
+        run: |
+          bazel build \
+            --platforms=@apple_support//platforms:ios_arm64 \
+            //Packages/Platform:PlatformTests_ios_device_bundle
+
+      - name: Build tvOS Device
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        working-directory: spm/Platform/App
+        run: |
+          bazel build \
+            --platforms=@apple_support//platforms:tvos_arm64 \
+            //Packages/Platform:PlatformTests_tvos_device_bundle
+
+      - name: Build watchOS Device
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        working-directory: spm/Platform/App
+        run: |
+          bazel build \
+            --platforms=@apple_support//platforms:watchos_device_arm64 \
+            //Packages/Platform:PlatformTests_watchos_device_bundle
+
+      - name: Build visionOS Device
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        working-directory: spm/Platform/App
+        run: |
+          bazel build \
+            --platforms=@apple_support//platforms:visionos_arm64 \
+            //Packages/Platform:PlatformTests_xros_device_bundle
