@@ -5,10 +5,10 @@ import Testing
 
 struct JSONProjectLoaderTests {
     @Test
-    func jsonProjectPreservesConfigurationsAndPackageReferences() throws {
+    func jsonProjectPreservesConfigurationsAndPackageReferences() async throws {
         let root = try fixture()
         defer { try? root.delete() }
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Debug")
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Debug")
         let probeIndex = project.targetIndex(named: "Probe")
         let probe = try #require(probeIndex)
 
@@ -22,10 +22,10 @@ struct JSONProjectLoaderTests {
     }
 
     @Test
-    func jsonMembershipAndInferredFileTypesReachTheConsumerModel() throws {
+    func jsonMembershipAndInferredFileTypesReachTheConsumerModel() async throws {
         let root = try fixture()
         defer { try? root.delete() }
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
         let probeFiles = project.withTarget(named: "Probe") { $0.files }
         let probeFrameworks = project.withTarget(named: "Probe") { $0.dependencies.frameworks }
         let files = try #require(probeFiles)
@@ -49,7 +49,7 @@ struct JSONProjectLoaderTests {
     }
 
     @Test
-    func sdkFrameworkPathsLinkByFrameworkName() throws {
+    func sdkFrameworkPathsLinkByFrameworkName() async throws {
         let path = "<DEVELOPER>/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework"
         let root = try fixture()
         defer { try? root.delete() }
@@ -60,7 +60,7 @@ struct JSONProjectLoaderTests {
         try (root + "Project.xcodeproj/project.xcproj").write(
             String(decoding: JSONSerialization.data(withJSONObject: model), as: UTF8.self))
 
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: nil)
         let probeSDKFrameworks = project.withTarget(named: "Probe") { $0.dependencies.sdkFrameworks }
         let sdkFrameworks = try #require(probeSDKFrameworks)
         #expect(sdkFrameworks == ["Foundation"])

@@ -6,13 +6,13 @@ import Xcode
 
 struct AppIconSelectionTests {
     @Test
-    func composerPrimaryKeepsItsLegacyFallbackAndExplicitAlternates() throws {
+    func composerPrimaryKeepsItsLegacyFallbackAndExplicitAlternates() async throws {
         let root = try fixture(settings: [
             "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES": "\"Dark Mode\"",
             "ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "NO",
         ])
         defer { try? root.delete() }
-        let selection = try selection(root)
+        let selection = try await selection(root)
         #expect(selection.primary == "AppIcon")
         #expect(Set(selection.patterns) == [
             "Sources/AppIcon.icon/**",
@@ -22,10 +22,10 @@ struct AppIconSelectionTests {
     }
 
     @Test
-    func includeAllDiscoversSynchronizedComposerAndLegacyAlternates() throws {
+    func includeAllDiscoversSynchronizedComposerAndLegacyAlternates() async throws {
         let root = try fixture(settings: ["ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "YES"])
         defer { try? root.delete() }
-        let selection = try selection(root)
+        let selection = try await selection(root)
         #expect(Set(selection.patterns) == [
             "Sources/AppIcon.icon/**",
             "Sources/Assets.xcassets/AppIcon.appiconset/**",
@@ -36,27 +36,27 @@ struct AppIconSelectionTests {
     }
 
     @Test(arguments: [false, true])
-    func aLegacyPrimaryDoesNotSelectUnrequestedAlternateIcons(includeSetting: Bool) throws {
+    func aLegacyPrimaryDoesNotSelectUnrequestedAlternateIcons(includeSetting: Bool) async throws {
         let root = try fixture(settings: includeSetting ? ["ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS": "NO"] : [:])
         defer { try? root.delete() }
         try (root + "AppIcon.icon").delete()
-        let selection = try selection(root)
+        let selection = try await selection(root)
         #expect(selection.patterns == ["Sources/Assets.xcassets/AppIcon.appiconset/**"])
         #expect(selection.primaryAppIcon == nil)
     }
 
     @Test
-    func aMissingPrimaryDoesNotGenerateAnEmptyIconGlob() throws {
+    func aMissingPrimaryDoesNotGenerateAnEmptyIconGlob() async throws {
         let root = try fixture(settings: ["ASSETCATALOG_COMPILER_APPICON_NAME": "Missing"])
         defer { try? root.delete() }
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
         let index = try #require(project.targets.indices.first)
         let selection = project.targets[index].appIconSelection(project: project)
         #expect(selection == nil)
     }
 
-    private func selection(_ root: Path) throws -> AppIconSelection {
-        let project = try Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
+    private func selection(_ root: Path) async throws -> AppIconSelection {
+        let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
         let index = try #require(project.targets.indices.first)
         let selection = project.targets[index].appIconSelection(project: project)
         return try #require(selection)

@@ -7,9 +7,10 @@
 
 import Foundation
 @preconcurrency import PathKit
-import Xcode
-import Subprocess
 import Util
+import Xcode
+
+// MARK: - SwiftPM.Deployment
 
 extension SwiftPM {
     /// Which platform version each of a package's targets is compiled at.
@@ -104,17 +105,15 @@ extension SwiftPM.Deployment {
         guard let sdk = sdkName[platform] else { return nil }
 
         guard
-            let platformPath = try? await run("xcrun", ["--sdk", sdk, "--show-sdk-platform-path"]),
-            !platformPath.isEmpty
+            let platformPath = try? await Commands.sdkPlatform(sdk: sdk)
         else {
             return nil
         }
 
-        let binary = Path(platformPath.trimmingCharacters(in: .whitespacesAndNewlines))
-            + "Developer/Library/Frameworks/XCTest.framework/XCTest"
+        let binary = platformPath + "Developer/Library/Frameworks/XCTest.framework/XCTest"
         guard binary.exists else { return nil }
 
-        guard let build = try? await run("xcrun", ["vtool", "-show-build", binary.string]) else {
+        guard let build = try? await Commands.binaryBuildInfo(at: binary) else {
             return nil
         }
 
@@ -170,14 +169,4 @@ extension SwiftPM.Deployment {
         "watchos": "WATCHOS",
         "visionos": "XROS",
     ]
-
-    private static func run(_ executable: String, _ arguments: [String]) async throws -> String {
-        let result = try await Subprocess.run(
-            .name(executable),
-            arguments: Arguments(arguments),
-            output: .string(limit: 1024 * 1024))
-
-        guard result.terminationStatus.isSuccess else { return "" }
-        return result.standardOutput
-    }
 }

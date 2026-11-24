@@ -286,6 +286,27 @@ and device bundles. Compile-only jobs do not claim runtime execution. Generated
 Starlark is checked in the workspaces these jobs already generated, without
 resolving the entire fixture graph again in a separate lint job.
 
+Swift and Compatibility share one workflow-level `macos-validation` queue.
+Only one complete validation runs at a time across PRs, branch pushes, version
+tags, and manual corpus runs; later validations wait instead of cancelling it.
+`queue: max` retains up to 100 pending runs. Setting only
+`cancel-in-progress: false` would still let a newer submission replace the one
+pending run. If that queue is full, GitHub cancels additional whole runs.
+
+Within the active workflow, the local SwiftPM fixture matrix runs at most four
+jobs together, and each external corpus matrix at most two. Every existing
+fixture and SDK check remains scheduled. Workflow queueing does not reserve
+hosted runners: GitHub can still cancel a job before any steps run if its
+runner pool is exhausted.
+
+Host tests, universal artifact builds, local SwiftPM fixtures, and compile-only
+SDK variants use `macos-26-intel` with Xcode 26.6 selected explicitly. The
+artifact is checked for both arm64 and x86_64 slices before upload. ARM Simulator
+execution, controlled bundle comparison, and the Xcode 27 JSON lane retain their
+ARM runners. Shared caches include the runner architecture and toolchain, so an
+Intel job does not restore ARM build outputs. This moves portable work off the
+constrained hosted ARM pool without dropping fixture or SDK coverage.
+
 The Xcode-format parity check generates independent workspace roots and preserves
 both roots. It compares all generated files and executable bits, excluding only
 SwiftPM `.build` state. Absolute links into each workspace are relocated to one
@@ -347,15 +368,18 @@ update `Sources/BazelizeKit/Bazel/Version.swift` and `Makefile` to the same nume
 version through a reviewed PR, and merge it into `master`. Push the tag only
 after the intended changes are merged. A tag must point to a commit in `master`.
 
-Both Swift and Compatibility run on the tag. Their completion triggers Release,
-which requires the latest push run of each workflow for the exact tag and SHA
-to succeed. Missing, pending, failed, or cancelled validation cannot publish.
+Pushing a version tag starts Swift, Compatibility, and one Release workflow.
+Ordinary branch pushes and CI completions do not trigger Release. Release waits
+on an Ubuntu runner for the latest push run of each required workflow for the
+exact tag and SHA to succeed, then starts macOS packaging. Missing or pending
+validation waits until it completes or the six-hour gate timeout expires; failed
+or cancelled validation fails the gate and cannot publish.
 Release downloads the universal binary from that verified Swift run, checks
 both architectures and `--version`, and packages it with a SHA-256 checksum.
 It downloads the draft release's assets and verifies the checksum and executable
 before making the release public. A failed download or smoke check leaves the
-release as a draft. Re-running either required tag workflow retries publication;
-an already published release is not overwritten.
+release as a draft. After fixing or re-running failed tag CI, re-run Release to
+retry publication; an already published release is not overwritten.
 
 The assets are `bazelize-macos-universal.tar.gz` and `SHA256SUMS`. To verify and
 extract a download, place both files in the same directory and run:
@@ -398,6 +422,22 @@ The local pre-commit hook checks staged blobs with the staged `.swiftformat`
 configuration. It never rewrites the working tree or index, so partially staged
 edits remain separate. Generated workspaces and external checkouts are excluded
 by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
+
+Swift child processes belong to module-local `Commands` operations named for
+their purpose. Their only execution backend is `swift-subprocess`; callers
+await discovery and execution rather than block a thread. Toolchain and SDK
+framework discovery share immutable results across concurrent generations.
+
+The generated macOS plugin host also uses `swift-subprocess`. Its pinned source
+archive and C shims are declared in Bazel under `tools/subprocess`, independently
+of the consumer's SwiftPM graph. The host requires macOS 13; its native command
+line rule applies that deployment floor only to the host and its dependencies.
+Plugin protocol messages remain binary, and build commands retain their
+arguments, environment overrides, working directory, and failure diagnostics.
+
+Repository dependency catalogs are regenerated with `swift run RepoEnumGenerator`
+or `make update-repo-enums`. This replaces the forwarding `repo-enum` package
+plugin: SwiftPM command plugins cannot import the subprocess library.
 
 ### Unsupported targets
 

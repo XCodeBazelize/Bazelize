@@ -6,7 +6,7 @@ import Testing
 
 struct RoadmapTreeBuilderTests {
     @Test(arguments: [false, true])
-    func missingInputsAreSeparatedUnderRealAndSymlinkRoots(linked: Bool) throws {
+    func missingInputsAreSeparatedUnderRealAndSymlinkRoots(linked: Bool) async throws {
         let scratch = Path(NSTemporaryDirectory()).realPath + UUID().uuidString
         defer { try? scratch.delete() }
         let real = scratch + "real"
@@ -45,7 +45,7 @@ struct RoadmapTreeBuilderTests {
         } else {
             root = real
         }
-        let project = try Xcode.Project.load(path: root + "Probe.xcodeproj", preferConfig: "Debug")
+        let project = try await Xcode.Project.load(path: root + "Probe.xcodeproj", preferConfig: "Debug")
         let index = try #require(project.targets.indices.first)
         #expect(project.targets[index].srcs == ["Sources/Sources/Present.swift"])
         #expect(project.targets[index].headers.isEmpty)

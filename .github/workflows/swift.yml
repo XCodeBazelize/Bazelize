@@ -39,16 +39,18 @@ on:
 permissions:
   contents: read
 
-# One run at a time per branch or pull request, never per repository: a shared
-# group let any other branch's push cancel a run that was proving a change, so
-# "CI passed" was a question of what else was pushed that hour.
+# Share hosted macOS capacity with Compatibility, one complete validation at a
+# time. Keep pending runs rather than replacing another PR's queued checks.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: macos-validation
+  cancel-in-progress: false
+  queue: max
 
 jobs:
   test:
-    runs-on: macos-26
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
 
     steps:
     - uses: actions/checkout@v6
@@ -366,11 +368,14 @@ jobs:
   # can do, and its tests only pass if that thing was generated correctly.
   IntegratePackage:
     name: IntegratePackage (${{ matrix.name }})
-    runs-on: macos-26
+    runs-on: macos-26-intel
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     needs: [artifact]
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         include:
           - name: ArtifactBundle
@@ -562,6 +567,13 @@ jobs:
           ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
           ! unzip -Z1 "$bundle" | grep -q "de.lproj"
 
+      # The subprocess runtime needs macOS 13 while the consumer may target 12.
+      # Building only the host isolates this from the fixture plugin's own APIs.
+      - name: Build Plugin Host For Older Consumer
+        if: matrix.name == 'PrebuildPlugin'
+        working-directory: spm/PrebuildPlugin/App
+        run: bazel build //:_plugin_host --macos_minimum_os=12.0
+
       # A command plugin is not run by a build: it is a verb someone types, and
       # running it is the only proof it is there. The fixture also has an
       # executable product named `hello`, so the command target is disambiguated
@@ -730,7 +742,9 @@ jobs:
   # execution on a physical device or a hosted visionOS Simulator.
   PlatformVariants:
     name: Platform (${{ matrix.mode }} ${{ matrix.name }})
-    runs-on: macos-26
+    runs-on: ${{ matrix.runner || 'macos-26-intel' }}
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     needs: [artifact]
     timeout-minutes: 60
     strategy:
@@ -740,14 +754,17 @@ jobs:
         include:
           - name: iOS Simulator
             mode: test
+            runner: macos-26
             platform: ios_sim_arm64
             target: PlatformTests_ios_simulator
           - name: tvOS Simulator
             mode: test
+            runner: macos-26
             platform: tvos_sim_arm64
             target: PlatformTests_tvos_simulator
           - name: watchOS Simulator
             mode: test
+            runner: macos-26
             platform: watchos_arm64
             target: PlatformTests_watchos_simulator
           - name: visionOS Simulator

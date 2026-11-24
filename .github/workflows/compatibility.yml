@@ -10,10 +10,11 @@ on:
 permissions:
   contents: read
 
-# Manual runs and version tags are independent of the ordinary PR checks.
+# Share the Swift workflow's queue so corpus runs cannot flood the same runners.
 concurrency:
-  group: compatibility-${{ github.ref }}
+  group: macos-validation
   cancel-in-progress: false
+  queue: max
 
 jobs:
   artifact:
@@ -30,6 +31,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - name: stats
@@ -297,6 +299,7 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
+      max-parallel: 2
       matrix:
         include:
           - name: swift-collections

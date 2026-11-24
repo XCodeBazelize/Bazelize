@@ -17,12 +17,12 @@ extension Xcode {
         /// through the subscript or `forEachTarget`; a target is never copied.
         public let targets: UniqueArray<Target>
 
-        public static func load(path: Path, preferConfig: String?) throws -> Self {
+        public static func load(path: Path, preferConfig: String?) async throws -> Self {
             if let manifest = Self.manifest(at: path) {
                 return package(at: manifest)
             }
 
-            return try ProjectLoader(path: path, preferConfig: preferConfig).model()
+            return try await ProjectLoader(path: path, preferConfig: preferConfig).model()
         }
 
         /// The `Package.swift` a path names, directly or as its directory.

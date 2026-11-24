@@ -24,14 +24,14 @@ struct ProjectLoaderTests {
     }
 
     @Test(.corpus("IceCubesApp/IceCubesApp.xcodeproj"))
-    func synchronizedExtensionTargetIncludesExpectedSourceFiles() throws {
+    func synchronizedExtensionTargetIncludesExpectedSourceFiles() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "app/IceCubesApp/IceCubesApp.xcodeproj"
 
-        let project = try Xcode.Project.load(path: projectPath, preferConfig: nil)
+        let project = try await Xcode.Project.load(path: projectPath, preferConfig: nil)
         let extensionSources = project.withTarget(named: "IceCubesShareExtension") { $0.files.sources }
         let sources = try #require(extensionSources)
 
@@ -40,14 +40,14 @@ struct ProjectLoaderTests {
     }
 
     @Test(.corpus("iina/IINA.xcodeproj"))
-    func resolvesXCConfigSettingsForIINACommandLineTarget() throws {
+    func resolvesXCConfigSettingsForIINACommandLineTarget() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "app/iina/IINA.xcodeproj"
 
-        let project = try Xcode.Project.load(path: projectPath, preferConfig: "Release")
+        let project = try await Xcode.Project.load(path: projectPath, preferConfig: "Release")
         let cliIndex = project.targetIndex(named: "iina-cli")
         let cli = try #require(cliIndex)
 
@@ -56,14 +56,14 @@ struct ProjectLoaderTests {
     }
 
     @Test(.corpus("iina/IINA.xcodeproj"))
-    func classifiesIINAFrameworkDependencies() throws {
+    func classifiesIINAFrameworkDependencies() async throws {
         let current = Path(#filePath)
             .parent()
             .parent()
             .parent()
         let projectPath = current + "app/iina/IINA.xcodeproj"
 
-        let project = try Xcode.Project.load(path: projectPath, preferConfig: "Release")
+        let project = try await Xcode.Project.load(path: projectPath, preferConfig: "Release")
         let iinaDependencies = project.withTarget(named: "iina") { $0.dependencies }
         let iinaCopyFiles = project.withTarget(named: "iina") { $0.files.copyFiles }
         let dependencies = try #require(iinaDependencies)

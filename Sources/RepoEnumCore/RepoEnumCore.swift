@@ -4,6 +4,8 @@ import FoundationNetworking
 #endif
 import Yams
 
+// MARK: - RepoReleaseAsset
+
 /// A release asset for one host, named the way `uname` names that host.
 public struct RepoReleaseAsset: Codable, Sendable, Equatable {
     /// `uname -s`, lowercased.
@@ -110,6 +112,8 @@ public protocol GitHubTagFetching: Sendable {
     func tags(for repositoryURL: String) async throws -> [String]
 }
 
+// MARK: - GitHubRelease
+
 public struct GitHubRelease: Sendable, Equatable {
     public let tagName: String
     public let assetDigests: [String: String]
@@ -119,6 +123,8 @@ public struct GitHubRelease: Sendable, Equatable {
         self.assetDigests = assetDigests
     }
 }
+
+// MARK: - GitHubReleaseFetching
 
 public protocol GitHubReleaseFetching: Sendable {
     func releases(for repositoryURL: String) async throws -> [GitHubRelease]
@@ -194,6 +200,8 @@ public struct RepoEnumFile: Equatable {
     }
 }
 
+// MARK: - RepoChecksummedReleaseVersion
+
 /// A release every configured host has a SHA-256 digest for.
 public struct RepoChecksummedReleaseVersion: Sendable, Equatable {
     public let tag: RepoVersionTag
@@ -231,6 +239,8 @@ public struct RepoChecksummedReleaseVersion: Sendable, Equatable {
         return checksum.lowercased()
     }
 }
+
+// MARK: - ChecksummedReleaseEnumFile
 
 public struct ChecksummedReleaseEnumFile: Equatable {
     public let source: RepoSource
@@ -363,7 +373,7 @@ public struct GitHubTagClient: GitHubTagFetching {
             let url = URL(string: "https://api.github.com/repos/\(repositoryPath)/tags?per_page=100&page=\(page)")!
             var request = URLRequest(url: url)
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            request.setValue("Bazelize RepoEnumPlugin", forHTTPHeaderField: "User-Agent")
+            request.setValue("Bazelize RepoEnumGenerator", forHTTPHeaderField: "User-Agent")
             if let token {
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             }
@@ -453,7 +463,7 @@ public struct GitHubReleaseClient: GitHubReleaseFetching {
                 string: "https://api.github.com/repos/\(repositoryPath)/releases?per_page=100&page=\(page)")!
             var request = URLRequest(url: url)
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-            request.setValue("Bazelize RepoEnumPlugin", forHTTPHeaderField: "User-Agent")
+            request.setValue("Bazelize RepoEnumGenerator", forHTTPHeaderField: "User-Agent")
             if let token {
                 request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             }
@@ -583,7 +593,8 @@ public struct RepoEnumGeneratorService {
     /// the Bazel Central Registry serves that version too.
     private func checksummedFile(
         for source: RepoSource,
-        assets: [RepoReleaseAsset]) async throws -> (String, String)
+        assets: [RepoReleaseAsset]) async throws
+        -> (String, String)
     {
         let published: Set<String>? = if let module = source.module {
             Set(try await registry.versions(forModule: module)

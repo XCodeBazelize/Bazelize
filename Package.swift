@@ -85,22 +85,6 @@ let package = Package(
             dependencies: [
                 "Yams",
             ]),
-        .plugin(
-            name: "RepoEnumPlugin",
-            capability: .command(
-                intent: .custom(
-                    verb: "repo-enum",
-                    description: "Generate Repo+*.swift files from GitHub tags."),
-                permissions: [
-                    .allowNetworkConnections(
-                        scope: .all(),
-                        reason: "Fetch GitHub tags for configured repositories."),
-                    .writeToPackageDirectory(
-                        reason: "Write generated Repo enum files into the package directory."),
-                ]),
-            dependencies: [
-                "RepoEnumGenerator",
-            ]),
 
         .target(
             name: "Util",
@@ -120,6 +104,7 @@ let package = Package(
 
                 .product(name: "BasicContainers", package: "swift-collections"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
+                .product(name: "Subprocess", package: "swift-subprocess"),
             ]),
         .testTarget(
             name: "XcodeTests",

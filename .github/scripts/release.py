@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import tarfile
+import time
 
 
 VERSION = re.compile(r"v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)")
@@ -57,18 +58,21 @@ def gate(args):
         raise ValueError("Tag no longer points to the CI commit")
     subprocess.run(["git", "merge-base", "--is-ancestor", args.sha,
                     "refs/remotes/origin/master"], check=True)
-    verified = {}
-    for workflow in WORKFLOWS:
-        pages = json.loads(run("gh", "api", "--paginate", "--slurp",
-            f"repos/{args.repository}/actions/workflows/{workflow}/runs?head_sha={args.sha}&event=push&per_page=100"))
-        result = successful_run([r for page in pages for r in page["workflow_runs"]],
-                                args.tag, args.sha)
-        if result is None:
-            print(f"Waiting for {workflow} on {args.tag} ({args.sha})")
-            return {}
-        verified[workflow] = result
-    print("Both required tag workflows passed")
-    return {"ready": "true", "run_id": str(verified["swift.yml"]["id"])}
+    while True:
+        verified = {}
+        for workflow in WORKFLOWS:
+            pages = json.loads(run("gh", "api", "--paginate", "--slurp",
+                f"repos/{args.repository}/actions/workflows/{workflow}/runs?head_sha={args.sha}&event=push&per_page=100"))
+            result = successful_run([r for page in pages for r in page["workflow_runs"]],
+                                    args.tag, args.sha)
+            if result is None:
+                print(f"Waiting for {workflow} on {args.tag} ({args.sha})")
+            else:
+                verified[workflow] = result
+        if len(verified) == len(WORKFLOWS):
+            print("Both required tag workflows passed")
+            return {"run_id": str(verified["swift.yml"]["id"])}
+        time.sleep(30)
 
 
 def package(args):

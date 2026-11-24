@@ -148,7 +148,7 @@ struct DumpCommand: AsyncParsableCommand {
 
     func run() async throws {
         let path = Path.current + input
-        let dump = try Xcode.Project.load(path: path, preferConfig: config)
+        let dump = try await Xcode.Project.load(path: path, preferConfig: config)
 
         if let printTarget {
             let summary = dump.withTarget(named: printTarget) { target in
