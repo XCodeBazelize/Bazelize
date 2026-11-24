@@ -284,6 +284,27 @@ and device bundles. Compile-only jobs do not claim runtime execution. Generated
 Starlark is checked in the workspaces these jobs already generated, without
 resolving the entire fixture graph again in a separate lint job.
 
+Swift and Compatibility share one workflow-level `macos-validation` queue.
+Only one complete validation runs at a time across PRs, branch pushes, version
+tags, and manual corpus runs; later validations wait instead of cancelling it.
+`queue: max` retains up to 100 pending runs. Setting only
+`cancel-in-progress: false` would still let a newer submission replace the one
+pending run. If that queue is full, GitHub cancels additional whole runs.
+
+Within the active workflow, the local SwiftPM fixture matrix runs at most four
+jobs together, and each external corpus matrix at most two. Every existing
+fixture and SDK check remains scheduled. Workflow queueing does not reserve
+hosted runners: GitHub can still cancel a job before any steps run if its
+runner pool is exhausted.
+
+Host tests, universal artifact builds, local SwiftPM fixtures, and compile-only
+SDK variants use `macos-26-intel` with Xcode 26.6 selected explicitly. The
+artifact is checked for both arm64 and x86_64 slices before upload. ARM Simulator
+execution, controlled bundle comparison, and the Xcode 27 JSON lane retain their
+ARM runners. Shared caches include the runner architecture and toolchain, so an
+Intel job does not restore ARM build outputs. This moves portable work off the
+constrained hosted ARM pool without dropping fixture or SDK coverage.
+
 The Xcode-format parity check generates independent workspace roots and preserves
 both roots. It compares all generated files and executable bits, excluding only
 SwiftPM `.build` state. Absolute links into each workspace are relocated to one
