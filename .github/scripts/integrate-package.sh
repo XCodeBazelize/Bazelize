@@ -294,11 +294,14 @@ if [ -n "$config" ]; then
     phase "Test package with trait"
     bazel test //... "--config=$config"
     flag="-D${config#*.}"
-    if bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "$flag"; then
+    # Into a variable first: under pipefail, `aquery | grep -q` fails with the
+    # SIGPIPE aquery gets when grep stops reading at its first match.
+    without=$(bazel aquery 'mnemonic("SwiftCompile", //...)')
+    with=$(bazel aquery "--config=$config" 'mnemonic("SwiftCompile", //...)')
+    if grep -q -- "$flag" <<< "$without"; then
         fail "$flag reached a compile without --config=$config"
     fi
-    bazel aquery "--config=$config" 'mnemonic("SwiftCompile", //...)' | grep -q -- "$flag" ||
-        fail "$flag is missing with --config=$config"
+    grep -q -- "$flag" <<< "$with" || fail "$flag is missing with --config=$config"
 fi
 
 # Select each declared trait on its own, through the `--config` the workspace
