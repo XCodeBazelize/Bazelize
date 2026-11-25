@@ -69,17 +69,24 @@ let package = Package(
                 "PathKit",
 
                 "BazelRules",
+                "Commands",
                 "Xcode",
                 "Util",
                 "Starlark",
                 "PluginLoader",
 
-                .product(name: "Subprocess", package: "swift-subprocess"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         .testTarget(
             name: "BazelizeKitTests",
             dependencies: ["BazelizeKit", "PathKit"]),
+        .target(
+            name: "Commands",
+            dependencies: [
+                "PathKit",
+                "Util",
+                .product(name: "Subprocess", package: "swift-subprocess"),
+            ]),
         .target(
             name: "RepoEnumCore",
             dependencies: [
@@ -99,12 +106,12 @@ let package = Package(
         .target(
             name: "Xcode",
             dependencies: [
+                "Commands",
                 "PathKit",
                 "AnyCodable",
 
                 .product(name: "BasicContainers", package: "swift-collections"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
-                .product(name: "Subprocess", package: "swift-subprocess"),
             ]),
         .testTarget(
             name: "XcodeTests",
@@ -116,9 +123,9 @@ let package = Package(
         .target(
             name: "PluginLoader",
             dependencies: [
+                "Commands",
                 "PathKit",
                 "Util",
                 "Xcode",
-                .product(name: "Subprocess", package: "swift-subprocess"),
             ]),
     ])
