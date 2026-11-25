@@ -83,6 +83,11 @@ extension Target {
                     copiedResourceGroups(project: kit.project)
                 },
                 enable_modules: prefer(\.enableModules),
+                /// The extended module map, with the `.Swift` submodule, is named
+                /// `module.modulemap` and put on the include path, so an
+                /// Objective-C dependent's `@import` reaches both halves, as it
+                /// does with the framework Xcode builds.
+                features: ["swift.propagate_generated_module_map"],
                 hdrs: .build {
                     flattenedModuleHeaderFiles(project: kit.project)
                     prefixHeader

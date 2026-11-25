@@ -637,6 +637,8 @@ extension Rules.Swift {
         ///   Runtime data made available to the target.
         /// - `enable_modules: Bool?`
         ///   Whether Clang modules are enabled for the target.
+        /// - `features: [String]?`
+        ///   Bazel features for the target and the targets the macro creates.
         /// - `hdrs: Starlark.Value?`
         ///   Public C-family headers published by this mixed-language target.
         /// - `includes: [String]?`
@@ -688,6 +690,7 @@ extension Rules.Swift {
             clang_srcs: Starlark.Value? = nil,
             data: Starlark.Value? = nil,
             enable_modules: Bool? = nil,
+            features: [String]? = nil,
             hdrs: Starlark.Value? = nil,
             includes: [String]? = nil,
             linkopts: Starlark.Value? = nil,
@@ -726,6 +729,7 @@ extension Rules.Swift {
                 if let clang_srcs { "clang_srcs" => clang_srcs }
                 if let data { "data" => data }
                 if let enable_modules { "enable_modules" => enable_modules }
+                if let features { "features" => features }
                 if let hdrs { "hdrs" => hdrs }
                 if let includes { "includes" => includes }
                 if let linkopts { "linkopts" => linkopts }
