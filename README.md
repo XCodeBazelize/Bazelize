@@ -293,11 +293,12 @@ tags, and manual corpus runs; later validations wait instead of cancelling it.
 `cancel-in-progress: false` would still let a newer submission replace the one
 pending run. If that queue is full, GitHub cancels additional whole runs.
 
-Within the active workflow, the local SwiftPM fixture matrix runs at most four
-jobs together, and each external corpus matrix at most two. Every existing
-fixture and SDK check remains scheduled. Workflow queueing does not reserve
-hosted runners: GitHub can still cancel a job before any steps run if its
-runner pool is exhausted.
+Within the active workflow, the local SwiftPM fixtures run in four shard jobs,
+one Bazel output base per shard, and each external corpus matrix runs at most
+two jobs. Every existing fixture and SDK check remains scheduled, and each
+fixture reports its own result in its shard's job summary. Workflow queueing
+does not reserve hosted runners: GitHub can still cancel a job before any steps
+run if its runner pool is exhausted.
 
 Host tests, universal artifact builds, local SwiftPM fixtures, and compile-only
 SDK variants use `macos-26-intel` with Xcode 26.6 selected explicitly. The

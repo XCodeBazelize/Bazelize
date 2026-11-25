@@ -379,10 +379,24 @@ jobs:
           diff "$xcode" "$bazel"
 
 
-  # One lane per SwiftPM fixture in `spm/`: each package is one thing SwiftPM
-  # can do, and its tests only pass if that thing was generated correctly.
+  # One fixture per SwiftPM package in `spm/`: each package is one thing
+  # SwiftPM can do, and its tests only pass if that thing was generated
+  # correctly. `.github/scripts/integrate-package.sh` runs every check of a
+  # fixture; what a fixture is about is said here.
+  #
+  # The fixtures run in four shards rather than one job each. A workspace's
+  # first Bazel command on a fresh runner spent 130-320s in repository rules
+  # that run locally and are cached nowhere (`local_config_xcode` asks every
+  # installed Xcode for its SDKs; rules_swift scans each SDK). A second
+  # workspace in its own output base paid that again; sharing one output base,
+  # it fetches nothing. Each fixture still runs in its own process, reports its
+  # own result in the job summary and log groups, and runs after an earlier
+  # one failed.
+  #
+  # Shards are balanced by recent Intel job times. A fixture that moves to
+  # another shard starts from another cache group.
   IntegratePackage:
-    name: IntegratePackage (${{ matrix.name }})
+    name: IntegratePackage (${{ join(matrix.fixtures.*.name, ', ') }})
     runs-on: macos-26-intel
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
@@ -390,374 +404,107 @@ jobs:
     timeout-minutes: 120
     strategy:
       fail-fast: false
-      max-parallel: 4
       matrix:
         include:
-          - name: ArtifactBundle
-            # A package rule carries `manual`, so a wildcard build never picks
-            # one up: a program a package builds is named to be run.
-            programs: |
-              //Packages/ArtifactBundle:GreetTool -- /tmp/artifact-bundle.swift
-          - name: BinaryTarget
-          - name: BuildToolPlugin
-          - name: Clang
-          - name: CommandPlugin
-            programs: |
-              //Packages/CommandPlugin:hello
-          - name: ConfigurationCondition
-          - name: DependencyCondition
-            # A trait is a flag, so the build that turns one on is a build to
-            # test as well: the dependency behind it is linked only then.
-            config: DependencyCondition.Extras
-          - name: DependencyShape
-          # Its test target compiles the back-port, so `bazel test //...` is
-          # what says the graph's deployment floor reached the compile.
-          - name: DeploymentFloor
-          - name: ExecutableResource
-            programs: |
-              //Packages/ExecutableResource:resource-probe
-          - name: Macro
-          - name: Platform
-          - name: PluginDependency
-          - name: PrebuildPlugin
-          - name: ProductShapes
-            programs: |
-              //Packages/Products:renamed-tool
-              //Packages/Products:ProductSnippet
-          - name: RemoteArtifactBundle
-          - name: RegistryPackage
-            notes: "swift package resolve failed"
-          - name: RemoteXCFramework
-          - name: SwiftSettings
-          - name: SystemLibrary
-          # Which build system SwiftPM runs by default moves with the
-          # toolchain, and the two do not implement the same resource rules, so
-          # a lane about a resource rule names the one that implements it
-          # rather than inheriting whichever the runner ships.
-          - name: TargetEmbed
-            # `swiftbuild` generated nothing for `.embedInCode` on the toolchain
-            # this lane was written against — Xcode 27 does — and `native` has
-            # generated it all along.
-            swiftpm: --build-system native
-          - name: TargetExclude
-          - name: TargetPath
-          - name: TargetResource
-            # `native` copies a platform resource rather than compiling it: no
-            # `momc`, no `actool`, no `ibtool`, so the model this package is
-            # about arrives as the `.xcdatamodeld` that was written.
-            swiftpm: --build-system swiftbuild
-          - name: TargetSources
-          - name: Trait
-            traits: Fast,Slow
-          - name: TraitGraph
-            traits: Alternative,Leaf,Middle,Top
+          - shard: 1
+            fixtures:
+              - name: ConfigurationCondition
+              - name: DependencyCondition
+                # A trait is a flag, so the build that turns one on is a build
+                # to test as well: the dependency behind it is linked only then.
+                config: DependencyCondition.Extras
+              - name: PrebuildPlugin
+              - name: TargetExclude
+              - name: TargetResource
+                # Which build system SwiftPM runs by default moves with the
+                # toolchain, and the two do not implement the same resource
+                # rules, so a fixture about a resource rule names the one that
+                # implements it rather than inheriting whichever the runner
+                # ships. `native` copies a platform resource rather than
+                # compiling it: no `momc`, no `actool`, no `ibtool`, so the
+                # model this package is about arrives as the `.xcdatamodeld`
+                # that was written.
+                swiftpm: --build-system swiftbuild
+              - name: TargetSources
+          - shard: 2
+            fixtures:
+              - name: BinaryTarget
+              - name: PluginDependency
+              - name: RemoteArtifactBundle
+              - name: SwiftSettings
+              - name: TargetPath
+              - name: TraitGraph
+                traits: Alternative,Leaf,Middle,Top
+          - shard: 3
+            fixtures:
+              - name: Clang
+              # Its test target compiles the back-port, so `bazel test //...`
+              # is what says the graph's deployment floor reached the compile.
+              - name: DeploymentFloor
+              - name: Macro
+              - name: Platform
+              - name: RemoteXCFramework
+              - name: SystemLibrary
+              - name: Trait
+                traits: Fast,Slow
+          - shard: 4
+            fixtures:
+              - name: ArtifactBundle
+                # A package rule carries `manual`, so a wildcard build never
+                # picks one up: a program a package builds is named to be run.
+                programs: |
+                  //Packages/ArtifactBundle:GreetTool -- /tmp/artifact-bundle.swift
+              - name: BuildToolPlugin
+              - name: CommandPlugin
+                programs: |
+                  //Packages/CommandPlugin:hello
+              - name: DependencyShape
+              - name: ExecutableResource
+                programs: |
+                  //Packages/ExecutableResource:resource-probe
+              - name: ProductShapes
+                programs: |
+                  //Packages/Products:renamed-tool
+                  //Packages/Products:ProductSnippet
+              - name: RegistryPackage
+                notes: "swift package resolve failed"
+              - name: TargetEmbed
+                # `swiftbuild` generated nothing for `.embedInCode` on the
+                # toolchain this fixture was written against (Xcode 27 does),
+                # and `native` has generated it all along.
+                swiftpm: --build-system native
     steps:
       - uses: actions/checkout@v6
 
       # The downloads cache is keyed by architecture and saved only by its
-      # designated writer. IntegrateIOS writes the ARM one; this is the only
-      # Intel writer, and Platform builds for macOS and iOS, so it fetches the
-      # rules every other Intel lane shares. Without it each Intel job fetches
-      # them from the network on every run.
+      # designated writer. IntegrateIOS writes the ARM one; the shard with
+      # Platform is the only Intel writer, and Platform builds for macOS and
+      # iOS, so it fetches the rules every other Intel job shares. Without it
+      # each Intel job fetches them from the network on every run.
       - name: Bazel Cache
         uses: ./.github/actions/bazel-cache
         with:
-          group: package-${{ matrix.name }}
-          save-repository: ${{ matrix.name == 'Platform' }}
-          lockfiles: spm/${{ matrix.name }}/App/MODULE.bazel.lock
+          group: package-shard-${{ matrix.shard }}
+          save-repository: ${{ contains(matrix.fixtures.*.name, 'Platform') }}
+          # A shard generates only its own fixtures, so the glob saves and
+          # restores exactly those.
+          lockfiles: spm/*/App/MODULE.bazel.lock
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
         with:
           name: bazelize
 
-      # What the fixture holds bazelize to is what SwiftPM does, so what
-      # SwiftPM does is run too: a fixture whose two sides disagree is a
-      # fixture that proves nothing.
-      #
-      # Every package of the fixture, not only the one bazelize is pointed at:
-      # the packages beside it are dependencies with sources of their own, and
-      # one that stopped building would be found here rather than in whatever
-      # it broke. A package with no tests is built and not run — there is
-      # nothing to run — and `App/` is generated, not a package of the fixture.
-      # A package that is only a plugin has nothing to build either: SwiftPM
-      # refuses the build rather than doing nothing, so it is skipped by what
-      # its manifest declares.
-      #
-      # Which packages those are is read from the manifest rather than the
-      # directory tree: a test target names its own `path`, so `Tests/` being
-      # absent says nothing about whether there are tests to run.
+      # Every `bazel` the fixtures run, the generator's plugin run included,
+      # reads ~/.bazelrc. Bazel restarts its server when the workspace changes
+      # and keeps the external repositories it already set up.
+      - name: Share One Output Base
+        run: echo "startup --output_base=$RUNNER_TEMP/bazel-output-base" >> "$HOME/.bazelrc"
 
-      - name: SwiftPM Build And Test
-        if: matrix.name != 'RegistryPackage'
-        working-directory: spm/${{ matrix.name }}
+      - name: Integrate Fixtures
         env:
-          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
-          ARGS: ${{ matrix.swiftpm }}
-        run: |
-          status=0
-          while read -r manifest; do
-            package=$(dirname "$manifest")
-            echo "::group::$package"
-            # One manifest answers both questions: whether anything here is
-            # built, and whether a test target exists wherever its `path` put
-            # it.
-            if ! model=$(cd "$package" && swift package dump-package); then
-              echo "::error::swift package dump-package failed for $package"
-              status=1
-            elif ! jq -e '[.targets[] | select(.type != "plugin")] | length > 0' <<< "$model" > /dev/null; then
-              echo "only plugins here, nothing to build"
-            elif ! (cd "$package" && swift build $ARGS); then
-              echo "::error::swift build failed for $package"
-              status=1
-            elif jq -e '[.targets[] | select(.type == "test")] | length > 0' <<< "$model" > /dev/null &&
-              ! (cd "$package" && swift test $ARGS); then
-              echo "::error::swift test failed for $package"
-              status=1
-            fi
-            echo "::endgroup::"
-          done < <(find . -name Package.swift -not -path "*/App/*" -not -path "*/.build/*" | sort)
-          exit $status
-
-      - name: Seed Offline Registry Download
-        if: matrix.name == 'RegistryPackage'
-        run: |
-          mkdir -p spm/RegistryPackage/App/.build/registry/downloads
-          cp -R spm/RegistryPackage/Registry/. spm/RegistryPackage/App/.build/registry/downloads/
-
-      # A package that wraps a system library is found through `pkg-config`,
-      # and a fixture that ships its own `.pc` is only found when that file's
-      # directory is on the path.
-      #
-      # A note is the generator saying the build differs from what the package
-      # asked for — a plugin that did not run, a program whose resources
-      # nothing can bundle, a library pkg-config has never heard of. Every one
-      # of those builds and tests green and is wrong at run time, so no fixture
-      # may produce one silently: a lane expecting a note names it in `notes`,
-      # and anything else said is a failure.
-      - name: Bazel Generation
-        env:
-          PKG_CONFIG_PATH: ${{ github.workspace }}/spm/${{ matrix.name }}/vendor/pkgconfig
-          NOTES: ${{ matrix.notes }}
-        run: |
-          set -o pipefail
-          chmod +x bazelize
-          ./bazelize --input "spm/${{ matrix.name }}" --output "spm/${{ matrix.name }}/App" | tee bazelize.log
-
-          if [ -n "$NOTES" ]; then
-            if ! grep -qE "$NOTES" bazelize.log; then
-              echo "::error::the note this fixture is here for was not said: $NOTES"
-              exit 1
-            fi
-          elif [ -s bazelize.log ]; then
-            echo "::error::the generator said something no fixture expects"
-            exit 1
-          fi
-
-      - name: Check Generated Starlark
-        working-directory: spm/${{ matrix.name }}/App
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
-
-      - name: Check Package Warning Policy
-        if: matrix.name == 'SwiftSettings'
-        run: python3 .github/scripts/check-package-warnings.py ./bazelize
-
-      # Nothing runs the plugins here: generation ends with `bazel run
-      # //:plugins`, so a target whose sources a plugin generates compiles in
-      # `Test Package` below, or the generator failed to run them and said so.
-
-      # The workspace's own commands, which answer whatever the package is:
-      # a package with no trait, no configuration and no localization answers
-      # that.
-      - name: List Workspace
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel list config
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel list trait
-          PATH="$GITHUB_WORKSPACE:$PATH" bazel list language
-
-      # A build that names a localization bundles that one and `Base`, and
-      # nothing else. What is in the bundle is the only proof of that.
-      - name: Filter Localizations
-        if: matrix.name == 'TargetResource'
-        working-directory: spm/TargetResource/App
-        run: |
-          bazel build //Packages/TargetResource:TargetResourceTests --config=lang.en
-          bundle=$(find -L bazel-bin/Packages/TargetResource -name TargetResourceTests.zip | head -1)
-          unzip -Z1 "$bundle" | grep -q "en.lproj"
-          unzip -Z1 "$bundle" | grep -q "Base.lproj"
-          ! unzip -Z1 "$bundle" | grep -q "ja.lproj"
-          ! unzip -Z1 "$bundle" | grep -q "de.lproj"
-
-      # The subprocess runtime needs macOS 13 while the consumer may target 12.
-      # Building only the host isolates this from the fixture plugin's own APIs.
-      - name: Build Plugin Host For Older Consumer
-        if: matrix.name == 'PrebuildPlugin'
-        working-directory: spm/PrebuildPlugin/App
-        run: bazel build //:_plugin_host --macos_minimum_os=12.0
-
-      # A command plugin is not run by a build: it is a verb someone types, and
-      # running it is the only proof it is there. The fixture also has an
-      # executable product named `hello`, so the command target is disambiguated
-      # as `hello_command`.
-      - name: Run Command Plugin
-        if: matrix.name == 'CommandPlugin'
-        working-directory: spm/CommandPlugin/App
-        run: |
-          bazel run //Packages/CommandPlugin:hello_command -- alpha --beta > command.log
-          grep -q "Hello from CommandPlugin" command.log
-          grep -q "Arguments: alpha --beta" command.log
-
-      # `bazel test` treats an empty wildcard as an error. Executable-only and
-      # library-only fixtures still build above; ask Bazel whether there is
-      # anything for this step to run instead of inventing a no-op test.
-      - name: Test Package
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          tests=$(bazel query 'tests(//...)')
-          if [ -n "$tests" ]; then
-            bazel test //...
-          else
-            echo "no Bazel tests, nothing to test"
-          fi
-
-      - name: Test Release Configuration
-        if: matrix.name == 'ConfigurationCondition'
-        working-directory: spm/ConfigurationCondition
-        run: |
-          swift test -c release
-          cd App
-          bazel test -c opt //...
-          actions=$(bazel aquery -c opt 'mnemonic("SwiftCompile", deps(//Packages/ConfigurationCondition:ConfigurationCondition))')
-          printf '%s' "$actions" | grep -q -- '-DRELEASE_ONLY'
-          ! printf '%s' "$actions" | grep -q -- '-DDEBUG_ONLY'
-
-      # A test bundle carries its own `minimum_os_version` through the rule's
-      # platform transition, so it proves nothing about the floor every other
-      # compile gets. Building the library on its own is what reads the default
-      # the workspace wrote, and the back-port it compiles is `obsoleted:` above
-      # the package's floor.
-      - name: Build Package At Its Deployment Floor
-        if: matrix.name == 'DeploymentFloor'
-        working-directory: spm/DeploymentFloor/App
-        run: |
-          grep -q 'build --macos_minimum_os=13.0' config.bazelrc
-          bazel build //Packages/DeploymentFloor:FloorProbe
-
-
-      # SwiftPM's macOS resource bundle is wrapped in Contents/Resources while
-      # apple_resource_bundle is flat. Compare their logical resource roots,
-      # and require every other observed difference to stay in the documented
-      # baseline.
-      - name: Compare Resource Bundles
-        if: matrix.name == 'TargetResource'
-        run: |
-          (cd spm/TargetResource/App &&
-            bazel build //Packages/TargetResource:TargetResourceTests)
-          output=$(cd spm/TargetResource/App &&
-            bazel cquery //Packages/TargetResource:TargetResourceTests --output=files |
-            grep 'TargetResourceTests.zip$')
-          execution_root=$(cd spm/TargetResource/App && bazel info execution_root)
-          archive="$execution_root/$output"
-          generated="$RUNNER_TEMP/target-resource-bundles"
-          unzip -q "$archive" -d "$generated"
-
-          for name in \
-            TargetResource_TargetResource.bundle \
-            TargetResource_TargetResourceTests.bundle
-          do
-            reference=$(find -L spm/TargetResource/.build \
-              -type d -name "$name" -not -path '*.xctest/*' -print -quit)
-            .github/scripts/compare-bundles.py \
-              --reference "$reference" \
-              --generated "$generated/TargetResourceTests.xctest/Contents/Resources/$name" \
-              --swiftpm-resource \
-              --baseline .github/scripts/bundle-differences.json
-          done
-
-      # One generated library is compiled through two platform configurations:
-      # each gets its own settings and only iOS gets the conditional target.
-      # Optimized iOS keeps the platform condition but drops the debug half of
-      # a combined condition.
-      - name: Test Platform Conditions
-        if: matrix.name == 'Platform'
-        working-directory: spm/Platform/App
-        run: |
-          bazel build //Packages/Platform:Platform --platforms=@apple_support//platforms:ios_sim_arm64
-
-          mac=$(bazel aquery 'mnemonic("SwiftCompile", deps(//Packages/Platform:Platform))')
-          ios=$(bazel aquery --platforms=@apple_support//platforms:ios_sim_arm64 \
-            'mnemonic("SwiftCompile", deps(//Packages/Platform:Platform))')
-          ios_opt=$(bazel aquery -c opt --platforms=@apple_support//platforms:ios_sim_arm64 \
-            'mnemonic("SwiftCompile", deps(//Packages/Platform:Platform))')
-
-          printf '%s' "$mac" | grep -q -- '-DMACOS_PLATFORM'
-          ! printf '%s' "$mac" | grep -q -- '-DIOS_PLATFORM'
-          ! printf '%s' "$mac" | grep -q 'Sources/IOSOnly/IOSOnly.swift'
-
-          printf '%s' "$ios" | grep -q -- '-DIOS_PLATFORM'
-          printf '%s' "$ios" | grep -q -- '-DIOS_DEBUG'
-          ! printf '%s' "$ios" | grep -q -- '-DMACOS_PLATFORM'
-          printf '%s' "$ios" | grep -q 'Sources/IOSOnly/IOSOnly.swift'
-
-          printf '%s' "$ios_opt" | grep -q -- '-DIOS_PLATFORM'
-          ! printf '%s' "$ios_opt" | grep -q -- '-DIOS_DEBUG'
-
-      # A program is not a test: the rules that build one carry `manual`, so
-      # `//...` never builds it. Running it is what says it links and works.
-      - name: Run Package Programs
-        if: matrix.programs
-        working-directory: spm/${{ matrix.name }}/App
-        env:
-          PROGRAMS: ${{ matrix.programs }}
-        run: |
-          while read -r program; do
-            [ -n "$program" ] || continue
-            bazel run $program
-          done <<< "$PROGRAMS"
-
-      # Both ways round, and not only that both pass: a trait is a compilation
-      # condition named after itself, so the flag reaching swiftc is the thing
-      # to see.
-      - name: Test Package With Trait
-        if: matrix.config
-        working-directory: spm/${{ matrix.name }}/App
-        run: |
-          bazel test //... --config=${{ matrix.config }}
-          trait="${{ matrix.config }}"
-          ! bazel aquery 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
-          bazel aquery --config=${{ matrix.config }} 'mnemonic("SwiftCompile", //...)' | grep -q -- "-D${trait#*.}"
-
-      # Select each declared trait on its own, through the `--config` the
-      # workspace generated for it. That is what `swift test --traits <trait>`
-      # does: the selection replaces the package's defaults, and carries
-      # whatever that trait enables.
-      - name: Test Each Package Trait
-        if: matrix.traits
-        working-directory: spm/${{ matrix.name }}/App
-        env:
-          PACKAGE: ${{ matrix.name }}
-          TRAITS: ${{ matrix.traits }}
-        run: |
-          IFS=',' read -ra traits <<< "$TRAITS"
-          for trait in "${traits[@]}"; do
-            bazel test //... "--config=${PACKAGE}.${trait}"
-          done
-
-      # What each selection resolves to, exactly: the closure of the trait
-      # asked for, and nothing of the defaults it replaced. The three SwiftPM
-      # names rather than lists — `--disable-default-traits`,
-      # `--enable-all-traits`, `--traits default` — answer the same here.
-      - name: Probe Trait Selections
-        if: matrix.name == 'TraitGraph'
-        working-directory: spm/TraitGraph/App
-        run: |
-          bazel run //Packages/TraitGraph:TraitProbe -- Leaf Middle Top
-          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Middle -- Leaf Middle
-          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.Alternative -- Alternative
-          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.none
-          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.all -- Alternative Leaf Middle Top
-          bazel run //Packages/TraitGraph:TraitProbe --config=TraitGraph.default -- Leaf Middle Top
+          FIXTURES: ${{ toJSON(matrix.fixtures) }}
+        run: .github/scripts/integrate-package.sh
 
   # Host tests and SwiftPM controls remain in IntegratePackage (Platform).
   # Each additional SDK has its own step and its own result; compile-only
