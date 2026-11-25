@@ -1,0 +1,4 @@
+module CPairInner {
+    header "CPairInner.h"
+    export *
+}

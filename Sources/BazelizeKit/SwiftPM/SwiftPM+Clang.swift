@@ -109,11 +109,14 @@ extension SwiftPM.Generator {
                 /// own name, not the one Bazel derives from the label.
                 module_name: module,
                 tags: Self.manual,
-                /// The map travels with the headers: it is on the include path of
-                /// everything that depends on the target, and clang has to find the
-                /// file there.
+                /// The maps travel with the headers: they are on the include path
+                /// of everything that depends on the target, and clang has to find
+                /// the files there. Not only the target's own: a map in a
+                /// subdirectory of the public headers declares a module of its own,
+                /// which clang finds as `<search path>/<module>/module.modulemap`
+                /// — the target is then two modules, and either can be imported.
                 textual_hdrs: interface.map { path in
-                    .build { [Starlark.Label.named("\(path)/module.modulemap")] }
+                    Starlark.glob(["\(path)/**/*.modulemap"])
                 },
                 visibility: .public))
     }
@@ -214,6 +217,7 @@ extension SwiftPM.Generator {
         let files = SwiftPM.Generator.walk(headers)
         let base = headers.normalize().string
         var shipped: Path?
+        var linked: [String] = []
 
         for file in files {
             let path = file.normalize().string
@@ -225,6 +229,14 @@ extension SwiftPM.Generator {
                 continue
             }
 
+            if
+                let `extension` = Path(name).extension.flatMap(FileExtension.init(rawValue:)),
+                Self.headerExtensions.contains(`extension`),
+                Self.isBehindDirectoryLink(name, in: headers)
+            {
+                linked.append(name)
+            }
+
             let link = interface + name
             try link.parent().mkpath()
             try link.symlink(file)
@@ -233,20 +245,40 @@ extension SwiftPM.Generator {
         /// A map the package ships is its intended interface; without one the
         /// module is every header in the directory, which is what SwiftPM
         /// generates for a clang target too.
+        ///
+        /// Every header clang finds walking that directory, that is: the walk
+        /// does not enter a directory that is a symlink, so a header behind one
+        /// is in no module of the target's — unless a map beside it declares
+        /// one. The mirror is real directories all the way down, so the headers
+        /// SwiftPM's umbrella never saw are excluded by name. Left in, a header
+        /// owned by a nested map would also be in the umbrella, and the two
+        /// modules include each other.
         let map = interface + "module.modulemap"
         if let shipped {
             try map.symlink(shipped)
         } else {
+            let excluded = linked.sorted().map { "    exclude header \"\($0)\"\n" }.joined()
             try map.write("""
             module \(module) {
                 umbrella "."
-                export *
+            \(excluded)    export *
             }
 
             """)
         }
 
         return relative
+    }
+
+    /// Whether a path under `directory` passes through a directory symlink.
+    private static func isBehindDirectoryLink(_ name: String, in directory: Path) -> Bool {
+        let components = name.split(separator: "/").dropLast()
+        var current = directory
+        for component in components {
+            current = current + String(component)
+            if current.isSymlink { return true }
+        }
+        return false
     }
 
     /// What `exclude` removes from a C-family target.

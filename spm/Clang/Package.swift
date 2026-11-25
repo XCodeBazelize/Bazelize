@@ -31,9 +31,14 @@ let package = Package(
             cxxSettings: [
                 .unsafeFlags(["-DCXX_UNSAFE_FLAG"]),
             ]),
+        /// One target, two modules: SwiftPM names `CPair` after the target, and
+        /// the module map in a subdirectory of `include` declares `CPairInner`,
+        /// which clang finds through the header search path alone. The shape of
+        /// indexstore-db's `IndexStoreDB_CIndexStoreDB` up to swift-6.1.
+        .target(name: "CPair"),
         .target(
             name: "Consumer",
-            dependencies: ["CObject", "CxxLib"],
+            dependencies: ["CObject", "CxxLib", "CPair"],
             swiftSettings: [
                 .interoperabilityMode(.Cxx),
             ]),
@@ -44,10 +49,12 @@ let package = Package(
                 .interoperabilityMode(.Cxx),
             ]),
         /// A test target written in Objective-C: SwiftPM compiles it the way it
-        /// compiles any C-family target, and so must the generated rules.
+        /// compiles any C-family target, and so must the generated rules. Its
+        /// compile is sandboxed, so its `@import CPairInner` also says the
+        /// nested module map is an input rather than a file left lying around.
         .testTarget(
             name: "CObjectTests",
-            dependencies: ["CObject"]),
+            dependencies: ["CObject", "CPair"]),
     ],
     cLanguageStandard: .c11,
     cxxLanguageStandard: .gnucxx17)

@@ -27,3 +27,9 @@ func assemblyAndObjectiveCxxCompile() {
     #expect(Consumer.assembly == 9)
     #expect(Consumer.objectiveCxxLength == 6)
 }
+
+@Test
+func oneTargetIsTwoModules() {
+    #expect(Consumer.pair.outer == 6)
+    #expect(Consumer.pair.inner == 5)
+}

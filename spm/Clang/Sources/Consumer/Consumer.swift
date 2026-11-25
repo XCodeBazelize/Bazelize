@@ -1,4 +1,6 @@
 import CObject
+import CPair
+import CPairInner
 import CxxLib
 
 public enum Consumer {
@@ -28,5 +30,11 @@ public enum Consumer {
 
     public static var objectiveCxxLength: Int32 {
         demo.objectiveCxxLength()
+    }
+
+    /// The module the target is named after, and the one its nested map
+    /// declares: both are the same target's.
+    public static var pair: (outer: Int32, inner: Int32) {
+        (pair_outer_value(), pair_inner_value())
     }
 }
