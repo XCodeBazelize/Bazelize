@@ -10,6 +10,8 @@ Bazelize generates Bazel workspaces from Xcode projects and Swift packages.
 mint install XCodeBazelize/Bazelize
 ```
 
+Bazelize runs on macOS 26 or later and builds with Swift 6.2 or later.
+
 ## Usage
 
 ```sh

@@ -11,10 +11,10 @@ extension Target {
     /// with `-bundle_loader`, and its project-wide header map lets the test include
     /// the host's headers by name. A Bazel test bundle has neither, so the host's
     /// library is linked into it: that covers both.
-    func testHostLibraries(project: Project?) -> [Starlark.Label] {
-        guard isTest, let host = testHostTarget(project: project) else { return [] }
+    func testHostLibraries(project: borrowing Project) -> [Starlark.Label] {
+        guard isTest, let host = testHostName(project: project) else { return [] }
 
-        let label = Starlark.Label.named("//Targets/\(host.name):\(host.name)_library")
+        let label = Starlark.Label.named("//Targets/\(host):\(host)_library")
         /// A test target usually also declares the host as a target dependency, and
         /// Bazel rejects a duplicated label in `deps`.
         return frameworksLibrary.contains(label) ? [] : [label]
@@ -22,9 +22,9 @@ extension Target {
 
     // MARK: Private
 
-    private func testHostTarget(project: Project?) -> Target? {
-        guard let project, let name = hostBundleName else { return nil }
-        return project.targets.first { $0.name == name }
+    private func testHostName(project: borrowing Project) -> String? {
+        guard let name = hostBundleName, project.targetIndex(named: name) != nil else { return nil }
+        return name
     }
 
     /// `TEST_HOST` points at the executable inside the host bundle, e.g.

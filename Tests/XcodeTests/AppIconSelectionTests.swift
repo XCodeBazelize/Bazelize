@@ -50,14 +50,16 @@ struct AppIconSelectionTests {
         let root = try fixture(settings: ["ASSETCATALOG_COMPILER_APPICON_NAME": "Missing"])
         defer { try? root.delete() }
         let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
-        let target = try #require(project.targets.first)
-        #expect(target.appIconSelection(project: project) == nil)
+        let index = try #require(project.targets.indices.first)
+        let selection = project.targets[index].appIconSelection(project: project)
+        #expect(selection == nil)
     }
 
     private func selection(_ root: Path) async throws -> AppIconSelection {
         let project = try await Xcode.Project.load(path: root + "Project.xcodeproj", preferConfig: "Release")
-        let target = try #require(project.targets.first)
-        return try #require(target.appIconSelection(project: project))
+        let index = try #require(project.targets.indices.first)
+        let selection = project.targets[index].appIconSelection(project: project)
+        return try #require(selection)
     }
 
     private func fixture(settings: [String: String]) throws -> Path {

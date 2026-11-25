@@ -21,8 +21,8 @@ extension Bazel {
             /// unloadable — iina references dylibs it builds separately. The
             /// roadmap is what says the file is missing; here it is simply left
             /// out.
-            let imported = kit.project.targets
-                .flatMap(\.files.frameworks)
+            let imported = kit.project.mapTargets { $0.files.frameworks }
+                .flatMap { $0 }
                 .filter { file in
                     guard file.label?.hasPrefix("//Prebuilt:") == true else { return false }
                     guard let fullPath = file.fullPath else { return false }

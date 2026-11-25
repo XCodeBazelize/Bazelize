@@ -3,7 +3,12 @@ import Foundation
 // MARK: - Xcode.Target
 
 extension Xcode {
-    public struct Target: Encodable {
+    /// A native target as loaded from the project.
+    ///
+    /// A target has exactly one owner: the `Project` that loaded it. Everything
+    /// else borrows it, so the configurations, file lists, and dependencies it
+    /// carries are never duplicated after loading.
+    public struct Target: ~Copyable {
         public let name: String
         public let productName: String?
         public let productType: String?
@@ -13,6 +18,35 @@ extension Xcode {
         public let buildPhases: [BuildPhase]
         public let files: Files
         public let dependencies: Dependencies
+    }
+}
+
+extension Xcode.Target {
+    enum CodingKeys: String, CodingKey {
+        case name
+        case productName
+        case productType
+        case preferConfig
+        case configs
+        case metadata
+        case buildPhases
+        case files
+        case dependencies
+    }
+
+    /// Encodes the fields `Encodable` synthesis encoded before the target became
+    /// noncopyable, which `Encodable` cannot describe.
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(productName, forKey: .productName)
+        try container.encodeIfPresent(productType, forKey: .productType)
+        try container.encodeIfPresent(preferConfig, forKey: .preferConfig)
+        try container.encode(configs, forKey: .configs)
+        try container.encode(metadata, forKey: .metadata)
+        try container.encode(buildPhases, forKey: .buildPhases)
+        try container.encode(files, forKey: .files)
+        try container.encode(dependencies, forKey: .dependencies)
     }
 }
 
@@ -123,7 +157,7 @@ extension Xcode.Target {
             })
     }
 
-    private static let compiledFileTypes: Set<String> = [
+    private static let compiledFileTypes: Set = [
         "sourcecode.c.c",
         "sourcecode.c.objc",
         "sourcecode.cpp.cpp",
@@ -215,7 +249,7 @@ extension Xcode.Target {
         return .init(name: "", setting: [:])
     }
 
-    private func filePath(_ file: Xcode.File) -> String? {
+    private static func filePath(_ file: Xcode.File) -> String? {
         guard let path = file.path?.trimmingCharacters(in: CharacterSet(charactersIn: "/")), !path.isEmpty else {
             return nil
         }
@@ -223,7 +257,7 @@ extension Xcode.Target {
     }
 
     private func filePaths(_ files: [Xcode.File]) -> [String] {
-        files.compactMap(filePath)
+        files.compactMap(Self.filePath)
     }
 }
 
@@ -233,7 +267,7 @@ extension String {
     /// A synchronized root group lists the files inside an asset catalog rather
     /// than the catalog, and the catalog is what `actool` compiles and what the
     /// rules take as an attribute.
-    fileprivate static let resourceWrapperExtensions: Set<String> = [
+    fileprivate static let resourceWrapperExtensions: Set = [
         "bundle",
         "docc",
         "icon",
@@ -241,7 +275,7 @@ extension String {
         "scnassets",
         "xcassets",
         "xcdatamodeld",
-        "xcstickers"
+        "xcstickers",
     ]
 
     /// The path truncated at the wrapper that owns it, or the path itself.

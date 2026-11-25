@@ -6,7 +6,7 @@ import Xcode
 extension Target {
     /// What the rule declares: the frameworks the project links plus the ones its
     /// Objective-C sources import.
-    func sdkFrameworks(project: Project, available: Set<String>) -> [String]? {
+    func sdkFrameworks(project: borrowing Project, available: Set<String>) -> [String]? {
         let all = Set(frameworksSDK).union(autolinkedFrameworks(project: project, available: available))
             .subtracting(weakFrameworksSDK)
         return all.isEmpty ? nil : all.sorted()
@@ -18,7 +18,7 @@ extension Target {
     /// directive for every framework module it imports. Bazel compiles with
     /// `-fno-autolink` — it wants the dependency declared — so the imports are read
     /// out of the sources instead, exactly the set clang would have recorded.
-    func autolinkedFrameworks(project: Project, available: Set<String>) -> [String] {
+    func autolinkedFrameworks(project: borrowing Project, available: Set<String>) -> [String] {
         guard !available.isEmpty else { return [] }
 
         let workspace = Path(project.workspacePath)
@@ -47,12 +47,15 @@ actor SDKFrameworks {
     private static let shared = SDKFrameworks()
     private var cache: [String: Task<Set<String>, Never>] = [:]
 
-    static func load(targets: [Target]) async -> [String: Set<String>] {
+    static func load(project: borrowing Project) async -> [String: Set<String>] {
         var names: Set<String> = []
-        for target in targets where !target.srcs_c.isEmpty || !target.srcs_objc.isEmpty
-            || !target.srcs_cpp.isEmpty || !target.srcs_objcpp.isEmpty
-        {
-            names.insert(sdkName(for: target.platformSDK))
+        project.forEachTarget { target in
+            if
+                !target.srcs_c.isEmpty || !target.srcs_objc.isEmpty
+                || !target.srcs_cpp.isEmpty || !target.srcs_objcpp.isEmpty
+            {
+                names.insert(sdkName(for: target.platformSDK))
+            }
         }
         var result: [String: Set<String>] = [:]
         for sdk in names.sorted() {

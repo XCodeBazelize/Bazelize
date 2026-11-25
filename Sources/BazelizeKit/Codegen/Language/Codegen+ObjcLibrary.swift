@@ -11,7 +11,6 @@ import Starlark
 
 extension Target {
     func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan, aliasPublic: Bool = true) {
-        let project = kit.project
         builder.load(.objc_library)
         let copts = ["-fblocks", "-fPIC", "-fmodule-name=\(codegenModuleName)"]
             + clangDialectCopts + forceIncludeFlags + clangCopts(kit)
@@ -23,21 +22,21 @@ extension Target {
                 name: groupName,
                 srcs: .build {
                     group.sources
-                    internalHeaderFiles(project: project)
-                    flattenedModuleHeaderFiles(project: project)
+                    internalHeaderFiles(project: kit.project)
+                    flattenedModuleHeaderFiles(project: kit.project)
                     prefixHeader
                     definesHeader
                 },
                 deps: .build {
-                    linkedFrameworksLibrary(project: project)
-                    testHostLibraries(project: project)
+                    linkedFrameworksLibrary(project: kit.project)
+                    testHostLibraries(project: kit.project)
                 },
                 copts: (copts + group.copts).starlark,
                 enable_modules: prefer(\.enableModules),
-                includes: headerIncludes(project: project),
+                includes: headerIncludes(project: kit.project),
                 non_arc_srcs: group.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,
-                sdk_frameworks: sdkFrameworks(project: project, available: kit.availableFrameworks(for: self)),
+                sdk_frameworks: sdkFrameworks(project: kit.project, available: kit.availableFrameworks(for: self)),
                 tags: manual,
                 testonly: isTest,
                 visibility: .private,
@@ -48,32 +47,32 @@ extension Target {
                 name: "\(name)_objc",
                 srcs: .build {
                     fileFlags.sources
-                    internalHeaderFiles(project: project)
+                    internalHeaderFiles(project: kit.project)
                     definesHeader
                 },
                 hdrs: .build {
-                    flattenedModuleHeaderFiles(project: project)
+                    flattenedModuleHeaderFiles(project: kit.project)
                     prefixHeader
                 },
                 deps: .build {
-                    linkedFrameworksLibrary(project: project)
-                    testHostLibraries(project: project)
+                    linkedFrameworksLibrary(project: kit.project)
+                    testHostLibraries(project: kit.project)
                     groups
                 },
                 data: .build {
                     if !assets.isEmpty {
                         ":Assets"
                     }
-                    copiedResourceGroups(project: project)
+                    copiedResourceGroups(project: kit.project)
                 },
                 copts: copts.starlark,
                 enable_modules: prefer(\.enableModules),
-                includes: headerIncludes(project: project),
+                includes: headerIncludes(project: kit.project),
                 linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
                 non_arc_srcs: fileFlags.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,
-                sdk_frameworks: sdkFrameworks(project: project, available: kit.availableFrameworks(for: self)),
+                sdk_frameworks: sdkFrameworks(project: kit.project, available: kit.availableFrameworks(for: self)),
                 tags: manual,
                 testonly: isTest,
                 visibility: .private,

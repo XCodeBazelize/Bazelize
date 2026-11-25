@@ -15,7 +15,7 @@ extension Target {
     /// Headers that belong in the module: Xcode only publishes the ones flagged
     /// `Public` or `Private` in the Headers phase, and modularizing the rest breaks
     /// the module build (project headers routinely pull in C++ or private SDK code).
-    func moduleHeaderFiles(project _: Project) -> [String] {
+    func moduleHeaderFiles(project _: borrowing Project) -> [String] {
         let exported = exportedHeaders
         /// Targets that publish nothing still need their headers reachable, so fall
         /// back to treating them all as module headers.
@@ -28,7 +28,7 @@ extension Target {
     /// Xcode copies a framework's published headers into one flat directory, which is
     /// why `#import <Module/Any.h>` works no matter where the header lives in the
     /// project. Bazel needs that directory to exist for the same imports to resolve.
-    func flattenedModuleHeaderFiles(project: Project) -> [String] {
+    func flattenedModuleHeaderFiles(project: borrowing Project) -> [String] {
         moduleHeaderFiles(project: project).map { header in
             "\(Self.moduleHeaderRoot)/\(codegenModuleName)/\(Path(header).lastComponent)"
         }
@@ -37,7 +37,7 @@ extension Target {
     static let moduleHeaderRoot = "Headers"
 
     /// Headers that are compile inputs only.
-    func internalHeaderFiles(project: Project) -> [String] {
+    func internalHeaderFiles(project: borrowing Project) -> [String] {
         let module = Set(moduleHeaderFiles(project: project))
         let siblings = siblingHeaderPaths(project: project).map { "Sources/\($0)" }
         let searched = searchPathHeaderFiles(project: project)
@@ -48,7 +48,7 @@ extension Target {
     ///
     /// Bazel sandboxes compile actions, so an include path is useless unless the
     /// headers behind it are declared inputs.
-    func searchPathHeaderFiles(project: Project) -> [String] {
+    func searchPathHeaderFiles(project: borrowing Project) -> [String] {
         let workspace = Path(project.workspacePath)
 
         return headerSearchPaths(project: project).flatMap { directory -> [String] in
@@ -66,7 +66,7 @@ extension Target {
         }
     }
 
-    func headerIncludes(project: Project) -> [String] {
+    func headerIncludes(project: borrowing Project) -> [String] {
         let all = moduleHeaderFiles(project: project) + internalHeaderFiles(project: project)
         let directories = all.map { header in
             Path(header).parent().string
@@ -148,7 +148,7 @@ extension Target {
     ///
     /// Bazel resolves the `includes` attribute relative to the package, raw `-I`
     /// flags relative to the execution root.
-    func swiftIncludeCopts(project: Project) -> [String] {
+    func swiftIncludeCopts(project: borrowing Project) -> [String] {
         headerIncludes(project: project)
             .filter { $0 != "." }
             .flatMap { directory in
@@ -160,7 +160,7 @@ extension Target {
     ///
     /// Xcode resolves them against the project; anything outside the workspace
     /// cannot be materialized into the target tree and is dropped.
-    func headerSearchPaths(project: Project) -> [String] {
+    func headerSearchPaths(project: borrowing Project) -> [String] {
         let workspace = Path(project.workspacePath).absolute().string
 
         return (prefer(\.headerSearchPaths) ?? []).compactMap { path -> String? in
@@ -183,7 +183,7 @@ extension Target {
     }
 
     /// Workspace-relative headers that sit next to the target's compiled sources.
-    func siblingHeaderPaths(project: Project) -> [String] {
+    func siblingHeaderPaths(project: borrowing Project) -> [String] {
         let workspace = Path(project.workspacePath)
 
         return sourceDirectories.flatMap { directory -> [String] in

@@ -77,7 +77,7 @@ struct ConfigListLoader: Hashable {
     }
 
     private func resolvedXCConfigSettings(at path: Path, visited: inout Set<String>) -> [String: String] {
-        guard let content = try? String(contentsOfFile: path.string) else { return [:] }
+        guard let content = try? String(contentsOfFile: path.string, encoding: .utf8) else { return [:] }
 
         var result: [String: String] = [:]
         for rawLine in content.components(separatedBy: .newlines) {

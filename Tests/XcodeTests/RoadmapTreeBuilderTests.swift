@@ -46,11 +46,11 @@ struct RoadmapTreeBuilderTests {
             root = real
         }
         let project = try await Xcode.Project.load(path: root + "Probe.xcodeproj", preferConfig: "Debug")
-        let target = try #require(project.targets.first)
-        #expect(target.srcs == ["Sources/Sources/Present.swift"])
-        #expect(target.headers.isEmpty)
-        #expect(target.resources.isEmpty)
-        #expect(Set(target.files.missing.compactMap(\.path)) == [
+        let index = try #require(project.targets.indices.first)
+        #expect(project.targets[index].srcs == ["Sources/Sources/Present.swift"])
+        #expect(project.targets[index].headers.isEmpty)
+        #expect(project.targets[index].resources.isEmpty)
+        #expect(Set(project.targets[index].files.missing.compactMap(\.path)) == [
             "Sources/Missing.swift", "Sources/Missing.h", "Sources/Missing.txt",
         ])
     }
@@ -98,7 +98,7 @@ struct RoadmapTreeBuilderTests {
             try previewAsset.symlinkDestination().absolute().string ==
                 (projectPath.parent() + "Example/Preview Content/Preview Assets.xcassets/Contents.json").absolute().string)
 
-        let exampleBuild = try String(contentsOfFile: (output + "Targets/Example/BUILD").string)
+        let exampleBuild = try String(contentsOfFile: (output + "Targets/Example/BUILD").string, encoding: .utf8)
         #expect(exampleBuild.contains("ios_application("))
         #expect(exampleBuild.contains("name = \"Example\""))
         #expect(exampleBuild.contains("swift_library("))
@@ -116,7 +116,7 @@ struct RoadmapTreeBuilderTests {
         #expect(!exampleBuild.contains("@swiftpkg_"))
         #expect(exampleBuild.contains("plist_fragment("))
 
-        let frameworkBuild = try String(contentsOfFile: (output + "Targets/Framework1/BUILD").string)
+        let frameworkBuild = try String(contentsOfFile: (output + "Targets/Framework1/BUILD").string, encoding: .utf8)
         #expect(frameworkBuild.contains("ios_framework("))
         #expect(frameworkBuild.contains("name = \"Framework1\""))
         #expect(frameworkBuild.contains("plist_fragment("))
@@ -124,13 +124,13 @@ struct RoadmapTreeBuilderTests {
         #expect(frameworkBuild.contains("infoplists = ["))
         #expect(frameworkBuild.contains("\":plist_default\""))
 
-        let static2Build = try String(contentsOfFile: (output + "Targets/Static2/BUILD").string)
+        let static2Build = try String(contentsOfFile: (output + "Targets/Static2/BUILD").string, encoding: .utf8)
         #expect(static2Build.contains("objc_library("))
         #expect(static2Build.contains("name = \"Static2_objc\""))
 
         /// A static framework has no bundle to load: its label is the library, and
         /// whatever links it gets the objects.
-        let staticFrameworkBuild = try String(contentsOfFile: (output + "Targets/StaticFramework1/BUILD").string)
+        let staticFrameworkBuild = try String(contentsOfFile: (output + "Targets/StaticFramework1/BUILD").string, encoding: .utf8)
         #expect(staticFrameworkBuild.contains("swift_library("))
         #expect(staticFrameworkBuild.contains("alias("))
         #expect(staticFrameworkBuild.contains("name = \"StaticFramework1\""))
@@ -140,17 +140,17 @@ struct RoadmapTreeBuilderTests {
 
         /// Every label `xcodeproj` names has to exist, and the project it writes is
         /// the one that was read.
-        let rootBuild = try String(contentsOfFile: (output + "BUILD").string)
+        let rootBuild = try String(contentsOfFile: (output + "BUILD").string, encoding: .utf8)
         #expect(rootBuild.contains("xcodeproj("))
         #expect(rootBuild.contains("project_name = \"Example\""))
         #expect(rootBuild.contains("//Targets/Example:Example"))
         #expect(!rootBuild.contains("top_level_target("))
 
-        let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string)
+        let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string, encoding: .utf8)
         #expect(prebuiltBuild.contains("apple_dynamic_xcframework_import("))
         #expect(prebuiltBuild.contains("name = \"SVProgressHUD\""))
 
-        let module = try String(contentsOfFile: (output + "MODULE.bazel").string)
+        let module = try String(contentsOfFile: (output + "MODULE.bazel").string, encoding: .utf8)
         #expect(module.contains("rules_apple"))
         #expect(module.contains("rules_swift"))
         /// The packages are targets of this workspace, so nothing declares a
@@ -159,7 +159,7 @@ struct RoadmapTreeBuilderTests {
         #expect(!module.contains("use_repo("))
 
         /// A product of a local package is the rules of its targets.
-        let localBuild = try String(contentsOfFile: (output + "Packages/Local1/BUILD").string)
+        let localBuild = try String(contentsOfFile: (output + "Packages/Local1/BUILD").string, encoding: .utf8)
         #expect(localBuild.contains("swift_library("))
         #expect(localBuild.contains("name = \"LocalTarget1\""))
         #expect(localBuild.contains("module_name = \"LocalTarget1\""))
@@ -172,14 +172,14 @@ struct RoadmapTreeBuilderTests {
         #expect(!localBuild.contains("@swiftpkg_"))
 
         /// A remote package's sources are linked per target, next to its rules.
-        let remoteBuild = try String(contentsOfFile: (output + "Packages/AnyCodable/BUILD").string)
+        let remoteBuild = try String(contentsOfFile: (output + "Packages/AnyCodable/BUILD").string, encoding: .utf8)
         #expect(remoteBuild.contains("name = \"AnyCodable\""))
         #expect(remoteBuild.contains("Sources/AnyCodable/**/*.swift"))
         #expect(!remoteBuild.contains("@swiftpkg_"))
         #expect((output + "Packages/AnyCodable/Sources/AnyCodable").isSymlink)
 
         /// SwiftPM's working directory is not part of the Bazel workspace.
-        let ignore = try String(contentsOfFile: (output + ".bazelignore").string)
+        let ignore = try String(contentsOfFile: (output + ".bazelignore").string, encoding: .utf8)
         #expect(ignore.contains(".build"))
     }
 
@@ -197,7 +197,7 @@ struct RoadmapTreeBuilderTests {
         let kit = try await Kit(projectPath, nil, outputPath: output)
         try await kit.run()
 
-        let appBuild = try String(contentsOfFile: (output + "Targets/IceCubesApp/BUILD").string)
+        let appBuild = try String(contentsOfFile: (output + "Targets/IceCubesApp/BUILD").string, encoding: .utf8)
         #expect(appBuild.contains("ios_application("))
         #expect(appBuild.contains("extensions = ["))
         #expect(appBuild.contains("//Targets/IceCubesActionExtension:IceCubesActionExtension"))
@@ -224,14 +224,14 @@ struct RoadmapTreeBuilderTests {
         let kit = try await Kit(projectPath, "Release", outputPath: output)
         try await kit.run()
 
-        let cliBuild = try String(contentsOfFile: (output + "Targets/iina-cli/BUILD").string)
+        let cliBuild = try String(contentsOfFile: (output + "Targets/iina-cli/BUILD").string, encoding: .utf8)
         #expect(cliBuild.contains("module_name = \"iina_cli\""))
         #expect(cliBuild.contains("minimum_os_version = \"10.15\""))
 
-        let pluginBuild = try String(contentsOfFile: (output + "Targets/iina-plugin/BUILD").string)
+        let pluginBuild = try String(contentsOfFile: (output + "Targets/iina-plugin/BUILD").string, encoding: .utf8)
         #expect(pluginBuild.contains("module_name = \"iina_plugin\""))
 
-        let appBuild = try String(contentsOfFile: (output + "Targets/iina/BUILD").string)
+        let appBuild = try String(contentsOfFile: (output + "Targets/iina/BUILD").string, encoding: .utf8)
         #expect(appBuild.contains("mixed_language_library("))
         #expect(appBuild.contains("name = \"iina_mixed\""))
         /// `PRODUCT_NAME` comes from the target's xcconfig, and it is the module a
@@ -265,10 +265,10 @@ struct RoadmapTreeBuilderTests {
         let nightlyKit = try await Kit(projectPath, "Nightly", outputPath: nightlyOutput)
         try await nightlyKit.run()
 
-        let nightlyBuild = try String(contentsOfFile: (nightlyOutput + "Targets/iina/BUILD").string)
+        let nightlyBuild = try String(contentsOfFile: (nightlyOutput + "Targets/iina/BUILD").string, encoding: .utf8)
         #expect(nightlyBuild.contains("Sources/iina/Assets.xcassets/AppIconNightly.appiconset/**"))
 
-        let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string)
+        let prebuiltBuild = try String(contentsOfFile: (output + "Prebuilt/BUILD").string, encoding: .utf8)
         /// The dylibs iina downloads into `deps/lib` are imported from there when the
         /// checkout has them, and left out entirely when it does not.
         let hasDylibs = (current + "app/iina/deps/lib/libX11.6.dylib").exists
@@ -280,7 +280,7 @@ struct RoadmapTreeBuilderTests {
 
         /// A package whose name carries a dot keeps it: the directory is the name a
         /// human refers to the package by.
-        let mustacheBuild = try String(contentsOfFile: (output + "Packages/GRMustache.swift/BUILD").string)
+        let mustacheBuild = try String(contentsOfFile: (output + "Packages/GRMustache.swift/BUILD").string, encoding: .utf8)
         #expect(mustacheBuild.contains("name = \"Mustache\""))
         #expect(mustacheBuild.contains("name = \"GRMustacheKeyAccess\""))
         #expect(mustacheBuild.contains("objc_library("))

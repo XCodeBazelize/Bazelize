@@ -11,7 +11,7 @@ extension Target {
     /// rules_apple takes them as `additional_contents`, keyed by the subdirectory of
     /// `Contents` they belong in, and knows how to place an app bundle, a bare
     /// executable or a plain file.
-    func additionalContents(project: Project?) -> [String: String] {
+    func additionalContents(project: borrowing Project) -> [String: String] {
         var result = copiedProducts(project: project).reduce(into: [String: String]()) { result, copied in
             result[copied.label] = copied.subdirectory
         }
@@ -49,12 +49,12 @@ extension Target {
                 visibility: .private))
     }
 
-    func hasCopiedResources(project: Project?) -> Bool {
+    func hasCopiedResources(project: borrowing Project) -> Bool {
         copiedFileGroups(project: project).contains(where: \.isBundleResource)
     }
 
     /// The resource group, for the library's deps.
-    func copiedResourceGroups(project: Project?) -> [Starlark.Label] {
+    func copiedResourceGroups(project: borrowing Project) -> [Starlark.Label] {
         hasCopiedResources(project: project) ? [.named(":\(Self.copyFilesRoot)")] : []
     }
 
@@ -106,9 +106,7 @@ extension Target {
         let rename: (rule: String, product: String, name: String)?
     }
 
-    private func copiedProducts(project: Project?) -> [CopiedProduct] {
-        guard let project else { return [] }
-
+    private func copiedProducts(project: borrowing Project) -> [CopiedProduct] {
         /// A build phase entry does not say where it comes from, so the copied files
         /// answer that: only a product of another target is a rule dependency, a file
         /// out of the source tree is just a file.
@@ -128,23 +126,24 @@ extension Target {
                 guard
                     let component = file.name ?? file.path,
                     products.contains(component),
-                    let sibling = project.product(named: component),
-                    sibling.hasSources,
+                    let index = project.productIndex(named: component),
+                    project.targets[index].hasSources,
                     seen.insert(component).inserted
                 else {
                     continue
                 }
 
-                let product = "//Targets/\(sibling.name):\(sibling.name)"
+                let name = project.targets[index].name
+                let product = "//Targets/\(name):\(name)"
                 guard
-                    component != sibling.name,
-                    sibling.productType == "com.apple.product-type.tool"
+                    component != name,
+                    project.targets[index].productType == "com.apple.product-type.tool"
                 else {
                     result.append(.init(label: product, subdirectory: subdirectory, rename: nil))
                     continue
                 }
 
-                let rule = "\(sibling.name)_product"
+                let rule = "\(name)_product"
                 result.append(
                     .init(
                         label: ":\(rule)",
@@ -177,9 +176,7 @@ extension Target {
     /// The roadmap stages them under `CopyFiles/<subdirectory>/` so the path a rule
     /// sees is the path the bundle wants; a build phase entry itself only names the
     /// file, and the same name can be copied to two different places.
-    func copiedFileGroups(project: Project?) -> [CopiedFileGroup] {
-        guard let project else { return [] }
-
+    func copiedFileGroups(project: borrowing Project) -> [CopiedFileGroup] {
         let workspace = Path(project.workspacePath)
 
         let sources = files.copyFiles.filter { file in
@@ -218,16 +215,16 @@ extension Target {
 }
 
 extension Project {
-    /// The target whose product is copied under this file name.
+    /// The position of the target whose product is copied under this file name.
     ///
     /// A copy phase names the product, which `PRODUCT_NAME` can rename: the Stats
     /// `SMC` target builds `smc`, and its `Helper` builds a tool named after the
     /// bundle identifier.
-    fileprivate func product(named component: String) -> Target? {
+    fileprivate func productIndex(named component: String) -> Int? {
         let base = Path(component).lastComponentWithoutExtension
 
-        return targets.first { target in
-            let names = [target.name, target.productName, target.prefer(\.metadata.productName)]
+        return targets.indices.first { index in
+            let names = [targets[index].name, targets[index].productName, targets[index].prefer(\.metadata.productName)]
                 .compactMap { $0 }
             return names.contains(component) || names.contains(base)
         }

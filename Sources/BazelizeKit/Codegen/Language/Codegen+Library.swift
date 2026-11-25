@@ -51,7 +51,6 @@ extension Target {
     }
 
     private func generateMixedLanguageLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan) {
-        let project = kit.project
         let plugin = kit.plugins.compactMap {
             $0[name]
         }.flatMap(\.deps)
@@ -74,32 +73,32 @@ extension Target {
                 ] + clangDialectCopts + forceIncludeFlags + clangCopts(kit)).starlark,
                 clang_srcs: .build {
                     fileFlags.sources
-                    internalHeaderFiles(project: project)
+                    internalHeaderFiles(project: kit.project)
                     definesHeader
                 },
                 data: .build {
                     if !assets.isEmpty {
                         ":Assets"
                     }
-                    copiedResourceGroups(project: project)
+                    copiedResourceGroups(project: kit.project)
                 },
                 enable_modules: prefer(\.enableModules),
                 hdrs: .build {
-                    flattenedModuleHeaderFiles(project: project)
+                    flattenedModuleHeaderFiles(project: kit.project)
                     prefixHeader
                     /// A mixed target gets the bridging header's declarations through
                     /// its own clang module: `swiftc` rejects `-import-objc-header`
                     /// while building a module.
                     bridgingHeader
                 },
-                includes: headerIncludes(project: project),
+                includes: headerIncludes(project: kit.project),
                 linkopts: sdkLinkopts?.starlark,
                 module_name: codegenModuleName,
                 non_arc_srcs: fileFlags.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,
-                sdk_frameworks: sdkFrameworks(project: project, available: kit.availableFrameworks(for: self)),
-                swift_copts: moduleSwiftCopts(project: project)?.starlark,
-                swift_defines: defines(project: project),
+                sdk_frameworks: sdkFrameworks(project: kit.project, available: kit.availableFrameworks(for: self)),
+                swift_copts: moduleSwiftCopts(project: kit.project)?.starlark,
+                swift_defines: defines(project: kit.project),
                 swift_srcs: .build {
                     srcs_swift
                     intentSources
@@ -109,8 +108,8 @@ extension Target {
                 tags: manual,
                 weak_sdk_frameworks: weakFrameworksSDK,
                 deps: .build {
-                    linkedFrameworksLibrary(project: project)
-                    testHostLibraries(project: project)
+                    linkedFrameworksLibrary(project: kit.project)
+                    testHostLibraries(project: kit.project)
                     plugin
                     builtins
                 },
