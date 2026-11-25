@@ -793,6 +793,15 @@ jobs:
           chmod +x bazelize
           ./bazelize --input spm/Platform --output spm/Platform/App
 
+      # Started before the tvOS and watchOS tests so the boot runs beside them:
+      # an iOS test that begins before the device is ready boots a second one
+      # of its own, and on mainline, where tests run uncached, it would begin
+      # the moment this step returned.
+      - name: Boot iOS Simulator
+        id: boot
+        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
+        run: .github/scripts/boot-apple-simulator.sh
+
       - name: Test tvOS Simulator
         if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
         working-directory: spm/Platform/App
@@ -814,11 +823,6 @@ jobs:
             --test_output=errors \
             --platforms=@apple_support//platforms:watchos_arm64 \
             //Packages/Platform:PlatformTests_watchos_simulator
-
-      - name: Boot iOS Simulator
-        id: boot
-        if: ${{ !cancelled() && steps.generate.outcome == 'success' }}
-        run: .github/scripts/boot-apple-simulator.sh
 
       - name: Test iOS Simulator
         if: ${{ !cancelled() && steps.boot.outcome == 'success' }}
