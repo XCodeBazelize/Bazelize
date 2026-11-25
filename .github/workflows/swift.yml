@@ -129,6 +129,9 @@ jobs:
         with:
           group: IntegrateIOS-${{ matrix.format }}
           save-repository: ${{ matrix.format == 'pbxproj' }}
+          # Not for xcproj: its two workspaces are compared file for file, and
+          # a lockfile restored into one of them would be the difference.
+          lockfiles: ${{ matrix.format == 'pbxproj' && 'fixture/iOS/App/MODULE.bazel.lock' || '' }}
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -254,6 +257,7 @@ jobs:
         uses: ./.github/actions/bazel-cache
         with:
           group: CompareBundles
+          lockfiles: fixture/iOS/App/MODULE.bazel.lock
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -460,6 +464,7 @@ jobs:
         with:
           group: package-${{ matrix.name }}
           save-repository: ${{ matrix.name == 'Platform' }}
+          lockfiles: spm/${{ matrix.name }}/App/MODULE.bazel.lock
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -781,6 +786,7 @@ jobs:
         uses: ./.github/actions/bazel-cache
         with:
           group: Platform-ios_sim_arm64
+          lockfiles: spm/Platform/App/MODULE.bazel.lock
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
@@ -846,6 +852,7 @@ jobs:
         uses: ./.github/actions/bazel-cache
         with:
           group: Platform-visionos_sim_arm64
+          lockfiles: spm/Platform/App/MODULE.bazel.lock
 
       - name: Download Bazelize
         uses: actions/download-artifact@v8
