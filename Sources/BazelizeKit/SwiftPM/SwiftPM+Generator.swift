@@ -308,7 +308,8 @@ extension SwiftPM {
                         target,
                         in: package,
                         prefix: prefix,
-                        generated: generated.sources,
+                        root: root,
+                        generated: generated,
                         resources: resources,
                         builder: builder)
                 case .swift:
@@ -321,6 +322,15 @@ extension SwiftPM {
                         builder: builder)
                 case .clang:
                     buildClang(
+                        target,
+                        in: package,
+                        prefix: prefix,
+                        root: root,
+                        generated: generated,
+                        resources: resources,
+                        builder: builder)
+                case .mixed:
+                    buildMixed(
                         target,
                         in: package,
                         prefix: prefix,

@@ -42,7 +42,8 @@ extension SwiftPM.Generator {
         pluginOutputsOf target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         at root: Path,
-        kind: TargetKind) throws -> PluginGenerated
+        kind: TargetKind) throws
+        -> PluginGenerated
     {
         /// A target that asks for no plugin has no such directory, and a
         /// pattern for one would be a pattern for something that is never
@@ -53,8 +54,15 @@ extension SwiftPM.Generator {
 
         /// What the target's own rule compiles; a Swift target compiles Swift,
         /// and a C-family one whatever clang takes.
+        /// A mixed target compiles both, and its rule takes each kind apart.
+        let mixed: Bool = switch kind {
+        case .mixed: true
+        case .test: isMixed(target, in: package)
+        default: false
+        }
         let compiled: Set<String> = {
             if case .clang = kind { return Set(Self.compileExtensions) }
+            if mixed { return Set(Self.compileExtensions + ["swift"]) }
             return ["swift"]
         }()
 
@@ -64,6 +72,7 @@ extension SwiftPM.Generator {
         var sources = compiled
         var headers: Set<String> = {
             if case .clang = kind { return Set(Self.headerExtensions) }
+            if mixed { return Set(Self.headerExtensions) }
             return []
         }()
         var resources: Set<String> = []
@@ -75,8 +84,9 @@ extension SwiftPM.Generator {
             let path = file.normalize().string
             /// A file the plugin wrote somewhere else is not this target's
             /// to name.
-            guard let relative = path.delete(prefix: base)?
-                .trimmingCharacters(in: ["/"])
+            guard
+                let relative = path.delete(prefix: base)?
+                    .trimmingCharacters(in: ["/"])
             else {
                 continue
             }

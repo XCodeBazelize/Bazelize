@@ -675,6 +675,8 @@ extension Rules.Swift {
         ///   SDK frameworks to weakly link.
         /// - `deps: Starlark.Value?`
         ///   Regular dependencies linked into the library.
+        /// - `testonly: Bool?`
+        ///   Repo-local convenience for emitting Bazel's `testonly` attribute.
         /// - `visibility: Starlark.Statement.Argument.Visibility?`
         ///   Repo-local convenience for emitting a `visibility` attribute.
         public static func mixed_language_library(
@@ -704,6 +706,7 @@ extension Rules.Swift {
             swift_srcs: Starlark.Value? = nil,
             swiftc_inputs: Starlark.Value? = nil,
             tags: [String]? = nil,
+            testonly: Bool? = nil,
             textual_hdrs: Starlark.Value? = nil,
             umbrella_header: Starlark.Label? = nil,
             weak_sdk_frameworks: [String]? = nil,
@@ -742,6 +745,7 @@ extension Rules.Swift {
                 if let swift_srcs { "swift_srcs" => swift_srcs }
                 if let swiftc_inputs { "swiftc_inputs" => swiftc_inputs }
                 if let tags { "tags" => tags }
+                if let testonly { "testonly" => testonly }
                 if let textual_hdrs { "textual_hdrs" => textual_hdrs }
                 if let umbrella_header { "umbrella_header" => umbrella_header }
                 if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }

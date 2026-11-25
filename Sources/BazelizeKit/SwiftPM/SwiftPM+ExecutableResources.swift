@@ -23,6 +23,9 @@ extension SwiftPM.Generator {
         let runfilesLabel: String?
         let root: Path
         let kind: TargetKind
+        /// The target holds C-family code beside its Swift, so each half needs
+        /// its own accessor.
+        let mixed: Bool
         let embeddedSource: String?
     }
 
@@ -37,7 +40,8 @@ extension SwiftPM.Generator {
         kind: TargetKind,
         macOSMinimum: String?,
         runfiles: Bool,
-        builder: CodeBuilder) -> String?
+        builder: CodeBuilder)
+        -> String?
     {
         guard case .executable = kind else {
             builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
