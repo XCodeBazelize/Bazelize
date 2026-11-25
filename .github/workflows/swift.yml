@@ -816,13 +816,27 @@ jobs:
           bazel test //...
           bazel run //Packages/MixedLanguage:unified-consumer | grep -qx 'unified ok'
 
-      - name: Verify One Public Module
+      - name: Verify One Public Module Per Mixed Target
         working-directory: spm/MixedLanguage/App
         run: |
-          modules=$(bazel cquery //Packages/MixedLanguage:Unified --output=starlark \
-            --starlark:expr='[(m.name, bool(m.swift), bool(m.clang)) for key, info in providers(target).items() if key.endswith("%SwiftInfo") for m in info.direct_modules]')
-          echo "$modules"
-          [ "$modules" = '[("Unified", True, True)]' ]
+          for target in Unified MixedConsumer; do
+            modules=$(bazel cquery "//Packages/MixedLanguage:$target" --output=starlark \
+              --starlark:expr='[(m.name, bool(m.swift), bool(m.clang)) for key, info in providers(target).items() if key.endswith("%SwiftInfo") for m in info.direct_modules]')
+            echo "$target: $modules"
+            [ "$modules" = "[(\"$target\", True, True)]" ]
+          done
+
+      # Another package depending on the `Unified` product, from Swift and from
+      # Objective-C: both interfaces have to reach targets outside the package.
+      - name: Cross-Package Dependent
+        run: |
+          set -o pipefail
+          (cd spm/MixedLanguage/Downstream && swift run downstream-consumer | grep -qx 'downstream ok')
+          ./bazelize --input spm/MixedLanguage/Downstream --output spm/MixedLanguage/Downstream/App | tee downstream.log
+          [ ! -s downstream.log ]
+          cp spm/MixedLanguage/App/user.bazelrc spm/MixedLanguage/Downstream/App/user.bazelrc
+          cd spm/MixedLanguage/Downstream/App
+          bazel run //Packages/Downstream:downstream-consumer | grep -qx 'downstream ok'
 
   # Host tests and SwiftPM controls remain in IntegratePackage (Platform).
   # Each additional SDK has its own step and its own result; compile-only

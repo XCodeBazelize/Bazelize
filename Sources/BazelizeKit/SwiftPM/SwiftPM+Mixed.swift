@@ -129,6 +129,10 @@ extension SwiftPM.Generator {
                         .build { labels.map { Starlark.Label.named($0) } }
                     },
                     enable_modules: true,
+                    /// The extended module map is named `module.modulemap` and put
+                    /// on the include path, so a C-family dependent's `@import`
+                    /// finds both halves the way SwiftPM's generated map offers them.
+                    features: ["swift.propagate_generated_module_map"],
                     hdrs: (interfaceHeaders + bridging.visible).nonEmpty.map { files(matching: $0) },
                     includes: includes(
                         of: target,

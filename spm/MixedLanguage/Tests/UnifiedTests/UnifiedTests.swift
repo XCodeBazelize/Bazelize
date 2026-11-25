@@ -1,3 +1,5 @@
+import MixedConsumer
+import ObjCConsumer
 import Testing
 import Unified
 
@@ -21,4 +23,11 @@ func objectiveCCallsBackIntoSwift() {
     #expect(unified_round_trip(5) == 93)
     #expect(SwiftAPI.roundTrip(5) == 93)
     #expect(SwiftAPI.roundTrip(0) == 83)
+}
+
+@Test
+func dependentsReachBothInterfaces() {
+    #expect(objc_consumer_total(1) == 85)
+    #expect(MixedConsumerAPI.total == 83)
+    #expect(MixedConsumerAPI.objc(1) == 129)
 }

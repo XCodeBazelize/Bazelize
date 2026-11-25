@@ -182,9 +182,21 @@ back and is 93. Its C settings (a define with and without a value, a header
 search path, `cLanguageStandard`), Swift define, custom `publicHeadersPath` and
 a test target that is itself mixed are each asserted, in swift-testing and
 XCTest. The C defines also reach the Clang module Swift imports underneath, which
-`UNIFIED_HEADER_FLAG` in the public header checks. CI also inspects the target's
-`SwiftInfo`: its only direct module must be `Unified`, with both Swift and Clang
-inputs. Internal compilation targets do not introduce another public module.
+`UNIFIED_HEADER_FLAG` in the public header checks.
+
+Both interfaces also reach whatever depends on `Unified`. `ObjCConsumer` is
+Objective-C only: one `@import Unified;` gives it the C functions and the Swift
+class exposed to Objective-C, so `objc_consumer_total(1)` is 85. `MixedConsumer`
+is itself mixed, and both of its halves use both halves of `Unified`:
+`MixedConsumerAPI.total` (Swift) is 83 and `MixedConsumerAPI.objc(1)`
+(Objective-C) is 129. The executable and the tests depend on all three. CI
+inspects the `SwiftInfo` of `Unified` and `MixedConsumer`: each has one direct
+module, named after the target, with both Swift and Clang inputs. Internal
+compilation targets do not introduce another public module. `Downstream/` is
+another package that depends on the `Unified` product through `path: ".."`: its
+Objective-C target `@import`s `Unified` and its Swift executable calls both
+interfaces, and CI runs it through SwiftPM and through its own generated
+workspace (`bazel run //Packages/Downstream:downstream-consumer`).
 
 Bazelize generates a mixed target only from a 6.5 manifest; an older one keeps
 the Swift-only classification SwiftPM gives it. A regular or test target becomes

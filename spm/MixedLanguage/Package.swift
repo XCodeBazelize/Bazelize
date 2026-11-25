@@ -24,12 +24,22 @@ let package = Package(
             swiftSettings: [
                 .define("UNIFIED_SWIFT_FLAG"),
             ]),
+        /// Depends on `Unified` from Objective-C alone: `@import Unified`
+        /// reaches its C functions and the Swift API it exposes to Objective-C.
+        .target(
+            name: "ObjCConsumer",
+            dependencies: ["Unified"]),
+        /// A mixed target that depends on `Unified`: both of its halves use
+        /// both halves of `Unified`.
+        .target(
+            name: "MixedConsumer",
+            dependencies: ["Unified"]),
         .executableTarget(
             name: "UnifiedConsumer",
-            dependencies: ["Unified"]),
+            dependencies: ["Unified", "ObjCConsumer", "MixedConsumer"]),
         .testTarget(
             name: "UnifiedTests",
-            dependencies: ["Unified"]),
+            dependencies: ["Unified", "ObjCConsumer", "MixedConsumer"]),
         /// A test target that is itself mixed: its C file must not be dropped.
         .testTarget(
             name: "UnifiedMixedTests",
