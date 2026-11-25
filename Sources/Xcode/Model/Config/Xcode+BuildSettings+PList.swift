@@ -18,7 +18,7 @@ extension Xcode.BuildSettings {
 
         /// "ABCDEF/Info.plist"
         public var infoPlist: String? {
-            settings["INFOPLIST_FILE"]
+            settings[.infoPlistFile]
         }
 
         /// "LaunchScreen"
@@ -50,7 +50,7 @@ extension Xcode.BuildSettings {
 
         /// "YES"
         public var enabled: Bool {
-            settings["GENERATE_INFOPLIST_FILE"] == "YES"
+            settings[.generateInfoPlistFile] == "YES"
         }
 
         /// CFBundleVersion - CURRENT_PROJECT_VERSION
@@ -58,7 +58,7 @@ extension Xcode.BuildSettings {
         /// Default Info.plist value:
         /// CFBundleVersion -> $(CURRENT_PROJECT_VERSION)
         public var currentProjectVersion: String? {
-            settings["CURRENT_PROJECT_VERSION"]
+            settings[.currentProjectVersion]
         }
 
         /// CFBundleShortVersionString - MARKETING_VERSION
@@ -66,7 +66,7 @@ extension Xcode.BuildSettings {
         /// Default Info.plist value:
         /// CFBundleShortVersionString -> $(MARKETING_VERSION)
         public var marketingVersion: String? {
-            settings["MARKETING_VERSION"]
+            settings[.marketingVersion]
         }
 
         /// Default Info.plist value:

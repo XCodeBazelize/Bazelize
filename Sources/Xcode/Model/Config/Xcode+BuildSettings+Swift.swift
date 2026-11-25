@@ -23,7 +23,7 @@ extension Xcode.BuildSettings {
         /// `5.5` are both the Swift 5 mode, and `4.2` is the one mode with a
         /// minor of its own.
         public var languageMode: String? {
-            guard let value = settings["SWIFT_VERSION"], !value.isEmpty else { return nil }
+            guard let value = settings[.swiftVersion], !value.isEmpty else { return nil }
 
             let components = value.split(separator: ".")
             guard let major = components.first else { return nil }
@@ -54,7 +54,7 @@ extension Xcode.BuildSettings {
         private static let defaultLanguageMode = "5"
 
         /// The language modes in which a feature still has to be asked for.
-        private static let featureModes: Set<String> = ["4", "4.2", "5"]
+        private static let featureModes: Set = ["4", "4.2", "5"]
 
         /// `SWIFT_UPCOMING_FEATURE_*` and the feature each one names, as Xcode's
         /// `Swift.xcspec` maps them. The setting's suffix is not the feature's name:
@@ -83,7 +83,7 @@ extension Xcode.BuildSettings {
 
         /// `SWIFT_APPROACHABLE_CONCURRENCY` is not a flag of its own: it is the
         /// default value of these five settings.
-        private static let approachableConcurrencyFeatures: Set<String> = [
+        private static let approachableConcurrencyFeatures: Set = [
             "DISABLE_OUTWARD_ACTOR_ISOLATION",
             "GLOBAL_ACTOR_ISOLATED_TYPES_USABILITY",
             "INFER_ISOLATED_CONFORMANCES",
@@ -92,7 +92,7 @@ extension Xcode.BuildSettings {
         ]
 
         private var approachableConcurrency: Bool {
-            settings["SWIFT_APPROACHABLE_CONCURRENCY"] == "YES"
+            settings[.swiftApproachableConcurrency] == "YES"
         }
 
         private var upcomingFeatureCopts: [String] {
@@ -114,13 +114,13 @@ extension Xcode.BuildSettings {
         /// `SWIFT_ENABLE_BARE_SLASH_REGEX`, which Xcode turns on by default and
         /// `swiftc` does not.
         private var bareSlashRegexCopts: [String] {
-            settings["SWIFT_ENABLE_BARE_SLASH_REGEX"] == "NO" ? [] : ["-enable-bare-slash-regex"]
+            settings[.swiftEnableBareSlashRegex] == "NO" ? [] : ["-enable-bare-slash-regex"]
         }
 
         /// `SWIFT_STRICT_CONCURRENCY`: anything above `minimal` but short of
         /// `complete` is a frontend flag, `complete` is the upcoming feature.
         private var strictConcurrencyCopts: [String] {
-            switch settings["SWIFT_STRICT_CONCURRENCY"] {
+            switch settings[.swiftStrictConcurrency] {
             case "targeted":
                 return ["-strict-concurrency=targeted"]
             case .some(let value) where value != "minimal" && !value.isEmpty:
@@ -133,7 +133,7 @@ extension Xcode.BuildSettings {
         /// `SWIFT_STRICT_MEMORY_SAFETY`, which a Swift 6 module still has to ask
         /// for.
         private var memorySafetyCopts: [String] {
-            switch settings["SWIFT_STRICT_MEMORY_SAFETY"] {
+            switch settings[.swiftStrictMemorySafety] {
             case "YES":
                 return ["-strict-memory-safety"]
             case "MIGRATE":
