@@ -36,7 +36,8 @@ extension SwiftPM.Generator {
         /// Such a tree is mirrored instead, entry by entry, without the link
         /// that closes the loop.
         if Self.hasCycle(directory) || Self.containsBazelPackage(directory) {
-            try Self.mirror(directory, at: link)
+            var visited: Set<String> = []
+            try Self.mirror(directory, at: link, visited: &visited)
         } else {
             try link.symlink(directory)
         }
@@ -44,16 +45,29 @@ extension SwiftPM.Generator {
         return prefix
     }
 
-    /// Whether anything under the directory links back into it.
-    private static func hasCycle(_ directory: Path) -> Bool {
-        let root = directory.url.resolvingSymlinksInPath().path
+    /// Whether a walk that follows links comes back to a directory it is
+    /// already inside.
+    ///
+    /// That is what Bazel refuses to glob, wherever the loop closes: a link to
+    /// the target directory, to a directory below it that holds the link —
+    /// `Parts/self -> .` — or to a sibling that links back.
+    private static func hasCycle(_ directory: Path, walked: Set<String> = []) -> Bool {
+        let walked = walked.union([resolved(directory)])
 
-        for entry in entries(of: directory) where entry.isSymlink {
-            let resolved = entry.url.resolvingSymlinksInPath().path
-            if root == resolved || root.hasPrefix("\(resolved)/") { return true }
+        return ((try? directory.children()) ?? []).contains { child in
+            guard child.isDirectory else { return false }
+            if child.isSymlink, closesLoop(child, walked: walked) { return true }
+            return hasCycle(child, walked: walked)
         }
+    }
 
-        return false
+    /// A link to a directory the walk is already inside.
+    private static func closesLoop(_ link: Path, walked: Set<String>) -> Bool {
+        walked.contains(resolved(link))
+    }
+
+    private static func resolved(_ path: Path) -> String {
+        path.url.resolvingSymlinksInPath().path
     }
 
     /// A linked source directory that contains its own `BUILD` file creates
@@ -64,23 +78,25 @@ extension SwiftPM.Generator {
     }
 
     /// A copy of the directory's shape, with one link per file.
-    private static func mirror(_ directory: Path, at destination: Path) throws {
+    ///
+    /// Each directory is copied once, wherever it is reached first: a link
+    /// back to one already copied — the one that closes a loop, or a second
+    /// way into a directory — is left out. SwiftPM compiles a file once
+    /// however many ways lead to it, and swiftc rejects a file name it is
+    /// given twice.
+    private static func mirror(_ directory: Path, at destination: Path, visited: inout Set<String>) throws {
+        guard visited.insert(resolved(directory)).inserted else { return }
         try destination.mkpath()
 
-        let root = directory.url.resolvingSymlinksInPath().path
-        for child in (try? directory.children()) ?? [] {
+        let children = ((try? directory.children()) ?? []).sorted { $0.lastComponent < $1.lastComponent }
+        for child in children {
             if packageMarkers.contains(child.lastComponent) { continue }
 
             let target = destination + child.lastComponent
 
-            if child.isSymlink {
-                let resolved = child.url.resolvingSymlinksInPath().path
-                /// The link that closes the loop; SwiftPM ignores it too.
-                if root == resolved || root.hasPrefix("\(resolved)/") { continue }
-            }
-
             if child.isDirectory {
-                try mirror(child, at: target)
+                if visited.contains(resolved(child)) { continue }
+                try mirror(child, at: target, visited: &visited)
             } else {
                 try target.symlink(child)
             }

@@ -31,14 +31,25 @@ let package = Package(
             cxxSettings: [
                 .unsafeFlags(["-DCXX_UNSAFE_FLAG"]),
             ]),
-        /// One target, two modules: SwiftPM names `CPair` after the target, and
-        /// the module map in a subdirectory of `include` declares `CPairInner`,
-        /// which clang finds through the header search path alone. The shape of
-        /// indexstore-db's `IndexStoreDB_CIndexStoreDB` up to swift-6.1.
+        /// More modules than targets, in every place clang looks for a map.
+        ///
+        /// `CPair` has no map of its own, so SwiftPM names a module after it with
+        /// `include` as the umbrella. Beside it, `include/CPairInner` links to a
+        /// directory whose map declares `CPairInner` — the shape of
+        /// indexstore-db's `IndexStoreDB_CIndexStoreDB` up to swift-6.1 — and
+        /// `include/CPairParts` is a real directory whose map infers a submodule
+        /// per header and holds a link back to itself.
         .target(name: "CPair"),
+        /// The map the target ships declares a second module after its own.
+        .target(name: "CMany"),
+        /// The map declares only a module of another name: there is no `CHidden`
+        /// to import.
+        .target(name: "CHidden", dependencies: ["CEmpty"]),
+        /// The map declares nothing, so the headers are only included by path.
+        .target(name: "CEmpty"),
         .target(
             name: "Consumer",
-            dependencies: ["CObject", "CxxLib", "CPair"],
+            dependencies: ["CObject", "CxxLib", "CPair", "CMany", "CHidden"],
             swiftSettings: [
                 .interoperabilityMode(.Cxx),
             ]),
@@ -50,11 +61,12 @@ let package = Package(
             ]),
         /// A test target written in Objective-C: SwiftPM compiles it the way it
         /// compiles any C-family target, and so must the generated rules. Its
-        /// compile is sandboxed, so its `@import CPairInner` also says the
-        /// nested module map is an input rather than a file left lying around.
+        /// compile is sandboxed, so its `@import`s of the modules a map other
+        /// than the target's own declares also say that map is an input rather
+        /// than a file left lying around.
         .testTarget(
             name: "CObjectTests",
-            dependencies: ["CObject", "CPair"]),
+            dependencies: ["CObject", "CPair", "CMany", "CHidden"]),
     ],
     cLanguageStandard: .c11,
     cxxLanguageStandard: .gnucxx17)

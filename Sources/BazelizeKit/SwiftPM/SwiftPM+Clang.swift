@@ -52,7 +52,7 @@ extension SwiftPM.Generator {
         builder.call(
             Rules.Swift.Call.swift_interop_hint(
                 name: hint,
-                module_map: interface.map { .named("\($0)/module.modulemap") },
+                module_map: interface.map { .named("\($0.root)/module.modulemap") },
                 module_name: module))
 
         builder.load(loadableRule: Rules.Objc.objc_library)
@@ -81,11 +81,7 @@ extension SwiftPM.Generator {
                     excluding: excludedClang(target, prefix: prefix)
                         + (headerPrefix.map { $0 == prefix ? [] : ["\($0)/**"] } ?? [])),
                 hdrs: interface
-                    .map { path in
-                        matching(
-                            Self.headerExtensions.map { "\(path)/**/*.\($0.rawValue)" },
-                            Self.relativeFiles(under: path, in: root))
-                    }?
+                    .map { matching(Self.headerExtensions.map(\.rawValue), under: $0.roots, in: root) }?
                     .nonEmpty
                     .map { Starlark.glob($0) },
                 deps: deps(of: target, in: package),
@@ -115,9 +111,10 @@ extension SwiftPM.Generator {
                 /// subdirectory of the public headers declares a module of its own,
                 /// which clang finds as `<search path>/<module>/module.modulemap`
                 /// — the target is then two modules, and either can be imported.
-                textual_hdrs: interface.map { path in
-                    Starlark.glob(["\(path)/**/*.modulemap"])
-                },
+                textual_hdrs: interface
+                    .map { matching(["modulemap"], under: $0.roots, in: root) }?
+                    .nonEmpty
+                    .map { Starlark.glob($0) },
                 visibility: .public))
     }
 
@@ -178,6 +175,16 @@ extension SwiftPM.Generator {
                 visibility: .private))
     }
 
+    /// The patterns for files of these extensions anywhere below the generated
+    /// directories, keeping only those that match something.
+    private func matching(_ extensions: [String], under directories: [String], in root: Path) -> [String] {
+        directories.flatMap { directory in
+            matching(
+                extensions.map { "\(directory)/**/*.\($0)" },
+                Self.relativeFiles(under: directory, in: root))
+        }
+    }
+
     /// The files of a generated directory, named the way a glob pattern is.
     private static func relativeFiles(under directory: String, in root: Path) -> [String] {
         let base = root.normalize().string
@@ -189,7 +196,15 @@ extension SwiftPM.Generator {
         }
     }
 
-    /// The target's public interface: its headers and the module map, in one
+    /// Where a target's public headers are reached from.
+    private struct Interface {
+        /// The directory holding the target's module map.
+        let root: String
+        /// Every directory a header lookup goes through, the root first.
+        let roots: [String]
+    }
+
+    /// The target's public interface: its headers and the module map, in a
     /// directory of our own.
     ///
     /// clang looks for `module.modulemap` in the directory a header was found in,
@@ -203,41 +218,53 @@ extension SwiftPM.Generator {
         at headers: Path?,
         module: String,
         root: Path) throws
-        -> String?
+        -> Interface?
     {
         guard let headers, headers.isDirectory else { return nil }
 
         let relative = "Generated/\(target.name)Interface"
-        let interface = root + relative
-        if interface.exists || interface.isSymlink {
-            try? interface.delete()
+        let linkedRelative = "Generated/\(target.name)LinkedInterface"
+        for directory in [relative, linkedRelative] {
+            let path = root + directory
+            if path.exists || path.isSymlink {
+                try? path.delete()
+            }
         }
+        let interface = root + relative
         try interface.mkpath()
+
+        let shippedMap = headers + "module.modulemap"
+        let shipped = shippedMap.isFile ? shippedMap : nil
 
         let files = SwiftPM.Generator.walk(headers)
         let base = headers.normalize().string
-        var shipped: Path?
-        var linked: [String] = []
+        var linked = false
 
         for file in files {
             let path = file.normalize().string
             guard path.hasPrefix(base) else { continue }
 
             let name = String(path.dropFirst(base.count)).trimmingCharacters(in: ["/"])
-            if name == "module.modulemap" {
-                shipped = file
-                continue
-            }
+            if name == "module.modulemap" { continue }
 
-            if
-                let `extension` = Path(name).extension.flatMap(FileExtension.init(rawValue:)),
-                Self.headerExtensions.contains(`extension`),
-                Self.isBehindDirectoryLink(name, in: headers)
-            {
-                linked.append(name)
-            }
+            /// Without a map of the package's own, the module is an umbrella over
+            /// the directory, and clang's walk of an umbrella does not enter a
+            /// directory that is a symlink: what sits behind one is in no module
+            /// of the target's, unless a map beside it declares one. The mirror
+            /// is real directories all the way down, so those files go to a
+            /// second directory on the include path instead, at the same path
+            /// below it. A lookup finds them as it did, and the umbrella does
+            /// not: left under it, a header a nested map owns would be in both
+            /// modules, and the two would include each other. An `exclude
+            /// header` cannot say the same — it takes a header away from the
+            /// nested map's umbrella directory too.
+            ///
+            /// A shipped map names its headers relative to itself, so with one
+            /// the tree stays whole.
+            let behindLink = shipped == nil && Self.isBehindDirectoryLink(name, in: headers)
+            linked = linked || behindLink
 
-            let link = interface + name
+            let link = root + (behindLink ? linkedRelative : relative) + name
             try link.parent().mkpath()
             try link.symlink(file)
         }
@@ -245,29 +272,20 @@ extension SwiftPM.Generator {
         /// A map the package ships is its intended interface; without one the
         /// module is every header in the directory, which is what SwiftPM
         /// generates for a clang target too.
-        ///
-        /// Every header clang finds walking that directory, that is: the walk
-        /// does not enter a directory that is a symlink, so a header behind one
-        /// is in no module of the target's — unless a map beside it declares
-        /// one. The mirror is real directories all the way down, so the headers
-        /// SwiftPM's umbrella never saw are excluded by name. Left in, a header
-        /// owned by a nested map would also be in the umbrella, and the two
-        /// modules include each other.
         let map = interface + "module.modulemap"
         if let shipped {
             try map.symlink(shipped)
         } else {
-            let excluded = linked.sorted().map { "    exclude header \"\($0)\"\n" }.joined()
             try map.write("""
             module \(module) {
                 umbrella "."
-            \(excluded)    export *
+                export *
             }
 
             """)
         }
 
-        return relative
+        return Interface(root: relative, roots: linked ? [relative, linkedRelative] : [relative])
     }
 
     /// Whether a path under `directory` passes through a directory symlink.
@@ -330,7 +348,7 @@ extension SwiftPM.Generator {
         Path("\(prefix)/\(path)").normalize().string
     }
 
-    /// What a header lookup can reach: the target's interface directory and
+    /// What a header lookup can reach: the target's interface directories and
     /// whatever `headerSearchPath` adds, which is the shape SwiftPM passes.
     ///
     /// Not the target directory itself: a module map sitting there would be found
@@ -339,13 +357,10 @@ extension SwiftPM.Generator {
     private func includes(
         of target: SwiftPM.PackageTarget,
         prefix: String,
-        interface: String?)
+        interface: Interface?)
         -> [String]
     {
-        var paths: [String] = []
-        if let interface {
-            paths.append(interface)
-        }
+        var paths: [String] = interface?.roots ?? []
 
         for setting in target.settings
             where setting.tool == "c" && setting.name == "headerSearchPath"
