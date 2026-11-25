@@ -206,24 +206,22 @@ than guessed. A mixed executable or macro target is reported: its C-family
 sources are not compiled, so put them in a library the program depends on. The
 fixture does not claim every feature of the mixed-target proposal.
 
-The job installs the pinned official snapshot
-(`.github/scripts/install-swift-snapshot.sh`: `swift-DEVELOPMENT-SNAPSHOT-2026-11-01-a`,
-toolchain identifier `org.swift.65202611011a`, installed with
-`installer -target CurrentUserHomeDirectory`), puts its `usr/bin` first on
-`PATH` for SwiftPM and selects it for Bazel's actions through `user.bazelrc`:
-`--action_env=TOOLCHAINS` names the snapshot, while `--repo_env=TOOLCHAINS`
-keeps `com.apple.dt.toolchain.XcodeDefault`, because SDK discovery needs
-Xcode's bundled compiler. The package is verified with `pkgutil --check-signature`
-before it is installed. The same commands run locally from this directory:
+The `MixedLanguage` CI job downloads no toolchain. It uses the runner's default
+Xcode and runs the fixture only when `swift --version` reports 6.5 or newer;
+otherwise the job reports a notice and skips every step after the check. Locally,
+run it with a Swift 6.5 toolchain selected:
 
 ```sh
-export TOOLCHAINS=org.swift.65202611011a
-export PATH="$HOME/Library/Developer/Toolchains/swift-DEVELOPMENT-SNAPSHOT-2026-11-01-a.xctoolchain/usr/bin:$PATH"
 cd spm/MixedLanguage
 swift build && swift test && swift run unified-consumer   # prints "unified ok"
 bazelize --input . --output App
 cd App
-printf 'build --repo_env=TOOLCHAINS=com.apple.dt.toolchain.XcodeDefault\nbuild --action_env=TOOLCHAINS=%s\n' "$TOOLCHAINS" > user.bazelrc
 bazel test //...
 bazel run //Packages/MixedLanguage:unified-consumer      # prints "unified ok"
 ```
+
+With a development snapshot rather than an Xcode that ships Swift 6.5, put the
+snapshot's `usr/bin` first on `PATH` for SwiftPM, and give Bazel
+`--action_env=TOOLCHAINS=<snapshot identifier>` while keeping
+`--repo_env=TOOLCHAINS=com.apple.dt.toolchain.XcodeDefault`: rules_swift's SDK
+discovery fails under the snapshot's compiler.
