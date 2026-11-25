@@ -2,10 +2,17 @@ extension Xcode.BuildSettings {
     /// The build settings Bazelize reads by name. The raw value is the name
     /// Xcode spells in a project file or an xcconfig.
     ///
-    /// A key built at runtime — `INFOPLIST_KEY_*`, `SWIFT_UPCOMING_FEATURE_*`,
-    /// or one named by a `$(SETTING)` reference — goes through the `String`
-    /// subscript instead.
+    /// A key built at runtime — `INFOPLIST_KEY_*`, or one named by a
+    /// `$(SETTING)` reference — goes through the `String` subscript instead.
     public enum Key: String, Sendable {
+        // MARK: Project
+
+        case targetName = "TARGET_NAME"
+        case projectName = "PROJECT_NAME"
+        case srcRoot = "SRCROOT"
+        case sourceRoot = "SOURCE_ROOT"
+        case projectDir = "PROJECT_DIR"
+
         // MARK: Metadata
 
         case productBundleIdentifier = "PRODUCT_BUNDLE_IDENTIFIER"

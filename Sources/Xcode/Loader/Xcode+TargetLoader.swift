@@ -22,11 +22,11 @@ struct TargetLoader {
         mergedConfig = configList.merge(defaultConfigList).mapValues { settings in
             settings
                 .with(overrides: [
-                    "TARGET_NAME": native.name,
-                    "PROJECT_NAME": project.name,
-                    "SRCROOT": workspace,
-                    "SOURCE_ROOT": workspace,
-                    "PROJECT_DIR": workspace,
+                    .targetName: native.name,
+                    .projectName: project.name,
+                    .srcRoot: workspace,
+                    .sourceRoot: workspace,
+                    .projectDir: workspace,
                 ])
                 /// What the toolchain answers for, and the configuration being
                 /// built — defaults, because a project that states one of them

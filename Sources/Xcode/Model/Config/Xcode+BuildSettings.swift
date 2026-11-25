@@ -42,10 +42,10 @@ extension Xcode {
                 })
         }
 
-        func with(overrides: [String: String]) -> BuildSettings {
+        func with(overrides: [Key: String]) -> BuildSettings {
             .init(
                 name: name,
-                setting: setting.merging(overrides) { _, new in
+                setting: setting.merging(overrides.lazy.map { ($0.key.rawValue, $0.value) }) { _, new in
                     new
                 })
         }
