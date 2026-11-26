@@ -109,9 +109,9 @@ objc_library(
     tags = [
         "manual",
     ],
-    textual_hdrs = [
-        "Generated/LocalTarget3Interface/module.modulemap",
-    ],
+    textual_hdrs = glob([
+        "Generated/LocalTarget3Interface/**/*.modulemap",
+    ]),
     visibility = [
         "//visibility:public",
     ],

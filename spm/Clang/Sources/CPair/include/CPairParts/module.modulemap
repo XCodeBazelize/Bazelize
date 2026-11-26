@@ -1,0 +1,5 @@
+module CPairParts {
+    umbrella "."
+    export *
+    module * { export * }
+}
