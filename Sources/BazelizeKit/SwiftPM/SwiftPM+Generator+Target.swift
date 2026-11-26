@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// The targets that can be generated, after dropping everything that depends
@@ -134,7 +135,7 @@ extension SwiftPM.Generator {
         /// SwiftPM 6.5 builds; otherwise any Swift makes a Swift target and
         /// the C-family files still on disk belong to another target or are
         /// excluded.
-        if extensions.contains("swift") {
+        if extensions.contains(FileExtension.swift.rawValue) {
             return isMixed(target, in: package) ? .mixed : .swift
         }
         return .clang

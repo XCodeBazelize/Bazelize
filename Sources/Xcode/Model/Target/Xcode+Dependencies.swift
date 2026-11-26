@@ -12,6 +12,24 @@ extension Xcode {
         /// default.
         public let sdkFrameworkSearchPaths: [String]
         public let weakSDKFrameworks: [String]
+
+        package init(
+            targets: [String],
+            packageProducts: [PackageProductDependency],
+            frameworks: [String],
+            sdkDylibs: [String],
+            sdkFrameworks: [String],
+            sdkFrameworkSearchPaths: [String],
+            weakSDKFrameworks: [String])
+        {
+            self.targets = targets
+            self.packageProducts = packageProducts
+            self.frameworks = frameworks
+            self.sdkDylibs = sdkDylibs
+            self.sdkFrameworks = sdkFrameworks
+            self.sdkFrameworkSearchPaths = sdkFrameworkSearchPaths
+            self.weakSDKFrameworks = weakSDKFrameworks
+        }
     }
 }
 

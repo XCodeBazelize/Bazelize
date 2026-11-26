@@ -8,6 +8,7 @@ extension Target {
     var manual: [String] {
         ["manual"]
     }
+
     /// A target with no sources of its own has no library to link, so no rule can
     /// produce its product: UTM wraps an externally built binary in a bundle that
     /// way. Nothing references a rule that is not emitted either.
@@ -32,37 +33,35 @@ extension Target {
 
         guard hasSources else {
             kit.note("""
-            \(name) is not generated: a \(productType ?? "target") with no sources of its own \
+            \(name) is not generated: a \(productType?.rawValue ?? "target") with no sources of its own \
             has no library for a rule to bundle.
             """)
             return builder.build()
         }
 
         switch productType {
-        case "com.apple.product-type.application":
+        case .application:
             generateStrings(builder, kit)
             generateCopiedProducts(builder, kit)
             generateCopiedFiles(builder, kit)
             try generateApplicationCode(builder, kit)
-        case "com.apple.product-type.bundle",
-             "com.apple.product-type.xpc-service",
-             "com.apple.product-type.app-extension":
+        case .bundle, .xpcService, .appExtension:
             generateBundleProduct(builder, kit)
-        case "com.apple.product-type.tool":
+        case .commandLineTool:
             generateCommandLineApplicationCode(builder, kit)
-        case "com.apple.product-type.framework", "com.apple.product-type.framework.static":
+        case .framework, .staticFramework:
             generateFrameworkProduct(builder, kit)
-        case "com.apple.product-type.library.static":
+        case .staticLibrary:
             generateStaticLibrary(builder, kit)
-        case "com.apple.product-type.bundle.unit-test":
+        case .unitTestBundle:
             generateUnitTest(builder, kit)
-        case "com.apple.product-type.bundle.ui-testing":
+        case .uiTestBundle:
             generateUITest(builder, kit)
         default:
             /// A product type nothing here knows is not a target to skip: whatever
             /// the project builds from it would be missing from every build that
             /// followed, and the error naming it is the only chance to notice.
-            throw UnsupportedTarget.productType(target: name, productType: productType)
+            throw UnsupportedTarget.productType(target: name, productType: productType?.rawValue)
         }
         return builder.build()
     }

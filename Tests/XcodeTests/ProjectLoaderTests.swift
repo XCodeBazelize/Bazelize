@@ -1,6 +1,7 @@
 import PathKit
 import Testing
 @testable import Xcode
+@testable import XcodeLoader
 
 struct ProjectLoaderTests {
     @Test
@@ -32,10 +33,11 @@ struct ProjectLoaderTests {
         let projectPath = current + "app/IceCubesApp/IceCubesApp.xcodeproj"
 
         let project = try await Xcode.Project.load(path: projectPath, preferConfig: nil)
-        let target = try #require(project.targets.first { $0.name == "IceCubesShareExtension" })
+        let extensionSources = project.withTarget(named: "IceCubesShareExtension") { $0.files.sources }
+        let sources = try #require(extensionSources)
 
-        #expect(target.files.sources.contains { $0.path == "IceCubesShareExtension/ShareViewController.swift" })
-        #expect(!target.files.sources.isEmpty)
+        #expect(sources.contains { $0.path == "IceCubesShareExtension/ShareViewController.swift" })
+        #expect(!sources.isEmpty)
     }
 
     @Test(.corpus("iina/IINA.xcodeproj"))
@@ -47,10 +49,11 @@ struct ProjectLoaderTests {
         let projectPath = current + "app/iina/IINA.xcodeproj"
 
         let project = try await Xcode.Project.load(path: projectPath, preferConfig: "Release")
-        let target = try #require(project.targets.first { $0.name == "iina-cli" })
+        let cliIndex = project.targetIndex(named: "iina-cli")
+        let cli = try #require(cliIndex)
 
-        #expect(target.prefer(\.platform.sdk) == .macOS)
-        #expect(target.prefer(\.platform.macOS) == "10.15")
+        #expect(project.targets[cli].prefer(\.platform.sdk) == .macOS)
+        #expect(project.targets[cli].prefer(\.platform.macOS) == "10.15")
     }
 
     @Test(.corpus("iina/IINA.xcodeproj"))
@@ -62,19 +65,22 @@ struct ProjectLoaderTests {
         let projectPath = current + "app/iina/IINA.xcodeproj"
 
         let project = try await Xcode.Project.load(path: projectPath, preferConfig: "Release")
-        let target = try #require(project.targets.first { $0.name == "iina" })
+        let iinaDependencies = project.withTarget(named: "iina") { $0.dependencies }
+        let iinaCopyFiles = project.withTarget(named: "iina") { $0.files.copyFiles }
+        let dependencies = try #require(iinaDependencies)
+        let copyFiles = try #require(iinaCopyFiles)
 
-        #expect(target.dependencies.sdkFrameworks.contains("CoreDisplay"))
-        #expect(target.dependencies.sdkFrameworks.contains("PIP"))
-        #expect(!target.dependencies.frameworks.contains("CoreDisplay.framework"))
-        #expect(!target.dependencies.frameworks.contains("PIP.framework"))
+        #expect(dependencies.sdkFrameworks.contains("CoreDisplay"))
+        #expect(dependencies.sdkFrameworks.contains("PIP"))
+        #expect(!dependencies.frameworks.contains("CoreDisplay.framework"))
+        #expect(!dependencies.frameworks.contains("PIP.framework"))
         /// A dylib the project carries is imported by path, never linked by name
         /// out of the SDK.
-        #expect(!target.dependencies.sdkDylibs.contains("libX11.6"))
+        #expect(!dependencies.sdkDylibs.contains("libX11.6"))
         #expect((current + "app/iina/deps/lib/libX11.6.dylib").exists
-            == target.dependencies.frameworks.contains("//Prebuilt:libX11.6"))
-        #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libX11.6.dylib" })
-        #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libXau.6.dylib" })
-        #expect(target.files.copyFiles.contains { $0.path == "deps/lib/libXdmcp.6.dylib" })
+            == dependencies.frameworks.contains("//Prebuilt:libX11.6"))
+        #expect(copyFiles.contains { $0.path == "deps/lib/libX11.6.dylib" })
+        #expect(copyFiles.contains { $0.path == "deps/lib/libXau.6.dylib" })
+        #expect(copyFiles.contains { $0.path == "deps/lib/libXdmcp.6.dylib" })
     }
 }

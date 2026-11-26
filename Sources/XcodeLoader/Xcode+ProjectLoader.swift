@@ -5,9 +5,18 @@
 //  Created by Yume on 2026/3/29.
 //
 
+import BasicContainers
 import Foundation
 import PathKit
-import XcodeProj
+import Xcode
+import class XcodeProj.PBXFileElement
+import class XcodeProj.PBXFileSystemSynchronizedBuildFileExceptionSet
+import class XcodeProj.PBXFileSystemSynchronizedRootGroup
+import class XcodeProj.PBXNativeTarget
+import class XcodeProj.PBXProj
+import class XcodeProj.PBXProject
+import class XcodeProj.XcodeProj
+import class XcodeProj.XCRemoteSwiftPackageReference
 
 // MARK: - ProjectLoader
 
@@ -40,7 +49,12 @@ final class ProjectLoader {
     }
 
     func model() throws -> Xcode.Project {
-        Xcode.Project(
+        var models = UniqueArray<Xcode.Target>(minimumCapacity: targets.count)
+        for target in targets {
+            models.append(target.model)
+        }
+
+        return Xcode.Project(
             name: name,
             workspacePath: workspacePath.string,
             projectPath: path.string,
@@ -49,7 +63,7 @@ final class ProjectLoader {
             packages: .init(
                 remote: remotePackages,
                 local: localPackages),
-            targets: targets.map(\.model))
+            targets: models)
     }
 
     private lazy var allFiles: [PBXFileElement] = (try? native.rootGroup()?.flatten()) ?? []
@@ -161,7 +175,7 @@ extension ProjectLoader {
         for package in localPackages {
             let packageRoot = workspacePath + package.relativePath
             let manifest = packageRoot + "Package.swift"
-            guard let content = try? String(contentsOfFile: manifest.string) else { continue }
+            guard let content = try? String(contentsOfFile: manifest.string, encoding: .utf8) else { continue }
 
             for product in content.swiftPackageProductNames {
                 result[product] = package.relativePath

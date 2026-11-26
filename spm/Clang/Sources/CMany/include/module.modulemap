@@ -1,0 +1,9 @@
+module CMany {
+    header "CMany.h"
+    export *
+}
+
+module CManyExtra {
+    header "CManyExtra.h"
+    export *
+}

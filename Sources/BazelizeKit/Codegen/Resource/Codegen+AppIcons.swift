@@ -3,6 +3,8 @@ import PathKit
 import Starlark
 import Xcode
 
+// MARK: - AppIconSelection
+
 /// The icons an application hands to its rule's `app_icons`, and the one of them
 /// the bundle shows by default.
 struct AppIconSelection {
@@ -37,8 +39,8 @@ extension Target {
     ///   select none.
     /// - macOS keeps the primary `.appiconset` alone: its rule takes neither `.icon`
     ///   bundles nor alternates here.
-    func appIconSelection(project: Project?) -> AppIconSelection? {
-        guard let project, let primary = prefer(\.assetCatalog.appIconName) else { return nil }
+    func appIconSelection(project: borrowing Project) -> AppIconSelection? {
+        guard let primary = prefer(\.assetCatalog.appIconName) else { return nil }
 
         let workspace = Path(project.workspacePath)
         func onDisk(_ label: String) -> Path {
@@ -85,7 +87,7 @@ extension Target {
             isLegacyPrimaryOnly: composerIcons[primary] == nil && alternatePatterns.isEmpty)
     }
 
-    func appIcons(project: Project?) -> Starlark.Value? {
+    func appIcons(project: borrowing Project) -> Starlark.Value? {
         appIconSelection(project: project)?.appIcons
     }
 }

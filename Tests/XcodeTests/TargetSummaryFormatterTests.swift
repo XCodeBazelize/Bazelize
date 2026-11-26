@@ -1,3 +1,4 @@
+import BasicContainers
 import Testing
 @testable import Xcode
 
@@ -7,7 +8,7 @@ struct TargetSummaryFormatterTests {
         let target = Xcode.Target(
             name: "Example",
             productName: "Example",
-            productType: "com.apple.product-type.application",
+            productType: .application,
             preferConfig: "Release",
             configs: [
                 "Debug": .init(
@@ -44,7 +45,7 @@ struct TargetSummaryFormatterTests {
                         fullPath: "/tmp/Example/ExampleApp.swift",
                         label: nil,
                         fileType: "sourcecode.swift",
-                        sourceTree: "<group>",
+                        sourceTree: .group,
                         buildPhase: "sources",
                         compilerFlags: nil,
                         attributes: []),
@@ -57,7 +58,7 @@ struct TargetSummaryFormatterTests {
                         fullPath: "/tmp/Example/Assets.xcassets",
                         label: nil,
                         fileType: "folder.assetcatalog",
-                        sourceTree: "<group>",
+                        sourceTree: .group,
                         buildPhase: "resources",
                         compilerFlags: nil,
                         attributes: []),
@@ -69,7 +70,7 @@ struct TargetSummaryFormatterTests {
                         fullPath: "/tmp/Vendor/SVProgressHUD.xcframework",
                         label: "//Prebuilt:SVProgressHUD",
                         fileType: "wrapper.xcframework",
-                        sourceTree: "<group>",
+                        sourceTree: .group,
                         buildPhase: "frameworks",
                         compilerFlags: nil,
                         attributes: []),
@@ -90,6 +91,8 @@ struct TargetSummaryFormatterTests {
                 sdkFrameworkSearchPaths: [],
                 weakSDKFrameworks: []))
 
+        var targets = UniqueArray<Xcode.Target>()
+        targets.append(target)
         let project = Xcode.Project(
             name: "Example",
             workspacePath: "/tmp",
@@ -97,9 +100,9 @@ struct TargetSummaryFormatterTests {
             preferConfig: "Release",
             configs: [:],
             packages: .init(remote: [], local: []),
-            targets: [target])
+            targets: targets)
 
-        let summary = Xcode.TargetSummaryFormatter.format(project: project, target: target)
+        let summary = Xcode.TargetSummaryFormatter.format(project: project, target: project.targets[0])
 
         #expect(summary.contains("Target: Example"))
         #expect(summary.contains("Type: com.apple.product-type.application"))

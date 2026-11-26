@@ -1,0 +1,10 @@
+module CPairInner {
+    header "CPairInner.h"
+    exclude header "CPairInnerDetail.h"
+    export *
+
+    module Extras {
+        umbrella "Extras"
+        export *
+    }
+}

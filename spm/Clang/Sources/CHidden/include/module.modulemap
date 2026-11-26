@@ -1,0 +1,4 @@
+module CHiddenOnly {
+    header "CHiddenOnly.h"
+    export *
+}

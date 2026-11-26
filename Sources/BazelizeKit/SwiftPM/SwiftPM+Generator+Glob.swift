@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// The sources of a target: what this run wrote, named, plus what the
@@ -23,7 +24,8 @@ extension SwiftPM.Generator {
     func sources(
         naming written: [String],
         globbing patterns: [String],
-        excluding excluded: [String]) -> Starlark.Value
+        excluding excluded: [String])
+        -> Starlark.Value
     {
         let named = written.filter { path in
             !patterns.contains { Self.matches($0, path) }
@@ -47,7 +49,8 @@ extension SwiftPM.Generator {
         naming written: [String] = [],
         matching patterns: [String],
         excluding excluded: [String] = [],
-        allowEmpty: Bool = false) -> Starlark.Value
+        allowEmpty: Bool = false)
+        -> Starlark.Value
     {
         let wildcards = patterns.filter { $0.contains(where: Self.isWildcard) }
         /// A file a wildcard already covers would be named twice, and a
@@ -126,16 +129,16 @@ extension SwiftPM.Generator {
 
     /// An explicit `sources` list names files or directories; without one the
     /// whole target directory is the target.
-    func sources(of target: SwiftPM.PackageTarget, prefix: String, extensions: [String]) -> [String] {
+    func sources(of target: SwiftPM.PackageTarget, prefix: String, extensions: [FileExtension]) -> [String] {
         guard let sources = target.sources, !sources.isEmpty else {
-            return extensions.map { "\(prefix)/**/*.\($0)" }
+            return extensions.map { "\(prefix)/**/*.\($0.rawValue)" }
         }
 
         return sources.flatMap { source -> [String] in
             guard let fileExtension = Path(source).extension else {
-                return extensions.map { "\(prefix)/\(source)/**/*.\($0)" }
+                return extensions.map { "\(prefix)/\(source)/**/*.\($0.rawValue)" }
             }
-            return extensions.contains(fileExtension) ? ["\(prefix)/\(source)"] : []
+            return extensions.contains { $0.rawValue == fileExtension } ? ["\(prefix)/\(source)"] : []
         }
     }
 

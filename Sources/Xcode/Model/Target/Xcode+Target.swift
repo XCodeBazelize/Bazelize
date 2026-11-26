@@ -3,16 +3,72 @@ import Foundation
 // MARK: - Xcode.Target
 
 extension Xcode {
-    public struct Target: Encodable {
+    /// A native target as loaded from the project.
+    ///
+    /// A target has exactly one owner: the `Project` that loaded it. Everything
+    /// else borrows it, so the configurations, file lists, and dependencies it
+    /// carries are never duplicated after loading.
+    public struct Target: ~Copyable {
         public let name: String
         public let productName: String?
-        public let productType: String?
+        public let productType: ProductType?
         public let preferConfig: String?
         public let configs: [String: BuildSettings]
         public let metadata: TargetMetadata
         public let buildPhases: [BuildPhase]
         public let files: Files
         public let dependencies: Dependencies
+
+        package init(
+            name: String,
+            productName: String?,
+            productType: ProductType?,
+            preferConfig: String?,
+            configs: [String: BuildSettings],
+            metadata: TargetMetadata,
+            buildPhases: [BuildPhase],
+            files: Files,
+            dependencies: Dependencies)
+        {
+            self.name = name
+            self.productName = productName
+            self.productType = productType
+            self.preferConfig = preferConfig
+            self.configs = configs
+            self.metadata = metadata
+            self.buildPhases = buildPhases
+            self.files = files
+            self.dependencies = dependencies
+        }
+    }
+}
+
+extension Xcode.Target {
+    enum CodingKeys: String, CodingKey {
+        case name
+        case productName
+        case productType
+        case preferConfig
+        case configs
+        case metadata
+        case buildPhases
+        case files
+        case dependencies
+    }
+
+    /// Encodes the fields `Encodable` synthesis encoded before the target became
+    /// noncopyable, which `Encodable` cannot describe.
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encodeIfPresent(productName, forKey: .productName)
+        try container.encodeIfPresent(productType?.rawValue, forKey: .productType)
+        try container.encodeIfPresent(preferConfig, forKey: .preferConfig)
+        try container.encode(configs, forKey: .configs)
+        try container.encode(metadata, forKey: .metadata)
+        try container.encode(buildPhases, forKey: .buildPhases)
+        try container.encode(files, forKey: .files)
+        try container.encode(dependencies, forKey: .dependencies)
     }
 }
 
@@ -46,13 +102,7 @@ extension Xcode.Target {
     }
 
     public var isTest: Bool {
-        switch productType {
-        case "com.apple.product-type.bundle.unit-test",
-             "com.apple.product-type.bundle.ui-testing":
-            return true
-        default:
-            return false
-        }
+        productType?.isTest == true
     }
 
     public var headers: [String] {
@@ -78,7 +128,9 @@ extension Xcode.Target {
     }
 
     public var hpps: [String] {
-        headers.filter { $0.hasSuffix(".hpp") || $0.hasSuffix(".hh") || $0.hasSuffix(".hxx") }
+        headers.filter { header in
+            [FileExtension.hpp, .hh, .hxx].contains { header.hasSuffix($0.suffix) }
+        }
     }
 
     public var srcs: [String] {
@@ -86,44 +138,44 @@ extension Xcode.Target {
     }
 
     public var srcs_c: [String] {
-        sources(ofType: "sourcecode.c.c", extensions: [".c"])
+        sources(ofType: "sourcecode.c.c", extensions: [.c])
     }
 
     public var srcs_objc: [String] {
-        sources(ofType: "sourcecode.c.objc", extensions: [".m"])
+        sources(ofType: "sourcecode.c.objc", extensions: [.m])
     }
 
     public var srcs_cpp: [String] {
-        sources(ofType: "sourcecode.cpp.cpp", extensions: [".cc", ".cp", ".cpp", ".cxx"])
+        sources(ofType: "sourcecode.cpp.cpp", extensions: [.cc, .cp, .cpp, .cxx])
     }
 
     public var srcs_objcpp: [String] {
-        sources(ofType: "sourcecode.cpp.objcpp", extensions: [".mm"])
+        sources(ofType: "sourcecode.cpp.objcpp", extensions: [.mm])
     }
 
     public var srcs_swift: [String] {
-        sources(ofType: "sourcecode.swift", extensions: [".swift"])
+        sources(ofType: "sourcecode.swift", extensions: [.swift])
     }
 
     public var srcs_metal: [String] {
-        sources(ofType: "sourcecode.metal", extensions: [".metal"])
+        sources(ofType: "sourcecode.metal", extensions: [.metal])
     }
 
     /// Xcode compiles by declared file type, which can disagree with the extension
     /// (`explicitFileType = sourcecode.cpp.objcpp` on a `.m` file is common for
     /// Objective-C code that includes C++).
-    private func sources(ofType type: String, extensions: [String]) -> [String] {
+    private func sources(ofType type: String, extensions: [FileExtension]) -> [String] {
         filePaths(
             files.sources.filter { file in
                 if let fileType = file.fileType, Self.compiledFileTypes.contains(fileType) {
                     return fileType == type
                 }
                 guard let path = file.path else { return false }
-                return extensions.contains { path.hasSuffix($0) }
+                return extensions.contains { path.hasSuffix($0.suffix) }
             })
     }
 
-    private static let compiledFileTypes: Set<String> = [
+    private static let compiledFileTypes: Set = [
         "sourcecode.c.c",
         "sourcecode.c.objc",
         "sourcecode.cpp.cpp",
@@ -215,7 +267,7 @@ extension Xcode.Target {
         return .init(name: "", setting: [:])
     }
 
-    private func filePath(_ file: Xcode.File) -> String? {
+    private static func filePath(_ file: Xcode.File) -> String? {
         guard let path = file.path?.trimmingCharacters(in: CharacterSet(charactersIn: "/")), !path.isEmpty else {
             return nil
         }
@@ -223,7 +275,7 @@ extension Xcode.Target {
     }
 
     private func filePaths(_ files: [Xcode.File]) -> [String] {
-        files.compactMap(filePath)
+        files.compactMap(Self.filePath)
     }
 }
 
@@ -233,7 +285,7 @@ extension String {
     /// A synchronized root group lists the files inside an asset catalog rather
     /// than the catalog, and the catalog is what `actool` compiles and what the
     /// rules take as an attribute.
-    fileprivate static let resourceWrapperExtensions: Set<String> = [
+    fileprivate static let resourceWrapperExtensions: Set = [
         "bundle",
         "docc",
         "icon",
@@ -241,7 +293,7 @@ extension String {
         "scnassets",
         "xcassets",
         "xcdatamodeld",
-        "xcstickers"
+        "xcstickers",
     ]
 
     /// The path truncated at the wrapper that owns it, or the path itself.

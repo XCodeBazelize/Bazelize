@@ -1,6 +1,17 @@
 import Foundation
 import PathKit
-import XcodeProj
+import Xcode
+import enum XcodeProj.BuildPhase
+import class XcodeProj.PBXBuildFile
+import class XcodeProj.PBXBuildPhase
+import class XcodeProj.PBXCopyFilesBuildPhase
+import class XcodeProj.PBXFileReference
+import class XcodeProj.PBXFileSystemSynchronizedBuildFileExceptionSet
+import class XcodeProj.PBXFileSystemSynchronizedRootGroup
+import class XcodeProj.PBXHeadersBuildPhase
+import class XcodeProj.PBXNativeTarget
+import class XcodeProj.PBXShellScriptBuildPhase
+import class XcodeProj.PBXVariantGroup
 
 // MARK: - TargetLoader
 
@@ -22,11 +33,11 @@ struct TargetLoader {
         mergedConfig = configList.merge(defaultConfigList).mapValues { settings in
             settings
                 .with(overrides: [
-                    "TARGET_NAME": native.name,
-                    "PROJECT_NAME": project.name,
-                    "SRCROOT": workspace,
-                    "SOURCE_ROOT": workspace,
-                    "PROJECT_DIR": workspace,
+                    .targetName: native.name,
+                    .projectName: project.name,
+                    .srcRoot: workspace,
+                    .sourceRoot: workspace,
+                    .projectDir: workspace,
                 ])
                 /// What the toolchain answers for, and the configuration being
                 /// built — defaults, because a project that states one of them
@@ -36,7 +47,7 @@ struct TargetLoader {
                 /// optional, and `auto` names no SDK at all.
                 .with(defaults: project.toolchain
                     .settings(sdk: settings.platform.resolvedSDK?.rawValue)
-                    .merging(["CONFIGURATION": settings.name]) { _, new in new })
+                    .merging([.configuration: settings.name]) { _, new in new })
         }
     }
 
@@ -84,7 +95,7 @@ struct TargetLoader {
             files.filter { file in
                 // SDK and sibling build products are not checkout inputs.
                 guard
-                    !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree),
+                    ![.buildProductsDir, .sdkRoot, .developerDir].contains(file.sourceTree),
                     let path = file.fullPath,
                     !path.contains("$("), !path.contains("${")
                 else { return true }
@@ -105,7 +116,7 @@ struct TargetLoader {
         return Xcode.Target(
             name: name,
             productName: native.productName,
-            productType: native.productType?.rawValue,
+            productType: native.productType.flatMap { Xcode.ProductType(rawValue: $0.rawValue) },
             preferConfig: preferConfig,
             configs: mergedConfig,
             metadata: metadata,
@@ -161,7 +172,7 @@ struct TargetLoader {
             /// run. The target is generated without it, and the run says which
             /// file went missing, rather than emitting a dependency Bazel
             /// cannot resolve.
-            if wrapped.sourceTree != PBXSourceTree.buildProductsDir.description, !wrapped.existsOnDisk {
+            if wrapped.sourceTree != .buildProductsDir, !wrapped.existsOnDisk {
                 return nil
             }
 

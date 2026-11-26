@@ -39,12 +39,12 @@ extension Target {
     }
 
     /// The bundle rule's `resources`: the groups above plus the asset catalog.
-    func bundleResources(project: Project?) -> [Starlark.Label] {
+    func bundleResources(project: borrowing Project) -> [Starlark.Label] {
         var labels: [Starlark.Label] = []
-        if let project, !resourceFiles(project: project).isEmpty {
+        if !resourceFiles(project: project).isEmpty {
             labels.append(.named(":\(Self.resourceGroupName)"))
         }
-        if let project, !resourceFolders(project: project).isEmpty {
+        if !resourceFolders(project: project).isEmpty {
             labels.append(.named(":\(Self.structuredResourceGroupName)"))
         }
         if !assets.isEmpty {
@@ -64,18 +64,18 @@ extension Target {
         let parent: String
     }
 
-    private func resourceFiles(project: Project) -> [String] {
+    private func resourceFiles(project: borrowing Project) -> [String] {
         Array(Set(classifiedResources(project: project).files)).sorted()
     }
 
-    private func resourceFolders(project: Project) -> [ResourceFolder] {
+    private func resourceFolders(project: borrowing Project) -> [ResourceFolder] {
         let folders = classifiedResources(project: project).folders
         return Array(Set(folders.map(\.path)))
             .sorted()
             .map { .init(path: $0, parent: Path($0).parent().normalize().string) }
     }
 
-    private func classifiedResources(project: Project) -> (files: [String], folders: [ResourceFolder]) {
+    private func classifiedResources(project: borrowing Project) -> (files: [String], folders: [ResourceFolder]) {
         let workspace = Path(project.workspacePath)
 
         var files: [String] = []
@@ -104,11 +104,11 @@ extension Target {
     /// Selected Icon Composer bundles also belong to `app_icons`. The pinned
     /// Apple rules materialize them inside the consuming actool action so their
     /// `icon.json` and image files remain regular files in a Bazel sandbox.
-    private static let ownedResourceExtensions: Set<String> = [
+    private static let ownedResourceExtensions: Set = [
         "icon",
         "intentdefinition",
         "strings",
-        "xcassets"
+        "xcassets",
     ]
 }
 

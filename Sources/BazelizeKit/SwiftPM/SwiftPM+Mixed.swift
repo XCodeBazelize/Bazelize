@@ -24,8 +24,8 @@ extension SwiftPM.Generator {
         guard !tools.lexicographicallyPrecedes([6, 5]) else { return false }
 
         let extensions = extensions(of: target, in: package)
-        guard extensions.contains("swift") else { return false }
-        guard Self.compileExtensions.allSatisfy({ !extensions.contains($0) }) else { return true }
+        guard extensions.contains(FileExtension.swift.rawValue) else { return false }
+        guard Self.compileExtensions.allSatisfy({ !extensions.contains($0.rawValue) }) else { return true }
 
         guard
             let directory = sourceDirectory(of: target, in: package),
@@ -35,7 +35,7 @@ extension SwiftPM.Generator {
         }
 
         return Self.walk(directory + headers).contains { file in
-            file.extension.map { Self.headerExtensions.contains($0) } ?? false
+            file.extension.map { Self.headerExtensions.map(\.rawValue).contains($0) } ?? false
         }
     }
 
@@ -60,7 +60,7 @@ extension SwiftPM.Generator {
         guard let directory = sourceDirectory(of: target, in: package) else { return }
 
         let extensions = extensions(of: target, in: package)
-        let compiled = Self.compileExtensions.filter { extensions.contains($0) }
+        let compiled = Self.compileExtensions.filter { extensions.contains($0.rawValue) }
         let headers = publicHeaders(of: target, in: directory)
         let onDisk = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
         let headerPrefix = headers.map { Self.path(prefix, $0) }
@@ -82,18 +82,17 @@ extension SwiftPM.Generator {
             module: module,
             generatingMap: false,
             root: root)
-        let shippedMap = interface.flatMap { path -> String? in
-            (root + path + "module.modulemap").exists ? "\(path)/module.modulemap" : nil
+        let shippedMap = interface.flatMap { interface -> String? in
+            let map = "\(interface.root)/module.modulemap"
+            return (root + map).exists ? map : nil
         }
 
         let bridging = bridgingHeaders(of: target, in: package, prefix: prefix)
         let clangImportOptions = grouped(target.settings, in: package, always: []) { setting in
             Self.clangFlags(setting).flatMap { ["-Xcc", $0] }
         }
-        let interfaceHeaders = interface.map { path in
-            matching(
-                Self.headerExtensions.map { "\(path)/**/*.\($0)" },
-                Self.relativeFiles(under: path, in: root))
+        let interfaceHeaders = interface.map { interface in
+            matching(Self.headerExtensions.map(\.rawValue), under: interface.roots, in: root)
         } ?? []
 
         /// The module under its own name, and once more under each name a
@@ -120,7 +119,7 @@ extension SwiftPM.Generator {
                         naming: clangAccessors,
                         globbing: matching(
                             sources(of: target, prefix: prefix, extensions: compiled)
-                                + Self.headerExtensions.map { "\(prefix)/**/*.\($0)" },
+                                + Self.headerExtensions.map { "\(prefix)/**/*.\($0.rawValue)" },
                             onDisk)
                             + clangGenerated,
                         excluding: excludedClang(target, prefix: prefix)
@@ -155,7 +154,7 @@ extension SwiftPM.Generator {
                     swift_srcs: sources(
                         naming: swiftAccessors,
                         globbing: matching(
-                            sources(of: target, prefix: prefix, extensions: ["swift"]),
+                            sources(of: target, prefix: prefix, extensions: [.swift]),
                             relativeFiles(of: target, in: package, prefix: prefix))
                             + swiftGenerated,
                         excluding: excluded(target, prefix: prefix)),

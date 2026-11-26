@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// What a plugin generated, linked next to the package's rules.
@@ -61,9 +62,9 @@ extension SwiftPM.Generator {
         default: false
         }
         let compiled: Set<String> = {
-            if case .clang = kind { return Set(Self.compileExtensions) }
-            if mixed { return Set(Self.compileExtensions + ["swift"]) }
-            return ["swift"]
+            if case .clang = kind { return Set(Self.compileExtensions.map(\.rawValue)) }
+            if mixed { return Set((Self.compileExtensions + [.swift]).map(\.rawValue)) }
+            return [FileExtension.swift.rawValue]
         }()
 
         /// The kinds the target could compile, whether or not the plugin has
@@ -71,8 +72,8 @@ extension SwiftPM.Generator {
         /// from `bazel run //:plugins`.
         var sources = compiled
         var headers: Set<String> = {
-            if case .clang = kind { return Set(Self.headerExtensions) }
-            if mixed { return Set(Self.headerExtensions) }
+            if case .clang = kind { return Set(Self.headerExtensions.map(\.rawValue)) }
+            if mixed { return Set(Self.headerExtensions.map(\.rawValue)) }
             return []
         }()
         var resources: Set<String> = []
@@ -101,7 +102,7 @@ extension SwiftPM.Generator {
 
             if compiled.contains(`extension`) {
                 sources.insert(`extension`)
-            } else if Self.headerExtensions.contains(`extension`) {
+            } else if let header = FileExtension(rawValue: `extension`), Self.headerExtensions.contains(header) {
                 headers.insert(`extension`)
             } else {
                 resources.insert(`extension`)

@@ -10,6 +10,7 @@ import BazelizeKit
 import Foundation
 import PathKit
 import Xcode
+import XcodeLoader
 
 // MARK: - Command
 
@@ -151,18 +152,21 @@ struct DumpCommand: AsyncParsableCommand {
         let dump = try await Xcode.Project.load(path: path, preferConfig: config)
 
         if let printTarget {
-            guard let target = dump.targets.first(where: { $0.name == printTarget }) else {
+            let summary = dump.withTarget(named: printTarget) { target in
+                Xcode.TargetSummaryFormatter.format(project: dump, target: target)
+            }
+            guard let summary else {
                 throw ValidationError("Target '\(printTarget)' not found.")
             }
 
-            print(Xcode.TargetSummaryFormatter.format(project: dump, target: target))
+            print(summary)
             return
         }
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
 
-        let data = try encoder.encode(dump)
+        let data = try dump.jsonData(using: encoder)
         guard let json = String(data: data, encoding: .utf8) else {
             throw ValidationError("Failed to encode JSON output.")
         }

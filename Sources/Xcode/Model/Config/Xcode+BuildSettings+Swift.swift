@@ -23,7 +23,7 @@ extension Xcode.BuildSettings {
         /// `5.5` are both the Swift 5 mode, and `4.2` is the one mode with a
         /// minor of its own.
         public var languageMode: String? {
-            guard let value = settings["SWIFT_VERSION"], !value.isEmpty else { return nil }
+            guard let value = settings.swiftVersion, !value.isEmpty else { return nil }
 
             let components = value.split(separator: ".")
             guard let major = components.first else { return nil }
@@ -54,57 +54,91 @@ extension Xcode.BuildSettings {
         private static let defaultLanguageMode = "5"
 
         /// The language modes in which a feature still has to be asked for.
-        private static let featureModes: Set<String> = ["4", "4.2", "5"]
+        private static let featureModes: Set = ["4", "4.2", "5"]
 
-        /// `SWIFT_UPCOMING_FEATURE_*` and the feature each one names, as Xcode's
-        /// `Swift.xcspec` maps them. The setting's suffix is not the feature's name:
-        /// `IMPORT_OBJC_FORWARD_DECLS` enables `ImportObjcForwardDeclarations` and
+        /// `SWIFT_UPCOMING_FEATURE_*`, as Xcode's `Swift.xcspec` names them. The
+        /// setting's suffix is not the feature's name: `IMPORT_OBJC_FORWARD_DECLS`
+        /// enables `ImportObjcForwardDeclarations` and
         /// `DISABLE_OUTWARD_ACTOR_ISOLATION` enables `DisableOutwardActorInference`.
-        private static let upcomingFeatures: KeyValuePairs<String, String> = [
-            "CONCISE_MAGIC_FILE": "ConciseMagicFile",
-            "DEPRECATE_APPLICATION_MAIN": "DeprecateApplicationMain",
-            "DISABLE_OUTWARD_ACTOR_ISOLATION": "DisableOutwardActorInference",
-            "DYNAMIC_ACTOR_ISOLATION": "DynamicActorIsolation",
-            "EXISTENTIAL_ANY": "ExistentialAny",
-            "FORWARD_TRAILING_CLOSURES": "ForwardTrailingClosures",
-            "GLOBAL_ACTOR_ISOLATED_TYPES_USABILITY": "GlobalActorIsolatedTypesUsability",
-            "GLOBAL_CONCURRENCY": "GlobalConcurrency",
-            "IMPLICIT_OPEN_EXISTENTIALS": "ImplicitOpenExistentials",
-            "IMPORT_OBJC_FORWARD_DECLS": "ImportObjcForwardDeclarations",
-            "INFER_ISOLATED_CONFORMANCES": "InferIsolatedConformances",
-            "INFER_SENDABLE_FROM_CAPTURES": "InferSendableFromCaptures",
-            "INTERNAL_IMPORTS_BY_DEFAULT": "InternalImportsByDefault",
-            "ISOLATED_DEFAULT_VALUES": "IsolatedDefaultValues",
-            "MEMBER_IMPORT_VISIBILITY": "MemberImportVisibility",
-            "NONFROZEN_ENUM_EXHAUSTIVITY": "NonfrozenEnumExhaustivity",
-            "NONISOLATED_NONSENDING_BY_DEFAULT": "NonisolatedNonsendingByDefault",
-            "REGION_BASED_ISOLATION": "RegionBasedIsolation",
-        ]
+        private enum UpcomingFeature: String, CaseIterable {
+            case conciseMagicFile = "SWIFT_UPCOMING_FEATURE_CONCISE_MAGIC_FILE"
+            case deprecateApplicationMain = "SWIFT_UPCOMING_FEATURE_DEPRECATE_APPLICATION_MAIN"
+            case disableOutwardActorInference = "SWIFT_UPCOMING_FEATURE_DISABLE_OUTWARD_ACTOR_ISOLATION"
+            case dynamicActorIsolation = "SWIFT_UPCOMING_FEATURE_DYNAMIC_ACTOR_ISOLATION"
+            case existentialAny = "SWIFT_UPCOMING_FEATURE_EXISTENTIAL_ANY"
+            case forwardTrailingClosures = "SWIFT_UPCOMING_FEATURE_FORWARD_TRAILING_CLOSURES"
+            case globalActorIsolatedTypesUsability = "SWIFT_UPCOMING_FEATURE_GLOBAL_ACTOR_ISOLATED_TYPES_USABILITY"
+            case globalConcurrency = "SWIFT_UPCOMING_FEATURE_GLOBAL_CONCURRENCY"
+            case implicitOpenExistentials = "SWIFT_UPCOMING_FEATURE_IMPLICIT_OPEN_EXISTENTIALS"
+            case importObjcForwardDeclarations = "SWIFT_UPCOMING_FEATURE_IMPORT_OBJC_FORWARD_DECLS"
+            case inferIsolatedConformances = "SWIFT_UPCOMING_FEATURE_INFER_ISOLATED_CONFORMANCES"
+            case inferSendableFromCaptures = "SWIFT_UPCOMING_FEATURE_INFER_SENDABLE_FROM_CAPTURES"
+            case internalImportsByDefault = "SWIFT_UPCOMING_FEATURE_INTERNAL_IMPORTS_BY_DEFAULT"
+            case isolatedDefaultValues = "SWIFT_UPCOMING_FEATURE_ISOLATED_DEFAULT_VALUES"
+            case memberImportVisibility = "SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY"
+            case nonfrozenEnumExhaustivity = "SWIFT_UPCOMING_FEATURE_NONFROZEN_ENUM_EXHAUSTIVITY"
+            case nonisolatedNonsendingByDefault = "SWIFT_UPCOMING_FEATURE_NONISOLATED_NONSENDING_BY_DEFAULT"
+            case regionBasedIsolation = "SWIFT_UPCOMING_FEATURE_REGION_BASED_ISOLATION"
 
-        /// `SWIFT_APPROACHABLE_CONCURRENCY` is not a flag of its own: it is the
-        /// default value of these five settings.
-        private static let approachableConcurrencyFeatures: Set<String> = [
-            "DISABLE_OUTWARD_ACTOR_ISOLATION",
-            "GLOBAL_ACTOR_ISOLATED_TYPES_USABILITY",
-            "INFER_ISOLATED_CONFORMANCES",
-            "INFER_SENDABLE_FROM_CAPTURES",
-            "NONISOLATED_NONSENDING_BY_DEFAULT",
-        ]
+            /// What `-enable-upcoming-feature` takes.
+            var name: String {
+                switch self {
+                case .conciseMagicFile: "ConciseMagicFile"
+                case .deprecateApplicationMain: "DeprecateApplicationMain"
+                case .disableOutwardActorInference: "DisableOutwardActorInference"
+                case .dynamicActorIsolation: "DynamicActorIsolation"
+                case .existentialAny: "ExistentialAny"
+                case .forwardTrailingClosures: "ForwardTrailingClosures"
+                case .globalActorIsolatedTypesUsability: "GlobalActorIsolatedTypesUsability"
+                case .globalConcurrency: "GlobalConcurrency"
+                case .implicitOpenExistentials: "ImplicitOpenExistentials"
+                case .importObjcForwardDeclarations: "ImportObjcForwardDeclarations"
+                case .inferIsolatedConformances: "InferIsolatedConformances"
+                case .inferSendableFromCaptures: "InferSendableFromCaptures"
+                case .internalImportsByDefault: "InternalImportsByDefault"
+                case .isolatedDefaultValues: "IsolatedDefaultValues"
+                case .memberImportVisibility: "MemberImportVisibility"
+                case .nonfrozenEnumExhaustivity: "NonfrozenEnumExhaustivity"
+                case .nonisolatedNonsendingByDefault: "NonisolatedNonsendingByDefault"
+                case .regionBasedIsolation: "RegionBasedIsolation"
+                }
+            }
+
+            /// `SWIFT_APPROACHABLE_CONCURRENCY` is not a flag of its own: it is the
+            /// default value of these five settings.
+            var isApproachableConcurrency: Bool {
+                switch self {
+                case .disableOutwardActorInference,
+                     .globalActorIsolatedTypesUsability,
+                     .inferIsolatedConformances,
+                     .inferSendableFromCaptures,
+                     .nonisolatedNonsendingByDefault:
+                    true
+                default:
+                    false
+                }
+            }
+        }
 
         private var approachableConcurrency: Bool {
-            settings["SWIFT_APPROACHABLE_CONCURRENCY"] == "YES"
+            settings.bool(.swiftApproachableConcurrency) == true
         }
 
         private var upcomingFeatureCopts: [String] {
-            Self.upcomingFeatures.flatMap { suffix, feature -> [String] in
-                let fallback = approachableConcurrency && Self.approachableConcurrencyFeatures.contains(suffix)
-                switch settings["SWIFT_UPCOMING_FEATURE_\(suffix)"] ?? (fallback ? "YES" : "NO") {
-                case "YES":
-                    return ["-enable-upcoming-feature", feature]
+            UpcomingFeature.allCases.flatMap { feature -> [String] in
+                let fallback = approachableConcurrency && feature.isApproachableConcurrency
+                let state: FeatureState? = if let value = settings[feature.rawValue] {
+                    FeatureState(rawValue: value)
+                } else {
+                    fallback ? .yes : .no
+                }
+                switch state {
+                case .yes:
+                    return ["-enable-upcoming-feature", feature.name]
                 /// A migrating feature is diagnosed but not enforced, and the
                 /// compiler spells that as a suffix on the feature's name.
-                case "MIGRATE":
-                    return ["-enable-upcoming-feature", "\(feature):migrate"]
+                case .migrate:
+                    return ["-enable-upcoming-feature", "\(feature.name):migrate"]
                 default:
                     return []
                 }
@@ -114,29 +148,31 @@ extension Xcode.BuildSettings {
         /// `SWIFT_ENABLE_BARE_SLASH_REGEX`, which Xcode turns on by default and
         /// `swiftc` does not.
         private var bareSlashRegexCopts: [String] {
-            settings["SWIFT_ENABLE_BARE_SLASH_REGEX"] == "NO" ? [] : ["-enable-bare-slash-regex"]
+            settings.bool(.swiftEnableBareSlashRegex) == false ? [] : ["-enable-bare-slash-regex"]
         }
 
         /// `SWIFT_STRICT_CONCURRENCY`: anything above `minimal` but short of
         /// `complete` is a frontend flag, `complete` is the upcoming feature.
         private var strictConcurrencyCopts: [String] {
-            switch settings["SWIFT_STRICT_CONCURRENCY"] {
-            case "targeted":
-                return ["-strict-concurrency=targeted"]
-            case .some(let value) where value != "minimal" && !value.isEmpty:
-                return ["-enable-upcoming-feature", "StrictConcurrency"]
-            default:
+            guard let value = settings[.swiftStrictConcurrency], !value.isEmpty else { return [] }
+            switch StrictConcurrency(rawValue: value) {
+            case .minimal:
                 return []
+            case .targeted:
+                return ["-strict-concurrency=targeted"]
+            /// `complete`, and anything stricter a later Xcode may spell.
+            case .complete, nil:
+                return ["-enable-upcoming-feature", "StrictConcurrency"]
             }
         }
 
         /// `SWIFT_STRICT_MEMORY_SAFETY`, which a Swift 6 module still has to ask
         /// for.
         private var memorySafetyCopts: [String] {
-            switch settings["SWIFT_STRICT_MEMORY_SAFETY"] {
-            case "YES":
+            switch settings[.swiftStrictMemorySafety].flatMap(FeatureState.init(rawValue:)) {
+            case .yes:
                 return ["-strict-memory-safety"]
-            case "MIGRATE":
+            case .migrate:
                 return ["-strict-memory-safety:migrate"]
             default:
                 return []

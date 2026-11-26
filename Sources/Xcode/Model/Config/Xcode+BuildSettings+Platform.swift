@@ -20,34 +20,34 @@ extension Xcode.BuildSettings {
         fileprivate let settings: Xcode.BuildSettings
 
         public var sdk: SDK? {
-            SDK(rawValue: settings["SDKROOT"] ?? "")
+            SDK(rawValue: settings[.sdkRoot] ?? "")
         }
 
         /// `SUPPORTED_PLATFORMS`, which decides the platform when `SDKROOT = auto`.
         public var supportedPlatforms: [SDK] {
-            (settings["SUPPORTED_PLATFORMS"] ?? "")
+            (settings[.supportedPlatforms] ?? "")
                 .split(separator: " ")
                 .compactMap { SDK(rawValue: String($0)) }
         }
 
         public var iOS: String? {
-            settings["IPHONEOS_DEPLOYMENT_TARGET"]
+            settings[.iphoneOSDeploymentTarget]
         }
 
         public var macOS: String? {
-            settings["MACOSX_DEPLOYMENT_TARGET"]
+            settings[.macOSXDeploymentTarget]
         }
 
         public var tvOS: String? {
-            settings["TVOS_DEPLOYMENT_TARGET"]
+            settings[.tvOSDeploymentTarget]
         }
 
         public var watchOS: String? {
-            settings["WATCHOS_DEPLOYMENT_TARGET"]
+            settings[.watchOSDeploymentTarget]
         }
 
         public var driverKit: String? {
-            settings["DRIVERKIT_DEPLOYMENT_TARGET"]
+            settings[.driverKitDeploymentTarget]
         }
 
         public var deploymentTargets: [String: String] {
@@ -92,7 +92,7 @@ extension Xcode.BuildSettings {
         }
 
         public var deviceFamily: [Xcode.DeviceFamily] {
-            Xcode.DeviceFamily.parse(settings["TARGETED_DEVICE_FAMILY"])
+            Xcode.DeviceFamily.parse(settings[.targetedDeviceFamily])
         }
 
         public var appleFamiliesLiteral: String? {

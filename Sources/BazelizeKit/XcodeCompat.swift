@@ -30,54 +30,44 @@ extension Dictionary where Key == String, Value == BuildSettings {
     }
 }
 
-extension Project {
-    fileprivate func target(named name: String) -> Target? {
-        targets.first { $0.name == name }
-    }
-}
-
 extension Target {
-    func select<T: Hashable>(_ keyPath: KeyPath<BuildSettings, T>, project _: Project) -> Starlark.Select<T> {
+    func select<T: Hashable>(_ keyPath: KeyPath<BuildSettings, T>, project _: borrowing Project) -> Starlark.Select<T> {
         configs.select(keyPath)
     }
 
-    fileprivate func isExtensionTarget(_ name: String, in project: Project) -> Bool {
-        guard let productType = project.target(named: name)?.productType else { return false }
-        return productType.contains("app-extension")
+    private func isExtensionTarget(_ name: String, in project: borrowing Project) -> Bool {
+        guard let productType = project.withTarget(named: name, { $0.productType }) ?? nil else { return false }
+        return productType.isAppExtension
     }
 
     /// A product that carries its own entry point or is a standalone bundle cannot be
     /// linked into another target: Xcode embeds it instead, and linking it would
     /// duplicate `main`.
-    fileprivate func isLinkableTarget(_ name: String, in project: Project) -> Bool {
-        guard let productType = project.target(named: name)?.productType else { return true }
+    private func isLinkableTarget(_ name: String, in project: borrowing Project) -> Bool {
+        guard let productType = project.withTarget(named: name, { $0.productType }) ?? nil else { return true }
 
         /// A test bundle is the exception: Xcode loads it into the host process, so
         /// the host's code has to be reachable. Bazel has no `-bundle_loader`
         /// equivalent for a logic test, so the host is linked in.
-        if isTest, productType == "com.apple.product-type.application" {
+        if isTest, productType == .application {
             return true
         }
 
         switch productType {
-        case "com.apple.product-type.application",
-             "com.apple.product-type.tool",
-             "com.apple.product-type.bundle",
-             "com.apple.product-type.bundle.unit-test",
-             "com.apple.product-type.bundle.ui-testing":
+        case .application, .commandLineTool, .bundle, .unitTestBundle, .uiTestBundle:
             return false
         default:
-            return !productType.contains("app-extension")
+            return !productType.isAppExtension
         }
     }
 
-    fileprivate func linkedTargetDependencyNames(project: Project) -> [String] {
+    private func linkedTargetDependencyNames(project: borrowing Project) -> [String] {
         dependencies.targets.filter { target in
-            isLinkableTarget(target, in: project) && project.target(named: target)?.hasSources != false
+            isLinkableTarget(target, in: project) && project.withTarget(named: target, { $0.hasSources }) != false
         }
     }
 
-    func embeddedExtensionTargetNames(project: Project) -> [String] {
+    func embeddedExtensionTargetNames(project: borrowing Project) -> [String] {
         dependencies.targets.filter { isExtensionTarget($0, in: project) }
     }
 
@@ -105,7 +95,7 @@ extension Target {
         return Array(Set(targetLabels + frameworkLabels)).sorted { $0.text < $1.text }
     }
 
-    func linkedFrameworksLibrary(project: Project) -> [Starlark.Label] {
+    func linkedFrameworksLibrary(project: borrowing Project) -> [Starlark.Label] {
         /// Every dependency is compiled and linked against as a library; a bundle
         /// that embeds one of them passes it in `frameworks` as well, and rules_apple
         /// then keeps those symbols out of the embedding binary.
@@ -120,7 +110,7 @@ extension Target {
         return Array(Set(targetLabels + frameworkLabels)).sorted { $0.text < $1.text }
     }
 
-    func linkedFrameworks(project: Project) -> [Starlark.Label] {
+    func linkedFrameworks(project: borrowing Project) -> [Starlark.Label] {
         let targetLabels = linkedTargetDependencyNames(project: project)
             .sorted()
             .map { target in
@@ -135,8 +125,8 @@ extension Target {
     /// Sibling frameworks Xcode copies into the bundle: the app links against the
     /// framework and loads it at runtime, so its resources stay in the framework and
     /// `Bundle(for:)` resolves there. Linking its library instead loses both.
-    func embeddedFrameworkNames(project: Project) -> [String] {
-        let siblings = Set(project.targets.map(\.name))
+    func embeddedFrameworkNames(project: borrowing Project) -> [String] {
+        let siblings = Set(project.targetNames)
 
         let names = files.copyFiles.compactMap { file -> String? in
             guard file.fileType == "wrapper.framework" else { return nil }
@@ -145,27 +135,26 @@ extension Target {
         }
 
         return Array(Set(names).intersection(siblings)).sorted().filter { name in
-            project.target(named: name)?.hasSources == true
+            project.withTarget(named: name, { $0.hasSources }) == true
         }
     }
 
-    /// The bundle that embeds this target, if any: an embedded bundle inherits the
-    /// parent's version and identifier prefix, which rules_apple insists on.
+    /// The position in `project.targets` of the bundle that embeds this target, if
+    /// any: an embedded bundle inherits the parent's version and identifier prefix,
+    /// which rules_apple insists on.
     ///
     /// `nil` when two applications embed it: one bundle cannot carry both prefixes,
     /// so the target stays a library linked into each of them, the way it was before
     /// it was recognized as embedded at all.
-    func embeddingBundle(project: Project?) -> Target? {
-        guard let project else { return nil }
-
-        let parents = project.targets.filter { parent in
-            parent.name != name
-                && (parent.embeddedFrameworkNames(project: project).contains(name)
-                    || parent.embeddedExtensionTargetNames(project: project).contains(name))
+    func embeddingBundleIndex(project: borrowing Project) -> Int? {
+        let parents = project.targets.indices.filter { index in
+            project.targets[index].name != name
+                && (project.targets[index].embeddedFrameworkNames(project: project).contains(name)
+                    || project.targets[index].embeddedExtensionTargetNames(project: project).contains(name))
         }
 
-        let applications = parents.filter { parent in
-            parent.productType == "com.apple.product-type.application"
+        let applications = parents.filter { index in
+            project.targets[index].productType == .application
         }
         guard applications.count <= 1 else { return nil }
 
@@ -179,7 +168,7 @@ extension Target {
     ///
     /// Apple requires the prefix and rules_apple enforces it; Xcode does not, so a
     /// framework in the same project routinely carries an unrelated identifier.
-    func bundleIdentifier(project: Project?) -> String? {
+    func bundleIdentifier(project: borrowing Project) -> String? {
         /// rules_apple substitutes nothing here, so a reference Xcode would have
         /// expanded — UTM spells every identifier
         /// `$(PRODUCT_BUNDLE_PREFIX:default=com.utmapp).X` — is expanded first.
@@ -192,8 +181,8 @@ extension Target {
             }
 
         guard
-            let parent = embeddingBundle(project: project),
-            let parentID = parent.bundleIdentifier(project: project),
+            let parent = embeddingBundleIndex(project: project),
+            let parentID = project.targets[parent].bundleIdentifier(project: project),
             let own, !own.hasPrefix("\(parentID).")
         else {
             return own
@@ -203,19 +192,20 @@ extension Target {
         return "\(parentID).\(suffix)"
     }
 
-    func embeddedFrameworks(project: Project) -> [Starlark.Label] {
+    func embeddedFrameworks(project: borrowing Project) -> [Starlark.Label] {
         embeddedFrameworkNames(project: project)
             .filter { target in
-                project.target(named: target)?.embeddingBundle(project: project)?.name == name
+                let parent = project.withTarget(named: target) { $0.embeddingBundleIndex(project: project) } ?? nil
+                return parent.map { project.targets[$0].name } == name
             }
             .map { target in
                 Starlark.Label.named("//Targets/\(target):\(target)")
             }
     }
 
-    func embeddedExtensions(project: Project) -> [Starlark.Label] {
+    func embeddedExtensions(project: borrowing Project) -> [Starlark.Label] {
         embeddedExtensionTargetNames(project: project)
-            .filter { project.target(named: $0)?.hasSources == true }
+            .filter { project.withTarget(named: $0, { $0.hasSources }) == true }
             .sorted()
             .map { target in
                 Starlark.Label.named("//Targets/\(target):\(target)")

@@ -1,4 +1,6 @@
+import Commands
 import Foundation
+import Xcode
 
 // MARK: - Toolchain
 
@@ -17,13 +19,13 @@ import Foundation
 struct Toolchain: Sendable {
     /// What Xcode would set for a target built against `sdk`, which is the
     /// project's `SDKROOT`.
-    func settings(sdk: String?) -> [String: String] {
+    func settings(sdk: String?) -> [Xcode.BuildSettings.Key: String] {
         guard let platform = canonical(sdk), let sdk = sdks[platform] else { return xcode }
 
         return xcode.merging([
-            "PLATFORM_NAME": platform,
-            "SDK_NAME": sdk.name,
-            "SDK_VERSION": sdk.version,
+            .platformName: platform,
+            .sdkName: sdk.name,
+            .sdkVersion: sdk.version,
         ]) { _, new in new }
     }
 
@@ -52,7 +54,7 @@ struct Toolchain: Sendable {
     }
 
     private let sdks: [String: (name: String, version: String)]
-    private let xcode: [String: String]
+    private let xcode: [Xcode.BuildSettings.Key: String]
 
     // One immutable discovery shared by concurrent project loads. A cancelled
     // consumer must not cancel discovery used by another consumer.
@@ -63,7 +65,7 @@ struct Toolchain: Sendable {
     }
 
     private static func discover() async -> Self {
-        async let sdkQuery = try? Commands.installedSDKs()
+        async let sdkQuery = try? JSONDecoder().decode([SDK].self, from: Commands.installedSDKs())
         async let versionQuery = try? Commands.xcodeVersion()
         let (sdks, output) = await (sdkQuery, versionQuery)
         let version = output?.split(separator: "\n").first?.split(separator: " ").last
@@ -88,16 +90,16 @@ struct Toolchain: Sendable {
     /// How Xcode spells its own version: a four digit number, so 27.0 is `2700`
     /// and 14.3.1 is `1431`. `MAJOR` keeps only the major, `MINOR` drops the
     /// patch.
-    static func settings(xcodeVersion version: String) -> [String: String] {
+    static func settings(xcodeVersion version: String) -> [Xcode.BuildSettings.Key: String] {
         let components = version.split(separator: ".").compactMap { Int($0) }
         guard let major = components.first else { return [:] }
         let minor = components.count > 1 ? components[1] : 0
         let patch = components.count > 2 ? components[2] : 0
 
         return [
-            "XCODE_VERSION_ACTUAL": "\(major * 100 + minor * 10 + patch)",
-            "XCODE_VERSION_MAJOR": "\(major * 100)",
-            "XCODE_VERSION_MINOR": "\(major * 100 + minor * 10)",
+            .xcodeVersionActual: "\(major * 100 + minor * 10 + patch)",
+            .xcodeVersionMajor: "\(major * 100)",
+            .xcodeVersionMinor: "\(major * 100 + minor * 10)",
         ]
     }
 }

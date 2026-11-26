@@ -11,21 +11,21 @@ extension Target {
     /// team prefix while signing; rules_apple substitutes neither, and its
     /// `plisttool` fails the build on a variable it does not know.
     /// Variables rules_apple's `plisttool` substitutes into entitlements itself.
-    fileprivate static let entitlementVariables: Set<String> = ["CFBundleIdentifier"]
+    fileprivate static let entitlementVariables: Set = [PlistKey.bundleIdentifier.rawValue]
 
     var entitlementsPath: String? {
         guard let entitlements = metadata.entitlements, !entitlements.isEmpty else { return nil }
         return "Generated/\(Path(entitlements).lastComponent)"
     }
 
-    func entitlementsLabel(project: Project?) -> Starlark.Label? {
+    func entitlementsLabel(project: borrowing Project) -> Starlark.Label? {
         entitlementsContent(project: project) == nil ? nil : .named(entitlementsPath ?? "")
     }
 
     /// `nil` when the target declares no entitlements, or when the file is missing:
     /// the rule attribute has to disappear with it.
-    func entitlementsContent(project: Project?) -> String? {
-        guard let project, let entitlements = metadata.entitlements, !entitlements.isEmpty else { return nil }
+    func entitlementsContent(project: borrowing Project) -> String? {
+        guard let entitlements = metadata.entitlements, !entitlements.isEmpty else { return nil }
 
         let path = Path(project.workspacePath) + entitlements
         guard
@@ -51,6 +51,8 @@ extension Target {
     /// The `dict` is a flat `<key>`/value sequence, so a dropped key takes the
     /// element that follows it with it.
     private func resolvedEntitlementEntries(_ nodes: [XMLNode]) -> [XMLElement] {
+        /// The log message escapes, and a borrowed target cannot go with it.
+        let name = name
         let settings = selectedSettings
         var result: [XMLElement] = []
         var pendingKey: XMLElement?

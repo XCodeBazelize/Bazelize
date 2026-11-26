@@ -4,11 +4,11 @@ import Foundation
 
 extension Xcode {
     public enum TargetSummaryFormatter {
-        public static func format(project: Xcode.Project, target: Xcode.Target) -> String {
+        public static func format(project: borrowing Xcode.Project, target: borrowing Xcode.Target) -> String {
             var lines: [String] = []
 
             lines.append("Target: \(target.name)")
-            lines.append("Type: \(target.productType ?? "<unknown>")")
+            lines.append("Type: \(target.productType?.rawValue ?? "<unknown>")")
 
             if let productName = target.productName {
                 lines.append("Product Name: \(productName)")

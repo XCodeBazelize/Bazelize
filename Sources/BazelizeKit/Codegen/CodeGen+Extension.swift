@@ -9,7 +9,7 @@ import Foundation
 
 extension Target {
     // MARK: Internal
-    
+
     func generateExtension(_ builder: CodeBuilder, _ kit: Kit) {
         switch platformSDK {
         case .iOS: buildIOS(builder, kit)
@@ -21,17 +21,16 @@ extension Target {
     /// An XPC service is its own bundle inside `Contents/XPCServices`, which the
     /// application's copy phase puts it in.
     func generateXPCService(_ builder: CodeBuilder, _ kit: Kit) {
-        let project = kit.project
         builder.load(.macos_xpc_service)
         builder.call(
             Rules.Apple.MacOS.Call.macos_xpc_service(
                 name: name,
-                additional_contents: additionalContents(project: project),
-                bundle_id: bundleIdentifier(project: project),
+                additional_contents: additionalContents(project: kit.project),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                 },
-                entitlements: entitlementsLabel(project: project),
+                entitlements: entitlementsLabel(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
@@ -39,7 +38,7 @@ extension Target {
                 },
                 minimum_os_version: prefer(\.platform.macOS),
                 resources: .build {
-                    bundleResources(project: project)
+                    bundleResources(project: kit.project)
                 },
                 strings: .build {
                     if !allStrings.isEmpty {
@@ -50,18 +49,17 @@ extension Target {
     }
 
     private func buildMac(_ builder: CodeBuilder, _ kit: Kit) {
-        let project = kit.project
         builder.load(.macos_extension)
         builder.call(
             Rules.Apple.MacOS.Call.macos_extension(
                 name: name,
-                additional_contents: additionalContents(project: project),
-                bundle_id: bundleIdentifier(project: project),
+                additional_contents: additionalContents(project: kit.project),
+                bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
                 },
-                entitlements: entitlementsLabel(project: project),
-                frameworks: embeddedFrameworks(project: project),
+                entitlements: entitlementsLabel(project: kit.project),
+                frameworks: embeddedFrameworks(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
@@ -69,7 +67,7 @@ extension Target {
                 },
                 minimum_os_version: prefer(\.platform.macOS),
                 resources: .build {
-                    bundleResources(project: project)
+                    bundleResources(project: kit.project)
                 },
                 strings: .build {
                     if !allStrings.isEmpty {
@@ -78,7 +76,7 @@ extension Target {
                 },
                 visibility: .public))
     }
-    
+
     private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
         builder.load(.ios_extension)
         //        families = ["iphone", "ipad"],

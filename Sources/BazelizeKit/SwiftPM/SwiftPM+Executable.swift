@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// An executable target becomes a `swift_binary`: it has a `main`, so it links
@@ -37,7 +38,7 @@ extension SwiftPM.Generator {
                 srcs: sources(
                     naming: resources?.accessors ?? [],
                     globbing: matching(
-                        sources(of: target, prefix: prefix, extensions: ["swift"]),
+                        sources(of: target, prefix: prefix, extensions: [.swift]),
                         relativeFiles(of: target, in: package, prefix: prefix))
                         + generated,
                     excluding: excluded(target, prefix: prefix)),
@@ -71,7 +72,7 @@ extension SwiftPM.Generator {
         }.sorted()
 
         for source in ((try? directory.children()) ?? [])
-            .filter({ $0.extension == "swift" })
+            .filter({ FileExtension(path: $0.string) == .swift })
             .sorted(by: { $0.lastComponent < $1.lastComponent })
         {
             let name = source.lastComponentWithoutExtension

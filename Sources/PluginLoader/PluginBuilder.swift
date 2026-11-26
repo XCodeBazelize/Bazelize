@@ -5,9 +5,9 @@
 //  Created by Yume on 2022/8/24.
 //
 
+import Commands
 import Foundation
 @preconcurrency import PathKit
-import Subprocess
 import Util
 
 // MARK: - PluginCompiler
@@ -87,17 +87,5 @@ enum PluginCompiler {
             Log.pluginLoader.info("cp \(from.string) \(to.string)")
             try from.copy(to)
         }
-    }
-}
-
-
-// MARK: - CommandError
-
-struct CommandError: Error, CustomStringConvertible {
-    let command: String
-    let status: Subprocess.TerminationStatus
-
-    var description: String {
-        "`\(command)` failed with \(status)"
     }
 }

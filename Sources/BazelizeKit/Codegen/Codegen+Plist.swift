@@ -49,7 +49,7 @@ extension Target {
     ///
     /// Read from the fragment rather than the source `Info.plist`, so a key dropped
     /// for being unresolvable still gets its build-setting default.
-    func infoPlistKeys(project: Project?) -> Set<String> {
+    func infoPlistKeys(project: borrowing Project) -> Set<String> {
         guard let content = plistContent(project: project) else { return [] }
         guard let regex = try? NSRegularExpression(pattern: #"<key>([^<]+)</key>"#) else { return [] }
 
@@ -64,7 +64,7 @@ extension Target {
 
     /// One resolved value out of the target's own `Info.plist`, which outranks the
     /// build setting a default would fall back to.
-    func infoPlistString(_ key: String, project: Project?) -> String? {
+    func infoPlistString(_ key: PlistKey, project: borrowing Project) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
         let settings = selectedSettings
@@ -79,15 +79,14 @@ extension Target {
             }
 
             defer { pendingKey = nil }
-            guard pendingKey == key, element.name == "string" else { continue }
+            guard pendingKey == key.rawValue, element.name == "string" else { continue }
             return element.stringValue?.resolvingBuildSettingReferences(with: settings)
         }
 
         return nil
     }
 
-    private func infoPlistNodes(project: Project?) -> [XMLNode]? {
-        guard let project else { return nil }
+    private func infoPlistNodes(project: borrowing Project) -> [XMLNode]? {
         guard let plistPath = prefer(\.plist.infoPlist) else { return nil }
 
         let path = Path(project.workspacePath) + plistPath
@@ -100,7 +99,7 @@ extension Target {
             .children
     }
 
-    private func plistContent(project: Project?) -> String? {
+    private func plistContent(project: borrowing Project) -> String? {
         guard let nodes = infoPlistNodes(project: project) else { return nil }
 
         /// Keys `plisttool` cannot resolve for this product are as unusable in the
@@ -109,7 +108,7 @@ extension Target {
         var dropped = unsupportedDefaultPlistKeys
         dropped.formUnion(appIcons(project: project) == nil ? [] : Self.iconKeys)
         /// The version an embedded bundle declares has to give way to its parent's.
-        if embeddingBundle(project: project) != nil {
+        if embeddingBundleIndex(project: project) != nil {
             dropped.formUnion(Self.versionPatterns.keys)
         }
         return entries(nodes, dropping: dropped).withNewLine.escapedForPlistFragment
@@ -117,10 +116,10 @@ extension Target {
 
     /// `macos_application`/`ios_application` derive these from `app_icons`, and
     /// `plisttool` fails the build when a fragment disagrees with what it wrote.
-    private static let iconKeys: Set<String> = [
-        "CFBundleIconFile",
-        "CFBundleIconFiles",
-        "CFBundleIconName",
+    private static let iconKeys: Set<PlistKey> = [
+        .bundleIconFile,
+        .bundleIconFiles,
+        .bundleIconName,
     ]
 
     /// The plist `dict` is a flat `<key>`/value sequence, so a dropped key takes the
@@ -129,7 +128,9 @@ extension Target {
     /// Entries whose value still references an unresolvable build setting are
     /// dropped as well: `plisttool` fails the build on a variable it cannot
     /// substitute, e.g. Xcode built-ins like `$(SDK_VERSION)`.
-    private func entries(_ nodes: [XMLNode], dropping keys: Set<String>) -> [String] {
+    private func entries(_ nodes: [XMLNode], dropping keys: Set<PlistKey>) -> [String] {
+        /// The log message escapes, and a borrowed target cannot go with it.
+        let name = name
         let settings = selectedSettings
         var result: [String] = []
         var pendingKey: (name: String, xml: String)?
@@ -140,7 +141,9 @@ extension Target {
 
             let xml = element
                 .xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
-                .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
+                .replacingOccurrences(
+                    of: BuildSettings.Key.productModuleName.reference,
+                    with: BuildSettings.Key.productName.reference)
                 .resolvingBuildSettingReferences(with: settings)
 
             if element.name == "key" {
@@ -154,7 +157,8 @@ extension Target {
             }
             pendingKey = nil
 
-            guard !keys.contains(key.name) else { continue }
+            let plistKey = PlistKey(rawValue: key.name)
+            guard !(plistKey.map(keys.contains) ?? false) else { continue }
 
             if xml.hasUnresolvedBuildSettingReference() {
                 Log.codeGenerate.warning("""
@@ -164,7 +168,7 @@ extension Target {
                 continue
             }
 
-            if isInvalidVersion(key: key.name, value: element.stringValue ?? "") {
+            if isInvalidVersion(key: plistKey, value: element.stringValue ?? "") {
                 Log.codeGenerate.warning("""
                 Drop Info.plist key \(key.name, privacy: .public) of \
                 \(name, privacy: .public): value is not a valid version
@@ -183,22 +187,22 @@ extension Target {
     /// the real number in later — MacPass writes a literal `UNDEFINED`. rules_apple
     /// validates the format instead, so an unusable value is dropped and the
     /// build-setting default takes over.
-    private func isInvalidVersion(key: String, value: String) -> Bool {
-        guard let pattern = Self.versionPatterns[key] else { return false }
+    private func isInvalidVersion(key: PlistKey?, value: String) -> Bool {
+        guard let key, let pattern = Self.versionPatterns[key] else { return false }
         guard !value.contains("$(") else { return false }
         return value.range(of: pattern, options: .regularExpression) == nil
     }
 
     /// What rules_apple accepts for each key, mirroring its `plisttool`.
-    private static let versionPatterns: [String: String] = [
-        "CFBundleVersion": #"^[0-9]+(\.[0-9]+){0,3}([a-z]+[0-9]{1,3})?$"#,
-        "CFBundleShortVersionString": #"^[0-9]+(\.[0-9]+){0,3}$"#,
+    private static let versionPatterns: [PlistKey: String] = [
+        .bundleVersion: #"^[0-9]+(\.[0-9]+){0,3}([a-z]+[0-9]{1,3})?$"#,
+        .bundleShortVersionString: #"^[0-9]+(\.[0-9]+){0,3}$"#,
     ]
 
     /// A build setting is no better a source than the `Info.plist`: MacPass sets
     /// `CURRENT_PROJECT_VERSION` to `${CURRENT_PROJECT_VERSION}`, which is neither a
     /// version nor something `plist_fragment` can carry.
-    private func version(_ value: String?, key: String) -> String? {
+    private func version(_ value: String?, key: PlistKey) -> String? {
         guard let value, !value.isEmpty, !value.contains("$") else { return nil }
         guard let pattern = Self.versionPatterns[key] else { return value }
         return value.range(of: pattern, options: .regularExpression) == nil ? nil : value
@@ -212,14 +216,14 @@ extension String {
 
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
-    static let plistToolVariables: Set<String> = [
-        "BUNDLE_NAME",
-        "DEVELOPMENT_LANGUAGE",
-        "EXECUTABLE_NAME",
-        "PRODUCT_BUNDLE_IDENTIFIER",
-        "PRODUCT_NAME",
-        "TARGET_NAME",
-    ]
+    static let plistToolVariables = Set([
+        BuildSettings.Key.bundleName,
+        .developmentLanguage,
+        .executableName,
+        .productBundleIdentifier,
+        .productName,
+        .targetName,
+    ].map(\.rawValue))
 
     /// Expands the remaining `$(SETTING)` references from the target's build
     /// settings. `plisttool` only knows a handful of variables, so anything else
@@ -313,9 +317,8 @@ extension Target {
         return settings.generatedPlist.enabled && !settings.generatedPlist.entries.isEmpty
     }
 
-    private func isGeneratePlistAuto(project: Project?) -> Bool {
-        guard project != nil else { return false }
-        return hasGeneratedPlistEntries
+    private func isGeneratePlistAuto(project _: borrowing Project) -> Bool {
+        hasGeneratedPlistEntries
     }
 }
 
@@ -350,24 +353,23 @@ extension Target {
 
     // MARK: Private
 
-    private func isGeneratePlistDefault(project: Project?) -> Bool {
-        guard project != nil else { return false }
-        return !defaultPlistFragments(for: selectedSettings, project: project).isEmpty
+    private func isGeneratePlistDefault(project: borrowing Project) -> Bool {
+        !defaultPlistFragments(for: selectedSettings, project: project).isEmpty
     }
 
     /// `plisttool` substitutes only a handful of variables, so a default whose value
     /// it cannot resolve has to be dropped: `macos_command_line_application` bundles
     /// no executable.
-    var unsupportedDefaultPlistKeys: Set<String> {
-        var keys: Set<String> = []
-        if productType == "com.apple.product-type.tool" {
-            keys.insert("CFBundleExecutable")
+    var unsupportedDefaultPlistKeys: Set<PlistKey> {
+        var keys: Set<PlistKey> = []
+        if productType == .commandLineTool {
+            keys.insert(.bundleExecutable)
         }
         /// `plisttool` substitutes `$(PRODUCT_BUNDLE_IDENTIFIER)` from the rule's
         /// `bundle_id`, which a target without one — iina's command line tools —
         /// never sets.
         if prefer(\.metadata.bundleID) == nil {
-            keys.insert("CFBundleIdentifier")
+            keys.insert(.bundleIdentifier)
         }
         return keys
     }
@@ -378,41 +380,39 @@ extension Target {
     /// rejects two fragments that disagree on one key.
     private func defaultPlistFragments(
         for settings: BuildSettings,
-        project: Project?,
+        project: borrowing Project,
         skipping existing: Set<String> = [])
         -> [String]
     {
         /// rules_apple requires an embedded bundle to carry the version of the bundle
         /// that embeds it — Apple's own rule, which Xcode never enforces.
-        let parent = embeddingBundle(project: project)
-        let currentVersion = parent.map { bundle in
-            bundle.infoPlistString("CFBundleVersion", project: project)
-                ?? bundle.prefer(\.generatedPlist.currentProjectVersion)
+        let parent = embeddingBundleIndex(project: project)
+        let currentVersion = parent.map { index in
+            project.targets[index].infoPlistString(.bundleVersion, project: project)
+                ?? project.targets[index].prefer(\.generatedPlist.currentProjectVersion)
         } ?? settings.generatedPlist.currentProjectVersion
-        let shortVersion = parent.map { bundle in
-            bundle.infoPlistString("CFBundleShortVersionString", project: project)
-                ?? bundle.prefer(\.generatedPlist.marketingVersion)
+        let shortVersion = parent.map { index in
+            project.targets[index].infoPlistString(.bundleShortVersionString, project: project)
+                ?? project.targets[index].prefer(\.generatedPlist.marketingVersion)
         } ?? settings.generatedPlist.marketingVersion
 
-        let defaults = [
-            ("CFBundleName", "$(PRODUCT_NAME)"),
-            ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
+        let defaults: [(PlistKey, String)] = [
+            (.bundleName, BuildSettings.Key.productName.reference),
+            (.bundleIdentifier, BuildSettings.Key.productBundleIdentifier.reference),
             /// `plisttool` cannot resolve these, and rules_apple rejects a bundle
             /// without them, so an unset setting falls back to Xcode's own template
             /// values instead of a literal `$(SETTING)`.
-            ("CFBundleVersion", version(currentVersion, key: "CFBundleVersion") ?? "1"),
-            ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
-            ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
-            (
-                "CFBundleShortVersionString",
-                version(shortVersion, key: "CFBundleShortVersionString") ?? "1.0"),
+            (.bundleVersion, version(currentVersion, key: .bundleVersion) ?? "1"),
+            (.bundleExecutable, BuildSettings.Key.executableName.reference),
+            (.bundleDevelopmentRegion, BuildSettings.Key.developmentLanguage.reference),
+            (.bundleShortVersionString, version(shortVersion, key: .bundleShortVersionString) ?? "1.0"),
         ]
 
         return defaults
-            .filter { key, _ in !existing.contains(key) && !unsupportedDefaultPlistKeys.contains(key) }
+            .filter { key, _ in !existing.contains(key.rawValue) && !unsupportedDefaultPlistKeys.contains(key) }
             .map { key, value in
                 """
-                <key>\(key)</key>
+                <key>\(key.rawValue)</key>
                 <string>\(value)</string>
                 """
             }
