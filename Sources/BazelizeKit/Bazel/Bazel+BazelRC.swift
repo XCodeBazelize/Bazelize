@@ -28,7 +28,7 @@ extension Bazel {
         mutating
         func setup(
             project: borrowing Project,
-            packages: [String: String] = [:])
+            packages: SwiftPM.Deployment.Floors = [:])
         {
             let configs = project.config?.keys.map { $0 } ?? []
             let modes = configs.map { config in
@@ -60,14 +60,14 @@ extension Bazel {
         /// default, where a back-port the graph still reaches is unavailable.
         private static func minimumOSFlags(
             project: borrowing Project,
-            packages: [String: String])
+            packages: SwiftPM.Deployment.Floors)
             -> [String]
         {
-            let platforms: [(flag: String, platform: String, keyPath: KeyPath<BuildSettings, String?>)] = [
-                ("ios_minimum_os", "ios", \.platform.iOS),
-                ("macos_minimum_os", "macos", \.platform.macOS),
-                ("tvos_minimum_os", "tvos", \.platform.tvOS),
-                ("watchos_minimum_os", "watchos", \.platform.watchOS),
+            let platforms: [(flag: String, platform: SwiftPM.ApplePlatform, keyPath: KeyPath<BuildSettings, String?>)] = [
+                ("ios_minimum_os", .iOS, \.platform.iOS),
+                ("macos_minimum_os", .macOS, \.platform.macOS),
+                ("tvos_minimum_os", .tvOS, \.platform.tvOS),
+                ("watchos_minimum_os", .watchOS, \.platform.watchOS),
             ]
 
             return platforms.compactMap { platform in

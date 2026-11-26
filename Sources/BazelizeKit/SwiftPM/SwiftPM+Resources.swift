@@ -161,7 +161,7 @@ extension SwiftPM.Generator {
                 plist: plist,
                 resources: resourceInputs),
             kind: kind,
-            macOSMinimum: deployment.required(package, platform: "macos"),
+            macOSMinimum: deployment.required(package, platform: .macOS),
             runfiles: executableReach.contains(
                 TargetKey(package: package.directory, target: target.name)),
             builder: builder)
