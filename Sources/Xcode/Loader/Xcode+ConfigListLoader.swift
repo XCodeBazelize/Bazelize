@@ -2,6 +2,8 @@ import Foundation
 import PathKit
 import XcodeProj
 
+// MARK: - ConfigListLoader
+
 struct ConfigListLoader: Hashable {
     let native: XCConfigurationList?
     let sourceRoot: Path
@@ -119,5 +121,16 @@ struct ConfigListLoader: Hashable {
             value = String(value.dropLast()).trimmingCharacters(in: .whitespaces)
         }
         return value
+    }
+}
+
+extension BuildSetting {
+    var value: String {
+        switch self {
+        case .string(let value):
+            return value
+        case .array(let value):
+            return value.joined(separator: " ")
+        }
     }
 }

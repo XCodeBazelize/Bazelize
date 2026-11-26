@@ -1,16 +1,4 @@
 import Foundation
-import XcodeProj
-
-extension BuildSetting {
-    var value: String {
-        switch self {
-        case .string(let value):
-            return value
-        case .array(let value):
-            return value.joined(separator: " ")
-        }
-    }
-}
 
 // MARK: - Xcode.BuildSettings
 
@@ -22,12 +10,6 @@ extension Xcode {
         public init(name: String, setting: [String: String]) {
             self.name = name
             self.setting = setting
-        }
-
-        init(_ config: XCBuildConfiguration) {
-            self.init(
-                name: config.name,
-                setting: config.buildSettings.mapValues(\.value))
         }
 
         func merged(with defaults: BuildSettings?) -> BuildSettings {

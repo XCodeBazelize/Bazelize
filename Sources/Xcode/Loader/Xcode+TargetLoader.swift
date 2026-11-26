@@ -105,7 +105,7 @@ struct TargetLoader {
         return Xcode.Target(
             name: name,
             productName: native.productName,
-            productType: native.productType,
+            productType: native.productType.flatMap { Xcode.ProductType(rawValue: $0.rawValue) },
             preferConfig: preferConfig,
             configs: mergedConfig,
             metadata: metadata,

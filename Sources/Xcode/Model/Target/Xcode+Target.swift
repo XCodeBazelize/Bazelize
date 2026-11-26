@@ -1,5 +1,4 @@
 import Foundation
-import XcodeProj
 
 // MARK: - Xcode.Target
 
@@ -12,7 +11,7 @@ extension Xcode {
     public struct Target: ~Copyable {
         public let name: String
         public let productName: String?
-        public let productType: PBXProductType?
+        public let productType: ProductType?
         public let preferConfig: String?
         public let configs: [String: BuildSettings]
         public let metadata: TargetMetadata
@@ -81,12 +80,7 @@ extension Xcode.Target {
     }
 
     public var isTest: Bool {
-        switch productType {
-        case .unitTestBundle, .uiTestBundle:
-            return true
-        default:
-            return false
-        }
+        productType?.isTest == true
     }
 
     public var headers: [String] {
