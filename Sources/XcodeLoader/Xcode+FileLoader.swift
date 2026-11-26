@@ -1,6 +1,10 @@
 import Foundation
 import PathKit
-import XcodeProj
+import Xcode
+import enum XcodeProj.BuildPhase
+import class XcodeProj.PBXFileElement
+import class XcodeProj.PBXFileReference
+import class XcodeProj.PBXGroup
 
 // MARK: - KnownFileType
 

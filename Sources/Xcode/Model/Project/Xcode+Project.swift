@@ -17,16 +17,26 @@ extension Xcode {
         /// through the subscript or `forEachTarget`; a target is never copied.
         public let targets: UniqueArray<Target>
 
-        public static func load(path: Path, preferConfig: String?) async throws -> Self {
-            if let manifest = Self.manifest(at: path) {
-                return package(at: manifest)
-            }
-
-            return try await ProjectLoader(path: path, preferConfig: preferConfig).model()
+        package init(
+            name: String,
+            workspacePath: String,
+            projectPath: String,
+            preferConfig: String?,
+            configs: [String: BuildSettings],
+            packages: Packages,
+            targets: consuming UniqueArray<Target>)
+        {
+            self.name = name
+            self.workspacePath = workspacePath
+            self.projectPath = projectPath
+            self.preferConfig = preferConfig
+            self.configs = configs
+            self.packages = packages
+            self.targets = targets
         }
 
         /// The `Package.swift` a path names, directly or as its directory.
-        static func manifest(at path: Path) -> Path? {
+        package static func manifest(at path: Path) -> Path? {
             if path.lastComponent == "Package.swift", path.exists { return path }
 
             let manifest = path + "Package.swift"
@@ -41,7 +51,7 @@ extension Xcode {
         /// A package given directly is the same thing — the one local package of a
         /// project that has nothing else in it — so nothing else has to know the
         /// input was a manifest.
-        private static func package(at manifest: Path) -> Self {
+        package static func package(at manifest: Path) -> Self {
             let root = manifest.parent().absolute()
 
             return .init(

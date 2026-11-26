@@ -1,5 +1,6 @@
 import Testing
 @testable import Xcode
+@testable import XcodeLoader
 
 /// The values Xcode fills in from the toolchain, which a project writes into its
 /// `Info.plist` and expects to read back in Xcode's own spelling.

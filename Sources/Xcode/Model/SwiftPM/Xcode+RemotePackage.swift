@@ -12,5 +12,11 @@ extension Xcode {
         public let name: String?
         public let repositoryURL: String?
         public let version: Requirement?
+
+        package init(name: String?, repositoryURL: String?, version: Requirement?) {
+            self.name = name
+            self.repositoryURL = repositoryURL
+            self.version = version
+        }
     }
 }

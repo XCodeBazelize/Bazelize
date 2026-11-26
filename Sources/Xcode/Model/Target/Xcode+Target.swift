@@ -18,6 +18,28 @@ extension Xcode {
         public let buildPhases: [BuildPhase]
         public let files: Files
         public let dependencies: Dependencies
+
+        package init(
+            name: String,
+            productName: String?,
+            productType: ProductType?,
+            preferConfig: String?,
+            configs: [String: BuildSettings],
+            metadata: TargetMetadata,
+            buildPhases: [BuildPhase],
+            files: Files,
+            dependencies: Dependencies)
+        {
+            self.name = name
+            self.productName = productName
+            self.productType = productType
+            self.preferConfig = preferConfig
+            self.configs = configs
+            self.metadata = metadata
+            self.buildPhases = buildPhases
+            self.files = files
+            self.dependencies = dependencies
+        }
     }
 }
 

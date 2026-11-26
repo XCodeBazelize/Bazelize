@@ -1,6 +1,9 @@
 import Foundation
 import PathKit
-import XcodeProj
+import Xcode
+import enum XcodeProj.BuildSetting
+import class XcodeProj.XCBuildConfiguration
+import class XcodeProj.XCConfigurationList
 
 // MARK: - ConfigListLoader
 

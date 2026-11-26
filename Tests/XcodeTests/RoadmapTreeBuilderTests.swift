@@ -3,6 +3,7 @@ import Foundation
 import PathKit
 import Testing
 @testable import Xcode
+@testable import XcodeLoader
 
 struct RoadmapTreeBuilderTests {
     @Test(arguments: [false, true])

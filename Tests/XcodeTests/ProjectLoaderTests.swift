@@ -1,6 +1,7 @@
 import PathKit
 import Testing
 @testable import Xcode
+@testable import XcodeLoader
 
 struct ProjectLoaderTests {
     @Test

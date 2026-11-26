@@ -8,7 +8,15 @@
 import BasicContainers
 import Foundation
 import PathKit
-import XcodeProj
+import Xcode
+import class XcodeProj.PBXFileElement
+import class XcodeProj.PBXFileSystemSynchronizedBuildFileExceptionSet
+import class XcodeProj.PBXFileSystemSynchronizedRootGroup
+import class XcodeProj.PBXNativeTarget
+import class XcodeProj.PBXProj
+import class XcodeProj.PBXProject
+import class XcodeProj.XcodeProj
+import class XcodeProj.XCRemoteSwiftPackageReference
 
 // MARK: - ProjectLoader
 

@@ -1,6 +1,17 @@
 import Foundation
 import PathKit
-import XcodeProj
+import Xcode
+import enum XcodeProj.BuildPhase
+import class XcodeProj.PBXBuildFile
+import class XcodeProj.PBXBuildPhase
+import class XcodeProj.PBXCopyFilesBuildPhase
+import class XcodeProj.PBXFileReference
+import class XcodeProj.PBXFileSystemSynchronizedBuildFileExceptionSet
+import class XcodeProj.PBXFileSystemSynchronizedRootGroup
+import class XcodeProj.PBXHeadersBuildPhase
+import class XcodeProj.PBXNativeTarget
+import class XcodeProj.PBXShellScriptBuildPhase
+import class XcodeProj.PBXVariantGroup
 
 // MARK: - TargetLoader
 

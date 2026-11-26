@@ -12,7 +12,7 @@ extension Xcode {
             self.setting = setting
         }
 
-        func merged(with defaults: BuildSettings?) -> BuildSettings {
+        package func merged(with defaults: BuildSettings?) -> BuildSettings {
             guard let defaults else {
                 return self
             }
@@ -24,7 +24,7 @@ extension Xcode {
                 })
         }
 
-        func with(overrides: [Key: String]) -> BuildSettings {
+        package func with(overrides: [Key: String]) -> BuildSettings {
             .init(
                 name: name,
                 setting: setting.merging(overrides.lazy.map { ($0.key.rawValue, $0.value) }) { _, new in
@@ -33,7 +33,7 @@ extension Xcode {
         }
 
         /// Values for the settings this configuration does not state itself.
-        func with(defaults: [Key: String]) -> BuildSettings {
+        package func with(defaults: [Key: String]) -> BuildSettings {
             .init(
                 name: name,
                 setting: setting.merging(defaults.lazy.map { ($0.key.rawValue, $0.value) }) { current, _ in

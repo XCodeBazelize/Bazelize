@@ -1,6 +1,7 @@
 import Foundation
 import PathKit
 import Testing
+import XcodeLoader
 @testable import Xcode
 
 struct JSONProjectLoaderTests {

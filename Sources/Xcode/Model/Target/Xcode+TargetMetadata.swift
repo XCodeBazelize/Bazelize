@@ -6,5 +6,21 @@ extension Xcode {
         public let entitlements: String?
         public let deploymentTargets: [String: String]
         public let codeSign: CodeSign
+
+        package init(
+            bundleID: String?,
+            moduleName: String?,
+            infoPlist: String?,
+            entitlements: String?,
+            deploymentTargets: [String: String],
+            codeSign: CodeSign)
+        {
+            self.bundleID = bundleID
+            self.moduleName = moduleName
+            self.infoPlist = infoPlist
+            self.entitlements = entitlements
+            self.deploymentTargets = deploymentTargets
+            self.codeSign = codeSign
+        }
     }
 }
