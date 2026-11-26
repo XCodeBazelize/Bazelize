@@ -203,6 +203,11 @@ extension Xcode.Target {
         resources.filter { $0.hasSuffix(".xcassets") }
     }
 
+    /// `.xcstickers` catalogs: what a sticker pack ships instead of code.
+    public var stickerAssets: [String] {
+        resources.filter { $0.hasSuffix(".xcstickers") }
+    }
+
     public var strings: [String] {
         resources.filter { $0.hasSuffix(".strings") }
     }

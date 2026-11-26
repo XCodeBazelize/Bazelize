@@ -108,6 +108,7 @@ extension Target {
         "intentdefinition",
         "strings",
         "xcassets",
+        "xcstickers",
     ]
 }
 

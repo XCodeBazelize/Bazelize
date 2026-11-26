@@ -16,6 +16,17 @@ extension Target {
         !(srcs_c + srcs_cpp + srcs_objc + srcs_objcpp + srcs_swift).isEmpty
     }
 
+    /// A sticker pack and an iMessage app ship what they carry rather than code
+    /// of their own, so no library is what they are bundled from.
+    var bundlesWithoutSources: Bool {
+        productType == .stickerPack || productType == .messagesApplication
+    }
+
+    /// Whether a rule is written for the target's product.
+    var isGenerated: Bool {
+        hasSources || bundlesWithoutSources
+    }
+
     func generateCode(_ kit: Kit) throws -> String {
         let builder = CodeBuilder()
         generateIntentLibraries(builder, kit)
@@ -31,7 +42,7 @@ extension Target {
 
         let name = name
 
-        guard hasSources else {
+        guard isGenerated else {
             kit.note("""
             \(name) is not generated: a \(productType?.rawValue ?? "target") with no sources of its own \
             has no library for a rule to bundle.
@@ -45,7 +56,15 @@ extension Target {
             generateCopiedProducts(builder, kit)
             generateCopiedFiles(builder, kit)
             try generateApplicationCode(builder, kit)
-        case .bundle, .xpcService, .appExtension:
+        case .onDemandInstallCapableApplication:
+            generateStrings(builder, kit)
+            generateCopiedProducts(builder, kit)
+            generateCopiedFiles(builder, kit)
+            generateAppClip(builder, kit)
+        case .messagesApplication:
+            generateStrings(builder, kit)
+            generateIMessageApplication(builder, kit)
+        case .bundle, .xpcService, .appExtension, .tvExtension, .messagesExtension, .stickerPack:
             generateBundleProduct(builder, kit)
         case .commandLineTool:
             generateCommandLineApplicationCode(builder, kit)
