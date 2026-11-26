@@ -116,6 +116,24 @@ let project = Project(
             ],
             dependencies: [.sdk(name: "Foundation", type: .framework)],
             settings: settings(["CLANG_ENABLE_OBJC_ARC": "YES", "CLANG_ENABLE_MODULES": "YES"])),
+        /// Xcode reads a list setting as shell words, so a quoted value with a
+        /// space in it is one argument. `main.m` does not compile, link, or
+        /// exit zero unless every value below reached clang or the linker so.
+        .target(
+            name: "QuotedFlags",
+            destinations: .macOS,
+            product: .commandLineTool,
+            bundleId: "com.bazel.QuotedFlags",
+            deploymentTargets: .macOS("13.0"),
+            infoPlist: nil,
+            sources: ["QuotedFlags/main.m"],
+            dependencies: [.sdk(name: "Foundation", type: .framework)],
+            settings: settings([
+                "HEADER_SEARCH_PATHS": #"$(inherited) "$(SRCROOT)/QuotedFlags/Header Dir""#,
+                "GCC_PREPROCESSOR_DEFINITIONS": #"$(inherited) QUOTED_MESSAGE='"two words"'"#,
+                "OTHER_CFLAGS": #"$(inherited) "-DOTHER_MESSAGE=\"other words\"""#,
+                "OTHER_LDFLAGS": #"$(inherited) -Xlinker "-alias" -Xlinker "_quoted_flags_symbol" -Xlinker "_quoted_flags_alias""#,
+            ])),
         .target(
             name: "MacBundle",
             destinations: .macOS,

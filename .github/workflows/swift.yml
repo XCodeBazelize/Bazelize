@@ -208,6 +208,10 @@ jobs:
         working-directory: fixture/iOS/App
         run: bazel run //Targets/PerFileFlags --config=Debug
 
+      - name: Run Quoted Flag Probe
+        working-directory: fixture/iOS/App
+        run: bazel run //Targets/QuotedFlags --config=Debug
+
       - name: Copy IPA
         working-directory: fixture/iOS/App
         run: |

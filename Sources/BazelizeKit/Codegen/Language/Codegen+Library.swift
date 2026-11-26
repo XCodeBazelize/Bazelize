@@ -61,7 +61,7 @@ extension Target {
         builder.call(
             Rules.Swift.Call.mixed_language_library(
                 name: "\(name)_mixed",
-                clang_copts: ([
+                clang_copts: Self.tokenized([
                     "-fblocks",
                     "-fPIC",
                     "-fmodule-name=\(codegenModuleName)",

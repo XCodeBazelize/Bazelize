@@ -69,7 +69,7 @@ extension Xcode.BuildSettings {
     /// for Swift — UTM decides which SPICE module to import with it.
     public var swiftDefines: [String] {
         var result: [String] = []
-        for define in Self.split(self[.swiftActiveCompilationConditions])
+        for define in Self.words(self[.swiftActiveCompilationConditions])
             + Self.swiftFlags(self[.otherSwiftFlags]).defines
             where !result.contains(define)
         {
@@ -101,7 +101,7 @@ extension Xcode.BuildSettings {
     private static func swiftFlags(_ value: String?) -> (defines: [String], flags: [String]) {
         var defines: [String] = []
         var flags: [String] = []
-        var remaining = split(value).makeIterator()
+        var remaining = words(value).makeIterator()
 
         while let flag = remaining.next() {
             if flag == "-D" {
@@ -127,23 +127,69 @@ extension Xcode.BuildSettings {
 
     /// `OTHER_CFLAGS`: what every C-family compile of the target takes.
     public var otherCFlags: [String] {
-        Self.split(self[.otherCFlags])
+        Self.words(self[.otherCFlags])
     }
 
     /// `OTHER_CPLUSPLUSFLAGS`: what the C++ compiles take on top of
     /// `OTHER_CFLAGS`, which is how Xcode spells a C++ dialect a C file would
     /// be rejected for.
     public var otherCPlusPlusFlags: [String] {
-        Self.split(self[.otherCPlusPlusFlags])
+        Self.words(self[.otherCPlusPlusFlags])
     }
 
-    /// One build setting's flags: whitespace-separated, unquoted, without
-    /// Xcode's `$(inherited)` marker.
-    private static func split(_ value: String?) -> [String] {
-        (value ?? "")
-            .split(separator: " ")
-            .map { String($0).unquoted }
-            .filter { !$0.isEmpty && $0 != "$(inherited)" }
+    /// A list setting — or a file's `COMPILER_FLAGS` — as Xcode reads it: shell
+    /// words, without Xcode's `$(inherited)` marker.
+    ///
+    /// Whitespace separates words. Single quotes keep what they enclose as it
+    /// is; double quotes do too, except that a backslash in them escapes `"`
+    /// and `\`; outside quotes a backslash keeps the character after it. The
+    /// quotes are not part of the word, wherever in it they open:
+    /// `"$(SRCROOT)/Vendor Dir"` is one path and `-DNAME='"a b"'` one flag.
+    public static func words(_ value: String?) -> [String] {
+        var words: [String] = []
+        var word = ""
+        var inWord = false
+        var quote: Character?
+        var escaped = false
+
+        for character in value ?? "" {
+            if escaped {
+                if quote == "\"", character != "\"", character != "\\" {
+                    word.append("\\")
+                }
+                word.append(character)
+                escaped = false
+            } else if character == "\\", quote != "'" {
+                escaped = true
+                inWord = true
+            } else if let open = quote {
+                if character == open {
+                    quote = nil
+                } else {
+                    word.append(character)
+                }
+            } else if character == "'" || character == "\"" {
+                quote = character
+                inWord = true
+            } else if character.isWhitespace {
+                if inWord {
+                    words.append(word)
+                }
+                word = ""
+                inWord = false
+            } else {
+                word.append(character)
+                inWord = true
+            }
+        }
+        if escaped {
+            word.append("\\")
+        }
+        if inWord {
+            words.append(word)
+        }
+
+        return words.filter { !$0.isEmpty && $0 != "$(inherited)" }
     }
 
     public var bridgingHeader: String? { self[.swiftObjCBridgingHeader] }
@@ -156,48 +202,23 @@ extension Xcode.BuildSettings {
         return header
     }
 
-    /// `HEADER_SEARCH_PATHS` plus `USER_HEADER_SEARCH_PATHS`, without Xcode's
-    /// `$(inherited)` marker.
+    /// `HEADER_SEARCH_PATHS` plus `USER_HEADER_SEARCH_PATHS`.
     public var headerSearchPaths: [String] {
-        [Key.headerSearchPaths, .userHeaderSearchPaths]
-            .compactMap { self[$0] }
-            .flatMap { value in
-                value.split(separator: " ").map(String.init)
-            }
-            .map { path in
-                path.trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-            }
-            .filter { path in
-                !path.isEmpty && path != "$(inherited)"
-            }
+        Self.words(self[.headerSearchPaths]) + Self.words(self[.userHeaderSearchPaths])
     }
 
-    /// `OTHER_LDFLAGS`, without Xcode's `$(inherited)` marker.
+    /// `OTHER_LDFLAGS`.
     public var otherLinkerFlags: [String] {
-        (self[.otherLinkerFlags] ?? "")
-            .split(separator: " ")
-            .map { flag in
-                String(flag).unquoted
-            }
-            .filter { !$0.isEmpty && $0 != "$(inherited)" }
+        Self.words(self[.otherLinkerFlags])
     }
 
-    /// `GCC_PREPROCESSOR_DEFINITIONS`, without Xcode's `$(inherited)` marker.
+    /// `GCC_PREPROCESSOR_DEFINITIONS`.
     ///
     /// Xcode passes each entry through a shell, so a value is often quoted
     /// (`ID='@"com.example"'`); Bazel hands `defines` to the compiler directly and
     /// the quotes would end up inside the macro.
     public var preprocessorDefinitions: [String] {
-        (self[.gccPreprocessorDefinitions] ?? "")
-            .split(separator: " ")
-            .map(String.init)
-            .filter { !$0.isEmpty && $0 != "$(inherited)" }
-            .map { definition in
-                guard let separator = definition.firstIndex(of: "=") else { return definition }
-                let key = definition[..<separator]
-                let value = definition[definition.index(after: separator)...]
-                return "\(key)=\(value.unquoted)"
-            }
+        Self.words(self[.gccPreprocessorDefinitions])
     }
 
     public var testTargetName: String? { self[.testTargetName] }
