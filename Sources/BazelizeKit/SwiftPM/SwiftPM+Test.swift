@@ -28,16 +28,21 @@ extension SwiftPM.Generator {
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
-        generated: [String],
+        root: Path,
+        generated: PluginGenerated,
         resources: ResourceBundle?,
         builder: CodeBuilder)
     {
         let name = ruleName(of: target.name, in: package)
         let library = "\(name)_library"
 
-        /// SwiftPM does not let one target mix languages, so a test target
-        /// without Swift in it is a C-family one and compiles as such.
-        if extensions(of: target, in: package).contains(FileExtension.swift.rawValue) {
+        /// A test target that mixes languages is one module, like any other
+        /// target does; one without Swift in it is a C-family one and compiles
+        /// as such.
+        if
+            extensions(of: target, in: package).contains(FileExtension.swift.rawValue),
+            !isMixed(target, in: package)
+        {
             builder.call(
                 Rules.Swift.Call.swift_library(
                     name: library,
@@ -50,7 +55,7 @@ extension SwiftPM.Generator {
                         globbing: matching(
                             sources(of: target, prefix: prefix, extensions: [.swift]),
                             relativeFiles(of: target, in: package, prefix: prefix))
-                            + generated,
+                            + generated.sources,
                         excluding: excluded(target, prefix: prefix)),
                     deps: deps(of: target, in: package),
                     data: resources?.labels.nonEmpty.map { labels in
@@ -60,13 +65,24 @@ extension SwiftPM.Generator {
                     tags: Self.manual,
                     testonly: true,
                     visibility: .private))
+        } else if isMixed(target, in: package) {
+            buildMixed(
+                target,
+                in: package,
+                prefix: prefix,
+                root: root,
+                generated: generated,
+                resources: resources,
+                name: library,
+                testonly: true,
+                builder: builder)
         } else {
             buildClangTest(
                 target,
                 in: package,
                 prefix: prefix,
                 name: library,
-                generated: generated,
+                generated: generated.sources,
                 resources: resources,
                 builder: builder)
         }

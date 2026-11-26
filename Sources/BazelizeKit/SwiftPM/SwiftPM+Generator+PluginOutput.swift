@@ -41,7 +41,7 @@ extension SwiftPM.Generator {
     /// into the same place and the rules still hold.
     func materialize(
         pluginOutputsOf target: SwiftPM.PackageTarget,
-        in _: SwiftPM.Package,
+        in package: SwiftPM.Package,
         at root: Path,
         kind: TargetKind) throws
         -> PluginGenerated
@@ -55,8 +55,15 @@ extension SwiftPM.Generator {
 
         /// What the target's own rule compiles; a Swift target compiles Swift,
         /// and a C-family one whatever clang takes.
+        /// A mixed target compiles both, and its rule takes each kind apart.
+        let mixed: Bool = switch kind {
+        case .mixed: true
+        case .test: isMixed(target, in: package)
+        default: false
+        }
         let compiled: Set<String> = {
             if case .clang = kind { return Set(Self.compileExtensions.map(\.rawValue)) }
+            if mixed { return Set((Self.compileExtensions + [.swift]).map(\.rawValue)) }
             return [FileExtension.swift.rawValue]
         }()
 
@@ -66,6 +73,7 @@ extension SwiftPM.Generator {
         var sources = compiled
         var headers: Set<String> = {
             if case .clang = kind { return Set(Self.headerExtensions.map(\.rawValue)) }
+            if mixed { return Set(Self.headerExtensions.map(\.rawValue)) }
             return []
         }()
         var resources: Set<String> = []

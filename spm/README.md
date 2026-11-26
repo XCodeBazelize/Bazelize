@@ -19,6 +19,7 @@ would not tell us anything.
 | `ExecutableResource` | resources reaching a program that has no Apple bundler to embed them: a command line tool's own `.copy`, `.process` and asset catalogue, plus a library it links whose `Bundle.module` only resolves when that library's bundle travels with the tool |
 | `Macro` | a macro target, loaded by the compiler while the target beside it is compiled |
 | `Platform` | platform-conditional settings and dependencies as build-time `select` expressions: the same generated rule takes the macOS branch on the host, the iOS branch through an iOS platform transition, and combines platform with debug configuration |
+| `MixedLanguage` | one target holding C, Objective-C and Swift, which is one module: a consumer imports `Unified` once and reaches the Swift API and the C functions, and Objective-C calls back into Swift through the generated `Unified-Swift.h`. Needs a Swift 6.5 toolchain |
 | `PluginDependency` | a build tool plugin that belongs to another package, named with the package it comes from, running that package's tool |
 | `PrebuildPlugin` | a plugin's `.prebuildCommand`, which names a directory rather than the files it writes |
 | `ProductShapes` | products over several targets: `.static`, `.dynamic` and automatic libraries, a product named after one of its own targets, an executable product under another name, and a `Snippets/` program |
@@ -169,3 +170,58 @@ that lane was written against, `swiftbuild` generated nothing for
 so the lane names the build system that implements the rule rather than
 inheriting whichever the runner ships. Its Bazel side is built the same way as
 every other fixture.
+
+`MixedLanguage` is a mixed Swift/C/Objective-C target and needs SwiftPM from a
+Swift 6.5 toolchain (`// swift-tools-version: 6.5`), so it has its own
+`MixedLanguage` CI job rather than a lane in `IntegratePackage`, and the older
+toolchains of the other lanes never read its manifest. The contract is one
+module: `Unified` is a single SwiftPM target and a single Bazel module, so a
+consumer writes `import Unified` once and calls both `SwiftAPI.value` (42) and
+`unified_c_value()` (41); `unified_round_trip(5)` goes C-family to Swift and
+back and is 93. Its C settings (a define with and without a value, a header
+search path, `cLanguageStandard`), Swift define, custom `publicHeadersPath` and
+a test target that is itself mixed are each asserted, in swift-testing and
+XCTest. The C defines also reach the Clang module Swift imports underneath, which
+`UNIFIED_HEADER_FLAG` in the public header checks.
+
+Both interfaces also reach whatever depends on `Unified`. `ObjCConsumer` is
+Objective-C only: one `@import Unified;` gives it the C functions and the Swift
+class exposed to Objective-C, so `objc_consumer_total(1)` is 85. `MixedConsumer`
+is itself mixed, and both of its halves use both halves of `Unified`:
+`MixedConsumerAPI.total` (Swift) is 83 and `MixedConsumerAPI.objc(1)`
+(Objective-C) is 129. The executable and the tests depend on all three. CI
+inspects the `SwiftInfo` of `Unified` and `MixedConsumer`: each has one direct
+module, named after the target, with both Swift and Clang inputs. Internal
+compilation targets do not introduce another public module. `Downstream/` is
+another package that depends on the `Unified` product through `path: ".."`: its
+Objective-C target `@import`s `Unified` and its Swift executable calls both
+interfaces, and CI runs it through SwiftPM and through its own generated
+workspace (`bazel run //Packages/Downstream:downstream-consumer`).
+
+Bazelize generates a mixed target only from a 6.5 manifest; an older one keeps
+the Swift-only classification SwiftPM gives it. A regular or test target becomes
+one `mixed_language_library`. An `.internal` `bridgingHeader` is passed with
+`-internal-import-bridging-header`, and a conditional one is reported rather
+than guessed. A mixed executable or macro target is reported: its C-family
+sources are not compiled, so put them in a library the program depends on. The
+fixture does not claim every feature of the mixed-target proposal.
+
+The `MixedLanguage` CI job downloads no toolchain. It uses the runner's default
+Xcode and runs the fixture only when `swift --version` reports 6.5 or newer;
+otherwise the job reports a notice and skips every step after the check. Locally,
+run it with a Swift 6.5 toolchain selected:
+
+```sh
+cd spm/MixedLanguage
+swift build && swift test && swift run unified-consumer   # prints "unified ok"
+bazelize --input . --output App
+cd App
+bazel test //...
+bazel run //Packages/MixedLanguage:unified-consumer      # prints "unified ok"
+```
+
+With a development snapshot rather than an Xcode that ships Swift 6.5, put the
+snapshot's `usr/bin` first on `PATH` for SwiftPM, and give Bazel
+`--action_env=TOOLCHAINS=<snapshot identifier>` while keeping
+`--repo_env=TOOLCHAINS=com.apple.dt.toolchain.XcodeDefault`: rules_swift's SDK
+discovery fails under the snapshot's compiler.

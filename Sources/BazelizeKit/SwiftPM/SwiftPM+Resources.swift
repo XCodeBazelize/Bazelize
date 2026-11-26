@@ -175,6 +175,7 @@ extension SwiftPM.Generator {
                 runfilesLabel: runfilesLabel,
                 root: root,
                 kind: kind,
+                mixed: isMixed(target, in: package),
                 embeddedSource: embeddedSource))
     }
 
@@ -206,7 +207,7 @@ extension SwiftPM.Generator {
                 labels: [result.label],
                 accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
                 header: nil)
-        case .swift, .test:
+        case .swift, .test, .mixed:
             let accessor = "Generated/\(result.target)ResourceBundleAccessor.swift"
             try (result.root + accessor).write(
                 swiftAccessor(
@@ -217,10 +218,26 @@ extension SwiftPM.Generator {
                     runfilesPath: result.runfilesLabel.map { _ in
                         "Packages/\(result.package)/\(result.bundle).bundle"
                     }))
+            /// A target with C-family code beside its Swift reaches its bundle
+            /// from both: the force-included header is the C half's accessor.
+            guard result.mixed else {
+                return ResourceBundle(
+                    labels: [result.label] + (result.runfilesLabel.map { [$0] } ?? []),
+                    accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
+                    header: nil)
+            }
+
+            let module = moduleName(result.target)
+            let header = "Generated/\(result.target)ResourceBundleAccessor.h"
+            let implementation = "Generated/\(result.target)ResourceBundleAccessor.m"
+            try (result.root + header).write(objcAccessorHeader(module: module))
+            try (result.root + implementation).write(
+                objcAccessor(module: module, bundle: result.bundle))
             return ResourceBundle(
                 labels: [result.label] + (result.runfilesLabel.map { [$0] } ?? []),
-                accessors: [accessor] + (result.embeddedSource.map { [$0] } ?? []),
-                header: nil)
+                accessors: [accessor, header, implementation]
+                    + (result.embeddedSource.map { [$0] } ?? []),
+                header: header)
         case .clang:
             let module = moduleName(result.target)
             let header = "Generated/\(result.target)ResourceBundleAccessor.h"
@@ -253,7 +270,7 @@ extension SwiftPM.Generator {
     {
         guard !paths.isEmpty else { return nil }
         switch kind {
-        case .swift, .executable, .test: break
+        case .swift, .mixed, .executable, .test: break
         case .clang, .binary, .system, .macro, .unsupported: return nil
         }
 

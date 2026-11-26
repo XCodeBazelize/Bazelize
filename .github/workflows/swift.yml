@@ -506,6 +506,95 @@ jobs:
           FIXTURES: ${{ toJSON(matrix.fixtures) }}
         run: .github/scripts/integrate-package.sh
 
+  # A mixed Swift/C target needs a SwiftPM that builds one (Swift 6.5), which is
+  # newer than the Xcode every other lane pins, so it has a lane of its own
+  # rather than a place in the matrix above: the older toolchains never read its
+  # manifest. Nothing is downloaded: the lane takes the runner's default Xcode
+  # and runs only when its Swift is 6.5 or newer, saying so when it does not.
+  # Both SwiftPM and Bazel must see the same single `Unified` module.
+  MixedLanguage:
+    name: MixedLanguage (Swift 6.5)
+    runs-on: macos-26
+    needs: [artifact]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Detect Swift 6.5
+        id: swift
+        run: |
+          swift --version
+          version=$(swift --version 2>&1 | sed -nE 's/.*Swift version ([0-9]+\.[0-9]+).*/\1/p' | head -n 1)
+          if [ -n "$version" ] && [ "$(printf '%s\n' 6.5 "$version" | sort -V | head -n 1)" = 6.5 ]; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Swift ${version:-unknown} is older than 6.5: the MixedLanguage fixture is skipped."
+          fi
+
+      - name: Bazel Cache
+        if: steps.swift.outputs.supported == 'true'
+        uses: ./.github/actions/bazel-cache
+        with:
+          group: package-MixedLanguage
+
+      - name: Download Bazelize
+        if: steps.swift.outputs.supported == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: bazelize
+
+      - name: SwiftPM Build And Test
+        if: steps.swift.outputs.supported == 'true'
+        working-directory: spm/MixedLanguage
+        run: |
+          swift build
+          swift test
+          swift run unified-consumer | grep -qx 'unified ok'
+
+      - name: Bazel Generation
+        if: steps.swift.outputs.supported == 'true'
+        run: |
+          set -o pipefail
+          chmod +x bazelize
+          ./bazelize --input spm/MixedLanguage --output spm/MixedLanguage/App | tee bazelize.log
+          [ ! -s bazelize.log ]
+
+      - name: Check Generated Starlark
+        if: steps.swift.outputs.supported == 'true'
+        working-directory: spm/MixedLanguage/App
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/check-generated-starlark.sh"
+
+      - name: Test And Run With Bazel
+        if: steps.swift.outputs.supported == 'true'
+        working-directory: spm/MixedLanguage/App
+        run: |
+          bazel test //...
+          bazel run //Packages/MixedLanguage:unified-consumer | grep -qx 'unified ok'
+
+      - name: Verify One Public Module Per Mixed Target
+        if: steps.swift.outputs.supported == 'true'
+        working-directory: spm/MixedLanguage/App
+        run: |
+          for target in Unified MixedConsumer; do
+            modules=$(bazel cquery "//Packages/MixedLanguage:$target" --output=starlark \
+              --starlark:expr='[(m.name, bool(m.swift), bool(m.clang)) for key, info in providers(target).items() if key.endswith("%SwiftInfo") for m in info.direct_modules]')
+            echo "$target: $modules"
+            [ "$modules" = "[(\"$target\", True, True)]" ]
+          done
+
+      # Another package depending on the `Unified` product, from Swift and from
+      # Objective-C: both interfaces have to reach targets outside the package.
+      - name: Cross-Package Dependent
+        if: steps.swift.outputs.supported == 'true'
+        run: |
+          set -o pipefail
+          (cd spm/MixedLanguage/Downstream && swift run downstream-consumer | grep -qx 'downstream ok')
+          ./bazelize --input spm/MixedLanguage/Downstream --output spm/MixedLanguage/Downstream/App | tee downstream.log
+          [ ! -s downstream.log ]
+          cd spm/MixedLanguage/Downstream/App
+          bazel run //Packages/Downstream:downstream-consumer | grep -qx 'downstream ok'
+
   # Host tests and SwiftPM controls remain in IntegratePackage (Platform).
   # Each additional SDK has its own step and its own result; compile-only
   # variants never claim execution on a physical device or a hosted visionOS

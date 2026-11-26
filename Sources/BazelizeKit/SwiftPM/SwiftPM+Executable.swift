@@ -63,7 +63,7 @@ extension SwiftPM.Generator {
 
         let dependencies = emitted.compactMap { name, kind -> String? in
             switch kind {
-            case .swift, .clang, .binary, .system:
+            case .swift, .clang, .mixed, .binary, .system:
                 return ":\(ruleName(of: name, in: package))"
             case .macro, .executable, .test, .unsupported:
                 return nil

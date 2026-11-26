@@ -174,7 +174,7 @@ extension SwiftPM.Generator {
 
     /// The patterns for files of these extensions anywhere below the generated
     /// directories, keeping only those that match something.
-    private func matching(_ extensions: [String], under directories: [String], in root: Path) -> [String] {
+    func matching(_ extensions: [String], under directories: [String], in root: Path) -> [String] {
         directories.flatMap { directory in
             matching(
                 extensions.map { "\(directory)/**/*.\($0)" },
@@ -183,7 +183,7 @@ extension SwiftPM.Generator {
     }
 
     /// The files of a generated directory, named the way a glob pattern is.
-    private static func relativeFiles(under directory: String, in root: Path) -> [String] {
+    static func relativeFiles(under directory: String, in root: Path) -> [String] {
         let base = root.normalize().string
 
         return SwiftPM.Generator.walk(root + directory).compactMap { file in
@@ -194,7 +194,7 @@ extension SwiftPM.Generator {
     }
 
     /// Where a target's public headers are reached from.
-    private struct Interface {
+    struct Interface {
         /// The directory holding the target's module map.
         let root: String
         /// Every directory a header lookup goes through, the root first.
@@ -210,10 +210,14 @@ extension SwiftPM.Generator {
     /// beside the map, the way an Xcode target's flattened header tree works. Every
     /// consumer then resolves the module through a header search path alone: a
     /// Swift `import`, a C-family `@import`, from this package or any other.
-    private func mirror(
+    ///
+    /// A target that is a mixed one leaves the map to its rule, which writes
+    /// the one that names both languages; only one the package ships is kept.
+    func mirror(
         headersOf target: SwiftPM.PackageTarget,
         at headers: Path?,
         module: String,
+        generatingMap: Bool = true,
         root: Path) throws
         -> Interface?
     {
@@ -272,7 +276,7 @@ extension SwiftPM.Generator {
         let map = interface + "module.modulemap"
         if let shipped {
             try map.symlink(shipped)
-        } else {
+        } else if generatingMap {
             try map.write("""
             module \(module) {
                 umbrella "."
@@ -302,7 +306,7 @@ extension SwiftPM.Generator {
     /// compilation inputs reached by `-I`, and excluding them leaves the compiler
     /// looking for a file the sandbox does not have. Only what would be compiled
     /// from there is dropped.
-    private func excludedClang(_ target: SwiftPM.PackageTarget, prefix: String) -> [String] {
+    func excludedClang(_ target: SwiftPM.PackageTarget, prefix: String) -> [String] {
         let searched = Set(target.settings.flatMap { setting -> [String] in
             guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
             guard setting.name == "headerSearchPath" else { return [] }
@@ -351,7 +355,7 @@ extension SwiftPM.Generator {
     /// Not the target directory itself: a module map sitting there would be found
     /// by clang on its own, and a package that ships one outside its public
     /// headers would end up with two maps for the same module.
-    private func includes(
+    func includes(
         of target: SwiftPM.PackageTarget,
         prefix: String,
         interface: Interface?)
@@ -370,7 +374,7 @@ extension SwiftPM.Generator {
 
     /// The module name has to be stated: without it clang names the module after
     /// the module map's directory, and a Swift `import` of the target fails.
-    private func clangCopts(
+    func clangCopts(
         of target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         module: String,
@@ -395,7 +399,7 @@ extension SwiftPM.Generator {
     ///
     /// Flags, not the `defines` attribute, for the same reason as a Swift
     /// target: the attribute would propagate into everything downstream.
-    private static func clangFlags(_ setting: SwiftPM.Setting) -> [String] {
+    static func clangFlags(_ setting: SwiftPM.Setting) -> [String] {
         guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
 
         switch setting.name {

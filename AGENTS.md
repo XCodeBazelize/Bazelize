@@ -5,6 +5,11 @@
 Any new feature or behavior change goes on its own branch and is delivered as a
 pull request. Never push such work directly to `master`.
 
+Open an issue before implementing a change. Prefer one issue and one pull request
+for each independently deliverable change. This is a default, not an absolute
+constraint: when splitting or combining work is necessary, explain why and link
+all affected issues and pull requests so their scope and completion remain clear.
+
 A branch is cut from the current `master` before the first edit, and the pull
 request names the issue it settles with a closing keyword — `Closes #44` — so
 merging the pull request closes it. Work that only investigates an issue, or
@@ -21,6 +26,36 @@ files changed since its base with
 Install the local staged-content check with `make install-hooks`. It never
 rewrites the index or working tree. Do not run SwiftFormat in CI or as a build
 dependency. Preserve fixture compatibility with each manifest's Swift version.
+
+Prefer declarative path definitions. Initialize a path owned by an object in
+its initializer, or store the root and expose fixed derived paths as computed
+properties. This applies to tests too: avoid a temporary `destination` local
+whose only purpose is `root + "config/custom.yaml"`; give that location a named
+property on the fixture instead. Keep local values when they represent a real
+intermediate result or a runtime choice.
+
+```swift
+init(_ root: Path) {
+    path = root + "config.bazelrc"
+}
+
+var foo: Path { root + "Foo" }
+```
+
+Declare external command operations as purpose-named static methods in
+extensions of an `enum Commands { }` namespace in the owning module. Callers
+should express intent, such as `Commands.showSDK(sdk:)`, and receive a useful
+result type, such as `Path`, parsed values, or `Void`, rather than assemble
+executable names and argument arrays at each callsite. Command methods own
+argument construction, working directories, output capture, and exit-status
+handling; use `async throws` for asynchronous operations that can fail.
+
+Swift child-process execution MUST consistently use `swift-subprocess`
+(`Subprocess.run`). Do not introduce parallel execution paths through
+`Foundation.Process`, hand-managed `Pipe` instances, or other process-launch
+APIs. Keep any shared execution helper behind the semantic command methods.
+Group operations in `Commands`; do not build a full wrapper type or framework
+for every CLI.
 
 ## Issue language
 

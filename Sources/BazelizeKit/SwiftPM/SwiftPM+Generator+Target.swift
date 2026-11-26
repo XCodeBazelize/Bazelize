@@ -26,7 +26,21 @@ extension SwiftPM.Generator {
         for target in targets {
             guard let kind = try kind(of: target, in: package) else { continue }
             switch kind {
-            case .swift, .clang, .binary, .system, .macro, .executable, .test:
+            case .swift, .clang, .mixed, .binary, .system, .macro, .executable, .test:
+                /// A program or a macro has no library to put C-family files in: they
+                /// are not compiled, and a module that needs them will not link.
+                switch kind {
+                case .executable, .macro:
+                    if isMixed(target, in: package) {
+                        note("""
+                        \(package.directory)/\(target.name) mixes Swift and C-family sources, \
+                        which only a library target can build as one module: the C-family \
+                        sources are not compiled.
+                        """)
+                    }
+                default:
+                    break
+                }
                 supported[target.name] = kind
             case .unsupported(let reason):
                 /// A target nothing is generated for is a target whatever
@@ -67,6 +81,8 @@ extension SwiftPM.Generator {
     enum TargetKind {
         case swift
         case clang
+        /// Swift and C-family sources, or Swift and public headers, in one module.
+        case mixed
         case binary
         case system
         /// A macro: a program the compiler loads, not a library the target links.
@@ -115,10 +131,14 @@ extension SwiftPM.Generator {
             return .unsupported("no sources")
         }
 
-        /// A target with any Swift in it is a Swift target: SwiftPM does not
-        /// allow one target to mix languages, so the C-family files that are
-        /// still on disk belong to another target or are excluded.
-        return extensions.contains(FileExtension.swift.rawValue) ? .swift : .clang
+        /// Swift and C-family files in one target are one module, which is what
+        /// SwiftPM 6.5 builds; otherwise any Swift makes a Swift target and
+        /// the C-family files still on disk belong to another target or are
+        /// excluded.
+        if extensions.contains(FileExtension.swift.rawValue) {
+            return isMixed(target, in: package) ? .mixed : .swift
+        }
+        return .clang
     }
 
     /// The rule that stands for a target.

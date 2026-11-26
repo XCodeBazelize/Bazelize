@@ -23,6 +23,9 @@ extension SwiftPM.Generator {
         let runfilesLabel: String?
         let root: Path
         let kind: TargetKind
+        /// The target holds C-family code beside its Swift, so each half needs
+        /// its own accessor.
+        let mixed: Bool
         let embeddedSource: String?
     }
 
