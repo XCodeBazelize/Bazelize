@@ -21,9 +21,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Plist")
-public typealias RulesPlist = Rules.Plist
-
 // MARK: - Rules.Plist.Call
 
 extension Rules.Plist {
@@ -36,10 +33,10 @@ extension Rules.Plist {
             -> Starlark.Statement.Call
         {
             Rules.Plist.plist_fragment.call {
-                "name" => name
-                "extension" => ext
-                "template" => template
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.extension(ext)
+                Attr.template(template)
+                Attr.visibility(visibility)
             }
         }
     }

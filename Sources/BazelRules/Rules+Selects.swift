@@ -30,16 +30,13 @@ extension Rules.Selects {
         public static func config_setting_group(
             name: String,
             match_any: [String]? = nil,
-            match_all: [String]? = nil) -> Starlark.Statement.Call
+            match_all: [String]? = nil)
+            -> Starlark.Statement.Call
         {
-            .init("selects.config_setting_group") {
-                "name" => name
-                if let matchAny = match_any {
-                    "match_any" => matchAny.map { Starlark.Label.named($0) }
-                }
-                if let matchAll = match_all {
-                    "match_all" => matchAll.map { Starlark.Label.named($0) }
-                }
+            .init("selects.config_setting_group", load: Rules.Selects.selects.load) {
+                Attr.name(name)
+                Attr.match_any(match_any?.map { Starlark.Label.named($0) })
+                Attr.match_all(match_all?.map { Starlark.Label.named($0) })
             }
         }
     }

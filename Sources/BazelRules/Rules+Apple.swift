@@ -151,9 +151,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Apple")
-public typealias RulesApple = Rules.Apple
-
 // MARK: - Rules.Apple.IOS.Call
 
 extension Rules.Apple.IOS {
@@ -181,24 +178,24 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_application.call {
-                "name" => name
-                if let app_icons { "app_icons" => app_icons }
-                if let primary_app_icon { "primary_app_icon" => primary_app_icon }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let extensions { "extensions" => extensions }
-                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
-                if let families { "families" => families }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
-                if let strings { "strings" => strings }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
-                if let watch_application { "watch_application" => watch_application }
+                Attr.name(name)
+                Attr.app_icons(app_icons)
+                Attr.primary_app_icon(primary_app_icon)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.extensions(extensions)
+                if let frameworks, !frameworks.isEmpty { Attr.frameworks(frameworks) }
+                Attr.families(families)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.sdk_frameworks(sdk_frameworks)
+                Attr.strings(strings)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
+                Attr.watch_application(watch_application)
             }
         }
 
@@ -218,17 +215,17 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let families { "families" => families }
-                if let hdrs { "hdrs" => hdrs }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.families(families)
+                Attr.hdrs(hdrs)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -247,17 +244,17 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_static_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let families { "families" => families }
-                if let hdrs { "hdrs" => hdrs }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.families(families)
+                Attr.hdrs(hdrs)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -276,17 +273,17 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_dynamic_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let families { "families" => families }
-                if let hdrs { "hdrs" => hdrs }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.families(families)
+                Attr.hdrs(hdrs)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -305,17 +302,17 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_extension.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let families { "families" => families }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.families(families)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -331,14 +328,14 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_app_clip.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -363,18 +360,18 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_imessage_application.call {
-                "name" => name
-                if let app_icons { "app_icons" => app_icons }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let entitlements { "entitlements" => entitlements }
-                if let extensions, !extensions.isEmpty { "extensions" => extensions }
-                if let families { "families" => families }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.app_icons(app_icons)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.entitlements(entitlements)
+                if let extensions, !extensions.isEmpty { Attr.extensions(extensions) }
+                Attr.families(families)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -395,18 +392,18 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_imessage_extension.call {
-                "name" => name
-                if let app_icons { "app_icons" => app_icons }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let families { "families" => families }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.app_icons(app_icons)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.families(families)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -428,16 +425,16 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_sticker_pack_extension.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let entitlements { "entitlements" => entitlements }
-                if let families { "families" => families }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let sticker_assets { "sticker_assets" => sticker_assets }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.entitlements(entitlements)
+                Attr.families(families)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.sticker_assets(sticker_assets)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -458,20 +455,18 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_unit_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let tags { "tags" => tags }
-                if let target_compatible_with {
-                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
-                }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let timeout { "timeout" => timeout }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.tags(tags)
+                Attr.target_compatible_with(target_compatible_with?.map { Starlark.Label.named($0) })
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.timeout(timeout)
+                Attr.visibility(visibility)
             }
         }
 
@@ -489,15 +484,15 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_ui_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -510,11 +505,11 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_unit_test_suite.call {
-                "name" => name
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runners { "runners" => runners }
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runners(runners)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -527,11 +522,11 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_ui_test_suite.call {
-                "name" => name
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runners { "runners" => runners }
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runners(runners)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -543,10 +538,10 @@ extension Rules.Apple.IOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.IOS.ios_build_test.call {
-                "name" => name
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                "targets" => targets
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.targets(targets)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -575,22 +570,20 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_application.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let app_icons { "app_icons" => app_icons }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let extensions, !extensions.isEmpty { "extensions" => extensions }
-                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.app_icons(app_icons)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                if let extensions, !extensions.isEmpty { Attr.extensions(extensions) }
+                if let frameworks, !frameworks.isEmpty { Attr.frameworks(frameworks) }
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -607,14 +600,14 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -634,20 +627,18 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_extension.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let frameworks, !frameworks.isEmpty { "frameworks" => frameworks }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                if let frameworks, !frameworks.isEmpty { Attr.frameworks(frameworks) }
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -667,19 +658,17 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_xpc_service.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -706,23 +695,21 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_bundle.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let app_icons { "app_icons" => app_icons }
-                if let bundle_extension { "bundle_extension" => bundle_extension }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let infoplists { "infoplists" => infoplists }
-                if let linkopts { "linkopts" => linkopts }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.app_icons(app_icons)
+                Attr.bundle_extension(bundle_extension)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.infoplists(infoplists)
+                Attr.linkopts(linkopts)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -742,19 +729,17 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_kernel_extension.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -774,19 +759,17 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_quick_look_plugin.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -806,19 +789,17 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_spotlight_importer.call {
-                "name" => name
-                if let additional_contents, !additional_contents.isEmpty {
-                    "additional_contents" => .init(additional_contents) ?? None
-                }
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let entitlements { "entitlements" => entitlements }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                if let additional_contents, !additional_contents.isEmpty { Attr.additional_contents(additional_contents) }
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -837,13 +818,13 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_dylib.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let linkopts { "linkopts" => linkopts }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.linkopts(linkopts)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.visibility(visibility)
             }
         }
 
@@ -862,16 +843,16 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_dynamic_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let hdrs { "hdrs" => hdrs }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.hdrs(hdrs)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -893,15 +874,15 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_static_framework.call {
-                "name" => name
-                if let avoid_deps { "avoid_deps" => avoid_deps }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let hdrs { "hdrs" => hdrs }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let umbrella_header { "umbrella_header" => umbrella_header }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.avoid_deps(avoid_deps)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.hdrs(hdrs)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.umbrella_header(umbrella_header)
+                Attr.visibility(visibility)
             }
         }
 
@@ -916,12 +897,12 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_command_line_application.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.visibility(visibility)
             }
         }
 
@@ -940,18 +921,16 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_unit_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let target_compatible_with {
-                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
-                }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.target_compatible_with(target_compatible_with?.map { Starlark.Label.named($0) })
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -969,15 +948,15 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_ui_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -989,10 +968,10 @@ extension Rules.Apple.MacOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.MacOS.macos_build_test.call {
-                "name" => name
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                "targets" => targets
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.targets(targets)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -1016,15 +995,15 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_application.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1041,15 +1020,15 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_extension.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1065,14 +1044,14 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_static_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1088,14 +1067,14 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_dynamic_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1115,19 +1094,17 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_unit_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let tags { "tags" => tags }
-                if let target_compatible_with {
-                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
-                }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.tags(tags)
+                Attr.target_compatible_with(target_compatible_with?.map { Starlark.Label.named($0) })
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1145,15 +1122,15 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_ui_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1165,10 +1142,10 @@ extension Rules.Apple.TVOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.TVOS.tvos_build_test.call {
-                "name" => name
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                "targets" => targets
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.targets(targets)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -1192,15 +1169,15 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_application.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1217,15 +1194,15 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_extension.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let strings { "strings" => strings }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.strings(strings)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1241,14 +1218,14 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_static_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1264,14 +1241,14 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_dynamic_framework.call {
-                "name" => name
-                if let bundle_id { "bundle_id" => bundle_id }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let resources { "resources" => resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.resources(resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1291,19 +1268,17 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_unit_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let tags { "tags" => tags }
-                if let target_compatible_with {
-                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
-                }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.tags(tags)
+                Attr.target_compatible_with(target_compatible_with?.map { Starlark.Label.named($0) })
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1321,15 +1296,15 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_ui_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runner { "runner" => runner }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runner(runner)
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1341,10 +1316,10 @@ extension Rules.Apple.WatchOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.WatchOS.watchos_build_test.call {
-                "name" => name
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                "targets" => targets
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.targets(targets)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -1370,19 +1345,17 @@ extension Rules.Apple.VisionOS {
             -> Starlark.Statement.Call
         {
             Rules.Apple.VisionOS.visionos_unit_test.call {
-                "name" => name
-                if let data { "data" => data }
-                if let deps { "deps" => deps }
-                if let env { "env" => .init(env) ?? None }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let runner { "runner" => runner }
-                if let tags { "tags" => tags }
-                if let target_compatible_with {
-                    "target_compatible_with" => target_compatible_with.map { Starlark.Label.named($0) }
-                }
-                if let test_filter { "test_filter" => test_filter }
-                if let test_host { "test_host" => test_host }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.runner(runner)
+                Attr.tags(tags)
+                Attr.target_compatible_with(target_compatible_with?.map { Starlark.Label.named($0) })
+                Attr.test_filter(test_filter)
+                Attr.test_host(test_host)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -1400,9 +1373,9 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_dynamic_framework_import.call {
-                "name" => name
-                "framework_imports" => framework_imports
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.framework_imports(framework_imports)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1414,9 +1387,9 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_static_framework_import.call {
-                "name" => name
-                "framework_imports" => framework_imports
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.framework_imports(framework_imports)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1429,10 +1402,10 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_dynamic_xcframework_import.call {
-                "name" => name
-                "xcframework_imports" => xcframework_imports
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.xcframework_imports(xcframework_imports)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1445,10 +1418,10 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_static_xcframework_import.call {
-                "name" => name
-                "xcframework_imports" => xcframework_imports
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.xcframework_imports(xcframework_imports)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1469,18 +1442,18 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_static_library.call {
-                "name" => name
-                "deps" => deps
-                if let avoid_deps { "avoid_deps" => avoid_deps }
-                if let data { "data" => data }
-                if let linkopts { "linkopts" => linkopts }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let platform_type { "platform_type" => platform_type }
-                if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
-                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
-                if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.avoid_deps(avoid_deps)
+                Attr.data(data)
+                Attr.linkopts(linkopts)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.platform_type(platform_type)
+                Attr.sdk_dylibs(sdk_dylibs)
+                Attr.sdk_frameworks(sdk_frameworks)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
+                Attr.weak_sdk_frameworks(weak_sdk_frameworks)
             }
         }
 
@@ -1493,10 +1466,10 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_universal_binary.call {
-                "name" => name
-                "binary" => binary
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.binary(binary)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1511,12 +1484,12 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_xcframework.call {
-                "name" => name
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let infoplists { "infoplists" => infoplists }
-                if let minimum_os_version { "minimum_os_version" => minimum_os_version }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                Attr.infoplists(infoplists)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1536,16 +1509,14 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.apple_static_xcframework.call {
-                "name" => name
-                if let avoid_deps { "avoid_deps" => avoid_deps }
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let deps { "deps" => deps }
-                if let minimum_os_versions, !minimum_os_versions.isEmpty {
-                    "minimum_os_versions" => .init(minimum_os_versions) ?? None
-                }
-                if let public_hdrs { "public_hdrs" => public_hdrs }
-                if let umbrella_header { "umbrella_header" => umbrella_header }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.avoid_deps(avoid_deps)
+                Attr.bundle_name(bundle_name)
+                Attr.deps(deps)
+                if let minimum_os_versions, !minimum_os_versions.isEmpty { Attr.minimum_os_versions(minimum_os_versions) }
+                Attr.public_hdrs(public_hdrs)
+                Attr.umbrella_header(umbrella_header)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1562,10 +1533,10 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.local_provisioning_profile.call {
-                "name" => name
-                if let profile_name { "profile_name" => profile_name }
-                if let teamid { "teamid" => teamid }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.profile_name(profile_name)
+                Attr.teamid(teamid)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1580,9 +1551,9 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.provisioning_profile_repository.call {
-                "name" => name
-                if let fallback_profiles { "fallback_profiles" => fallback_profiles }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.fallback_profiles(fallback_profiles)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1596,8 +1567,8 @@ extension Rules.Apple.General {
             -> Starlark.Statement.Call
         {
             Rules.Apple.General.provisioning_profile_repository_extension.call {
-                "name" => name
-                if let fallback_profiles { "fallback_profiles" => fallback_profiles }
+                Attr.name(name)
+                Attr.fallback_profiles(fallback_profiles)
             }
         }
     }
@@ -1615,9 +1586,9 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_bundle_import.call {
-                "name" => name
-                "bundle_imports" => bundle_imports
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_imports(bundle_imports)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1630,10 +1601,10 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_core_data_model.call {
-                "name" => name
-                "srcs" => srcs
-                if let minimum_deployment_os_version { "minimum_deployment_os_version" => minimum_deployment_os_version }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.srcs(srcs)
+                Attr.minimum_deployment_os_version(minimum_deployment_os_version)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1645,9 +1616,9 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_core_ml_library.call {
-                "name" => name
-                "srcs" => srcs
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.srcs(srcs)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1663,13 +1634,13 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_resource_bundle.call {
-                "name" => name
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let infoplists { "infoplists" => infoplists }
-                if let resources { "resources" => resources }
-                if let structured_resources { "structured_resources" => structured_resources }
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_name(bundle_name)
+                Attr.infoplists(infoplists)
+                Attr.resources(resources)
+                Attr.structured_resources(structured_resources)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1683,13 +1654,14 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_resource_group.call {
-                "name" => name
-                if let resources { "resources" => resources }
-                if let strip_structured_resources_prefixes, !strip_structured_resources_prefixes.isEmpty {
-                    "strip_structured_resources_prefixes" => strip_structured_resources_prefixes
-                }
-                if let structured_resources { "structured_resources" => structured_resources }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.resources(resources)
+                if
+                    let strip_structured_resources_prefixes,
+                    !strip_structured_resources_prefixes
+                        .isEmpty { Attr.strip_structured_resources_prefixes(strip_structured_resources_prefixes) }
+                Attr.structured_resources(structured_resources)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1701,9 +1673,9 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.swift_apple_core_ml_library.call {
-                "name" => name
-                "srcs" => srcs
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.srcs(srcs)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1735,13 +1707,13 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.swift_intent_library.call {
-                "name" => name
-                "src" => src
-                if let class_prefix { "class_prefix" => class_prefix }
-                if let class_visibility { "class_visibility" => class_visibility }
-                if let swift_version { "swift_version" => swift_version }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.src(src)
+                Attr.class_prefix(class_prefix)
+                Attr.class_visibility(class_visibility)
+                Attr.swift_version(swift_version)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1786,16 +1758,16 @@ extension Rules.Apple.Resources {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Resources.apple_intent_library.call {
-                "name" => name
-                "src" => src
-                "language" => language
-                if let class_prefix { "class_prefix" => class_prefix }
-                if let class_visibility { "class_visibility" => class_visibility }
-                if let header_name { "header_name" => header_name }
-                if let swift_version { "swift_version" => swift_version }
-                if let tags { "tags" => tags }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.src(src)
+                Attr.language(language)
+                Attr.class_prefix(class_prefix)
+                Attr.class_visibility(class_visibility)
+                Attr.header_name(header_name)
+                Attr.swift_version(swift_version)
+                Attr.tags(tags)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -1814,10 +1786,10 @@ extension Rules.Apple.Versioning {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Versioning.apple_bundle_version.call {
-                "name" => name
-                if let build_version { "build_version" => build_version }
-                if let short_version_string { "short_version_string" => short_version_string }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.build_version(build_version)
+                Attr.short_version_string(short_version_string)
+                Attr.visibility(visibility)
             }
         }
     }
@@ -1838,12 +1810,12 @@ extension Rules.Apple.Packaging {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Packaging.xcarchive.call {
-                "name" => name
-                if let bundle_name { "bundle_name" => bundle_name }
-                if let infoplists { "infoplists" => infoplists }
-                if let provisioning_profile { "provisioning_profile" => provisioning_profile }
-                "target" => target
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.bundle_name(bundle_name)
+                Attr.infoplists(infoplists)
+                Attr.provisioning_profile(provisioning_profile)
+                Attr.target(target)
+                Attr.visibility(visibility)
             }
         }
 
@@ -1857,11 +1829,11 @@ extension Rules.Apple.Packaging {
             -> Starlark.Statement.Call
         {
             Rules.Apple.Packaging.xctrunner.call {
-                "name" => name
-                if let device_type { "device_type" => device_type }
-                if let os_version { "os_version" => os_version }
-                "test_bundle" => test_bundle
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.device_type(device_type)
+                Attr.os_version(os_version)
+                Attr.test_bundle(test_bundle)
+                Attr.visibility(visibility)
             }
         }
     }

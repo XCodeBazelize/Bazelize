@@ -24,7 +24,6 @@ extension SwiftPM.Generator {
         resources: ResourceBundle?,
         builder: CodeBuilder)
     {
-        builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.call(
             Rules.Swift.Call.swift_binary(
                 name: ruleName(of: target.name, in: package),
@@ -83,7 +82,6 @@ extension SwiftPM.Generator {
             if link.isSymlink || link.exists { try? link.delete() }
             try link.symlink(source)
 
-            builder.load(loadableRule: Rules.Swift.swift_binary)
             builder.call(
                 Rules.Swift.Call.swift_binary(
                     name: name,

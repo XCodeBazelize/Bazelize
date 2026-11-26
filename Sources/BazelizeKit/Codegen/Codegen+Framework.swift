@@ -16,7 +16,6 @@ extension Target {
     }
 
     private func buildIOSFramework(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.ios_framework)
         builder.call(
             Rules.Apple.IOS.Call.ios_framework(
                 name: name,
@@ -45,7 +44,6 @@ extension Target {
     }
 
     private func buildMacFramework(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.macos_framework)
         builder.call(
             Rules.Apple.MacOS.Call.macos_framework(
                 name: name,

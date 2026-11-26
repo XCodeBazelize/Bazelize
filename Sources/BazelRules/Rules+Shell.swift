@@ -29,15 +29,14 @@ extension Rules.Shell {
             name: String,
             srcs: [String],
             data: [String] = [],
-            tags: [String] = []) -> Starlark.Statement.Call
+            tags: [String] = [])
+            -> Starlark.Statement.Call
         {
             Rules.Shell.sh_binary.call {
-                "name" => name
-                "srcs" => srcs
-                if !data.isEmpty {
-                    "data" => data.map { Starlark.Label.named($0) }
-                }
-                if !tags.isEmpty { "tags" => tags }
+                Attr.name(name)
+                Attr.srcs(srcs)
+                if !data.isEmpty { Attr.data(data.map { Starlark.Label.named($0) }) }
+                if !tags.isEmpty { Attr.tags(tags) }
             }
         }
     }

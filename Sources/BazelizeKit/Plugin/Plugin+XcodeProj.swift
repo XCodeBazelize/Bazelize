@@ -35,12 +35,11 @@ final class PluginXcodeProj: PluginBuiltin {
 
         guard !labels.isEmpty else { return }
 
-        builder.load(
-            module: "@rules_xcodeproj//xcodeproj:defs.bzl",
-            symbols: ["xcodeproj"])
-
         builder.call(
-            Starlark.Statement.Call("xcodeproj") {
+            Starlark.Statement.Call(
+                "xcodeproj",
+                load: .init(module: "@rules_xcodeproj//xcodeproj:defs.bzl", symbols: ["xcodeproj"]))
+            {
                 "name" => "xcodeproj"
                 "project_name" => kit.project.name
                 "tags" => ["manual"]

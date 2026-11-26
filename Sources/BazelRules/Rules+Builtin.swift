@@ -18,16 +18,10 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("config_setting") {
-            "name" => name
-            if let values {
-                "values" => values
-            }
-            if let flag_values {
-                "flag_values" => flag_values
-            }
-            if let visibility {
-                visibility.argument
-            }
+            Attr.name(name)
+            Attr.values(values)
+            Attr.flag_values(flag_values)
+            Attr.visibility(visibility)
         }
     }
 
@@ -37,10 +31,8 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("constraint_setting") {
-            "name" => name
-            if let visibility {
-                visibility.argument
-            }
+            Attr.name(name)
+            Attr.visibility(visibility)
         }
     }
 
@@ -51,11 +43,9 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("constraint_value") {
-            "name" => name
-            "constraint_setting" => Starlark.Label.named(constraint_setting)
-            if let visibility {
-                visibility.argument
-            }
+            Attr.name(name)
+            Attr.constraint_setting(Starlark.Label.named(constraint_setting))
+            Attr.visibility(visibility)
         }
     }
 
@@ -66,8 +56,8 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("module") {
-            "name" => name
-            "version" => version
+            Attr.name(name)
+            Attr.version(version)
         }
     }
 
@@ -78,11 +68,9 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("bazel_dep") {
-            "name" => name
-            "version" => version
-            if let repo_name {
-                "repo_name" => repo_name
-            }
+            Attr.name(name)
+            Attr.version(version)
+            Attr.repo_name(repo_name)
         }
     }
 
@@ -93,11 +81,9 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("filegroup") {
-            "name" => name
-            "srcs" => srcs
-            if let visibility {
-                visibility.argument
-            }
+            Attr.name(name)
+            Attr.srcs(srcs)
+            Attr.visibility(visibility)
         }
     }
 
@@ -110,13 +96,11 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("genrule") {
-            "name" => name
-            "srcs" => srcs
-            "outs" => outs
-            "cmd" => Starlark.custom("\"\"\"\(cmd)\"\"\"")
-            if let visibility {
-                visibility.argument
-            }
+            Attr.name(name)
+            Attr.srcs(srcs)
+            Attr.outs(outs)
+            Attr.cmd(Starlark.custom("\"\"\"\(cmd)\"\"\""))
+            Attr.visibility(visibility)
         }
     }
 
@@ -128,12 +112,10 @@ extension Rules.Builtin.Call {
         -> Starlark.Statement.Call
     {
         .init("alias") {
-            "name" => name
-            "actual" => actual
-            if let tags { "tags" => tags }
-            if let visibility {
-                visibility.argument
-            }
+            Attr.name(name)
+            Attr.actual(actual)
+            Attr.tags(tags)
+            Attr.visibility(visibility)
         }
     }
 }

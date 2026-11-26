@@ -46,18 +46,12 @@ extension Rules.Native {
             -> Starlark.Statement.Call
         {
             Rules.Native.native_binary.call {
-                "name" => name
-                "src" => Starlark.Label.named(src)
-                "out" => out
-                if let data {
-                    "data" => data
-                }
-                if !tags.isEmpty {
-                    "tags" => tags
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.src(Starlark.Label.named(src))
+                Attr.out(out)
+                Attr.data(data)
+                if !tags.isEmpty { Attr.tags(tags) }
+                Attr.visibility(visibility)
             }
         }
     }

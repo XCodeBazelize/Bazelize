@@ -24,7 +24,6 @@ extension Target {
     func generateIntentLibraries(_ builder: CodeBuilder, _: Kit) {
         guard !intentDefinitions.isEmpty else { return }
 
-        builder.load(loadableRule: Rules.Apple.Resources.apple_intent_library)
 
         for definition in intentDefinitions {
             builder.call(

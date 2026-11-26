@@ -43,9 +43,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Config")
-public typealias RulesConfig = Rules.Config
-
 // MARK: - Rules.Config.Call
 
 extension Rules.Config {
@@ -71,14 +68,10 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.bool_flag.call {
-                "name" => name
-                "build_setting_default" => build_setting_default
-                if let scope {
-                    "scope" => scope
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.scope(scope)
+                Attr.visibility(visibility)
             }
         }
 
@@ -93,14 +86,10 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.bool_setting.call {
-                "name" => name
-                "build_setting_default" => build_setting_default
-                if let scope {
-                    "scope" => scope
-                }
-                if let visibility {
-                    visibility.argument
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.scope(scope)
+                Attr.visibility(visibility)
             }
         }
 
@@ -115,14 +104,10 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.int_flag.call {
-                "name" => name
-                "build_setting_default" => .int(build_setting_default)
-                if let scope {
-                    "scope" => scope
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.scope(scope)
+                Attr.visibility(visibility)
             }
         }
 
@@ -137,14 +122,10 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.int_setting.call {
-                "name" => name
-                "build_setting_default" => .int(build_setting_default)
-                if let scope {
-                    "scope" => scope
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.scope(scope)
+                Attr.visibility(visibility)
             }
         }
 
@@ -161,20 +142,12 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.string_flag.call {
-                "name" => name
-                "build_setting_default" => build_setting_default
-                if let make_variable {
-                    "make_variable" => make_variable
-                }
-                if let scope {
-                    "scope" => scope
-                }
-                if let values {
-                    "values" => values
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.make_variable(make_variable)
+                Attr.scope(scope)
+                Attr.values(values)
+                Attr.visibility(visibility)
             }
         }
 
@@ -191,20 +164,12 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.string_setting.call {
-                "name" => name
-                "build_setting_default" => build_setting_default
-                if let make_variable {
-                    "make_variable" => make_variable
-                }
-                if let scope {
-                    "scope" => scope
-                }
-                if let values {
-                    "values" => values
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.make_variable(make_variable)
+                Attr.scope(scope)
+                Attr.values(values)
+                Attr.visibility(visibility)
             }
         }
 
@@ -219,14 +184,10 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.string_list_flag.call {
-                "name" => name
-                "build_setting_default" => build_setting_default
-                if let scope {
-                    "scope" => scope
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.scope(scope)
+                Attr.visibility(visibility)
             }
         }
 
@@ -241,14 +202,10 @@ extension Rules.Config {
             -> Starlark.Statement.Call
         {
             Rules.Config.string_list_setting.call {
-                "name" => name
-                "build_setting_default" => build_setting_default
-                if let scope {
-                    "scope" => scope
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.build_setting_default(build_setting_default)
+                Attr.scope(scope)
+                Attr.visibility(visibility)
             }
         }
     }

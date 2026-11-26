@@ -44,7 +44,6 @@ extension SwiftPM.Generator {
         -> String?
     {
         guard case .executable = kind else {
-            builder.load(loadableRule: Rules.Apple.Resources.apple_resource_bundle)
             builder.call(
                 Rules.Apple.Resources.Call.apple_resource_bundle(
                     name: rule.name,
@@ -84,7 +83,6 @@ extension SwiftPM.Generator {
         builder: CodeBuilder)
     {
         let archive = "\(rule.name)Archive"
-        builder.load(.macos_bundle)
         builder.call(
             Rules.Apple.MacOS.Call.macos_bundle(
                 name: archive,
@@ -96,11 +94,11 @@ extension SwiftPM.Generator {
                 resources: rule.resources,
                 tags: Self.manual))
 
-        builder.load(
-            module: "//Packages:swiftpm_resource_bundle.bzl",
-            symbols: ["swiftpm_resource_bundle"])
         builder.call(
-            Starlark.Statement.Call("swiftpm_resource_bundle") {
+            Starlark.Statement.Call(
+                "swiftpm_resource_bundle",
+                load: .init(module: "//Packages:swiftpm_resource_bundle.bzl", symbols: ["swiftpm_resource_bundle"]))
+            {
                 "name" => rule.name
                 "archive" => Starlark.Label.named(":\(archive)")
                 "bundle_name" => rule.bundle

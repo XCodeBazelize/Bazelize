@@ -17,7 +17,6 @@ extension Target {
     }
 
     private func generateMacOSBundle(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.macos_bundle)
         builder.call(
             Rules.Apple.MacOS.Call.macos_bundle(
                 name: name,
