@@ -51,10 +51,6 @@ extension Target {
     }
 
     private func generateMixedLanguageLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan) {
-        let plugin = kit.plugins.compactMap {
-            $0[name]
-        }.flatMap(\.deps)
-
         let builtins: [String] = kit.builtinPlugins
             .compactMap(\.target)
             .reduce([]) { origin, next in
@@ -115,7 +111,6 @@ extension Target {
                 deps: .build {
                     linkedFrameworksLibrary(project: kit.project)
                     testHostLibraries(project: kit.project)
-                    plugin
                     builtins
                 },
                 visibility: .private))

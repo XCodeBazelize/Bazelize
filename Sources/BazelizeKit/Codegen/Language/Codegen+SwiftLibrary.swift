@@ -8,10 +8,6 @@ extension Target {
         _ kit: Kit,
         extraDeps: [Starlark.Label] = [])
     {
-        let plugin = kit.plugins.compactMap {
-            $0[name]
-        }.flatMap(\.deps)
-
         let builtins: [String] = kit.builtinPlugins
             .compactMap(\.target)
             .reduce([]) { origin, next in
@@ -35,7 +31,6 @@ extension Target {
                     extraDeps
                     linkedFrameworksLibrary(project: kit.project)
                     testHostLibraries(project: kit.project)
-                    plugin
                     builtins
                 },
                 data: .build {

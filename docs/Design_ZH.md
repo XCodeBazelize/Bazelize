@@ -292,19 +292,10 @@ alias(
 
 ### 支援 plugin
 
-見 [Building and loading dynamic libraries at runtime in Swift](https://theswiftdev.com/building-and-loading-dynamic-libraries-at-runtime-in-swift/)
-
-#### plugin interface
-
-目前實際在用的是 builtin plugin(`Sources/BazelizeKit/Plugin/`)：
+plugin 都是 builtin plugin(`Sources/BazelizeKit/Plugin/`)：
 `PluginBuildifier`、`PluginGitRepository`、`PluginSwiftPM`、`PluginApple`、`PluginSwift`、
 `PluginXcodeProj`、`PluginPlistFragment`、`PluginLinker`，由 `Kit.builtinPlugins` 註冊。
 plugin 可以補 `MODULE.bazel` 的 dependency、per-target 的 deps，以及產生結束後的 tip。
-
-#### plugin loader
-
-外部動態載入的 plugin(`Sources/PluginLoader/`)目前是停用狀態：`Kit` 中的 `loadPlugins` 被註解掉，
-`plugins` 永遠是空陣列，所以只有 builtin plugin 會生效。
 
 ---
 
