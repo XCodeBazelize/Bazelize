@@ -9,31 +9,31 @@ extension Xcode.BuildSettings {
         fileprivate let settings: Xcode.BuildSettings
 
         public var bundleID: String? {
-            settings["PRODUCT_BUNDLE_IDENTIFIER"]
+            settings[.productBundleIdentifier]
         }
 
         public var moduleName: String? {
-            settings["PRODUCT_MODULE_NAME"]
+            settings[.productModuleName]
         }
 
         public var productName: String? {
-            settings["PRODUCT_NAME"]
+            settings[.productName]
         }
 
         public var developmentTeam: String? {
-            settings["DEVELOPMENT_TEAM"]
+            settings[.developmentTeam]
         }
 
         public var codeSignStyle: String? {
-            settings["CODE_SIGN_STYLE"]
+            settings[.codeSignStyle]
         }
 
         public var codeSignIdentity: String? {
-            settings["CODE_SIGN_IDENTITY"]
+            settings[.codeSignIdentity]
         }
 
         public var codeSignEntitlements: String? {
-            settings["CODE_SIGN_ENTITLEMENTS"]
+            settings[.codeSignEntitlements]
         }
     }
 }

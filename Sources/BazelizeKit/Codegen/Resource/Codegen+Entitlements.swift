@@ -11,7 +11,7 @@ extension Target {
     /// team prefix while signing; rules_apple substitutes neither, and its
     /// `plisttool` fails the build on a variable it does not know.
     /// Variables rules_apple's `plisttool` substitutes into entitlements itself.
-    fileprivate static let entitlementVariables: Set = ["CFBundleIdentifier"]
+    fileprivate static let entitlementVariables: Set = [PlistKey.bundleIdentifier.rawValue]
 
     var entitlementsPath: String? {
         guard let entitlements = metadata.entitlements, !entitlements.isEmpty else { return nil }

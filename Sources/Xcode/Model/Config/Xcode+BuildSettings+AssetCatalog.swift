@@ -9,11 +9,11 @@ extension Xcode.BuildSettings {
         fileprivate let settings: Xcode.BuildSettings
 
         public var appIconName: String? {
-            settings["ASSETCATALOG_COMPILER_APPICON_NAME"]
+            settings[.appIconName]
         }
 
         public var accentColorName: String? {
-            settings["ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME"]
+            settings[.globalAccentColorName]
         }
 
         /// `ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS`
@@ -21,7 +21,7 @@ extension Xcode.BuildSettings {
         /// Xcode 15+ generates `ImageResource`/`ColorResource` members from the
         /// catalogs and compiles them into the target.
         public var generatesSwiftSymbols: Bool {
-            settings["ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS"] == "YES"
+            settings.bool(.generateSwiftAssetSymbolExtensions) == true
         }
 
         /// `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`: the extra icons the
@@ -31,18 +31,14 @@ extension Xcode.BuildSettings {
         /// Entries are whitespace-separated and may be quoted, because an icon
         /// name can hold a space (`"Dark Mode"`).
         public var alternateAppIconNames: [String]? {
-            guard let value = settings["ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES"] else { return nil }
+            guard let value = settings[.alternateAppIconNames] else { return nil }
             return Self.tokens(value)
         }
 
         /// `ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS`: `true` for `YES`,
         /// `false` for `NO`, `nil` when the target does not say.
         public var includeAllAppIconAssets: Bool? {
-            switch settings["ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS"] {
-            case "YES": true
-            case "NO": false
-            default: nil
-            }
+            settings.bool(.includeAllAppIconAssets)
         }
 
         /// Whitespace-separated, quote-aware, without Xcode's `$(inherited)` marker.

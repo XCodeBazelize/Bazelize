@@ -10,6 +10,7 @@ import BazelizeKit
 import Foundation
 import PathKit
 import Xcode
+import XcodeLoader
 
 // MARK: - Command
 

@@ -85,8 +85,7 @@ extension Target {
     /// with a `main.swift` is common — has to be parsed as a library.
     var parseAsLibraryCopts: [String] {
         switch productType {
-        case "com.apple.product-type.application",
-             "com.apple.product-type.tool":
+        case .application, .commandLineTool:
             return []
         default:
             break

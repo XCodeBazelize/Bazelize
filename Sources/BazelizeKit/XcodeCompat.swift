@@ -37,7 +37,7 @@ extension Target {
 
     private func isExtensionTarget(_ name: String, in project: borrowing Project) -> Bool {
         guard let productType = project.withTarget(named: name, { $0.productType }) ?? nil else { return false }
-        return productType.contains("app-extension")
+        return productType.isAppExtension
     }
 
     /// A product that carries its own entry point or is a standalone bundle cannot be
@@ -49,19 +49,15 @@ extension Target {
         /// A test bundle is the exception: Xcode loads it into the host process, so
         /// the host's code has to be reachable. Bazel has no `-bundle_loader`
         /// equivalent for a logic test, so the host is linked in.
-        if isTest, productType == "com.apple.product-type.application" {
+        if isTest, productType == .application {
             return true
         }
 
         switch productType {
-        case "com.apple.product-type.application",
-             "com.apple.product-type.tool",
-             "com.apple.product-type.bundle",
-             "com.apple.product-type.bundle.unit-test",
-             "com.apple.product-type.bundle.ui-testing":
+        case .application, .commandLineTool, .bundle, .unitTestBundle, .uiTestBundle:
             return false
         default:
-            return !productType.contains("app-extension")
+            return !productType.isAppExtension
         }
     }
 
@@ -158,7 +154,7 @@ extension Target {
         }
 
         let applications = parents.filter { index in
-            project.targets[index].productType == "com.apple.product-type.application"
+            project.targets[index].productType == .application
         }
         guard applications.count <= 1 else { return nil }
 

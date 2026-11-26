@@ -11,6 +11,24 @@ extension Xcode {
         /// Declared local inputs omitted from generated rules because they are
         /// absent. Kept separately so generation can still name each one.
         public var missing: [File] = []
+
+        package init(
+            sources: [File],
+            headers: [File],
+            resources: [File],
+            frameworks: [File],
+            copyFiles: [File],
+            others: [File],
+            missing: [File] = [])
+        {
+            self.sources = sources
+            self.headers = headers
+            self.resources = resources
+            self.frameworks = frameworks
+            self.copyFiles = copyFiles
+            self.others = others
+            self.missing = missing
+        }
     }
 }
 

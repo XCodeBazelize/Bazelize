@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     func build(
@@ -45,7 +46,7 @@ extension SwiftPM.Generator {
                     srcs: sources(
                         naming: resources?.accessors ?? [],
                         globbing: matching(
-                            sources(of: target, prefix: prefix, extensions: ["swift"]),
+                            sources(of: target, prefix: prefix, extensions: [.swift]),
                             relativeFiles(of: target, in: package, prefix: prefix))
                             + generated,
                         excluding: excluded(target, prefix: prefix)),

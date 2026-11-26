@@ -1,5 +1,6 @@
 import Testing
 @testable import Xcode
+@testable import XcodeLoader
 
 /// The values Xcode fills in from the toolchain, which a project writes into its
 /// `Info.plist` and expects to read back in Xcode's own spelling.
@@ -7,22 +8,22 @@ struct ToolchainTests {
     @Test
     func xcodeVersionIsSpelledAsFourDigits() {
         #expect(Toolchain.settings(xcodeVersion: "27.0") == [
-            "XCODE_VERSION_ACTUAL": "2700",
-            "XCODE_VERSION_MAJOR": "2700",
-            "XCODE_VERSION_MINOR": "2700",
+            .xcodeVersionActual: "2700",
+            .xcodeVersionMajor: "2700",
+            .xcodeVersionMinor: "2700",
         ])
 
         #expect(Toolchain.settings(xcodeVersion: "14.3") == [
-            "XCODE_VERSION_ACTUAL": "1430",
-            "XCODE_VERSION_MAJOR": "1400",
-            "XCODE_VERSION_MINOR": "1430",
+            .xcodeVersionActual: "1430",
+            .xcodeVersionMajor: "1400",
+            .xcodeVersionMinor: "1430",
         ])
 
         /// A patch release counts, and only `ACTUAL` carries it.
         #expect(Toolchain.settings(xcodeVersion: "14.3.1") == [
-            "XCODE_VERSION_ACTUAL": "1431",
-            "XCODE_VERSION_MAJOR": "1400",
-            "XCODE_VERSION_MINOR": "1430",
+            .xcodeVersionActual: "1431",
+            .xcodeVersionMajor: "1400",
+            .xcodeVersionMinor: "1430",
         ])
     }
 

@@ -2,6 +2,7 @@ import Foundation
 import PathKit
 import Testing
 import Xcode
+import XcodeLoader
 @testable import BazelizeKit
 
 struct AppIconSelectionTests {

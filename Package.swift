@@ -18,7 +18,6 @@ let package = Package(
         // Dependencies declare other packages that this package depends on.
 
         .package(url: "https://github.com/tuist/XcodeProj", from: "9.17.8"),
-        .package(url: "https://github.com/Flight-School/AnyCodable", from: "0.6.7"),
         .package(url: "https://github.com/jpsim/Yams", from: "6.2.2"),
         .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
         .package(url: "https://github.com/apple/swift-collections", from: "1.7.5"),
@@ -37,6 +36,7 @@ let package = Package(
                 "PathKit",
                 "BazelizeKit",
                 "Xcode",
+                "XcodeLoader",
             ]),
         .executableTarget(
             name: "RepoEnumGenerator",
@@ -71,11 +71,10 @@ let package = Package(
                 "BazelRules",
                 "Commands",
                 "Xcode",
+                "XcodeLoader",
                 "Util",
                 "Starlark",
                 "PluginLoader",
-
-                .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         .testTarget(
             name: "BazelizeKitTests",
@@ -106,16 +105,23 @@ let package = Package(
         .target(
             name: "Xcode",
             dependencies: [
-                "Commands",
                 "PathKit",
-                "AnyCodable",
+
+                .product(name: "BasicContainers", package: "swift-collections"),
+            ]),
+        .target(
+            name: "XcodeLoader",
+            dependencies: [
+                "Commands",
+                "Xcode",
+                "PathKit",
 
                 .product(name: "BasicContainers", package: "swift-collections"),
                 .product(name: "XcodeProj", package: "XcodeProj"),
             ]),
         .testTarget(
             name: "XcodeTests",
-            dependencies: ["Xcode", "BazelizeKit"]),
+            dependencies: ["Xcode", "XcodeLoader", "BazelizeKit"]),
         .testTarget(
             name: "RepoEnumCoreTests",
             dependencies: ["RepoEnumCore"]),

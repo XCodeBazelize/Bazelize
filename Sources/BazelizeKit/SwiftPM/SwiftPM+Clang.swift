@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// A C-family target becomes an `objc_library`: the same rule an Xcode target
@@ -29,7 +30,7 @@ extension SwiftPM.Generator {
         let module = Self.moduleName(target.name)
         let extensions = extensions(of: target, in: package)
         let headers = publicHeaders(of: target, in: directory)
-        let compiled = Self.compileExtensions.filter { extensions.contains($0) }
+        let compiled = Self.compileExtensions.filter { extensions.contains($0.rawValue) }
         /// Headers are matched against everything on disk: `exclude` can drop a
         /// directory that a header search path still points into.
         let files = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
@@ -69,7 +70,7 @@ extension SwiftPM.Generator {
                             /// whose public headers are its own directory needs them
                             /// too: a `#include "sibling.hpp"` is resolved beside the
                             /// source, not through the mirrored interface.
-                            + Self.headerExtensions.map { "\(prefix)/**/*.\($0)" },
+                            + Self.headerExtensions.map { "\(prefix)/**/*.\($0.rawValue)" },
                         files)
                         /// A plugin's output compiles like a source of the target,
                         /// and the header beside it is an input the same way a
@@ -82,7 +83,7 @@ extension SwiftPM.Generator {
                 hdrs: interface
                     .map { path in
                         matching(
-                            Self.headerExtensions.map { "\(path)/**/*.\($0)" },
+                            Self.headerExtensions.map { "\(path)/**/*.\($0.rawValue)" },
                             Self.relativeFiles(under: path, in: root))
                     }?
                     .nonEmpty
@@ -135,7 +136,7 @@ extension SwiftPM.Generator {
         builder: CodeBuilder)
     {
         let extensions = extensions(of: target, in: package)
-        let compiled = Self.compileExtensions.filter { extensions.contains($0) }
+        let compiled = Self.compileExtensions.filter { extensions.contains($0.rawValue) }
         /// Headers are matched against everything on disk, the way a regular
         /// C-family target matches them: a header beside a test source is an
         /// input of its compile.
@@ -149,7 +150,7 @@ extension SwiftPM.Generator {
                     naming: resources?.accessors ?? [],
                     globbing: matching(
                         sources(of: target, prefix: prefix, extensions: compiled)
-                            + Self.headerExtensions.map { "\(prefix)/**/*.\($0)" },
+                            + Self.headerExtensions.map { "\(prefix)/**/*.\($0.rawValue)" },
                         files)
                         + generated,
                     excluding: excludedClang(target, prefix: prefix)),
@@ -198,7 +199,8 @@ extension SwiftPM.Generator {
         headersOf target: SwiftPM.PackageTarget,
         at headers: Path?,
         module: String,
-        root: Path) throws -> String?
+        root: Path) throws
+        -> String?
     {
         guard let headers, headers.isDirectory else { return nil }
 
@@ -265,13 +267,16 @@ extension SwiftPM.Generator {
             let `extension` = Path(excluded).extension
 
             if searched.contains(path) {
-                return Self.compileExtensions.map { "\(prefix)/\(path)/**/*.\($0)" }
+                return Self.compileExtensions.map { "\(prefix)/\(path)/**/*.\($0.rawValue)" }
             }
 
             /// A header a manifest excludes is excluded from being compiled, which
             /// it never was: it is included by a source beside it, and dropping it
             /// leaves the compiler looking for a file the sandbox does not have.
-            if let `extension`, Self.headerExtensions.contains(`extension`) {
+            if
+                let `extension`, let header = FileExtension(rawValue: `extension`),
+                Self.headerExtensions.contains(header)
+            {
                 return []
             }
 
@@ -302,7 +307,8 @@ extension SwiftPM.Generator {
     private func includes(
         of target: SwiftPM.PackageTarget,
         prefix: String,
-        interface: String?) -> [String]
+        interface: String?)
+        -> [String]
     {
         var paths: [String] = []
         if let interface {
@@ -324,8 +330,9 @@ extension SwiftPM.Generator {
         of target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         module: String,
-        compiled: [String],
-        resources: ResourceBundle?) -> Starlark.Value?
+        compiled: [FileExtension],
+        resources: ResourceBundle?)
+        -> Starlark.Value?
     {
         var always = ["-fmodule-name=\(module)", "-DSWIFT_PACKAGE"]
 
@@ -379,7 +386,8 @@ extension SwiftPM.Generator {
     private func standards(
         of target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
-        compiled: [String]) -> [String]
+        compiled: [FileExtension])
+        -> [String]
     {
         let extensions = Set(compiled)
         let cxx = !extensions.isDisjoint(with: Self.cxxExtensions)
@@ -407,6 +415,6 @@ extension SwiftPM.Generator {
         }
     }
 
-    private static let cExtensions: Set<String> = ["c", "m"]
-    private static let cxxExtensions: Set<String> = ["cc", "cpp", "cxx", "c++", "mm"]
+    private static let cExtensions: Set<FileExtension> = [.c, .m]
+    private static let cxxExtensions: Set<FileExtension> = [.cc, .cpp, .cxx, .cPlusPlus, .mm]
 }

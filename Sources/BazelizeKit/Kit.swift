@@ -8,7 +8,7 @@
 import Commands
 import PluginLoader
 import Util
-import XcodeProj
+import XcodeLoader
 
 // MARK: - Kit
 

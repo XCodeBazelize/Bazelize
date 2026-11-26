@@ -7,6 +7,7 @@
 
 import Foundation
 @preconcurrency import PathKit
+import Xcode
 
 extension SwiftPM {
     /// Builds what a plugin is told about the package it is running for.
@@ -125,7 +126,8 @@ extension SwiftPM {
         private mutating func wire(
             _ target: PackageTarget,
             in package: Package,
-            sources listed: Bool) throws -> PluginWire.Target
+            sources listed: Bool) throws
+            -> PluginWire.Target
         {
             let directory = generator.sourceDirectory(of: target, in: package) ?? package.root
             let directoryId = add(path: directory.absolute().string)
@@ -159,7 +161,8 @@ extension SwiftPM {
         private static func info(
             of target: PackageTarget,
             module: String,
-            sources: [PluginWire.File]) -> PluginWire.TargetInfo
+            sources: [PluginWire.File])
+            -> PluginWire.TargetInfo
         {
             switch target.type {
             case "binary":
@@ -186,9 +189,9 @@ extension SwiftPM {
         }
 
         private static func type(of file: Path) -> String {
-            let `extension` = file.extension ?? ""
-            if Generator.headerExtensions.contains(`extension`) { return "header" }
-            if `extension` == "swift" || Generator.compileExtensions.contains(`extension`) { return "source" }
+            let `extension` = FileExtension(path: file.string)
+            if let `extension`, Generator.headerExtensions.contains(`extension`) { return "header" }
+            if let `extension`, `extension` == .swift || Generator.compileExtensions.contains(`extension`) { return "source" }
             return "resource"
         }
     }

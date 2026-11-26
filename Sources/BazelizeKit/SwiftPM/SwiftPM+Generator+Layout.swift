@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// The sources stay where SwiftPM put them; the package directory carries
@@ -148,7 +149,8 @@ extension SwiftPM.Generator {
         of target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         prefix: String,
-        excluding exclude: Bool = true) -> [String]
+        excluding exclude: Bool = true)
+        -> [String]
     {
         guard let directory = sourceDirectory(of: target, in: package) else { return [] }
         let root = directory.normalize().string
@@ -192,9 +194,9 @@ extension SwiftPM.Generator {
     }
 
     /// Extensions a C-family compiler is handed.
-    static let compileExtensions = ["c", "cc", "cpp", "cxx", "m", "mm", "S", "s"]
+    static let compileExtensions: [FileExtension] = [.c, .cc, .cpp, .cxx, .m, .mm, .preprocessedAssembly, .assembly]
     /// Extensions that are only ever included by another file.
-    static let headerExtensions = ["h", "hh", "hpp", "hxx", "inc"]
+    static let headerExtensions: [FileExtension] = [.h, .hh, .hpp, .hxx, .inc]
 
     /// SwiftPM's own layout rules: an explicit `path`, else one of the
     /// conventional directories, else the package root for a single target.

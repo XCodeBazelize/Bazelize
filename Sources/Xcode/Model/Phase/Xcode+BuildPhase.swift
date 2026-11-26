@@ -11,6 +11,28 @@ extension Xcode {
         public let outputFileListPaths: [String]
         public let shellScript: String?
         public let destination: CopyFilesDestination?
+
+        package init(
+            type: String,
+            name: String?,
+            files: [BuildPhaseFile],
+            inputPaths: [String],
+            outputPaths: [String],
+            inputFileListPaths: [String],
+            outputFileListPaths: [String],
+            shellScript: String?,
+            destination: CopyFilesDestination?)
+        {
+            self.type = type
+            self.name = name
+            self.files = files
+            self.inputPaths = inputPaths
+            self.outputPaths = outputPaths
+            self.inputFileListPaths = inputFileListPaths
+            self.outputFileListPaths = outputFileListPaths
+            self.shellScript = shellScript
+            self.destination = destination
+        }
     }
 }
 

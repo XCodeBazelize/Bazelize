@@ -17,9 +17,9 @@ extension Target {
     /// whatever links it — so there is no bundle to build. The label a dependent
     /// names stays valid by pointing at the library the target already generates.
     var isStaticFramework: Bool {
-        if productType == "com.apple.product-type.framework.static" { return true }
-        guard productType == "com.apple.product-type.framework" else { return false }
-        return prefer(\.machOType) == "staticlib"
+        if productType == .staticFramework { return true }
+        guard productType == .framework else { return false }
+        return prefer(\.machOType) == .staticLibrary
     }
 
     func generateStaticFrameworkCode(_ builder: CodeBuilder, _: Kit) {
