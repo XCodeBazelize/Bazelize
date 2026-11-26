@@ -494,7 +494,7 @@ struct RulesAppleTests {
         let call = Rules.Apple.IOS.Call.ios_imessage_application(
             name: "Stickers",
             bundle_id: "com.example.stickers",
-            extensions: ["//Targets/StickerPack:StickerPack"],
+            extension: "//Targets/StickerPack:StickerPack",
             families: ["iphone"],
             minimum_os_version: "18.0")
 
@@ -504,9 +504,7 @@ struct RulesAppleTests {
                 ios_imessage_application(
                     name = "Stickers",
                     bundle_id = "com.example.stickers",
-                    extensions = [
-                        "//Targets/StickerPack:StickerPack",
-                    ],
+                    extension = "//Targets/StickerPack:StickerPack",
                     families = [
                         "iphone",
                     ],

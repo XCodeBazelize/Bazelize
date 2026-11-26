@@ -160,6 +160,7 @@ extension Rules.Apple.IOS {
             name: String,
             app_icons: Starlark.Value? = nil,
             primary_app_icon: Starlark.Value? = nil,
+            app_clips: [Starlark.Label]? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
@@ -181,6 +182,7 @@ extension Rules.Apple.IOS {
                 Attr.name(name)
                 Attr.app_icons(app_icons)
                 Attr.primary_app_icon(primary_app_icon)
+                if let app_clips, !app_clips.isEmpty { Attr.app_clips(app_clips) }
                 Attr.bundle_id(bundle_id)
                 Attr.bundle_name(bundle_name)
                 Attr.deps(deps)
@@ -321,9 +323,13 @@ extension Rules.Apple.IOS {
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            entitlements: Starlark.Label? = nil,
+            families: [String]? = nil,
+            frameworks: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
+            strings: Starlark.Value? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -332,25 +338,29 @@ extension Rules.Apple.IOS {
                 Attr.bundle_id(bundle_id)
                 Attr.bundle_name(bundle_name)
                 Attr.deps(deps)
+                Attr.entitlements(entitlements)
+                Attr.families(families)
+                if let frameworks, !frameworks.isEmpty { Attr.frameworks(frameworks) }
                 Attr.infoplists(infoplists)
                 Attr.minimum_os_version(minimum_os_version)
                 Attr.resources(resources)
+                Attr.strings(strings)
                 Attr.visibility(visibility)
             }
         }
 
         /// Builds an `ios_imessage_application` target.
         ///
-        /// An iMessage app has no code of its own: what it ships is the
-        /// extension it carries, which is why `extensions` is what it takes
-        /// instead of `deps`.
+        /// An iMessage app has no code of its own: what it ships is the one
+        /// extension it carries — an iMessage extension or a sticker pack —
+        /// which is why `extension` is what it takes instead of `deps`.
         public static func ios_imessage_application(
             name: String,
             app_icons: Starlark.Value? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             entitlements: Starlark.Label? = nil,
-            extensions: [Starlark.Label]? = nil,
+            extension: Starlark.Label,
             families: [String]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
@@ -365,7 +375,7 @@ extension Rules.Apple.IOS {
                 Attr.bundle_id(bundle_id)
                 Attr.bundle_name(bundle_name)
                 Attr.entitlements(entitlements)
-                if let extensions, !extensions.isEmpty { Attr.extensions(extensions) }
+                Attr.extension(`extension`)
                 Attr.families(families)
                 Attr.infoplists(infoplists)
                 Attr.minimum_os_version(minimum_os_version)
@@ -987,6 +997,7 @@ extension Rules.Apple.TVOS {
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            extensions: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
@@ -999,6 +1010,7 @@ extension Rules.Apple.TVOS {
                 Attr.bundle_id(bundle_id)
                 Attr.bundle_name(bundle_name)
                 Attr.deps(deps)
+                if let extensions, !extensions.isEmpty { Attr.extensions(extensions) }
                 Attr.infoplists(infoplists)
                 Attr.minimum_os_version(minimum_os_version)
                 Attr.resources(resources)

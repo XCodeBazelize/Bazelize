@@ -134,6 +134,79 @@ let project = Project(
                 "OTHER_CFLAGS": #"$(inherited) "-DOTHER_MESSAGE=\"other words\"""#,
                 "OTHER_LDFLAGS": #"$(inherited) -Xlinker "-alias" -Xlinker "_quoted_flags_symbol" -Xlinker "_quoted_flags_alias""#,
             ])),
+        /// The iOS product types an app embeds besides a plain extension: an App
+        /// Clip, an iMessage extension, and a sticker pack.
+        target(
+            "ProductKinds",
+            product: .app,
+            sources: ["ProductKinds/Application/**/*.swift"],
+            dependencies: [
+                .target(name: "ProductKindsClip"),
+                .target(name: "ProductKindsMessages"),
+                .target(name: "ProductKindsStickers"),
+            ]),
+        .target(
+            name: "ProductKindsClip",
+            destinations: .iOS,
+            product: .appClip,
+            bundleId: "com.bazel.ProductKinds.Clip",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .extendingDefault(with: [:]),
+            sources: ["ProductKinds/Clip/**/*.swift"],
+            /// Tuist refuses an App Clip without it. The prefix is the signing
+            /// team's, which nothing here signs with.
+            entitlements: .dictionary([
+                "com.apple.developer.parent-application-identifiers": ["$(AppIdentifierPrefix)com.bazel.ProductKinds"],
+            ]),
+            settings: settings()),
+        .target(
+            name: "ProductKindsMessages",
+            destinations: .iOS,
+            product: .messagesExtension,
+            bundleId: "com.bazel.ProductKinds.Messages",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .extendingDefault(with: [
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.message-payload-provider",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).MessagesViewController",
+                ],
+            ]),
+            sources: ["ProductKinds/Messages/**/*.swift"],
+            settings: settings(["APPLICATION_EXTENSION_API_ONLY": "YES"])),
+        .target(
+            name: "ProductKindsStickers",
+            destinations: .iOS,
+            product: .stickerPackExtension,
+            bundleId: "com.bazel.ProductKinds.Stickers",
+            deploymentTargets: deploymentTargets,
+            infoPlist: .extendingDefault(with: [:]),
+            resources: ["ProductKinds/Stickers/Stickers.xcassets"],
+            settings: settings()),
+        /// A tvOS app and the Top Shelf extension it embeds.
+        .target(
+            name: "TVProductKinds",
+            destinations: .tvOS,
+            product: .app,
+            bundleId: "com.bazel.TVProductKinds",
+            deploymentTargets: .tvOS("17.0"),
+            infoPlist: .extendingDefault(with: [:]),
+            sources: ["TVProductKinds/Application/**/*.swift"],
+            dependencies: [.target(name: "TVProductKindsTopShelf")],
+            settings: settings()),
+        .target(
+            name: "TVProductKindsTopShelf",
+            destinations: .tvOS,
+            product: .tvTopShelfExtension,
+            bundleId: "com.bazel.TVProductKinds.TopShelf",
+            deploymentTargets: .tvOS("17.0"),
+            infoPlist: .extendingDefault(with: [
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.tv-top-shelf",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).ContentProvider",
+                ],
+            ]),
+            sources: ["TVProductKinds/TopShelf/**/*.swift"],
+            settings: settings(["APPLICATION_EXTENSION_API_ONLY": "YES"])),
         .target(
             name: "MacBundle",
             destinations: .macOS,

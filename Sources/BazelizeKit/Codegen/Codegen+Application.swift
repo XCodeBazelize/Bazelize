@@ -67,11 +67,18 @@ extension Target {
 
     private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
         let icons = appIconSelection(project: kit.project)
+        for stickerPack in embeddedStickerPackNames(project: kit.project) {
+            kit.note("""
+            \(name) embeds the sticker pack \(stickerPack), which is left out of it: rules_apple embeds a \
+            sticker pack only in an iMessage app, never in an application.
+            """)
+        }
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
                 app_icons: icons?.appIcons,
                 primary_app_icon: icons?.primaryAppIcon,
+                app_clips: embeddedAppClips(project: kit.project),
                 bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
@@ -137,14 +144,84 @@ extension Target {
                 bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
-                    frameworks
+                    linkedFrameworks(project: kit.project)
                 },
+                extensions: embeddedExtensions(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
                     plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.tvOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
+    }
+
+    /// An App Clip: an application of its own that its parent embeds in
+    /// `AppClips`.
+    func generateAppClip(_ builder: CodeBuilder, _ kit: Kit) {
+        builder.call(
+            Rules.Apple.IOS.Call.ios_app_clip(
+                name: name,
+                bundle_id: bundleIdentifier(project: kit.project),
+                deps: .build {
+                    ":\(name)_library"
+                    linkedFrameworks(project: kit.project)
+                },
+                entitlements: entitlementsLabel(project: kit.project),
+                families: deviceFamilies,
+                frameworks: embeddedFrameworks(project: kit.project),
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.iOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
+    }
+
+    /// An iMessage app has no code: it is the one iMessage extension or sticker
+    /// pack it carries, which rules_apple takes as `extension`. One that carries
+    /// none, or several, has no rule that bundles it.
+    func generateIMessageApplication(_ builder: CodeBuilder, _ kit: Kit) {
+        let carried = embeddedExtensionTargetNames(project: kit.project).sorted()
+        guard carried.count == 1, let only = carried.first else {
+            kit.note("""
+            \(name) is not generated: an iMessage app carries exactly one iMessage extension or sticker \
+            pack, and it carries \(carried.isEmpty ? "none" : carried.joined(separator: ", ")).
+            """)
+            return
+        }
+
+        builder.call(
+            Rules.Apple.IOS.Call.ios_imessage_application(
+                name: name,
+                app_icons: appIcons(project: kit.project),
+                bundle_id: bundleIdentifier(project: kit.project),
+                entitlements: entitlementsLabel(project: kit.project),
+                extension: .named("//Targets/\(only):\(only)"),
+                families: deviceFamilies,
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.iOS),
                 resources: .build {
                     bundleResources(project: kit.project)
                 },

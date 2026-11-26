@@ -35,9 +35,12 @@ extension Target {
         configs.select(keyPath)
     }
 
+    private func productTypeOfTarget(named name: String, in project: borrowing Project) -> Xcode.ProductType? {
+        project.withTarget(named: name, { $0.productType }) ?? nil
+    }
+
     private func isExtensionTarget(_ name: String, in project: borrowing Project) -> Bool {
-        guard let productType = project.withTarget(named: name, { $0.productType }) ?? nil else { return false }
-        return productType.isAppExtension
+        productTypeOfTarget(named: name, in: project)?.isAppExtension ?? false
     }
 
     /// A product that carries its own entry point or is a standalone bundle cannot be
@@ -54,7 +57,8 @@ extension Target {
         }
 
         switch productType {
-        case .application, .commandLineTool, .bundle, .unitTestBundle, .uiTestBundle:
+        case .application, .onDemandInstallCapableApplication, .messagesApplication, .commandLineTool, .bundle,
+             .unitTestBundle, .uiTestBundle:
             return false
         default:
             return !productType.isAppExtension
@@ -69,6 +73,22 @@ extension Target {
 
     func embeddedExtensionTargetNames(project: borrowing Project) -> [String] {
         dependencies.targets.filter { isExtensionTarget($0, in: project) }
+    }
+
+    /// The sticker packs among the extensions: only an iMessage app takes one.
+    func embeddedStickerPackNames(project: borrowing Project) -> [String] {
+        embeddedExtensionTargetNames(project: project)
+            .filter { productTypeOfTarget(named: $0, in: project) == .stickerPack }
+            .sorted()
+    }
+
+    /// The App Clips the application embeds in `AppClips`.
+    func embeddedAppClips(project: borrowing Project) -> [Starlark.Label] {
+        dependencies.targets
+            .filter { productTypeOfTarget(named: $0, in: project) == .onDemandInstallCapableApplication }
+            .filter { project.withTarget(named: $0, { $0.isGenerated }) == true }
+            .sorted()
+            .map { Starlark.Label.named("//Targets/\($0):\($0)") }
     }
 
     var frameworksLibrary: [Starlark.Label] {
@@ -203,8 +223,11 @@ extension Target {
             }
     }
 
+    /// The extensions an application's `extensions` takes. A sticker pack is not
+    /// one of them: rules_apple embeds it only in an iMessage app.
     func embeddedExtensions(project: borrowing Project) -> [Starlark.Label] {
         embeddedExtensionTargetNames(project: project)
+            .filter { productTypeOfTarget(named: $0, in: project) != .stickerPack }
             .filter { project.withTarget(named: $0, { $0.hasSources }) == true }
             .sorted()
             .map { target in

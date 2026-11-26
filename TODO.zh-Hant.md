@@ -86,6 +86,33 @@ SwiftPM 的 `--traits A` 會讓該 package 以 `-DA` 編譯；沒有選到的其
 manifest defaults，`<Package>.all` 打開全部。多個 trait 也能用公開的 boolean flags
 表示。少一個單一 config 的便利寫法不算 generator 行為缺口，因此不再列為未完成。
 
+### A8. app 內嵌的 iOS 與 tvOS product type —— 已完成，剩三種情況
+
+App Clip 生成 `ios_app_clip`，由它的 application 放進 `app_clips`；iMessage
+extension 生成 `ios_imessage_extension`；sticker pack 生成
+`ios_sticker_pack_extension`，`sticker_assets` 是它的 asset catalog；tvOS app
+extension 生成 `tvos_extension`，由 `tvos_application` 放進 `extensions`；iMessage
+app 生成 `ios_imessage_application`，包住它唯一的那個 extension。`fixture/iOS`
+的 `ProductKinds` 和 `TVProductKinds` 會分別用 Xcode 與生成的 workspace build，
+CI 檢查 App Clip 和各 extension 是否放在 Xcode 放的位置。
+
+還沒解決的：
+
+- **一般 app 裡的 sticker pack 會被拿掉。** Xcode 可以把 sticker pack 嵌進任何 app
+  的 `PlugIns`；但 rules_apple 的 `ios_application.extensions` 只接受
+  `IosExtensionBundleInfo`，而 `ios_sticker_pack_extension` 不提供它。generator
+  會照樣寫出 sticker pack 自己的 rule，並發一則 note 說明；`ProductKinds` 就會印出
+  這則 note。
+- **iMessage app 沒有 fixture。** Tuist 沒有對應
+  `com.apple.product-type.application.messages` 的 product。這部分是手動驗證的：
+  把一個 Tuist 專案的 target 在 `project.pbxproj` 裡改成這個類型並拿掉原始碼後，
+  `xcodebuild` 可以 build，生成的 `ios_imessage_application` 也能用 Bazel build，
+  結構相同——extension 在 `PlugIns`，外加 stub 執行檔。CI 裡沒有重複這個驗證。
+- **`com.apple.product-type.app-extension.intents-service` 仍然會報錯。** Xcode 27
+  只為 watchOS 定義這個類型；iOS 上的這種 target 連 `xcodebuild` 都會因
+  `unable to resolve product type` 失敗。它應該和 watchOS 的 product type 一起
+  處理，而那些目前還沒有生成。
+
 ## B. 覆蓋率
 
 ### B1. Root package tests 會在 macOS 與 iOS Simulator 執行 —— 已完成

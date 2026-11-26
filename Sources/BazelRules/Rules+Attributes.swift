@@ -39,6 +39,10 @@ enum Attr {
         value.map { "alwayslink" => $0 }
     }
 
+    static func app_clips(_ value: [Starlark.Label]?) -> Starlark.Statement.Argument? {
+        value.map { "app_clips" => $0 }
+    }
+
     static func app_icons(_ value: Starlark.Value?) -> Starlark.Statement.Argument? {
         value.map { "app_icons" => $0 }
     }
@@ -224,6 +228,10 @@ enum Attr {
     }
 
     static func `extension`(_ value: String?) -> Starlark.Statement.Argument? {
+        value.map { "extension" => $0 }
+    }
+
+    static func `extension`(_ value: Starlark.Label?) -> Starlark.Statement.Argument? {
         value.map { "extension" => $0 }
     }
 

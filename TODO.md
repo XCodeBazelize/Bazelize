@@ -105,6 +105,35 @@ expressed with the public boolean flags. The missing single-config shorthand is
 only convenience, not a generator behaviour gap, so it is no longer tracked as
 unfinished work.
 
+### A8. iOS and tvOS product types an app embeds — done, three cases open
+
+An App Clip becomes an `ios_app_clip` its application carries in `app_clips`;
+an iMessage extension an `ios_imessage_extension`; a sticker pack an
+`ios_sticker_pack_extension` whose `sticker_assets` is its catalog; a tvOS app
+extension a `tvos_extension` its `tvos_application` carries in `extensions`; an
+iMessage app an `ios_imessage_application` around the one extension it holds.
+`fixture/iOS` builds `ProductKinds` and `TVProductKinds` with both Xcode and the
+generated workspace, and CI checks that the clip and the extensions land where
+Xcode puts them.
+
+What is still open:
+
+- **A sticker pack inside an ordinary app is left out of it.** Xcode embeds one
+  in any app's `PlugIns`; rules_apple's `ios_application.extensions` accepts only
+  `IosExtensionBundleInfo`, which `ios_sticker_pack_extension` does not provide.
+  The generator writes the sticker pack's own rule and says so in a note;
+  `ProductKinds` is the case that prints it.
+- **An iMessage app has no fixture.** Tuist has no product for
+  `com.apple.product-type.application.messages`. It was verified by hand: a
+  Tuist project whose target was retyped in `project.pbxproj` and stripped of
+  sources builds with `xcodebuild`, and its generated `ios_imessage_application`
+  builds with Bazel into the same layout — the extension in `PlugIns` and the
+  stub executable. Nothing in CI repeats that.
+- **`com.apple.product-type.app-extension.intents-service` is still an error.**
+  Xcode 27 defines it for watchOS only; an iOS target of that type fails
+  `xcodebuild` with `unable to resolve product type`. It belongs with the
+  watchOS product types, which are not generated yet.
+
 ## B. Coverage
 
 ### B1. Root-package tests run on macOS and iOS Simulator — done

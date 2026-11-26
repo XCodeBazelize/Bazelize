@@ -14,8 +14,64 @@ extension Target {
         switch platformSDK {
         case .iOS: buildIOS(builder, kit)
         case .macOS: buildMac(builder, kit)
+        case .tvOS: buildTV(builder, kit)
         default: break
         }
+    }
+
+    /// An iMessage extension: an app extension Messages loads, embedded in an
+    /// application's `PlugIns` or carried by an iMessage app.
+    func generateIMessageExtension(_ builder: CodeBuilder, _ kit: Kit) {
+        builder.call(
+            Rules.Apple.IOS.Call.ios_imessage_extension(
+                name: name,
+                bundle_id: bundleIdentifier(project: kit.project),
+                deps: .build {
+                    ":\(name)_library"
+                    frameworks
+                },
+                entitlements: entitlementsLabel(project: kit.project),
+                families: deviceFamilies,
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.iOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
+    }
+
+    /// A sticker pack has no code: its stickers are an asset catalog —
+    /// `.xcassets` or `.xcstickers` — that `actool` compiles into the extension.
+    func generateStickerPack(_ builder: CodeBuilder, _ kit: Kit) {
+        let catalogs = (assets + stickerAssets).map { "\($0)/**" }
+        builder.call(
+            Rules.Apple.IOS.Call.ios_sticker_pack_extension(
+                name: name,
+                bundle_id: bundleIdentifier(project: kit.project),
+                entitlements: entitlementsLabel(project: kit.project),
+                families: deviceFamilies,
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.iOS),
+                sticker_assets: catalogs.isEmpty ? nil : Starlark.glob(catalogs),
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
     }
 
     /// An XPC service is its own bundle inside `Contents/XPCServices`, which the
@@ -94,6 +150,32 @@ extension Target {
                     plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.iOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
+    }
+
+    private func buildTV(_ builder: CodeBuilder, _ kit: Kit) {
+        builder.call(
+            Rules.Apple.TVOS.Call.tvos_extension(
+                name: name,
+                bundle_id: bundleIdentifier(project: kit.project),
+                deps: .build {
+                    ":\(name)_library"
+                    frameworks
+                },
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.tvOS),
                 resources: .build {
                     bundleResources(project: kit.project)
                 },

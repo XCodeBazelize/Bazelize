@@ -204,6 +204,25 @@ jobs:
         working-directory: fixture/iOS/App
         run: bazel build //Targets/Example //Targets/MacBundle //Targets/ProductProbe
 
+      # The product types an application embeds besides a plain extension: an
+      # App Clip in AppClips, an iMessage extension, and a tvOS Top Shelf
+      # extension. Each has to land where Xcode puts it.
+      - name: Build Embedded Product Kinds
+        working-directory: fixture/iOS/App
+        run: |
+          bazel build //Targets/ProductKinds //Targets/ProductKindsStickers //Targets/TVProductKinds
+          # The listing is read whole: `grep -q` closing a pipe early fails the
+          # step under `pipefail`.
+          check() {
+            ipa=$(bazel cquery "//Targets/$1" --output=files | grep '\.ipa$')
+            listing=$(unzip -l "$ipa")
+            for entry in "${@:2}"; do
+              grep -q " Payload/$1.app/$entry$" <<< "$listing" || { echo "$1 is missing $entry" >&2; exit 1; }
+            done
+          }
+          check ProductKinds AppClips/ProductKindsClip.app/ProductKindsClip PlugIns/ProductKindsMessages.appex/ProductKindsMessages
+          check TVProductKinds PlugIns/TVProductKindsTopShelf.appex/TVProductKindsTopShelf
+
       - name: Run Per-File Flag Probe
         working-directory: fixture/iOS/App
         run: bazel run //Targets/PerFileFlags --config=Debug
