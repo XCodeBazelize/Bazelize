@@ -43,9 +43,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Config")
-public typealias RulesConfig = Rules.Config
-
 // MARK: - Rules.Config.Call
 
 extension Rules.Config {

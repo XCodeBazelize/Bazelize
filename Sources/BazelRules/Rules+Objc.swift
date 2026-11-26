@@ -31,9 +31,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Objc")
-public typealias RulesObjc = Rules.Objc
-
 // MARK: - Rules.Objc.Call
 
 extension Rules.Objc {

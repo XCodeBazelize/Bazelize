@@ -21,9 +21,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Plist")
-public typealias RulesPlist = Rules.Plist
-
 // MARK: - Rules.Plist.Call
 
 extension Rules.Plist {

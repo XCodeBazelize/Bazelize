@@ -151,9 +151,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Apple")
-public typealias RulesApple = Rules.Apple
-
 // MARK: - Rules.Apple.IOS.Call
 
 extension Rules.Apple.IOS {

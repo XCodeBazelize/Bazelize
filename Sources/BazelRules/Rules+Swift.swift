@@ -82,9 +82,6 @@ extension Rules {
     }
 }
 
-@available(*, deprecated, renamed: "Rules.Swift")
-public typealias RulesSwift = Rules.Swift
-
 // MARK: - Rules.Swift.Call
 
 extension Rules.Swift {
