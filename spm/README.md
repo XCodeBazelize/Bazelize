@@ -28,7 +28,7 @@ would not tell us anything.
 | `SystemLibrary` | system-library targets: module maps whose `link` and `link framework` directives say what to link, and a library whose header only `pkg-config` knows the way to — which is why this one needs `PKG_CONFIG_PATH` (see below) |
 | `Trait` | the package's own traits, a default one, and a dependency whose trait is turned on by name |
 | `TraitGraph` | the whole trait graph: traits that enable traits, a condition naming several, and dependencies taking `.defaults`, nothing, or a named selection |
-| `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled, a link back to the target's own directory that must not be walked, and two directories that link to each other, whose file is compiled once |
+| `TargetSources` | `sources:`, where a file beside the listed ones must not be compiled, and a link back to the target's own directory that must not be walked |
 | `TargetPath` | `path:`, where neither the target nor its tests are under `Sources/` |
 | `TargetExclude` | `exclude:` naming a directory and a single file, neither of which may be compiled — in a package that declares no products at all |
 | `TargetEmbed` | `.embedInCode`, the one rule with no bundle at all: the file's bytes are a generated source |

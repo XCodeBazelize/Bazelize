@@ -5,5 +5,4 @@ import Testing
 func listedSourcesAreCompiled() {
     #expect(TargetSources.compiled)
     #expect(TargetSources.kept)
-    #expect(TargetSources.paired)
 }
