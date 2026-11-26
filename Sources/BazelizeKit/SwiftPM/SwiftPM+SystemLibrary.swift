@@ -49,14 +49,12 @@ extension SwiftPM.Generator {
             of: target,
             at: root)) ?? []
 
-        builder.load(loadableRule: Rules.Swift.swift_interop_hint)
         builder.call(
             Rules.Swift.Call.swift_interop_hint(
                 name: hint,
                 module_map: .named(moduleMap),
                 module_name: Self.moduleName(target.name)))
 
-        builder.load(loadableRule: Rules.Cc.cc_library)
         builder.call(
             Rules.Cc.Call.cc_library(
                 name: name,

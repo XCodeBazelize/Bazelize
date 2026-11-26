@@ -69,30 +69,30 @@ extension Rules.Objc {
             -> Starlark.Statement.Call
         {
             Rules.Objc.objc_library.call {
-                "name" => name
-                if let aspect_hints { "aspect_hints" => aspect_hints }
-                if let srcs { "srcs" => srcs }
-                if let hdrs { "hdrs" => hdrs }
-                if let deps { "deps" => deps }
-                if let data { "data" => data }
-                if let alwayslink { "alwayslink" => alwayslink }
-                if let copts { "copts" => copts }
-                if let defines { "defines" => defines }
-                if let enable_modules { "enable_modules" => enable_modules }
-                if let includes { "includes" => includes }
-                if let linkopts { "linkopts" => linkopts }
-                if let module_map { "module_map" => module_map }
-                if let module_name { "module_name" => module_name }
-                if let non_arc_srcs { "non_arc_srcs" => non_arc_srcs }
-                if let pch { "pch" => pch }
-                if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
-                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
-                if let sdk_includes { "sdk_includes" => sdk_includes }
-                if let tags { "tags" => tags }
-                if let textual_hdrs { "textual_hdrs" => textual_hdrs }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
-                if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
+                Attr.name(name)
+                Attr.aspect_hints(aspect_hints)
+                Attr.srcs(srcs)
+                Attr.hdrs(hdrs)
+                Attr.deps(deps)
+                Attr.data(data)
+                Attr.alwayslink(alwayslink)
+                Attr.copts(copts)
+                Attr.defines(defines)
+                Attr.enable_modules(enable_modules)
+                Attr.includes(includes)
+                Attr.linkopts(linkopts)
+                Attr.module_map(module_map)
+                Attr.module_name(module_name)
+                Attr.non_arc_srcs(non_arc_srcs)
+                Attr.pch(pch)
+                Attr.sdk_dylibs(sdk_dylibs)
+                Attr.sdk_frameworks(sdk_frameworks)
+                Attr.sdk_includes(sdk_includes)
+                Attr.tags(tags)
+                Attr.textual_hdrs(textual_hdrs)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
+                Attr.weak_sdk_frameworks(weak_sdk_frameworks)
             }
         }
 
@@ -113,16 +113,16 @@ extension Rules.Objc {
             -> Starlark.Statement.Call
         {
             Rules.Objc.objc_import.call {
-                "name" => name
-                if let archives { "archives" => archives }
-                if let deps { "deps" => deps }
-                if let hdrs { "hdrs" => hdrs }
-                if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
-                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
-                if let alwayslink { "alwayslink" => alwayslink }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
-                if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
+                Attr.name(name)
+                Attr.archives(archives)
+                Attr.deps(deps)
+                Attr.hdrs(hdrs)
+                Attr.sdk_dylibs(sdk_dylibs)
+                Attr.sdk_frameworks(sdk_frameworks)
+                Attr.alwayslink(alwayslink)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
+                Attr.weak_sdk_frameworks(weak_sdk_frameworks)
             }
         }
 
@@ -139,12 +139,12 @@ extension Rules.Objc {
             -> Starlark.Statement.Call
         {
             Rules.Objc.j2objc_library.call {
-                "name" => name
-                "deps" => deps
-                if let entry_classes { "entry_classes" => entry_classes }
-                if let jre_deps { "jre_deps" => jre_deps }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.entry_classes(entry_classes)
+                Attr.jre_deps(jre_deps)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
 
@@ -160,11 +160,11 @@ extension Rules.Objc {
             -> Starlark.Statement.Call
         {
             Rules.Objc.available_xcodes.call {
-                "name" => name
-                "default" => `default`
-                if let versions { "versions" => versions }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.`default`(`default`)
+                Attr.versions(versions)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
 
@@ -182,13 +182,13 @@ extension Rules.Objc {
             -> Starlark.Statement.Call
         {
             Rules.Objc.xcode_config.call {
-                "name" => name
-                if let `default` { "default" => `default` }
-                if let local_versions { "local_versions" => local_versions }
-                if let remote_versions { "remote_versions" => remote_versions }
-                if let versions { "versions" => versions }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.`default`(`default`)
+                Attr.local_versions(local_versions)
+                Attr.remote_versions(remote_versions)
+                Attr.versions(versions)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
 
@@ -208,15 +208,15 @@ extension Rules.Objc {
             -> Starlark.Statement.Call
         {
             Rules.Objc.xcode_version.call {
-                "name" => name
-                "version" => version
-                if let aliases { "aliases" => aliases }
-                if let default_ios_sdk_version { "default_ios_sdk_version" => default_ios_sdk_version }
-                if let default_macos_sdk_version { "default_macos_sdk_version" => default_macos_sdk_version }
-                if let default_tvos_sdk_version { "default_tvos_sdk_version" => default_tvos_sdk_version }
-                if let default_watchos_sdk_version { "default_watchos_sdk_version" => default_watchos_sdk_version }
-                if let testonly { "testonly" => testonly }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.version(version)
+                Attr.aliases(aliases)
+                Attr.default_ios_sdk_version(default_ios_sdk_version)
+                Attr.default_macos_sdk_version(default_macos_sdk_version)
+                Attr.default_tvos_sdk_version(default_tvos_sdk_version)
+                Attr.default_watchos_sdk_version(default_watchos_sdk_version)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
     }

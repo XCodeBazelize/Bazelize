@@ -21,7 +21,6 @@ extension Target {
     /// An XPC service is its own bundle inside `Contents/XPCServices`, which the
     /// application's copy phase puts it in.
     func generateXPCService(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.macos_xpc_service)
         builder.call(
             Rules.Apple.MacOS.Call.macos_xpc_service(
                 name: name,
@@ -49,7 +48,6 @@ extension Target {
     }
 
     private func buildMac(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.macos_extension)
         builder.call(
             Rules.Apple.MacOS.Call.macos_extension(
                 name: name,
@@ -78,7 +76,6 @@ extension Target {
     }
 
     private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.ios_extension)
         //        families = ["iphone", "ipad"],
         //        provisioning_profile = ":ShareExtension.mobileprovision",  # 若需要簽名
         builder.call(

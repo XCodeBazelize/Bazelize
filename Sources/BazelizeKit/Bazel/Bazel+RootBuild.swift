@@ -67,7 +67,6 @@ extension Bazel {
             let configs = config.keys.sorted()
             guard let defaultConfig = configs.first else { return }
 
-            builder.load(.string_flag)
             builder.call(
                 Rules.Config.Call.string_flag(
                     name: "mode",

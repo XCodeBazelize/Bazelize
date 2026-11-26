@@ -23,7 +23,6 @@ extension Target {
     func generateAssetSymbols(_ builder: CodeBuilder, _: Kit) {
         guard generatesAssetSymbols else { return }
 
-        builder.load(loadableRule: Rules.Workspace.asset_symbols)
         builder.call(
             Rules.Workspace.Call.asset_symbols(
                 name: Self.assetSymbolsTarget,

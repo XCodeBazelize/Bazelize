@@ -101,7 +101,6 @@ extension SwiftPM.Generator {
             let isAlias = alias != target.name
             let aliased = Self.moduleName(alias)
 
-            builder.load(loadableRule: Rules.Swift.mixed_language_library)
             builder.call(
                 Rules.Swift.Call.mixed_language_library(
                     name: library.map { isAlias ? Self.aliasRuleName(of: $0, as: alias) : $0 }

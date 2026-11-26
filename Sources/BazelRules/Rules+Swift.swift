@@ -153,61 +153,26 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_library.call {
-                "name" => name
-                "alwayslink" => alwayslink
-                if let always_include_developer_search_paths {
-                    "always_include_developer_search_paths" => always_include_developer_search_paths
-                }
-                if let copts {
-                    "copts" => copts
-                }
-                if let module_name {
-                    "module_name" => module_name
-                }
-                if let package_name {
-                    "package_name" => package_name
-                }
-                if let plugins {
-                    "plugins" => plugins
-                }
-                "srcs" => srcs
-
-                if let deps {
-                    "deps" => deps
-                }
-                if let data {
-                    "data" => data
-                }
-                if let defines {
-                    "defines" => defines
-                }
-                if let generated_header_name {
-                    "generated_header_name" => generated_header_name
-                }
-                if let generates_header {
-                    "generates_header" => generates_header
-                }
-                if let linkopts {
-                    "linkopts" => linkopts
-                }
-                if let linkstatic {
-                    "linkstatic" => linkstatic
-                }
-                if let private_deps {
-                    "private_deps" => private_deps
-                }
-                if let swiftc_inputs {
-                    "swiftc_inputs" => swiftc_inputs
-                }
-                if let tags {
-                    "tags" => tags
-                }
-                if let testonly {
-                    "testonly" => testonly
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.alwayslink(alwayslink)
+                Attr.always_include_developer_search_paths(always_include_developer_search_paths)
+                Attr.copts(copts)
+                Attr.module_name(module_name)
+                Attr.package_name(package_name)
+                Attr.plugins(plugins)
+                Attr.srcs(srcs)
+                Attr.deps(deps)
+                Attr.data(data)
+                Attr.defines(defines)
+                Attr.generated_header_name(generated_header_name)
+                Attr.generates_header(generates_header)
+                Attr.linkopts(linkopts)
+                Attr.linkstatic(linkstatic)
+                Attr.private_deps(private_deps)
+                Attr.swiftc_inputs(swiftc_inputs)
+                Attr.tags(tags)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
 
@@ -257,40 +222,18 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_binary.call {
-                "name" => name
-                if let copts {
-                    "copts" => copts
-                }
-                if let data {
-                    "data" => data
-                }
-                if let deps {
-                    "deps" => deps
-                }
-                if let linkopts {
-                    "linkopts" => linkopts
-                }
-                if let module_name {
-                    "module_name" => module_name
-                }
-                if let srcs {
-                    "srcs" => srcs
-                }
-                if let stamp {
-                    "stamp" => .int(stamp)
-                }
-                if let swiftc_inputs {
-                    "swiftc_inputs" => swiftc_inputs
-                }
-                if let tags {
-                    "tags" => tags
-                }
-                if let testonly {
-                    "testonly" => testonly
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.copts(copts)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.linkopts(linkopts)
+                Attr.module_name(module_name)
+                Attr.srcs(srcs)
+                Attr.stamp(stamp)
+                Attr.swiftc_inputs(swiftc_inputs)
+                Attr.tags(tags)
+                Attr.testonly(testonly)
+                Attr.visibility(visibility)
             }
         }
 
@@ -342,40 +285,18 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_test.call {
-                "name" => name
-                if let args {
-                    "args" => args
-                }
-                if let copts {
-                    "copts" => copts
-                }
-                if let data {
-                    "data" => data
-                }
-                if let deps {
-                    "deps" => deps
-                }
-                if let env {
-                    "env" => .init(env) ?? None
-                }
-                if let linkopts {
-                    "linkopts" => linkopts
-                }
-                if let module_name {
-                    "module_name" => module_name
-                }
-                if let srcs {
-                    "srcs" => srcs
-                }
-                if let stamp {
-                    "stamp" => .int(stamp)
-                }
-                if let swiftc_inputs {
-                    "swiftc_inputs" => swiftc_inputs
-                }
-                if let visibility {
-                    visibility
-                }
+                Attr.name(name)
+                Attr.args(args)
+                Attr.copts(copts)
+                Attr.data(data)
+                Attr.deps(deps)
+                Attr.env(env)
+                Attr.linkopts(linkopts)
+                Attr.module_name(module_name)
+                Attr.srcs(srcs)
+                Attr.stamp(stamp)
+                Attr.swiftc_inputs(swiftc_inputs)
+                Attr.visibility(visibility)
             }
         }
 
@@ -416,16 +337,16 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_import.call {
-                "name" => name
-                if let archives { "archives" => archives }
-                if let deps { "deps" => deps }
-                if let data { "data" => data }
-                "module_name" => module_name
-                if let plugins { "plugins" => plugins }
-                if let swiftdoc { "swiftdoc" => swiftdoc }
-                if let swiftinterface { "swiftinterface" => swiftinterface }
-                if let swiftmodule { "swiftmodule" => swiftmodule }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.archives(archives)
+                Attr.deps(deps)
+                Attr.data(data)
+                Attr.module_name(module_name)
+                Attr.plugins(plugins)
+                Attr.swiftdoc(swiftdoc)
+                Attr.swiftinterface(swiftinterface)
+                Attr.swiftmodule(swiftmodule)
+                Attr.visibility(visibility)
             }
         }
 
@@ -454,12 +375,12 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_c_module.call {
-                "name" => name
-                if let deps { "deps" => deps }
-                if let hdrs { "hdrs" => hdrs }
-                if let module_map { "module_map" => module_map }
-                if let srcs { "srcs" => srcs }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.hdrs(hdrs)
+                Attr.module_map(module_map)
+                Attr.srcs(srcs)
+                Attr.visibility(visibility)
             }
         }
 
@@ -485,11 +406,11 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_overlay.call {
-                "name" => name
-                if let deps { "deps" => deps }
-                if let overlay_deps { "overlay_deps" => overlay_deps }
-                "srcs" => srcs
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.overlay_deps(overlay_deps)
+                Attr.srcs(srcs)
+                Attr.visibility(visibility)
             }
         }
 
@@ -532,12 +453,12 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_interop_hint.call {
-                "name" => name
-                if let module_map { "module_map" => module_map }
-                if let module_name { "module_name" => module_name }
-                if let exclude_hdrs { "exclude_hdrs" => exclude_hdrs }
-                if let suppressed { "suppressed" => suppressed }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.module_map(module_map)
+                Attr.module_name(module_name)
+                Attr.exclude_hdrs(exclude_hdrs)
+                Attr.suppressed(suppressed)
+                Attr.visibility(visibility)
             }
         }
 
@@ -550,11 +471,11 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_library_group.call {
-                "name" => name
-                if let deps { "deps" => deps }
-                if let exports { "exports" => exports }
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.exports(exports)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -578,13 +499,13 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_compiler_plugin.call {
-                "name" => name
-                if let srcs { "srcs" => srcs }
-                if let copts { "copts" => copts }
-                if let deps { "deps" => deps }
-                if let module_name { "module_name" => module_name }
-                if let tags { "tags" => tags }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.srcs(srcs)
+                Attr.copts(copts)
+                Attr.deps(deps)
+                Attr.module_name(module_name)
+                Attr.tags(tags)
+                Attr.visibility(visibility)
             }
         }
 
@@ -607,10 +528,10 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.universal_swift_compiler_plugin.call {
-                "name" => name
-                "plugin" => plugin
-                if let toolchain_types { "toolchain_types" => toolchain_types }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.plugin(plugin)
+                Attr.toolchain_types(toolchain_types)
+                Attr.visibility(visibility)
             }
         }
 
@@ -718,43 +639,39 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.mixed_language_library.call {
-                "name" => name
-                if let additional_objc_compiler_inputs {
-                    "additional_objc_compiler_inputs" => additional_objc_compiler_inputs
-                }
-                if let always_include_developer_search_paths {
-                    "always_include_developer_search_paths" => always_include_developer_search_paths
-                }
-                if let alwayslink { "alwayslink" => alwayslink }
-                if let clang_copts { "clang_copts" => clang_copts }
-                if let clang_defines { "clang_defines" => clang_defines }
-                if let clang_deps { "clang_deps" => clang_deps }
-                if let clang_srcs { "clang_srcs" => clang_srcs }
-                if let data { "data" => data }
-                if let enable_modules { "enable_modules" => enable_modules }
-                if let features { "features" => features }
-                if let hdrs { "hdrs" => hdrs }
-                if let includes { "includes" => includes }
-                if let linkopts { "linkopts" => linkopts }
-                if let module_map { "module_map" => module_map }
-                if let module_name { "module_name" => module_name }
-                if let non_arc_srcs { "non_arc_srcs" => non_arc_srcs }
-                if let package_name { "package_name" => package_name }
-                if let private_deps { "private_deps" => private_deps }
-                if let sdk_dylibs { "sdk_dylibs" => sdk_dylibs }
-                if let sdk_frameworks { "sdk_frameworks" => sdk_frameworks }
-                if let swift_copts { "swift_copts" => swift_copts }
-                if let swift_defines { "swift_defines" => swift_defines }
-                if let swift_plugins { "swift_plugins" => swift_plugins }
-                if let swift_srcs { "swift_srcs" => swift_srcs }
-                if let swiftc_inputs { "swiftc_inputs" => swiftc_inputs }
-                if let tags { "tags" => tags }
-                if let testonly { "testonly" => testonly }
-                if let textual_hdrs { "textual_hdrs" => textual_hdrs }
-                if let umbrella_header { "umbrella_header" => umbrella_header }
-                if let weak_sdk_frameworks { "weak_sdk_frameworks" => weak_sdk_frameworks }
-                if let deps { "deps" => deps }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.additional_objc_compiler_inputs(additional_objc_compiler_inputs)
+                Attr.always_include_developer_search_paths(always_include_developer_search_paths)
+                Attr.alwayslink(alwayslink)
+                Attr.clang_copts(clang_copts)
+                Attr.clang_defines(clang_defines)
+                Attr.clang_deps(clang_deps)
+                Attr.clang_srcs(clang_srcs)
+                Attr.data(data)
+                Attr.enable_modules(enable_modules)
+                Attr.features(features)
+                Attr.hdrs(hdrs)
+                Attr.includes(includes)
+                Attr.linkopts(linkopts)
+                Attr.module_map(module_map)
+                Attr.module_name(module_name)
+                Attr.non_arc_srcs(non_arc_srcs)
+                Attr.package_name(package_name)
+                Attr.private_deps(private_deps)
+                Attr.sdk_dylibs(sdk_dylibs)
+                Attr.sdk_frameworks(sdk_frameworks)
+                Attr.swift_copts(swift_copts)
+                Attr.swift_defines(swift_defines)
+                Attr.swift_plugins(swift_plugins)
+                Attr.swift_srcs(swift_srcs)
+                Attr.swiftc_inputs(swiftc_inputs)
+                Attr.tags(tags)
+                Attr.testonly(testonly)
+                Attr.textual_hdrs(textual_hdrs)
+                Attr.umbrella_header(umbrella_header)
+                Attr.weak_sdk_frameworks(weak_sdk_frameworks)
+                Attr.deps(deps)
+                Attr.visibility(visibility)
             }
         }
 
@@ -774,11 +691,9 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_feature_allowlist.call {
-                "name" => name
-                if let package_groups {
-                    "package_groups" => package_groups
-                }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.package_groups(package_groups)
+                Attr.visibility(visibility)
             }
         }
 
@@ -801,10 +716,10 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_grpc_library.call {
-                "name" => name
-                if let deps { "deps" => deps }
-                if let srcs { "srcs" => srcs }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.srcs(srcs)
+                Attr.visibility(visibility)
             }
         }
 
@@ -824,9 +739,9 @@ extension Rules.Swift {
             -> Starlark.Statement.Call
         {
             Rules.Swift.swift_proto_library.call {
-                "name" => name
-                if let deps { "deps" => deps }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.deps(deps)
+                Attr.visibility(visibility)
             }
         }
     }

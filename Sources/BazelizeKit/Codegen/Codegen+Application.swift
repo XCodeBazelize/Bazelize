@@ -21,7 +21,6 @@ extension Target {
     }
 
     func generateCommandLineApplicationCode(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.macos_command_line_application)
         builder.call(
             Rules.Apple.MacOS.Call.macos_command_line_application(
                 name: name,
@@ -41,7 +40,6 @@ extension Target {
     // MARK: Private
 
     private func buildWatch(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.watchos_application)
         builder.call(
             Rules.Apple.WatchOS.Call.watchos_application(
                 name: name,
@@ -69,7 +67,6 @@ extension Target {
 
     private func buildIOS(_ builder: CodeBuilder, _ kit: Kit) {
         let icons = appIconSelection(project: kit.project)
-        builder.load(.ios_application)
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
@@ -104,7 +101,6 @@ extension Target {
     }
 
     private func buildMac(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.macos_application)
         builder.call(
             Rules.Apple.MacOS.Call.macos_application(
                 name: name,
@@ -135,7 +131,6 @@ extension Target {
     }
 
     private func buildTV(_ builder: CodeBuilder, _ kit: Kit) {
-        builder.load(.tvos_application)
         builder.call(
             Rules.Apple.TVOS.Call.tvos_application(
                 name: name,

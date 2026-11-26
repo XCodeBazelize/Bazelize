@@ -29,13 +29,13 @@ extension Rules.Cc {
             -> Starlark.Statement.Call
         {
             Rules.Cc.cc_import.call {
-                "name" => name
-                if let shared_library { "shared_library" => shared_library }
-                if let static_library { "static_library" => static_library }
-                if let interface_library { "interface_library" => interface_library }
-                if let hdrs { "hdrs" => hdrs }
-                if let system_provided { "system_provided" => system_provided }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.shared_library(shared_library)
+                Attr.static_library(static_library)
+                Attr.interface_library(interface_library)
+                Attr.hdrs(hdrs)
+                Attr.system_provided(system_provided)
+                Attr.visibility(visibility)
             }
         }
 
@@ -58,18 +58,18 @@ extension Rules.Cc {
             -> Starlark.Statement.Call
         {
             Rules.Cc.cc_library.call {
-                "name" => name
-                if let aspect_hints { "aspect_hints" => aspect_hints }
-                if let srcs { "srcs" => srcs }
-                if let hdrs { "hdrs" => hdrs }
-                if let deps { "deps" => deps }
-                if let copts { "copts" => copts }
-                if let defines { "defines" => defines }
-                if let includes { "includes" => includes }
-                if let linkopts { "linkopts" => linkopts }
-                if let tags { "tags" => tags }
-                if let textual_hdrs { "textual_hdrs" => textual_hdrs }
-                if let visibility { visibility }
+                Attr.name(name)
+                Attr.aspect_hints(aspect_hints)
+                Attr.srcs(srcs)
+                Attr.hdrs(hdrs)
+                Attr.deps(deps)
+                Attr.copts(copts)
+                Attr.defines(defines)
+                Attr.includes(includes)
+                Attr.linkopts(linkopts)
+                Attr.tags(tags)
+                Attr.textual_hdrs(textual_hdrs)
+                Attr.visibility(visibility)
             }
         }
     }

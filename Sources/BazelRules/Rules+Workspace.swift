@@ -38,17 +38,16 @@ extension Rules.Workspace {
             bundle_id: String,
             minimum_os_version: String,
             platform: String,
-            visibility: Starlark.Statement.Argument.Visibility? = nil) -> Starlark.Statement.Call
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
         {
             Rules.Workspace.asset_symbols.call {
-                "name" => name
-                "bundle_id" => bundle_id
-                "catalogs" => catalogs
-                "minimum_os_version" => minimum_os_version
-                "platform" => platform
-                if let visibility {
-                    visibility.argument
-                }
+                Attr.name(name)
+                Attr.bundle_id(bundle_id)
+                Attr.catalogs(catalogs)
+                Attr.minimum_os_version(minimum_os_version)
+                Attr.platform(platform)
+                Attr.visibility(visibility)
             }
         }
 
@@ -62,19 +61,19 @@ extension Rules.Workspace {
             runtime_platform: String,
             target_compatible_with: [String],
             timeout: String? = nil,
-            visibility: Starlark.Statement.Argument.Visibility? = nil) -> Starlark.Statement.Call
+            visibility: Starlark.Statement.Argument.Visibility? = nil)
+            -> Starlark.Statement.Call
         {
             Rules.Workspace.apple_simulator_test.call {
-                "name" => name
-                "bundle" => bundle
-                "destination_platform" => destination_platform
-                "developer_platform" => developer_platform
-                "product_family" => product_family
-                "runtime_platform" => runtime_platform
-                "target_compatible_with" =>
-                    target_compatible_with.map { Starlark.Label.named($0) }
-                if let timeout { "timeout" => timeout }
-                if let visibility { visibility.argument }
+                Attr.name(name)
+                Attr.bundle(bundle)
+                Attr.destination_platform(destination_platform)
+                Attr.developer_platform(developer_platform)
+                Attr.product_family(product_family)
+                Attr.runtime_platform(runtime_platform)
+                Attr.target_compatible_with(target_compatible_with.map { Starlark.Label.named($0) })
+                Attr.timeout(timeout)
+                Attr.visibility(visibility)
             }
         }
     }

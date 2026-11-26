@@ -237,7 +237,6 @@ extension SwiftPM.Generator {
     func buildTraitRules(_ builder: CodeBuilder) {
         let flags = traitFlags
         if !flags.isEmpty {
-            builder.load(.bool_flag)
             for flag in flags {
                 builder.call(
                     Rules.Config.Call.bool_flag(
@@ -285,7 +284,6 @@ extension SwiftPM.Generator {
             || configurationConditions.contains("debug")
         guard hasGroups else { return }
 
-        builder.load(loadableRule: Rules.Selects.selects)
         if configurationConditions.contains("debug") {
             builder.call(
                 Rules.Selects.Call.config_setting_group(

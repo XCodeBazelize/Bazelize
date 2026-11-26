@@ -5,14 +5,18 @@ extension Starlark.Statement {
     public struct Call: Text {
         public let name: String
         public let arguments: [Argument]
+        /// The `load` that brings `name` into scope, which the file the call is
+        /// written to needs as well; `nil` for a rule Bazel defines itself.
+        public let load: Load?
 
-        public init(_ name: String, _ arguments: [Argument] = []) {
+        public init(_ name: String, _ arguments: [Argument] = [], load: Load? = nil) {
             self.name = name
             self.arguments = arguments
+            self.load = load
         }
 
-        public init(_ name: String, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
-            self.init(name, builder())
+        public init(_ name: String, load: Load? = nil, @ArgumentBuilder builder: () -> [ArgumentBuilder.Target]) {
+            self.init(name, builder(), load: load)
         }
 
         public var text: String {

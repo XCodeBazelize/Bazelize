@@ -67,7 +67,8 @@ extension SwiftPM.Generator {
         _ target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
         root: Path,
-        builder: CodeBuilder) throws -> Bool
+        builder: CodeBuilder) throws
+        -> Bool
     {
         guard let artifact = artifact(of: target, in: package) else {
             Log.codeGenerate.warning("""
@@ -101,7 +102,6 @@ extension SwiftPM.Generator {
                 return false
             }
 
-            builder.load(loadableRule: Rules.Native.native_binary)
             builder.call(
                 Rules.Native.Call.native_binary(
                     name: rule,
@@ -112,7 +112,6 @@ extension SwiftPM.Generator {
                     visibility: .public))
 
         case .xcframework where isStatic(artifact.path):
-            builder.load(.apple_static_xcframework_import)
             builder.call(
                 Rules.Apple.General.Call.apple_static_xcframework_import(
                     name: rule,
@@ -121,7 +120,6 @@ extension SwiftPM.Generator {
                     visibility: .public))
 
         case .xcframework:
-            builder.load(.apple_dynamic_xcframework_import)
             builder.call(
                 Rules.Apple.General.Call.apple_dynamic_xcframework_import(
                     name: rule,

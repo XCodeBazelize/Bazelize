@@ -58,7 +58,6 @@ extension Target {
                 return origin + data
             }
 
-        builder.load(.mixed_language_library)
         builder.call(
             Rules.Swift.Call.mixed_language_library(
                 name: "\(name)_mixed",
