@@ -54,7 +54,6 @@ extension Bazel {
         /// a bare library and still exposes it to Swift and Objective-C targets.
         private func buildLibraries(_ staticLibraries: [Xcode.File], _ dynamicLibraries: [Xcode.File]) {
             guard !staticLibraries.isEmpty || !dynamicLibraries.isEmpty else { return }
-            builder.load(.cc_import)
 
             for file in unique(staticLibraries) {
                 guard let path = file.path, !path.isEmpty else { continue }
@@ -77,7 +76,6 @@ extension Bazel {
 
         private func buildXCFrameworks(_ files: [Xcode.File]) {
             guard !files.isEmpty else { return }
-            builder.load(.apple_dynamic_xcframework_import)
 
             for file in unique(files) {
                 guard let path = file.path, !path.isEmpty else { continue }
@@ -94,7 +92,6 @@ extension Bazel {
 
         private func buildFrameworks(_ files: [Xcode.File]) {
             guard !files.isEmpty else { return }
-            builder.load(.apple_dynamic_framework_import)
 
             for file in unique(files) {
                 guard let path = file.path, !path.isEmpty else { continue }

@@ -19,7 +19,6 @@ extension Target {
                 return origin + data
             }
 
-        builder.load(.swift_library)
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "\(name)_swift",

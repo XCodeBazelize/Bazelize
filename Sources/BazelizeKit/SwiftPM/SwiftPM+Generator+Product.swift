@@ -27,7 +27,6 @@ extension SwiftPM.Generator {
         for module in [target.name] + aliases(of: target.name, in: package) {
             let isAlias = module != target.name
 
-            builder.load(loadableRule: Rules.Swift.swift_library)
             builder.call(
                 Rules.Swift.Call.swift_library(
                     name: isAlias
@@ -97,7 +96,6 @@ extension SwiftPM.Generator {
             return
         }
 
-        builder.load(loadableRule: Rules.Swift.swift_library_group)
         builder.call(
             Rules.Swift.Call.swift_library_group(
                 name: product.name,

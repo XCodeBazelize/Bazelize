@@ -235,9 +235,6 @@ final class PluginSwiftPM: PluginBuiltin {
     override func build(_ builder: CodeBuilder) {
         guard hasPackages else { return }
 
-        builder.load(loadableRule: Rules.Swift.swift_library)
-        builder.load(.macos_command_line_application)
-        builder.load(loadableRule: Rules.Shell.sh_binary)
         builder.call(
             Rules.Swift.Call.swift_library(
                 name: "_plugin_host_library",

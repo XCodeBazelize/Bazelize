@@ -28,63 +28,19 @@ extension CodeBuilder {
 }
 
 extension CodeBuilder {
-    func load(_ rule: Rules.Apple.General) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Objc) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Cc) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Apple.IOS) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Apple.MacOS) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Apple.TVOS) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Apple.WatchOS) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Swift) {
-        load(loadableRule: rule)
-    }
-
-    func load(_ rule: Rules.Config) {
-        load(loadableRule: rule)
-    }
-
-    /// load function at top of the file.
-    func load(module: String, symbols: [Starlark.Statement.LoadSymbol]) {
-        loads[module, default: []].formUnion(symbols)
-    }
-
-    func load(_ statementLoad: Starlark.Statement.Load) {
-        load(
-            module: statementLoad.module,
-            symbols: statementLoad.symbols)
-    }
-
-    func load(loadableRule rule: LoadableRule) {
-        load(
-            module: rule.module,
-            symbols: [.init(rule.rule)])
+    private func load(_ statementLoad: Starlark.Statement.Load) {
+        loads[statementLoad.module, default: []].formUnion(statementLoad.symbols)
     }
 }
 
 // MARK: - RuleBuild
 extension CodeBuilder {
+    /// A call and the `load` its rule needs: the file never names a rule it
+    /// does not load, nor loads one it does not call.
     func call(_ call: Starlark.Statement.Call) {
+        if let rule = call.load {
+            load(rule)
+        }
         statements.append(.call(call))
     }
 

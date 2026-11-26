@@ -38,7 +38,6 @@ extension SwiftPM.Generator {
         /// SwiftPM does not let one target mix languages, so a test target
         /// without Swift in it is a C-family one and compiles as such.
         if extensions(of: target, in: package).contains(FileExtension.swift.rawValue) {
-            builder.load(loadableRule: Rules.Swift.swift_library)
             builder.call(
                 Rules.Swift.Call.swift_library(
                     name: library,
@@ -72,12 +71,6 @@ extension SwiftPM.Generator {
                 builder: builder)
         }
 
-        builder.load(.ios_unit_test)
-        builder.load(.macos_unit_test)
-        builder.load(.tvos_unit_test)
-        builder.load(loadableRule: Rules.Apple.VisionOS.visionos_unit_test)
-        builder.load(.watchos_unit_test)
-        builder.load(loadableRule: Rules.Workspace.apple_simulator_test)
         builder.call(
             Rules.Apple.MacOS.Call.macos_unit_test(
                 name: name,

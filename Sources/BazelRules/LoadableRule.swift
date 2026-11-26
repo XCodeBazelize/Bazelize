@@ -14,6 +14,10 @@ import Starlark
 public protocol CallableRule {
     /// The Bazel rule symbol name, for example `"ios_application"`.
     var rule: String { get }
+
+    /// The `load` a call to this rule needs; `nil` for a rule Bazel defines
+    /// itself.
+    var load: Starlark.Statement.Load? { get }
 }
 
 // MARK: - LoadableRule
@@ -22,6 +26,18 @@ public protocol LoadableRule: CallableRule {
     /// The loaded Starlark module path, for example
     /// `"@build_bazel_rules_apple//apple:ios.bzl"`.
     var module: String { get }
+}
+
+extension CallableRule {
+    public var load: Starlark.Statement.Load? {
+        nil
+    }
+}
+
+extension LoadableRule {
+    public var load: Starlark.Statement.Load? {
+        .init(module: module, symbols: [.init(rule)])
+    }
 }
 
 extension CallableRule where Self: RawRepresentable, Self.RawValue == String {
@@ -35,7 +51,7 @@ extension CallableRule {
         @ArgumentBuilder builder: () -> [ArgumentBuilder.Target])
         -> Starlark.Statement.Call
     {
-        .init(rule, builder: builder)
+        .init(rule, load: load, builder: builder)
     }
 
     public func statement(

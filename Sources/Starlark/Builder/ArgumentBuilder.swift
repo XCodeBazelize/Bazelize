@@ -6,6 +6,11 @@ public enum ArgumentBuilder {
         [expression]
     }
 
+    /// An attribute given nil is an attribute left out of the call.
+    public static func buildExpression(_ expression: Target?) -> [Target] {
+        expression.map { [$0] } ?? []
+    }
+
     public static func buildExpression(_ expression: Target.Visibility) -> [Target] {
         [expression.argument]
     }

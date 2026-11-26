@@ -48,14 +48,12 @@ extension SwiftPM.Generator {
             module: module,
             root: root)
 
-        builder.load(loadableRule: Rules.Swift.swift_interop_hint)
         builder.call(
             Rules.Swift.Call.swift_interop_hint(
                 name: hint,
                 module_map: interface.map { .named("\($0.root)/module.modulemap") },
                 module_name: module))
 
-        builder.load(loadableRule: Rules.Objc.objc_library)
         builder.call(
             Rules.Objc.Call.objc_library(
                 name: name,
@@ -142,7 +140,6 @@ extension SwiftPM.Generator {
         /// input of its compile.
         let files = relativeFiles(of: target, in: package, prefix: prefix, excluding: false)
 
-        builder.load(loadableRule: Rules.Objc.objc_library)
         builder.call(
             Rules.Objc.Call.objc_library(
                 name: name,

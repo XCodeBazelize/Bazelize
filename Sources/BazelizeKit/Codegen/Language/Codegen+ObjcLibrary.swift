@@ -11,7 +11,6 @@ import Starlark
 
 extension Target {
     func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan, aliasPublic: Bool = true) {
-        builder.load(.objc_library)
         let copts = ["-fblocks", "-fPIC", "-fmodule-name=\(codegenModuleName)"]
             + clangDialectCopts + forceIncludeFlags + clangCopts(kit)
         var groups: [String] = []

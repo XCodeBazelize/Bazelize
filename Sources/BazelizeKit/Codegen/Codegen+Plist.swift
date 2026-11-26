@@ -12,7 +12,7 @@ import Starlark
 import Util
 
 extension Target {
-    func generateLoadPlistFragment(_ builder: CodeBuilder, _ kit: Kit) {
+    func generateLoadPlistFragment(_: CodeBuilder, _ kit: Kit) {
         guard
             plistContent(project: kit.project) != nil ||
             isGeneratePlistAuto(project: kit.project) ||
@@ -20,7 +20,6 @@ extension Target {
         else {
             return
         }
-        builder.load(loadableRule: Rules.Plist.plist_fragment)
     }
 }
 

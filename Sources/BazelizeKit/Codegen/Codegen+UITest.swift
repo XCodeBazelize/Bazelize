@@ -25,7 +25,6 @@ extension Target {
     // MARK: Private
 
     private func generateIOSUITest(_ builder: CodeBuilder, _: Kit) {
-        builder.load(.ios_ui_test)
         builder.call(
             Rules.Apple.IOS.Call.ios_ui_test(
                 name: name,
@@ -40,7 +39,6 @@ extension Target {
     }
 
     private func generateMacUITest(_ builder: CodeBuilder, _: Kit) {
-        builder.load(.macos_ui_test)
         builder.call(
             Rules.Apple.MacOS.Call.macos_ui_test(
                 name: name,
@@ -55,7 +53,6 @@ extension Target {
     }
 
     private func generateTVUITest(_ builder: CodeBuilder, _: Kit) {
-        builder.load(.tvos_ui_test)
         builder.call(
             Rules.Apple.TVOS.Call.tvos_ui_test(
                 name: name,
@@ -70,7 +67,6 @@ extension Target {
     }
 
     private func generateWatchUITest(_ builder: CodeBuilder, _: Kit) {
-        builder.load(.watchos_ui_test)
         builder.call(
             Rules.Apple.WatchOS.Call.watchos_ui_test(
                 name: name,

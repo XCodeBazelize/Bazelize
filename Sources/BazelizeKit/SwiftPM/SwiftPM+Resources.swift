@@ -131,7 +131,6 @@ extension SwiftPM.Generator {
             let group = "\(name)Processed"
             groups.append(group)
 
-            builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
             builder.call(
                 Rules.Apple.Resources.Call.apple_resource_group(
                     name: group,
@@ -144,7 +143,6 @@ extension SwiftPM.Generator {
             let group = "\(name)Copied\(index)"
             groups.append(group)
 
-            builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
             builder.call(
                 Rules.Apple.Resources.Call.apple_resource_group(
                     name: group,

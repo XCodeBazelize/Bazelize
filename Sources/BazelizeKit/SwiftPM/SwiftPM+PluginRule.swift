@@ -58,7 +58,6 @@ extension SwiftPM.Generator {
         named name: String? = nil,
         builder: CodeBuilder)
     {
-        builder.load(loadableRule: Rules.Swift.swift_binary)
         builder.call(
             Rules.Swift.Call.swift_binary(
                 name: name ?? ruleName(of: target.name, in: package),
@@ -145,7 +144,6 @@ extension SwiftPM.Generator {
         /// `sh_binary` refuses a script that is not executable.
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path.string)
 
-        builder.load(loadableRule: Rules.Shell.sh_binary)
         builder.call(
             Rules.Shell.Call.sh_binary(
                 name: commandName,
@@ -162,7 +160,8 @@ extension SwiftPM.Generator {
     private func commandRequest(
         for target: SwiftPM.PackageTarget,
         in package: SwiftPM.Package,
-        executable rule: String) throws -> String
+        executable rule: String) throws
+        -> String
     {
         var builder = SwiftPM.PluginContextBuilder(package: package, generator: self)
         try builder.add(package: package, asking: nil)
@@ -257,7 +256,7 @@ extension SwiftPM.Generator {
                     in: execution.pluginPackage).path,
                 "output": workDirectory.absolute().string,
                 "resetOutput": firstForTarget,
-                "request": payload.base64EncodedString()
+                "request": payload.base64EncodedString(),
             ] as [String: Any]
         }
         var data = try JSONSerialization.data(
@@ -284,7 +283,6 @@ extension SwiftPM.Generator {
             ("language", Listing.languages(localizations)),
         ]
         let builder = CodeBuilder()
-        builder.load(loadableRule: Rules.Shell.sh_binary)
 
         for (topic, contents) in listings {
             let name = "list-\(topic)"
@@ -387,14 +385,16 @@ extension SwiftPM.Generator {
     /// workspace builds it.
     func pluginOwner(
         of usage: SwiftPM.PluginUsage,
-        from package: SwiftPM.Package) -> SwiftPM.Package?
+        from package: SwiftPM.Package)
+        -> SwiftPM.Package?
     {
         resolvedPlugin(usage, from: package)?.1
     }
 
     private func resolvedPlugin(
         _ usage: SwiftPM.PluginUsage,
-        from package: SwiftPM.Package) -> (SwiftPM.PackageTarget, SwiftPM.Package)?
+        from package: SwiftPM.Package)
+        -> (SwiftPM.PackageTarget, SwiftPM.Package)?
     {
         let packages: [SwiftPM.Package]
         if let name = usage.package {
@@ -405,9 +405,11 @@ extension SwiftPM.Generator {
         }
 
         for candidate in packages {
-            if let target = candidate.manifest.targets.first(where: {
-                $0.name == usage.name && $0.type == "plugin"
-            }) {
+            if
+                let target = candidate.manifest.targets.first(where: {
+                    $0.name == usage.name && $0.type == "plugin"
+                })
+            {
                 return (target, candidate)
             }
         }
@@ -428,7 +430,8 @@ extension SwiftPM.Generator {
 
     private func pluginRequest(
         for execution: PluginExecution,
-        workDirectory: Path) throws -> SwiftPM.PluginWire.Request
+        workDirectory: Path) throws
+        -> SwiftPM.PluginWire.Request
     {
         var builder = SwiftPM.PluginContextBuilder(package: execution.package, generator: self)
         let targetId = try builder.add(package: execution.package, asking: execution.target)
@@ -475,7 +478,8 @@ extension SwiftPM.Generator {
 
     private func binary(
         of target: SwiftPM.PackageTarget,
-        in package: SwiftPM.Package) -> PluginBinary
+        in package: SwiftPM.Package)
+        -> PluginBinary
     {
         let rule = ruleName(of: target.name, in: package)
         let directory = "\(PluginSwiftPM.packagesDirectory)/\(package.directory)"
@@ -485,6 +489,8 @@ extension SwiftPM.Generator {
             path: "\(directory)/\(rule)")
     }
 }
+
+// MARK: - SwiftPM.Generator.PluginBinary
 
 extension SwiftPM.Generator {
     /// A program `//:plugins` has Bazel build before it runs.

@@ -26,7 +26,6 @@ extension SwiftPM.Generator {
         generated: [String],
         builder: CodeBuilder)
     {
-        builder.load(loadableRule: Rules.Swift.swift_compiler_plugin)
         builder.call(
             Rules.Swift.Call.swift_compiler_plugin(
                 name: ruleName(of: target.name, in: package),

@@ -78,7 +78,7 @@ let package = Package(
             ]),
         .testTarget(
             name: "BazelizeKitTests",
-            dependencies: ["BazelizeKit", "PathKit"]),
+            dependencies: ["BazelizeKit", "BazelRules", "PathKit", "Starlark"]),
         .target(
             name: "Commands",
             dependencies: [

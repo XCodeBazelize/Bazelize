@@ -29,7 +29,6 @@ extension Target {
         let folders = resourceFolders(project: kit.project)
         guard !folders.isEmpty else { return }
 
-        builder.load(loadableRule: Rules.Apple.Resources.apple_resource_group)
         builder.call(
             Rules.Apple.Resources.Call.apple_resource_group(
                 name: Self.structuredResourceGroupName,
