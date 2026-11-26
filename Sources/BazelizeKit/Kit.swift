@@ -6,7 +6,6 @@
 //
 
 import Commands
-import PluginLoader
 import Util
 import XcodeLoader
 
@@ -30,9 +29,6 @@ public final class Kit {
     lazy var targetsBuild = project.targets.indices.map { index in
         Bazel.TargetBuild(outputRoot, project.targets[index], at: index)
     }
-
-    /// plugins...
-    var plugins: [Plugin]
 
     private lazy var pluginSPM = PluginSwiftPM(self)
 
@@ -59,7 +55,6 @@ public final class Kit {
         self.configuration = configuration
         project = try await Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
-        plugins = []
         sdkFrameworkNames = await SDKFrameworks.load(project: project)
 
         try await pluginSPM.loadPackageNames(projPath: projPath)
@@ -124,13 +119,6 @@ public final class Kit {
 }
 
 extension Kit {
-//    private final func loadPlugins(_ mainfest: Path) async throws {
-//        plugins = try await PluginLoader.load(manifest: mainfest, project)
-//        for plugin in plugins {
-//            Log.pluginLoader.info("Load Plugin \(plugin.name)(\(plugin.version))")
-//        }
-//    }
-
     private final func tips() {
         builtinPlugins.compactMap(\.tip).forEach { tip in
             print(tip)
@@ -148,10 +136,6 @@ extension Kit {
             packageTips.forEach { tip in
                 print(tip)
             }
-        }
-
-        plugins.forEach { plugin in
-            plugin.tip()
         }
     }
 }
@@ -424,10 +408,6 @@ extension Kit {
                     [.posixPermissions: 0o755],
                     ofItemAtPath: path.string)
             }
-        }
-
-        try plugins.forEach { plugin in
-            try plugin.generateFile(outputRoot)
         }
     }
 

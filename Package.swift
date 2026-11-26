@@ -74,7 +74,6 @@ let package = Package(
                 "XcodeLoader",
                 "Util",
                 "Starlark",
-                "PluginLoader",
             ]),
         .testTarget(
             name: "BazelizeKitTests",
@@ -125,13 +124,4 @@ let package = Package(
         .testTarget(
             name: "RepoEnumCoreTests",
             dependencies: ["RepoEnumCore"]),
-
-        .target(
-            name: "PluginLoader",
-            dependencies: [
-                "Commands",
-                "PathKit",
-                "Util",
-                "Xcode",
-            ]),
     ])
