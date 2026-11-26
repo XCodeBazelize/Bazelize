@@ -199,11 +199,16 @@ let project = Project(
                 /// `-D` reaches Swift as a condition, `-Xcc -D` the importer.
                 "OTHER_SWIFT_FLAGS": "-DYDebug -D A -Xcc -DBAZELIZE_OTHER_FLAGS",
             ]) { _, value in value }),
+        /// Swift tests. Besides the app, they `import Mixed`, which has to reach
+        /// both the Objective-C and the Swift half of that framework.
         target(
             "ExampleTests",
             product: .unitTests,
             sources: ["ExampleTests/**/*.swift"],
-            dependencies: [.target(name: "Example")],
+            dependencies: [
+                .target(name: "Example"),
+                .target(name: "Mixed"),
+            ],
             settings: otherFlags),
         target(
             "Framework1Tests",
@@ -223,6 +228,8 @@ let project = Project(
                 .target(name: "Framework2"),
             ],
             settings: otherFlags),
+        /// Objective-C tests. Besides Framework3, they `@import Mixed`, which has
+        /// to reach both the Objective-C and the Swift half of that framework.
         target(
             "Framework3Tests",
             product: .unitTests,
@@ -230,6 +237,7 @@ let project = Project(
             dependencies: [
                 .target(name: "Example"),
                 .target(name: "Framework3"),
+                .target(name: "Mixed"),
             ],
             settings: otherFlags),
         target(
