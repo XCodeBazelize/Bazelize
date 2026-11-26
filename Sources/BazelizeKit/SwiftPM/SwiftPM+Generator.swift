@@ -137,8 +137,8 @@ extension SwiftPM {
         private func report(deploymentOf package: Package) {
             for unmet in deployment.unmet(package) {
                 let message = """
-                \(package.directory) declares \(unmet.platform) \(unmet.required), \
-                and the project builds \(unmet.platform) \(unmet.project): \
+                \(package.directory) declares \(unmet.platform.rawValue) \(unmet.required), \
+                and the project builds \(unmet.platform.rawValue) \(unmet.project): \
                 the package is compiled at \(unmet.project) and may not support it.
                 """
 

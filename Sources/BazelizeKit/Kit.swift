@@ -148,7 +148,7 @@ extension Kit {
         let locals = project.packages.local.map { local in
             project.workspaceRoot + local.relativePath
         }
-        let deployment = await deployment()
+        let deployment = await SwiftPM.Deployment.of(project)
         let workspace = try await SwiftPM.loadWorkspace(
             output: outputRoot,
             root: project.packageRoot,
@@ -162,39 +162,18 @@ extension Kit {
         packageGenerator = generator
         workspaceTips = workspace.notes
         packageTips = workspaceTips + generator.notes
-        packageDirectoryByProduct(of: workspace)
+        pluginSPM.packageDirectoryByProduct = workspace.packageDirectoryByProduct
+        /// Which packages this run actually wrote rules for: a product traced
+        /// to anything else is a label nothing declares.
+        pluginSPM.generatedPackageDirectories = Set(workspace.packages.map(\.directory))
         /// A project decides its own deployment target, and a package that asks
         /// for more than it provides is reported rather than allowed to raise
         /// everything else. A package handed in directly has no project targets
         /// to read, and then the graph's own floor is the only answer there is.
-        try generateConfig(packages: project.targets.isEmpty ? Self.floors(of: workspace) : [:])
+        try generateConfig(packages: project.targets.isEmpty ? workspace.deploymentFloors : [:])
 
         let count = workspace.packages.count
         Log.codeGenerate.info("Generate \(count, privacy: .public) Swift packages")
-    }
-
-    /// The deployment floor of the resolved graph, per platform.
-    ///
-    /// SwiftPM compiles every package of a graph at the highest version any of
-    /// them declares: a package that asks for more raises the floor for all of
-    /// them, which is why a graph it is part of is built against that.
-    private static func floors(of workspace: SwiftPM.Workspace) -> [String: String] {
-        var floors: [String: String] = [:]
-
-        for package in workspace.packages {
-            for platform in package.manifest.platforms {
-                guard let version = platform.version, !version.isEmpty else { continue }
-                guard let floor = floors[platform.platformName] else {
-                    floors[platform.platformName] = version
-                    continue
-                }
-                if SwiftPM.Deployment.isNewer(version, than: floor) {
-                    floors[platform.platformName] = version
-                }
-            }
-        }
-
-        return floors
     }
 
     /// Runs the build tool plugins of the packages this project owns, the way
@@ -228,80 +207,6 @@ extension Kit {
         }
 
         packageTips = workspaceTips + generator.notes
-    }
-
-    /// Which package directory declares each product, for the target rules
-    /// that have to name one.
-    ///
-    /// A product name is the package's own, so two packages can ship one of
-    /// the same name; such a name answers for neither, because nothing in an
-    /// Xcode target says which package it meant.
-    private final func packageDirectoryByProduct(of workspace: SwiftPM.Workspace) {
-        var directories: [String: String] = [:]
-        var ambiguous: Set<String> = []
-
-        for package in workspace.packages {
-            for product in package.manifest.products {
-                if let existing = directories[product.name], existing != package.directory {
-                    ambiguous.insert(product.name)
-                    continue
-                }
-                directories[product.name] = package.directory
-            }
-        }
-
-        for name in ambiguous {
-            directories[name] = nil
-        }
-
-        pluginSPM.packageDirectoryByProduct = directories
-        /// Which packages this run actually wrote rules for: a product traced
-        /// to anything else is a label nothing declares.
-        pluginSPM.generatedPackageDirectories = Set(workspace.packages.map(\.directory))
-    }
-
-    /// The versions a package's targets end up compiled at: the lowest deployment
-    /// target of the project's own targets, per platform, because that is the one
-    /// a package has to be buildable against.
-    ///
-    /// A platform no target of the project builds for cannot fail, so it is left
-    /// out. Where the project says nothing, the oldest version the installed SDK
-    /// can build for stands in — the same answer SwiftPM reads out of the SDK.
-    private final func deployment() async -> SwiftPM.Deployment {
-        var floors: [String: String] = [:]
-        var platforms: Set<String> = []
-
-        project.forEachTarget { target in
-            if let platform = target.platformSDK.flatMap(SwiftPM.Deployment.platform(of:)) {
-                platforms.insert(platform)
-            }
-
-            let declared: [(String, String?)] = [
-                ("macos", target.prefer(\.platform.macOS)),
-                ("ios", target.prefer(\.platform.iOS)),
-                ("tvos", target.prefer(\.platform.tvOS)),
-                ("watchos", target.prefer(\.platform.watchOS)),
-            ]
-
-            for (platform, version) in declared {
-                guard let version, !version.isEmpty else { continue }
-                guard let floor = floors[platform] else {
-                    floors[platform] = version
-                    continue
-                }
-                if SwiftPM.Deployment.isNewer(floor, than: version) {
-                    floors[platform] = version
-                }
-            }
-        }
-
-        /// A platform the project builds for without saying which version: the
-        /// oldest the installed SDK can build is what Xcode would use.
-        for platform in platforms where floors[platform] == nil {
-            floors[platform] = await SwiftPM.Deployment.sdkFloor(platform: platform)
-        }
-
-        return .init(project: floors)
     }
 }
 
@@ -362,7 +267,7 @@ extension Kit {
     /// Written once the package graph is resolved: a workspace generated from a
     /// package has no project targets to read a deployment floor from, and the
     /// graph's own is what SwiftPM compiles it at.
-    private final func generateConfig(packages: [String: String]) throws {
+    private final func generateConfig(packages: SwiftPM.Deployment.Floors) throws {
         config.setup(project: project, packages: packages)
         try config.write()
         try rootRC.ensureImport()

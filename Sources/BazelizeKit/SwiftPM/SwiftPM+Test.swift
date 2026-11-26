@@ -91,14 +91,14 @@ extension SwiftPM.Generator {
             Rules.Apple.MacOS.Call.macos_unit_test(
                 name: name,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "macos"),
+                minimum_os_version: deployment.required(package, platform: .macOS),
                 target_compatible_with: ["@platforms//os:macos"],
                 visibility: .public))
         builder.call(
             Rules.Apple.IOS.Call.ios_unit_test(
                 name: "\(name)_ios_simulator",
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "ios"),
+                minimum_os_version: deployment.required(package, platform: .iOS),
                 target_compatible_with: [
                     "@platforms//os:ios",
                     "@apple_support//constraints:simulator",
@@ -115,7 +115,7 @@ extension SwiftPM.Generator {
             Rules.Apple.IOS.Call.ios_unit_test(
                 name: iOSDeviceRule,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "ios"),
+                minimum_os_version: deployment.required(package, platform: .iOS),
                 tags: Self.manual,
                 target_compatible_with: iOSDeviceConstraints,
                 visibility: .private))
@@ -135,7 +135,7 @@ extension SwiftPM.Generator {
             Rules.Apple.TVOS.Call.tvos_unit_test(
                 name: tvOSBundle,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "tvos"),
+                minimum_os_version: deployment.required(package, platform: .tvOS),
                 tags: Self.manual,
                 target_compatible_with: tvOSConstraints,
                 visibility: .private))
@@ -160,7 +160,7 @@ extension SwiftPM.Generator {
             Rules.Apple.TVOS.Call.tvos_unit_test(
                 name: tvOSDeviceRule,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "tvos"),
+                minimum_os_version: deployment.required(package, platform: .tvOS),
                 tags: Self.manual,
                 target_compatible_with: tvOSDeviceConstraints,
                 visibility: .private))
@@ -180,7 +180,7 @@ extension SwiftPM.Generator {
             Rules.Apple.WatchOS.Call.watchos_unit_test(
                 name: watchOSBundle,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "watchos"),
+                minimum_os_version: deployment.required(package, platform: .watchOS),
                 tags: Self.manual,
                 target_compatible_with: watchOSConstraints,
                 visibility: .private))
@@ -205,7 +205,7 @@ extension SwiftPM.Generator {
             Rules.Apple.WatchOS.Call.watchos_unit_test(
                 name: watchOSDeviceRule,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "watchos"),
+                minimum_os_version: deployment.required(package, platform: .watchOS),
                 tags: Self.manual,
                 target_compatible_with: watchOSDeviceConstraints,
                 visibility: .private))
@@ -225,7 +225,7 @@ extension SwiftPM.Generator {
             Rules.Apple.VisionOS.Call.visionos_unit_test(
                 name: visionOSBundle,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "visionos"),
+                minimum_os_version: deployment.required(package, platform: .visionOS),
                 tags: Self.manual,
                 target_compatible_with: visionOSConstraints,
                 visibility: .private))
@@ -250,7 +250,7 @@ extension SwiftPM.Generator {
             Rules.Apple.VisionOS.Call.visionos_unit_test(
                 name: visionOSDeviceRule,
                 deps: .build { [Starlark.Label.named(":\(library)")] },
-                minimum_os_version: deployment.required(package, platform: "visionos"),
+                minimum_os_version: deployment.required(package, platform: .visionOS),
                 tags: Self.manual,
                 target_compatible_with: visionOSDeviceConstraints,
                 visibility: .private))
