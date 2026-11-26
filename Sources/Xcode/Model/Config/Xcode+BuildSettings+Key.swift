@@ -117,10 +117,10 @@ extension Xcode.BuildSettings {
     /// A boolean setting as Xcode spells it: `true` for `YES`, `false` for
     /// `NO`, `nil` when the setting is unset or says anything else.
     func bool(_ key: Key) -> Bool? {
-        switch self[key] {
-        case "YES": true
-        case "NO": false
-        default: nil
+        switch self[key].flatMap(FeatureState.init(rawValue:)) {
+        case .yes: true
+        case .no: false
+        case .migrate, nil: nil
         }
     }
 }

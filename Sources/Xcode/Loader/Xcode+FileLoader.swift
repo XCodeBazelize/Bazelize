@@ -27,15 +27,22 @@ enum KnownFileType: String {
     case framework = "wrapper.framework"
 
     init?(path: String) {
+        if let source = FileExtension(caseInsensitivePath: path) {
+            switch source {
+            case .swift: self = .swift
+            case .m: self = .objc
+            case .mm: self = .objcxx
+            case .c: self = .c
+            case .cc, .cp, .cpp, .cxx: self = .cpp
+            case .h: self = .cHeader
+            case .hh, .hpp, .hxx: self = .cppHeader
+            case .metal: self = .metal
+            case .cPlusPlus, .inc, .assembly, .preprocessedAssembly: return nil
+            }
+            return
+        }
+
         switch Path(path).extension?.lowercased() {
-        case "swift": self = .swift
-        case "m": self = .objc
-        case "mm": self = .objcxx
-        case "c": self = .c
-        case "cc", "cp", "cpp", "cxx": self = .cpp
-        case "h": self = .cHeader
-        case "hh", "hpp", "hxx": self = .cppHeader
-        case "metal": self = .metal
         case "a": self = .staticLibrary
         case "dylib": self = .dynamicLibrary
         case "tbd": self = .dylibStub
@@ -90,8 +97,8 @@ struct FileLoader {
             ?? native.path.flatMap { KnownFileType(path: $0)?.rawValue }
     }
 
-    var sourceTree: String {
-        native.sourceTree?.description ?? ""
+    var sourceTree: Xcode.SourceTree {
+        Xcode.SourceTree(rawValue: native.sourceTree?.description ?? "")
     }
 
     var frameworkName: String? {
@@ -133,8 +140,8 @@ struct FileLoader {
         /// dylibs and `.tbd` stubs, which link completely differently.
         guard typedFileType == .framework || typedFileType == .xcframework else { return false }
 
-        return sourceTree == PBXSourceTree.sdkRoot.description ||
-            sourceTree == PBXSourceTree.developerDir.description ||
+        return sourceTree == .sdkRoot ||
+            sourceTree == .developerDir ||
             fullPath?.hasPrefix("/System/Library/Frameworks/") == true ||
             fullPath?.hasPrefix("/System/Library/PrivateFrameworks/") == true
     }
@@ -142,8 +149,8 @@ struct FileLoader {
     var isSDKDylib: Bool {
         guard typedFileType == .dynamicLibrary || typedFileType == .dylibStub else { return false }
 
-        return sourceTree == PBXSourceTree.sdkRoot.description ||
-            sourceTree == PBXSourceTree.developerDir.description ||
+        return sourceTree == .sdkRoot ||
+            sourceTree == .developerDir ||
             fullPath?.hasPrefix("/usr/lib/") == true ||
             fullPath?.hasPrefix("/System/iOSSupport/usr/lib/") == true
     }
@@ -243,7 +250,7 @@ struct SynchronizedFile {
             fullPath: fullPath,
             label: nil,
             fileType: fileType,
-            sourceTree: "<group>",
+            sourceTree: .group,
             buildPhase: buildPhase,
             compilerFlags: compilerFlags,
             attributes: [])

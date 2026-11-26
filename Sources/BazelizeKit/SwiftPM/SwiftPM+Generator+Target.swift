@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// The targets that can be generated, after dropping everything that depends
@@ -117,7 +118,7 @@ extension SwiftPM.Generator {
         /// A target with any Swift in it is a Swift target: SwiftPM does not
         /// allow one target to mix languages, so the C-family files that are
         /// still on disk belong to another target or are excluded.
-        return extensions.contains("swift") ? .swift : .clang
+        return extensions.contains(FileExtension.swift.rawValue) ? .swift : .clang
     }
 
     /// The rule that stands for a target.

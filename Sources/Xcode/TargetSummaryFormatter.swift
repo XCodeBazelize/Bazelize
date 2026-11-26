@@ -8,7 +8,7 @@ extension Xcode {
             var lines: [String] = []
 
             lines.append("Target: \(target.name)")
-            lines.append("Type: \(target.productType ?? "<unknown>")")
+            lines.append("Type: \(target.productType?.rawValue ?? "<unknown>")")
 
             if let productName = target.productName {
                 lines.append("Product Name: \(productName)")

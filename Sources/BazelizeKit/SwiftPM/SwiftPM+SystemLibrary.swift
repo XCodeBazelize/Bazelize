@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// A system-library target is a module map over headers that are already on
@@ -59,7 +60,7 @@ extension SwiftPM.Generator {
             Rules.Cc.Call.cc_library(
                 name: name,
                 aspect_hints: .build { [Starlark.Label.named(":\(hint)")] },
-                hdrs: (matching(Self.headerExtensions.map { "\(prefix)/**/*.\($0)" }, files)
+                hdrs: (matching(Self.headerExtensions.map { "\(prefix)/**/*.\($0.rawValue)" }, files)
                     + included.map { "\($0)/**" })
                     .nonEmpty
                     .map { Starlark.glob($0) },

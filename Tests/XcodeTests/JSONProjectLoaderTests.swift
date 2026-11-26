@@ -12,7 +12,7 @@ struct JSONProjectLoaderTests {
         let probeIndex = project.targetIndex(named: "Probe")
         let probe = try #require(probeIndex)
 
-        #expect(project.targets[probe].productType == "com.apple.product-type.application")
+        #expect(project.targets[probe].productType == .application)
         #expect(project.targets[probe].configs["Debug"]?.swiftVersion == "6.0")
         #expect(project.targets[probe].configs["Release"]?.swiftVersion == "5.0")
         #expect(project.targets[probe].prefer(\.platform.iOS) == "16.0")

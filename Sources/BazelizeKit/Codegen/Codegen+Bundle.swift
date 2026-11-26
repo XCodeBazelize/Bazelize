@@ -5,11 +5,11 @@ extension Target {
         generateCopiedFiles(builder, kit)
 
         switch productType {
-        case "com.apple.product-type.bundle":
+        case .bundle:
             generateMacOSBundle(builder, kit)
-        case "com.apple.product-type.xpc-service":
+        case .xpcService:
             generateXPCService(builder, kit)
-        case "com.apple.product-type.app-extension":
+        case .appExtension:
             generateExtension(builder, kit)
         default:
             break

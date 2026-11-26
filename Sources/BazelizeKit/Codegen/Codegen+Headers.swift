@@ -207,7 +207,7 @@ extension Target {
         let clangSources = srcs_c + srcs_cpp + srcs_objc + srcs_objcpp
         guard !clangSources.isEmpty else { return [] }
         guard srcs_objcpp.count == clangSources.count else { return [] }
-        guard srcs_objcpp.contains(where: { !$0.hasSuffix(".mm") }) else { return [] }
+        guard srcs_objcpp.contains(where: { !$0.hasSuffix(FileExtension.mm.suffix) }) else { return [] }
 
         return ["-x", "objective-c++"]
     }
@@ -251,7 +251,7 @@ extension Target {
 
 extension Path {
     var isHeader: Bool {
-        guard let ext = `extension`?.lowercased() else { return false }
-        return ["h", "hh", "hpp", "hxx"].contains(ext)
+        guard let ext = FileExtension(caseInsensitivePath: string) else { return false }
+        return [FileExtension.h, .hh, .hpp, .hxx].contains(ext)
     }
 }

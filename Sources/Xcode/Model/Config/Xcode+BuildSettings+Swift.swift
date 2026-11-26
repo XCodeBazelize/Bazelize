@@ -127,12 +127,17 @@ extension Xcode.BuildSettings {
         private var upcomingFeatureCopts: [String] {
             UpcomingFeature.allCases.flatMap { feature -> [String] in
                 let fallback = approachableConcurrency && feature.isApproachableConcurrency
-                switch settings[feature.rawValue] ?? (fallback ? "YES" : "NO") {
-                case "YES":
+                let state: FeatureState? = if let value = settings[feature.rawValue] {
+                    FeatureState(rawValue: value)
+                } else {
+                    fallback ? .yes : .no
+                }
+                switch state {
+                case .yes:
                     return ["-enable-upcoming-feature", feature.name]
                 /// A migrating feature is diagnosed but not enforced, and the
                 /// compiler spells that as a suffix on the feature's name.
-                case "MIGRATE":
+                case .migrate:
                     return ["-enable-upcoming-feature", "\(feature.name):migrate"]
                 default:
                     return []
@@ -149,23 +154,25 @@ extension Xcode.BuildSettings {
         /// `SWIFT_STRICT_CONCURRENCY`: anything above `minimal` but short of
         /// `complete` is a frontend flag, `complete` is the upcoming feature.
         private var strictConcurrencyCopts: [String] {
-            switch settings[.swiftStrictConcurrency] {
-            case "targeted":
-                return ["-strict-concurrency=targeted"]
-            case .some(let value) where value != "minimal" && !value.isEmpty:
-                return ["-enable-upcoming-feature", "StrictConcurrency"]
-            default:
+            guard let value = settings[.swiftStrictConcurrency], !value.isEmpty else { return [] }
+            switch StrictConcurrency(rawValue: value) {
+            case .minimal:
                 return []
+            case .targeted:
+                return ["-strict-concurrency=targeted"]
+            /// `complete`, and anything stricter a later Xcode may spell.
+            case .complete, nil:
+                return ["-enable-upcoming-feature", "StrictConcurrency"]
             }
         }
 
         /// `SWIFT_STRICT_MEMORY_SAFETY`, which a Swift 6 module still has to ask
         /// for.
         private var memorySafetyCopts: [String] {
-            switch settings[.swiftStrictMemorySafety] {
-            case "YES":
+            switch settings[.swiftStrictMemorySafety].flatMap(FeatureState.init(rawValue:)) {
+            case .yes:
                 return ["-strict-memory-safety"]
-            case "MIGRATE":
+            case .migrate:
                 return ["-strict-memory-safety:migrate"]
             default:
                 return []

@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// A test target of the package handed in becomes a test bundle over a library
@@ -36,7 +37,7 @@ extension SwiftPM.Generator {
 
         /// SwiftPM does not let one target mix languages, so a test target
         /// without Swift in it is a C-family one and compiles as such.
-        if extensions(of: target, in: package).contains("swift") {
+        if extensions(of: target, in: package).contains(FileExtension.swift.rawValue) {
             builder.load(loadableRule: Rules.Swift.swift_library)
             builder.call(
                 Rules.Swift.Call.swift_library(
@@ -48,7 +49,7 @@ extension SwiftPM.Generator {
                     srcs: sources(
                         naming: resources?.accessors ?? [],
                         globbing: matching(
-                            sources(of: target, prefix: prefix, extensions: ["swift"]),
+                            sources(of: target, prefix: prefix, extensions: [.swift]),
                             relativeFiles(of: target, in: package, prefix: prefix))
                             + generated,
                         excluding: excluded(target, prefix: prefix)),

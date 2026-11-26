@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// What a target's resources add to its own rule.
@@ -94,9 +95,9 @@ extension SwiftPM.Generator {
         /// headers, so they belong to the same resource group. The bundler treats a
         /// bundled header as a Metal header and compiles it into the library
         /// instead of copying it.
-        if resources.contains(where: { $0.hasSuffix(".metal") }) {
+        if resources.contains(where: { $0.hasSuffix(FileExtension.metal.suffix) }) {
             resources += matching(
-                SwiftPM.Generator.headerExtensions.map { "\(prefix)/**/*.\($0)" },
+                SwiftPM.Generator.headerExtensions.map { "\(prefix)/**/*.\($0.rawValue)" },
                 relativeFiles(of: target, in: package, prefix: prefix, excluding: false))
         }
 

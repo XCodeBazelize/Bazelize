@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// A macro target becomes a `swift_compiler_plugin`: a program the compiler
@@ -31,7 +32,7 @@ extension SwiftPM.Generator {
                 name: ruleName(of: target.name, in: package),
                 srcs: files(
                     matching: matching(
-                        sources(of: target, prefix: prefix, extensions: ["swift"]),
+                        sources(of: target, prefix: prefix, extensions: [.swift]),
                         relativeFiles(of: target, in: package, prefix: prefix))
                         + generated,
                     excluding: excluded(target, prefix: prefix),

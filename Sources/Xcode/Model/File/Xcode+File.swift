@@ -5,7 +5,7 @@ extension Xcode {
         public let fullPath: String?
         public let label: String?
         public let fileType: String?
-        public let sourceTree: String
+        public let sourceTree: SourceTree
         public let buildPhase: String?
         public let compilerFlags: String?
         public let attributes: [String]

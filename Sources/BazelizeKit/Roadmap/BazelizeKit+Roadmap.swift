@@ -265,7 +265,7 @@ extension Xcode.Target {
             /// anything a project names by absolute path, which a private
             /// framework in `/System/Library/PrivateFrameworks` is.
             .filter { file in
-                !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree)
+                ![Xcode.SourceTree.buildProductsDir, .sdkRoot, .developerDir].contains(file.sourceTree)
                     && file.path?.hasPrefix("/") != true
             }
             .compactMap(\.roadmapRelativePath)

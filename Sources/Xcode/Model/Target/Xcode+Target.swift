@@ -1,4 +1,5 @@
 import Foundation
+import XcodeProj
 
 // MARK: - Xcode.Target
 
@@ -11,7 +12,7 @@ extension Xcode {
     public struct Target: ~Copyable {
         public let name: String
         public let productName: String?
-        public let productType: String?
+        public let productType: PBXProductType?
         public let preferConfig: String?
         public let configs: [String: BuildSettings]
         public let metadata: TargetMetadata
@@ -40,7 +41,7 @@ extension Xcode.Target {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
         try container.encodeIfPresent(productName, forKey: .productName)
-        try container.encodeIfPresent(productType, forKey: .productType)
+        try container.encodeIfPresent(productType?.rawValue, forKey: .productType)
         try container.encodeIfPresent(preferConfig, forKey: .preferConfig)
         try container.encode(configs, forKey: .configs)
         try container.encode(metadata, forKey: .metadata)
@@ -81,8 +82,7 @@ extension Xcode.Target {
 
     public var isTest: Bool {
         switch productType {
-        case "com.apple.product-type.bundle.unit-test",
-             "com.apple.product-type.bundle.ui-testing":
+        case .unitTestBundle, .uiTestBundle:
             return true
         default:
             return false
@@ -112,7 +112,9 @@ extension Xcode.Target {
     }
 
     public var hpps: [String] {
-        headers.filter { $0.hasSuffix(".hpp") || $0.hasSuffix(".hh") || $0.hasSuffix(".hxx") }
+        headers.filter { header in
+            [FileExtension.hpp, .hh, .hxx].contains { header.hasSuffix($0.suffix) }
+        }
     }
 
     public var srcs: [String] {
@@ -120,40 +122,40 @@ extension Xcode.Target {
     }
 
     public var srcs_c: [String] {
-        sources(ofType: "sourcecode.c.c", extensions: [".c"])
+        sources(ofType: "sourcecode.c.c", extensions: [.c])
     }
 
     public var srcs_objc: [String] {
-        sources(ofType: "sourcecode.c.objc", extensions: [".m"])
+        sources(ofType: "sourcecode.c.objc", extensions: [.m])
     }
 
     public var srcs_cpp: [String] {
-        sources(ofType: "sourcecode.cpp.cpp", extensions: [".cc", ".cp", ".cpp", ".cxx"])
+        sources(ofType: "sourcecode.cpp.cpp", extensions: [.cc, .cp, .cpp, .cxx])
     }
 
     public var srcs_objcpp: [String] {
-        sources(ofType: "sourcecode.cpp.objcpp", extensions: [".mm"])
+        sources(ofType: "sourcecode.cpp.objcpp", extensions: [.mm])
     }
 
     public var srcs_swift: [String] {
-        sources(ofType: "sourcecode.swift", extensions: [".swift"])
+        sources(ofType: "sourcecode.swift", extensions: [.swift])
     }
 
     public var srcs_metal: [String] {
-        sources(ofType: "sourcecode.metal", extensions: [".metal"])
+        sources(ofType: "sourcecode.metal", extensions: [.metal])
     }
 
     /// Xcode compiles by declared file type, which can disagree with the extension
     /// (`explicitFileType = sourcecode.cpp.objcpp` on a `.m` file is common for
     /// Objective-C code that includes C++).
-    private func sources(ofType type: String, extensions: [String]) -> [String] {
+    private func sources(ofType type: String, extensions: [FileExtension]) -> [String] {
         filePaths(
             files.sources.filter { file in
                 if let fileType = file.fileType, Self.compiledFileTypes.contains(fileType) {
                     return fileType == type
                 }
                 guard let path = file.path else { return false }
-                return extensions.contains { path.hasSuffix($0) }
+                return extensions.contains { path.hasSuffix($0.suffix) }
             })
     }
 

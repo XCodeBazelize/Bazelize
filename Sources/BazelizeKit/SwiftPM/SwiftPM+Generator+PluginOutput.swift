@@ -10,6 +10,7 @@ import Foundation
 @preconcurrency import PathKit
 import Starlark
 import Util
+import Xcode
 
 extension SwiftPM.Generator {
     /// What a plugin generated, linked next to the package's rules.
@@ -40,9 +41,10 @@ extension SwiftPM.Generator {
     /// into the same place and the rules still hold.
     func materialize(
         pluginOutputsOf target: SwiftPM.PackageTarget,
-        in package: SwiftPM.Package,
+        in _: SwiftPM.Package,
         at root: Path,
-        kind: TargetKind) throws -> PluginGenerated
+        kind: TargetKind) throws
+        -> PluginGenerated
     {
         /// A target that asks for no plugin has no such directory, and a
         /// pattern for one would be a pattern for something that is never
@@ -54,8 +56,8 @@ extension SwiftPM.Generator {
         /// What the target's own rule compiles; a Swift target compiles Swift,
         /// and a C-family one whatever clang takes.
         let compiled: Set<String> = {
-            if case .clang = kind { return Set(Self.compileExtensions) }
-            return ["swift"]
+            if case .clang = kind { return Set(Self.compileExtensions.map(\.rawValue)) }
+            return [FileExtension.swift.rawValue]
         }()
 
         /// The kinds the target could compile, whether or not the plugin has
@@ -63,7 +65,7 @@ extension SwiftPM.Generator {
         /// from `bazel run //:plugins`.
         var sources = compiled
         var headers: Set<String> = {
-            if case .clang = kind { return Set(Self.headerExtensions) }
+            if case .clang = kind { return Set(Self.headerExtensions.map(\.rawValue)) }
             return []
         }()
         var resources: Set<String> = []
@@ -75,8 +77,9 @@ extension SwiftPM.Generator {
             let path = file.normalize().string
             /// A file the plugin wrote somewhere else is not this target's
             /// to name.
-            guard let relative = path.delete(prefix: base)?
-                .trimmingCharacters(in: ["/"])
+            guard
+                let relative = path.delete(prefix: base)?
+                    .trimmingCharacters(in: ["/"])
             else {
                 continue
             }
@@ -91,7 +94,7 @@ extension SwiftPM.Generator {
 
             if compiled.contains(`extension`) {
                 sources.insert(`extension`)
-            } else if Self.headerExtensions.contains(`extension`) {
+            } else if let header = FileExtension(rawValue: `extension`), Self.headerExtensions.contains(header) {
                 headers.insert(`extension`)
             } else {
                 resources.insert(`extension`)

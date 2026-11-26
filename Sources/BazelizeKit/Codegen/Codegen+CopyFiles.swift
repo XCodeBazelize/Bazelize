@@ -111,7 +111,7 @@ extension Target {
         /// answer that: only a product of another target is a rule dependency, a file
         /// out of the source tree is just a file.
         let products = Set(files.copyFiles.filter { file in
-            file.sourceTree == "BUILT_PRODUCTS_DIR"
+            file.sourceTree == .buildProductsDir
         }.compactMap { file in
             file.name ?? file.path
         })
@@ -137,7 +137,7 @@ extension Target {
                 let product = "//Targets/\(name):\(name)"
                 guard
                     component != name,
-                    project.targets[index].productType == "com.apple.product-type.tool"
+                    project.targets[index].productType == .commandLineTool
                 else {
                     result.append(.init(label: product, subdirectory: subdirectory, rename: nil))
                     continue
@@ -180,7 +180,7 @@ extension Target {
         let workspace = Path(project.workspacePath)
 
         let sources = files.copyFiles.filter { file in
-            file.sourceTree != "BUILT_PRODUCTS_DIR"
+            file.sourceTree != .buildProductsDir
         }
         let byName = Dictionary(
             sources.compactMap { file -> (String, String)? in

@@ -225,7 +225,7 @@ extension Xcode.BuildSettings {
 
     /// `MACH_O_TYPE`: how a target's objects are linked — `staticlib` makes a
     /// framework target a static one, which has no bundle to load at runtime.
-    public var machOType: String? { self[.machOType] }
+    public var machOType: MachOType? { self[.machOType].flatMap(MachOType.init(rawValue:)) }
 }
 
 extension StringProtocol {

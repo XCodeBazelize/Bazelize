@@ -84,7 +84,7 @@ struct TargetLoader {
             files.filter { file in
                 // SDK and sibling build products are not checkout inputs.
                 guard
-                    !["BUILT_PRODUCTS_DIR", "SDKROOT", "DEVELOPER_DIR"].contains(file.sourceTree),
+                    ![.buildProductsDir, .sdkRoot, .developerDir].contains(file.sourceTree),
                     let path = file.fullPath,
                     !path.contains("$("), !path.contains("${")
                 else { return true }
@@ -105,7 +105,7 @@ struct TargetLoader {
         return Xcode.Target(
             name: name,
             productName: native.productName,
-            productType: native.productType?.rawValue,
+            productType: native.productType,
             preferConfig: preferConfig,
             configs: mergedConfig,
             metadata: metadata,
@@ -161,7 +161,7 @@ struct TargetLoader {
             /// run. The target is generated without it, and the run says which
             /// file went missing, rather than emitting a dependency Bazel
             /// cannot resolve.
-            if wrapped.sourceTree != PBXSourceTree.buildProductsDir.description, !wrapped.existsOnDisk {
+            if wrapped.sourceTree != .buildProductsDir, !wrapped.existsOnDisk {
                 return nil
             }
 
