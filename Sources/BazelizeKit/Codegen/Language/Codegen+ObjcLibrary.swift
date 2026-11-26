@@ -12,8 +12,9 @@ import Starlark
 extension Target {
     func generateObjcLibrary(_ builder: CodeBuilder, _ kit: Kit, fileFlags: FileCompilerPlan, aliasPublic: Bool = true) {
         builder.load(.objc_library)
-        let copts = ["-fblocks", "-fPIC", "-fmodule-name=\(codegenModuleName)"]
-            + clangDialectCopts + forceIncludeFlags + clangCopts(kit)
+        let copts = Self.tokenized(
+            ["-fblocks", "-fPIC", "-fmodule-name=\(codegenModuleName)"]
+                + clangDialectCopts + forceIncludeFlags + clangCopts(kit))
         var groups: [String] = []
         for (index, group) in fileFlags.groups.enumerated() {
             let groupName = "\(name)_objc_flags_\(index)"
@@ -68,7 +69,7 @@ extension Target {
                 copts: copts.starlark,
                 enable_modules: prefer(\.enableModules),
                 includes: headerIncludes(project: kit.project),
-                linkopts: sdkLinkopts?.starlark,
+                linkopts: sdkLinkopts.map(Self.tokenized)?.starlark,
                 module_name: codegenModuleName,
                 non_arc_srcs: fileFlags.nonArcSources.nonEmpty.map { paths in .build { paths } },
                 sdk_dylibs: dylibsSDK,

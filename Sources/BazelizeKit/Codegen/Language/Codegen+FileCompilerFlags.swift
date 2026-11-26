@@ -28,7 +28,7 @@ extension Target {
 
         for file in files.sources {
             guard let raw = file.compilerFlags, let path = file.path else { continue }
-            let flags = Self.fileCompilerArguments(raw)
+            let flags = Xcode.BuildSettings.words(raw)
             guard !flags.isEmpty else { continue }
             let source = "Sources/\(path)"
             let arcFlags = ["-fobjc-arc", "-fno-objc-arc"]
@@ -60,46 +60,10 @@ extension Target {
         plan.groups = grouped.values.sorted { $0.flags.lexicographicallyPrecedes($1.flags) }
         return plan
     }
-
-    /// PBX COMPILER_FLAGS is a shell argument string. Keep quoted spaces and
-    /// escapes; copts will receive each argument quoted for Bazel's own tokenizer.
-    private static func fileCompilerArguments(_ value: String) -> [String] {
-        var result: [String] = []
-        var token = ""
-        var quote: Character?
-        var escaped = false
-        var started = false
-        for character in value {
-            if escaped {
-                token.append(character)
-                escaped = false
-            } else if character == "\\" && quote != "'" {
-                escaped = true
-                started = true
-            } else if let current = quote {
-                if character == current { quote = nil } else { token.append(character) }
-            } else if character == "\"" || character == "'" {
-                quote = character
-                started = true
-            } else if character.isWhitespace {
-                if started { result.append(token) }
-                token = ""
-                started = false
-            } else {
-                token.append(character)
-                started = true
-            }
-        }
-        if escaped { token.append("\\") }
-        if started { result.append(token) }
-        return result.filter { !$0.isEmpty && $0 != "$(inherited)" }
-    }
 }
 
 extension FileCompilerPlan.Group {
     var copts: [String] {
-        flags.filter { $0 != "-fobjc-arc" && $0 != "-fno-objc-arc" }.map {
-            "'" + $0.replacingOccurrences(of: "'", with: "'\\''") + "'"
-        }
+        Target.tokenized(flags.filter { $0 != "-fobjc-arc" && $0 != "-fno-objc-arc" })
     }
 }

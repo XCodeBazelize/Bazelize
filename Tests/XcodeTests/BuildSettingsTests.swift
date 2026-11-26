@@ -173,4 +173,34 @@ struct BuildSettingsTests {
         #expect(plist.contains("<key>UIApplicationSupportsIndirectInputEvents</key>"))
         #expect(plist.contains("<true/>"))
     }
+
+    @Test(arguments: [
+        (#"-ObjC $(inherited)  -lz"#, ["-ObjC", "-lz"]),
+        ("\"$(SRCROOT)/Vendor Dir\" other", ["$(SRCROOT)/Vendor Dir", "other"]),
+        ("$(SRCROOT)/\"Vendor Dir\"/include", ["$(SRCROOT)/Vendor Dir/include"]),
+        ("MESSAGE='\"two words\"'", ["MESSAGE=\"two words\""]),
+        ("\"-DQUOTE=\\\"a b\\\"\"", ["-DQUOTE=\"a b\""]),
+        ("\"keep\\n\"", ["keep\\n"]),
+        ("Vendor\\ Dir 'it''s'", ["Vendor Dir", "its"]),
+        ("\"\" '' x", ["x"]),
+    ])
+    func listSettingsAreReadAsShellWords(value: String, words: [String]) {
+        #expect(Xcode.BuildSettings.words(value) == words)
+    }
+
+    @Test
+    func quotedListSettingsKeepTheirSpaces() {
+        let settings = Xcode.BuildSettings(
+            name: "Debug",
+            setting: [
+                "HEADER_SEARCH_PATHS": #"$(inherited) "Vendor Dir/include""#,
+                "USER_HEADER_SEARCH_PATHS": #"'User Headers'"#,
+                "GCC_PREPROCESSOR_DEFINITIONS": #"$(inherited) MESSAGE='"two words"' PLAIN=1"#,
+                "OTHER_LDFLAGS": #"-Xlinker "-sectcreate" -Xlinker "Linker Input/data.bin""#,
+            ])
+
+        #expect(settings.headerSearchPaths == ["Vendor Dir/include", "User Headers"])
+        #expect(settings.preprocessorDefinitions == [#"MESSAGE="two words""#, "PLAIN=1"])
+        #expect(settings.otherLinkerFlags == ["-Xlinker", "-sectcreate", "-Xlinker", "Linker Input/data.bin"])
+    }
 }

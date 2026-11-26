@@ -164,12 +164,11 @@ extension Target {
         let workspace = Path(project.workspacePath).absolute().string
 
         return (prefer(\.headerSearchPaths) ?? []).compactMap { path -> String? in
-            /// Xcode quotes segments and allows `$(SETTING:modifier)`; a path that
-            /// still carries either cannot be resolved to a directory here.
-            let unquoted = path.replacingOccurrences(of: "\"", with: "")
-            guard !unquoted.contains("$") else { return nil }
+            /// Xcode allows `$(SETTING:modifier)`; a path that still carries one
+            /// cannot be resolved to a directory here.
+            guard !path.contains("$") else { return nil }
 
-            let normalized = Path(unquoted).normalize().string
+            let normalized = Path(path).normalize().string
             guard normalized != "." else { return nil }
 
             if !normalized.hasPrefix("/") {
@@ -234,6 +233,20 @@ extension Target {
         }
 
         return flags + cPlusPlusFlags
+    }
+
+    /// Flags as a C-family rule has to be given them: `objc_library` runs
+    /// `copts` and `linkopts` through Bazel's Bourne-shell tokenization, so a
+    /// flag Xcode passes as one argument — `-DMESSAGE="two words"` — is quoted
+    /// to come out of it as that one argument again. `swift_library` passes
+    /// its flags through as they are and takes them unquoted.
+    static func tokenized(_ flags: [String]) -> [String] {
+        flags.map { flag in
+            guard flag.contains(where: { $0.isWhitespace || $0 == "'" || $0 == "\"" || $0 == "\\" }) else {
+                return flag
+            }
+            return "'" + flag.replacingOccurrences(of: "'", with: #"'\''"#) + "'"
+        }
     }
 
     // MARK: Private
