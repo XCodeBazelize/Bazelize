@@ -6,6 +6,7 @@
 //
 
 import BazelRules
+import Commands
 import Foundation
 @preconcurrency import PathKit
 import Starlark

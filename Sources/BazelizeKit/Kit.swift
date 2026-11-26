@@ -5,6 +5,7 @@
 //  Created by Yume on 2022/4/29.
 //
 
+import Commands
 import PluginLoader
 import Util
 import XcodeLoader
@@ -237,7 +238,7 @@ extension Kit {
             try await generator.refreshPluginPackages()
         } catch {
             generator.note("""
-            `bazel run //:plugins` did not run the build tool plugins: \(error). \
+            The build tool plugins did not run: \(error). \
             Whatever they generate is missing from the targets that use them.
             """)
         }
