@@ -5,6 +5,7 @@
 //  The platform version a package's targets are compiled at.
 //
 
+import Commands
 import Foundation
 @preconcurrency import PathKit
 import Util

@@ -1,3 +1,4 @@
+import Commands
 import Foundation
 
 // MARK: - Toolchain
@@ -63,7 +64,7 @@ struct Toolchain: Sendable {
     }
 
     private static func discover() async -> Self {
-        async let sdkQuery = try? Commands.installedSDKs()
+        async let sdkQuery = try? JSONDecoder().decode([SDK].self, from: Commands.installedSDKs())
         async let versionQuery = try? Commands.xcodeVersion()
         let (sdks, output) = await (sdkQuery, versionQuery)
         let version = output?.split(separator: "\n").first?.split(separator: " ").last

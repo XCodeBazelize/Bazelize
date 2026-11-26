@@ -143,7 +143,7 @@ extension SwiftPM {
                 let linkerFlags: [String]
             }
 
-            private struct Empty: Encodable {}
+            private struct Empty: Encodable { }
         }
 
         struct Product: Encodable {
@@ -297,14 +297,11 @@ extension SwiftPM {
     enum PluginError: Error, CustomStringConvertible {
         /// The toolchain's protocol is not the one mirrored here.
         case undecodable(String)
-        case runFailed(String)
 
         var description: String {
             switch self {
             case .undecodable(let reason):
                 return "the plugin protocol of this toolchain is not the one bazelize speaks: \(reason)"
-            case .runFailed(let reason):
-                return "\(reason)"
             }
         }
     }

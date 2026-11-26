@@ -5,6 +5,7 @@
 //  Resolving the packages a project depends on and reading their manifests.
 //
 
+import Commands
 import Foundation
 @preconcurrency import PathKit
 import Util
@@ -305,19 +306,6 @@ extension SwiftPM {
             \(error.localizedDescription, privacy: .public)
             """)
             return nil
-        }
-    }
-}
-
-// MARK: - SwiftPMError
-
-enum SwiftPMError: Error, CustomStringConvertible {
-    case resolveFailed(status: String)
-
-    var description: String {
-        switch self {
-        case .resolveFailed(let status):
-            return "swift package resolve failed: \(status)"
         }
     }
 }
