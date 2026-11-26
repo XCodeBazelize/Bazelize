@@ -36,7 +36,7 @@ struct TargetLoader {
                 /// optional, and `auto` names no SDK at all.
                 .with(defaults: project.toolchain
                     .settings(sdk: settings.platform.resolvedSDK?.rawValue)
-                    .merging(["CONFIGURATION": settings.name]) { _, new in new })
+                    .merging([.configuration: settings.name]) { _, new in new })
         }
     }
 

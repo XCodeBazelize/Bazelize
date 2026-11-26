@@ -51,10 +51,10 @@ extension Xcode {
         }
 
         /// Values for the settings this configuration does not state itself.
-        func with(defaults: [String: String]) -> BuildSettings {
+        func with(defaults: [Key: String]) -> BuildSettings {
             .init(
                 name: name,
-                setting: setting.merging(defaults) { current, _ in
+                setting: setting.merging(defaults.lazy.map { ($0.key.rawValue, $0.value) }) { current, _ in
                     current
                 })
         }
@@ -221,7 +221,7 @@ extension Xcode.BuildSettings {
     public var testTargetName: String? { self[.testTargetName] }
     public var testHost: String? { self[.testHost] }
     public var bundleLoader: String? { self[.bundleLoader] }
-    public var enableModules: Bool { self[.clangEnableModules] == "YES" }
+    public var enableModules: Bool { bool(.clangEnableModules) == true }
 
     /// `MACH_O_TYPE`: how a target's objects are linked — `staticlib` makes a
     /// framework target a static one, which has no bundle to load at runtime.

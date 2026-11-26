@@ -23,7 +23,7 @@ extension Xcode.BuildSettings {
         /// `5.5` are both the Swift 5 mode, and `4.2` is the one mode with a
         /// minor of its own.
         public var languageMode: String? {
-            guard let value = settings[.swiftVersion], !value.isEmpty else { return nil }
+            guard let value = settings.swiftVersion, !value.isEmpty else { return nil }
 
             let components = value.split(separator: ".")
             guard let major = components.first else { return nil }
@@ -121,7 +121,7 @@ extension Xcode.BuildSettings {
         }
 
         private var approachableConcurrency: Bool {
-            settings[.swiftApproachableConcurrency] == "YES"
+            settings.bool(.swiftApproachableConcurrency) == true
         }
 
         private var upcomingFeatureCopts: [String] {
@@ -143,7 +143,7 @@ extension Xcode.BuildSettings {
         /// `SWIFT_ENABLE_BARE_SLASH_REGEX`, which Xcode turns on by default and
         /// `swiftc` does not.
         private var bareSlashRegexCopts: [String] {
-            settings[.swiftEnableBareSlashRegex] == "NO" ? [] : ["-enable-bare-slash-regex"]
+            settings.bool(.swiftEnableBareSlashRegex) == false ? [] : ["-enable-bare-slash-regex"]
         }
 
         /// `SWIFT_STRICT_CONCURRENCY`: anything above `minimal` but short of

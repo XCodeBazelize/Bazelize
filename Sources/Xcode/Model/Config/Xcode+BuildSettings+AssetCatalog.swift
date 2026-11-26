@@ -21,7 +21,7 @@ extension Xcode.BuildSettings {
         /// Xcode 15+ generates `ImageResource`/`ColorResource` members from the
         /// catalogs and compiles them into the target.
         public var generatesSwiftSymbols: Bool {
-            settings[.generateSwiftAssetSymbolExtensions] == "YES"
+            settings.bool(.generateSwiftAssetSymbolExtensions) == true
         }
 
         /// `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`: the extra icons the
@@ -38,11 +38,7 @@ extension Xcode.BuildSettings {
         /// `ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS`: `true` for `YES`,
         /// `false` for `NO`, `nil` when the target does not say.
         public var includeAllAppIconAssets: Bool? {
-            switch settings[.includeAllAppIconAssets] {
-            case "YES": true
-            case "NO": false
-            default: nil
-            }
+            settings.bool(.includeAllAppIconAssets)
         }
 
         /// Whitespace-separated, quote-aware, without Xcode's `$(inherited)` marker.

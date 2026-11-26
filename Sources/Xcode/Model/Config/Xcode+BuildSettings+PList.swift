@@ -1,7 +1,5 @@
 import Foundation
 
-private let plistPrefix = "INFOPLIST_KEY_"
-
 extension Xcode.BuildSettings {
     // MARK: Info.plist
 
@@ -11,6 +9,41 @@ extension Xcode.BuildSettings {
 
     public var generatedPlist: GeneratedPlist {
         .init(settings: self)
+    }
+
+    /// The `INFOPLIST_KEY_*` settings Bazelize knows the value type of. The raw
+    /// value is the `Info.plist` key the setting writes.
+    ///
+    /// Declared in the order `GeneratedPlist.entries` writes them.
+    enum InfoPlistKey: String, CaseIterable {
+        case cfBundleDisplayName = "CFBundleDisplayName"
+        case uiApplicationSupportsIndirectInputEvents = "UIApplicationSupportsIndirectInputEvents"
+        case uiLaunchStoryboardName = "UILaunchStoryboardName"
+        case uiMainStoryboardFile = "UIMainStoryboardFile"
+        case uiSupportedInterfaceOrientations = "UISupportedInterfaceOrientations"
+
+        /// What every one of these settings starts with.
+        static let prefix = "INFOPLIST_KEY_"
+
+        /// The build setting: `INFOPLIST_KEY_CFBundleDisplayName`.
+        var setting: String {
+            "\(Self.prefix)\(rawValue)"
+        }
+
+        fileprivate var value: InfoPlistValue {
+            switch self {
+            case .cfBundleDisplayName, .uiLaunchStoryboardName, .uiMainStoryboardFile:
+                .string
+            case .uiSupportedInterfaceOrientations:
+                .stringArray
+            case .uiApplicationSupportsIndirectInputEvents:
+                .bool
+            }
+        }
+    }
+
+    subscript(infoPlist key: InfoPlistKey) -> String? {
+        self[key.setting]
     }
 
     public struct Plist {
@@ -23,25 +56,21 @@ extension Xcode.BuildSettings {
 
         /// "LaunchScreen"
         public var launch: String? {
-            plistValue("UILaunchStoryboardName")
+            settings[infoPlist: .uiLaunchStoryboardName]
         }
 
         /// "Main"
         public var storyboard: String? {
-            plistValue("UIMainStoryboardFile")
+            settings[infoPlist: .uiMainStoryboardFile]
         }
 
-        /// INFOPLIST_KEY_
-        /// INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad
+        /// Every `INFOPLIST_KEY_*` the target states, known or not:
+        /// `INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad`.
         public var keys: [String] {
             settings.keys.filter { key in
-                key.hasPrefix(plistPrefix)
+                key.hasPrefix(InfoPlistKey.prefix)
             }
             .sorted()
-        }
-
-        private func plistValue(_ key: String) -> String? {
-            settings["\(plistPrefix)\(key)"]
         }
     }
 
@@ -50,7 +79,7 @@ extension Xcode.BuildSettings {
 
         /// "YES"
         public var enabled: Bool {
-            settings[.generateInfoPlistFile] == "YES"
+            settings.bool(.generateInfoPlistFile) == true
         }
 
         /// CFBundleVersion - CURRENT_PROJECT_VERSION
@@ -77,58 +106,37 @@ extension Xcode.BuildSettings {
         /// CFBundleDevelopmentRegion -> $(DEVELOPMENT_LANGUAGE)
         public var defaultInfoPlistKeyNotes: [String] {
             [
-                "CFBundleName -> $(PRODUCT_NAME)",
-                "CFBundleIdentifier -> $(PRODUCT_BUNDLE_IDENTIFIER)",
-                "CFBundleExecutable -> $(EXECUTABLE_NAME)",
-                "CFBundlePackageType -> $(PRODUCT_BUNDLE_PACKAGE_TYPE)",
-                "CFBundleDevelopmentRegion -> $(DEVELOPMENT_LANGUAGE)",
-                "CFBundleVersion -> $(CURRENT_PROJECT_VERSION)",
-                "CFBundleShortVersionString -> $(MARKETING_VERSION)",
+                "CFBundleName -> \(Key.productName.reference)",
+                "CFBundleIdentifier -> \(Key.productBundleIdentifier.reference)",
+                "CFBundleExecutable -> \(Key.executableName.reference)",
+                "CFBundlePackageType -> \(Key.productBundlePackageType.reference)",
+                "CFBundleDevelopmentRegion -> \(Key.developmentLanguage.reference)",
+                "CFBundleVersion -> \(Key.currentProjectVersion.reference)",
+                "CFBundleShortVersionString -> \(Key.marketingVersion.reference)",
             ]
         }
 
         /// GENERATED_INFOPLIST_FILE
         ///
-        /// Render a minimal subset of INFOPLIST_KEY_* settings into plist XML
-        /// fragments so generated Info.plist files preserve common Xcode
+        /// Render the `INFOPLIST_KEY_*` settings `InfoPlistKey` knows into plist
+        /// XML fragments so generated Info.plist files preserve common Xcode
         /// build-setting customizations.
         public var entries: [String] {
             guard enabled else { return [] }
 
-            return settings.plist.keys.sorted().flatMap { key -> [String] in
-                guard let value = settings[key] else { return [] }
+            return InfoPlistKey.allCases.flatMap { key -> [String] in
+                guard let value = settings[infoPlist: key] else { return [] }
 
-                switch plistDecision(for: key) {
+                let element = switch key.value {
                 case .string:
-                    return [plistKey(key), plistString(value)]
+                    plistString(value)
                 case .stringArray:
-                    return [plistKey(key), plistStringArray(value)]
+                    plistStringArray(value)
                 case .bool:
-                    return [plistKey(key), plistBool(value)]
-                case .unknown:
-                    return []
+                    plistBool(value)
                 }
+                return ["<key>\(key.rawValue)</key>", element]
             }
-        }
-
-        private func plistDecision(for key: String) -> PlistDecision {
-            switch key {
-            case "INFOPLIST_KEY_CFBundleDisplayName",
-                 "INFOPLIST_KEY_UIMainStoryboardFile",
-                 "INFOPLIST_KEY_UILaunchStoryboardName":
-                return .string
-            case "INFOPLIST_KEY_UISupportedInterfaceOrientations":
-                return .stringArray
-            case "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents":
-                return .bool
-            default:
-                return .unknown
-            }
-        }
-
-        private func plistKey(_ key: String) -> String {
-            let newKey = key.delete(prefix: plistPrefix) ?? key
-            return "<key>\(newKey)</key>"
         }
 
         private func plistBool(_ value: String) -> String {
@@ -156,11 +164,11 @@ extension Xcode.BuildSettings {
     }
 }
 
-// MARK: - PlistDecision
+// MARK: - InfoPlistValue
 
-private enum PlistDecision {
+/// How an `InfoPlistKey`'s setting is written into the `Info.plist`.
+private enum InfoPlistValue {
     case string
     case stringArray
     case bool
-    case unknown
 }

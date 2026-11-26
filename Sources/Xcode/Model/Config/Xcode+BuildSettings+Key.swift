@@ -2,8 +2,8 @@ extension Xcode.BuildSettings {
     /// The build settings Bazelize reads by name. The raw value is the name
     /// Xcode spells in a project file or an xcconfig.
     ///
-    /// A key built at runtime — `INFOPLIST_KEY_*`, or one named by a
-    /// `$(SETTING)` reference — goes through the `String` subscript instead.
+    /// `INFOPLIST_KEY_*` has `InfoPlistKey`; a key named by a `$(SETTING)`
+    /// reference goes through the `String` subscript instead.
     public enum Key: String, Sendable {
         // MARK: Project
 
@@ -12,6 +12,16 @@ extension Xcode.BuildSettings {
         case srcRoot = "SRCROOT"
         case sourceRoot = "SOURCE_ROOT"
         case projectDir = "PROJECT_DIR"
+        case configuration = "CONFIGURATION"
+
+        // MARK: Toolchain
+
+        case platformName = "PLATFORM_NAME"
+        case sdkName = "SDK_NAME"
+        case sdkVersion = "SDK_VERSION"
+        case xcodeVersionActual = "XCODE_VERSION_ACTUAL"
+        case xcodeVersionMajor = "XCODE_VERSION_MAJOR"
+        case xcodeVersionMinor = "XCODE_VERSION_MINOR"
 
         // MARK: Metadata
 
@@ -22,6 +32,13 @@ extension Xcode.BuildSettings {
         case codeSignStyle = "CODE_SIGN_STYLE"
         case codeSignIdentity = "CODE_SIGN_IDENTITY"
         case codeSignEntitlements = "CODE_SIGN_ENTITLEMENTS"
+
+        // MARK: Bundle
+
+        case bundleName = "BUNDLE_NAME"
+        case executableName = "EXECUTABLE_NAME"
+        case developmentLanguage = "DEVELOPMENT_LANGUAGE"
+        case productBundlePackageType = "PRODUCT_BUNDLE_PACKAGE_TYPE"
 
         // MARK: Asset catalog
 
@@ -85,9 +102,25 @@ extension Xcode.BuildSettings {
 
         case testTargetName = "TEST_TARGET_NAME"
         case testHost = "TEST_HOST"
+
+        /// How an `Info.plist` or an xcconfig refers to the setting:
+        /// `$(PRODUCT_NAME)`.
+        public var reference: String {
+            "$(\(rawValue))"
+        }
     }
 
     public subscript(key: Key) -> String? {
         self[key.rawValue]
+    }
+
+    /// A boolean setting as Xcode spells it: `true` for `YES`, `false` for
+    /// `NO`, `nil` when the setting is unset or says anything else.
+    func bool(_ key: Key) -> Bool? {
+        switch self[key] {
+        case "YES": true
+        case "NO": false
+        default: nil
+        }
     }
 }

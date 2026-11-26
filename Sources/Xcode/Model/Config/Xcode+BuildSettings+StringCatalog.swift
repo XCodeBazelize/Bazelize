@@ -14,7 +14,7 @@ extension Xcode.BuildSettings {
         /// table of the target and compiles the result into it, which is where
         /// `LocalizedStringResource.ok` and friends come from.
         public var generatesSymbols: Bool {
-            settings[.stringCatalogGenerateSymbols] == "YES"
+            settings.bool(.stringCatalogGenerateSymbols) == true
         }
     }
 }

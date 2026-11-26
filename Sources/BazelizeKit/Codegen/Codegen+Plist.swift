@@ -141,7 +141,9 @@ extension Target {
 
             let xml = element
                 .xmlString(options: [.nodePrettyPrint, .nodePreserveAll])
-                .replacingOccurrences(of: "$(PRODUCT_MODULE_NAME)", with: "$(PRODUCT_NAME)")
+                .replacingOccurrences(
+                    of: BuildSettings.Key.productModuleName.reference,
+                    with: BuildSettings.Key.productName.reference)
                 .resolvingBuildSettingReferences(with: settings)
 
             if element.name == "key" {
@@ -213,14 +215,14 @@ extension String {
 
     /// Variables `plisttool` substitutes itself; leaving them intact keeps
     /// rules_apple in charge of the bundle identity it also validates.
-    static let plistToolVariables: Set = [
-        "BUNDLE_NAME",
-        "DEVELOPMENT_LANGUAGE",
-        "EXECUTABLE_NAME",
-        "PRODUCT_BUNDLE_IDENTIFIER",
-        "PRODUCT_NAME",
-        "TARGET_NAME",
-    ]
+    static let plistToolVariables = Set([
+        BuildSettings.Key.bundleName,
+        .developmentLanguage,
+        .executableName,
+        .productBundleIdentifier,
+        .productName,
+        .targetName,
+    ].map(\.rawValue))
 
     /// Expands the remaining `$(SETTING)` references from the target's build
     /// settings. `plisttool` only knows a handful of variables, so anything else
@@ -394,14 +396,14 @@ extension Target {
         } ?? settings.generatedPlist.marketingVersion
 
         let defaults = [
-            ("CFBundleName", "$(PRODUCT_NAME)"),
-            ("CFBundleIdentifier", "$(PRODUCT_BUNDLE_IDENTIFIER)"),
+            ("CFBundleName", BuildSettings.Key.productName.reference),
+            ("CFBundleIdentifier", BuildSettings.Key.productBundleIdentifier.reference),
             /// `plisttool` cannot resolve these, and rules_apple rejects a bundle
             /// without them, so an unset setting falls back to Xcode's own template
             /// values instead of a literal `$(SETTING)`.
             ("CFBundleVersion", version(currentVersion, key: "CFBundleVersion") ?? "1"),
-            ("CFBundleExecutable", "$(EXECUTABLE_NAME)"),
-            ("CFBundleDevelopmentRegion", "$(DEVELOPMENT_LANGUAGE)"),
+            ("CFBundleExecutable", BuildSettings.Key.executableName.reference),
+            ("CFBundleDevelopmentRegion", BuildSettings.Key.developmentLanguage.reference),
             (
                 "CFBundleShortVersionString",
                 version(shortVersion, key: "CFBundleShortVersionString") ?? "1.0"),
