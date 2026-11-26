@@ -17,7 +17,12 @@ extension SwiftPM.Generator {
     ///
     /// A conditional setting becomes a `select` on its platform, traits and
     /// build configuration, so the build decides it rather than this run.
-    func copts(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Starlark.Value? {
+    func copts(
+        of target: SwiftPM.PackageTarget,
+        in package: SwiftPM.Package,
+        extra: [String] = [])
+        -> Starlark.Value?
+    {
         let suppressWarnings = !package.isRoot && !package.isLocal
         return grouped(
             target.settings,
@@ -32,7 +37,8 @@ extension SwiftPM.Generator {
             always: Self.define("SWIFT_PACKAGE")
                 + Self.aliasFlags(of: target)
                 + Self.languageMode(of: target, in: package)
-                + (suppressWarnings ? ["-suppress-warnings"] : []),
+                + (suppressWarnings ? ["-suppress-warnings"] : [])
+                + extra,
             /// A trait is a compilation condition of the package that declares
             /// it: `#if Fast` is how a source asks. Swift only — SwiftPM does
             /// not hand it to clang, so neither is it handed to `-Xcc`.
@@ -94,9 +100,10 @@ extension SwiftPM.Generator {
     /// the package's is only passed when the target says nothing.
     private static func languageMode(
         of target: SwiftPM.PackageTarget,
-        in package: SwiftPM.Package) -> [String]
+        in package: SwiftPM.Package)
+        -> [String]
     {
-        let named: Set<String> = ["swiftLanguageMode", "swiftLanguageVersion"]
+        let named: Set = ["swiftLanguageMode", "swiftLanguageVersion"]
         let overridden = target.settings.contains { setting in
             setting.tool == "swift" && named.contains(setting.name ?? "")
         }
@@ -214,7 +221,8 @@ extension SwiftPM.Generator {
         in package: SwiftPM.Package,
         always base: [String],
         conditional seeds: [(condition: String, values: [String])] = [],
-        flags: (SwiftPM.Setting) -> [String]) -> Starlark.Value?
+        flags: (SwiftPM.Setting) -> [String])
+        -> Starlark.Value?
     {
         var always = base
         var conditions: [String] = []
