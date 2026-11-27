@@ -309,7 +309,7 @@ extension SwiftPM.Generator {
     func excludedClang(_ target: SwiftPM.PackageTarget, prefix: String) -> [String] {
         let searched = Set(target.settings.flatMap { setting -> [String] in
             guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
-            guard setting.name == "headerSearchPath" else { return [] }
+            guard setting.name == .headerSearchPath else { return [] }
             return setting.values.map { Path($0).normalize().string }
         })
 
@@ -364,7 +364,7 @@ extension SwiftPM.Generator {
         var paths: [String] = interface?.roots ?? []
 
         for setting in target.settings
-            where setting.tool == "c" && setting.name == "headerSearchPath"
+            where setting.tool == "c" && setting.name == .headerSearchPath
         {
             paths.append(contentsOf: setting.values.map { Self.path(prefix, $0) })
         }
@@ -403,19 +403,19 @@ extension SwiftPM.Generator {
         guard setting.tool == "c" || setting.tool == "cxx" else { return [] }
 
         switch setting.name {
-        case "define":
+        case .define:
             /// `.define("A", to: "1")` is dumped as two values, and is one
             /// flag: `-DA=1`.
             return setting.values.nonEmpty.map { ["-D\($0.joined(separator: "="))"] } ?? []
-        case "unsafeFlags":
+        case .unsafeFlags:
             return setting.values
         /// `treatAllWarnings(as:)` and `treatWarning(_:as:)`, which clang spells
         /// as `-Werror` over everything and `-W{error,no-error}=<name>` over one
         /// warning.
-        case "treatAllWarnings":
+        case .treatAllWarnings:
             guard let level = setting.values.first else { return [] }
             return level == "error" ? ["-Werror"] : ["-Wno-error"]
-        case "treatWarning":
+        case .treatWarning:
             guard setting.values.count == 2 else { return [] }
             let group = setting.values[0]
             return setting.values[1] == "error" ? ["-Werror=\(group)"] : ["-Wno-error=\(group)"]

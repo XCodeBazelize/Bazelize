@@ -227,9 +227,9 @@ extension SwiftPM.Generator {
         let conventional = ["Sources", "Source", "src", "srcs"]
         let candidates: [String]
         switch target.type {
-        case "test":
+        case .test:
             candidates = ["Tests"] + conventional
-        case "plugin":
+        case .plugin:
             candidates = ["Plugins"] + conventional
         default:
             candidates = conventional
@@ -260,9 +260,9 @@ extension SwiftPM.Generator {
     private static func isOnlyTarget(_ target: SwiftPM.PackageTarget, in package: SwiftPM.Package) -> Bool {
         let sameKind = package.manifest.targets.filter { other in
             switch (other.type, target.type) {
-            case ("test", "test"), ("plugin", "plugin"):
+            case (.test, .test), (.plugin, .plugin):
                 return true
-            case ("test", _), (_, "test"), ("plugin", _), (_, "plugin"):
+            case (.test, _), (_, .test), (.plugin, _), (_, .plugin):
                 return false
             default:
                 return true

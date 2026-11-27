@@ -165,9 +165,9 @@ extension SwiftPM {
             -> PluginWire.TargetInfo
         {
             switch target.type {
-            case "binary":
+            case .binary:
                 return .binary(artifactId: 0)
-            case "system":
+            case .system:
                 return .system
             default:
                 return .swift(module: module, kind: Self.kind(of: target), sources: sources)
@@ -177,11 +177,11 @@ extension SwiftPM {
         /// What SwiftPM calls the kind of a source module.
         private static func kind(of target: PackageTarget) -> String {
             switch target.type {
-            case "executable", "snippet":
+            case .executable, .snippet:
                 return "executable"
-            case "test":
+            case .test:
                 return "test"
-            case "macro":
+            case .macro:
                 return "macro"
             default:
                 return "generic"

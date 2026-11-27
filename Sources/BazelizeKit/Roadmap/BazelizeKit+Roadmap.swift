@@ -346,12 +346,12 @@ extension Path {
         return destination == absolute()
     }
 
+    private enum BuildFileName: String {
+        case build = "BUILD"
+        case buildBazel = "BUILD.bazel"
+    }
+
     fileprivate var isRoadmapIgnoredFile: Bool {
-        switch lastComponent {
-        case "BUILD", "BUILD.bazel":
-            return true
-        default:
-            return false
-        }
+        BuildFileName(rawValue: lastComponent) != nil
     }
 }

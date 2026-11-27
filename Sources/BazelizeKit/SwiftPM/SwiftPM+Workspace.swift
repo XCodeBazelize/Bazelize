@@ -90,7 +90,7 @@ extension SwiftPM {
         if let input, (input + "Package.swift").exists {
             packageScratch = input + ".build"
             do {
-                try await Commands.resolvePackage(in: input)
+                try await Commands.swiftpm.resolvePackage(in: input)
             } catch {
                 notes.append("""
                 swift package resolve failed (\(error)): the packages it had not \
@@ -100,7 +100,7 @@ extension SwiftPM {
         } else {
             packageScratch = nil
             do {
-                try await Commands.resolvePackage(in: output)
+                try await Commands.swiftpm.resolvePackage(in: output)
             } catch {
                 notes.append("""
                 swift package resolve failed (\(error)): the packages it had not \
@@ -290,7 +290,7 @@ extension SwiftPM {
     private static func manifest(at root: Path) async throws -> Manifest? {
         let data: Data
         do {
-            data = try await Commands.packageManifest(at: root)
+            data = try await Commands.swiftpm.packageManifest(at: root)
         } catch is Commands.Failure {
             Log.codeGenerate.warning("""
             No manifest for \(root.lastComponent, privacy: .public): dump-package failed

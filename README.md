@@ -424,10 +424,12 @@ configuration. It never rewrites the working tree or index, so partially staged
 edits remain separate. Generated workspaces and external checkouts are excluded
 by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
 
-Swift child processes belong to operations of the `Commands` target, named for
-their purpose. Their only execution backend is `swift-subprocess`; callers
-await discovery and execution rather than block a thread. Toolchain and SDK
-framework discovery share immutable results across concurrent generations.
+Swift child processes belong to purpose-named operations of the `Commands` target,
+grouped by tool: `Commands.swiftpm.resolvePackage(in:)`, `Commands.bazel`,
+`Commands.pkgConfig`, `Commands.xcodebuild`, and `Commands.xcrun`. Their only
+execution backend is `swift-subprocess`; callers await discovery and execution
+rather than block a thread. Toolchain and SDK framework discovery share immutable
+results across concurrent generations.
 
 The generated macOS plugin host also uses `swift-subprocess`. Its pinned source
 archive and C shims are declared in Bazel under `tools/subprocess`, independently

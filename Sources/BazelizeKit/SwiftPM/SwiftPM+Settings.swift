@@ -49,7 +49,7 @@ extension SwiftPM.Generator {
                 // with warnings-as-errors, so their warning controls do not apply.
                 if
                     suppressWarnings,
-                    setting.name == "treatAllWarnings" || setting.name == "treatWarning"
+                    setting.name == .treatAllWarnings || setting.name == .treatWarning
                 {
                     return []
                 }
@@ -103,9 +103,8 @@ extension SwiftPM.Generator {
         in package: SwiftPM.Package)
         -> [String]
     {
-        let named: Set = ["swiftLanguageMode", "swiftLanguageVersion"]
         let overridden = target.settings.contains { setting in
-            setting.tool == "swift" && named.contains(setting.name ?? "")
+            setting.tool == "swift" && (setting.name == .swiftLanguageMode || setting.name == .swiftLanguageVersion)
         }
         guard !overridden else { return [] }
 
@@ -146,38 +145,38 @@ extension SwiftPM.Generator {
         guard setting.tool == "swift", let name = setting.name else { return [] }
 
         switch name {
-        case "define":
+        case .define:
             return setting.values.flatMap { define(String($0)) }
-        case "swiftLanguageMode", "swiftLanguageVersion":
+        case .swiftLanguageMode, .swiftLanguageVersion:
             guard let version = setting.values.first else { return [] }
             return ["-swift-version", version]
-        case "defaultIsolation":
+        case .defaultIsolation:
             guard let isolation = setting.values.first else { return [] }
             return ["-default-isolation", isolation]
-        case "enableUpcomingFeature":
+        case .enableUpcomingFeature:
             return setting.values.flatMap { feature in
                 ["-enable-upcoming-feature", feature]
             }
-        case "enableExperimentalFeature":
+        case .enableExperimentalFeature:
             return setting.values.flatMap { feature in
                 ["-enable-experimental-feature", feature]
             }
-        case "strictMemorySafety":
+        case .strictMemorySafety:
             return ["-strict-memory-safety"]
-        case "interoperabilityMode":
+        case .interoperabilityMode:
             /// The manifest names the language; the compiler takes a mode.
             /// `.C` is what it does anyway, and has no flag.
             guard setting.values.first == "Cxx" else { return [] }
             return ["-cxx-interoperability-mode=default"]
-        case "unsafeFlags":
+        case .unsafeFlags:
             return setting.values
         /// `treatAllWarnings(as:)` and `treatWarning(_:as:)`: the first decides
         /// what every warning is, the second overrides one diagnostic group by
         /// the name the compiler prints in brackets.
-        case "treatAllWarnings":
+        case .treatAllWarnings:
             guard let level = setting.values.first else { return [] }
             return level == "error" ? ["-warnings-as-errors"] : ["-no-warnings-as-errors"]
-        case "treatWarning":
+        case .treatWarning:
             guard setting.values.count == 2 else { return [] }
             let group = setting.values[0]
             return setting.values[1] == "error" ? ["-Werror", group] : ["-Wwarning", group]
@@ -190,15 +189,15 @@ extension SwiftPM.Generator {
         guard setting.tool == "linker", let name = setting.name else { return [] }
 
         switch name {
-        case "linkedLibrary":
+        case .linkedLibrary:
             return setting.values.map { library in
                 "-l\(library)"
             }
-        case "linkedFramework":
+        case .linkedFramework:
             return setting.values.flatMap { framework in
                 ["-framework", framework]
             }
-        case "unsafeFlags":
+        case .unsafeFlags:
             return setting.values
         default:
             return []

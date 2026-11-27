@@ -180,7 +180,7 @@ extension SwiftPM.Generator {
         var visible: [String] = []
         var hidden: [String] = []
 
-        for setting in target.settings where setting.tool == "swift" && setting.name == "bridgingHeader" {
+        for setting in target.settings where setting.tool == "swift" && setting.name == .bridgingHeader {
             guard let header = setting.values.first else { continue }
 
             /// A bridging header that depends on the platform or the

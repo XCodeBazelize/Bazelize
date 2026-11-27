@@ -245,18 +245,19 @@ extension Xcode.BuildPhase {
 
         /// `PBXCopyFilesBuildPhase.SubFolder`, as Xcode writes it.
         switch destination.subfolderSpec {
-        case 1, 16:
+        case .wrapper, .productsDirectory:
             /// Relative to the wrapper, so the `Contents` prefix is already there.
             let trimmed = path.delete(prefix: "Contents/") ?? path
             return trimmed.isEmpty ? nil : trimmed
-        case 6:
+        case .executables:
             return join("MacOS", path)
-        case 7:
+        case .resources:
             return join("Resources", path)
-        case 12:
+        case .sharedSupport:
             return join("SharedSupport", path)
         default:
-            /// 10 is `frameworks`, 13 is `extensions`, 0 is an absolute path.
+            /// Frameworks and plugins have their own rule attributes; an absolute path or
+            /// an unnamed value no bundle subdirectory can express.
             return nil
         }
     }

@@ -20,4 +20,15 @@ struct EncodingTests {
 
         #expect(json == "{}")
     }
+
+    @Test(arguments: [0, 1, 6, 7, 10, 12, 13, 16, 999] as [UInt])
+    func copyDestinationsKeepNumericJSON(spec: UInt) throws {
+        let json = Data("{\"path\":\"Assets\",\"subfolderSpec\":\(spec)}".utf8)
+        let destination = try JSONDecoder().decode(Xcode.CopyFilesDestination.self, from: json)
+        let encoded = try JSONEncoder().encode(destination)
+        let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+
+        #expect(object["subfolderSpec"] as? UInt == spec)
+        #expect(object["path"] as? String == "Assets")
+    }
 }
