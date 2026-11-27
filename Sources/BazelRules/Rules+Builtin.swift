@@ -74,6 +74,22 @@ extension Rules.Builtin.Call {
         }
     }
 
+    /// Pins `module_name` to `version`, optionally patched.
+    public static func single_version_override(
+        module_name: String,
+        version: String,
+        patches: [String]? = nil,
+        patch_strip: Int? = nil)
+        -> Starlark.Statement.Call
+    {
+        .init("single_version_override") {
+            Attr.module_name(module_name)
+            Attr.version(version)
+            Attr.patches(patches)
+            Attr.patch_strip(patch_strip)
+        }
+    }
+
     public static func filegroup(
         name: String,
         srcs: Starlark.Value,

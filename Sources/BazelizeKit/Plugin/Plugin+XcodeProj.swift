@@ -5,6 +5,7 @@
 //  Created by Yume on 2023/2/3.
 //
 
+import BazelRules
 import Foundation
 import Starlark
 
@@ -36,14 +37,10 @@ final class PluginXcodeProj: PluginBuiltin {
         guard !labels.isEmpty else { return }
 
         builder.call(
-            Starlark.Statement.Call(
-                "xcodeproj",
-                load: .init(module: "@rules_xcodeproj//xcodeproj:defs.bzl", symbols: ["xcodeproj"]))
-            {
-                "name" => "xcodeproj"
-                "project_name" => kit.project.name
-                "tags" => ["manual"]
-                "top_level_targets" => labels
-            })
+            Rules.XcodeProj.Call.xcodeproj(
+                name: "xcodeproj",
+                project_name: kit.project.name,
+                tags: ["manual"],
+                top_level_targets: labels))
     }
 }

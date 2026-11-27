@@ -5,6 +5,7 @@
 //  Created by Yume on 2023/2/3.
 //
 
+import BazelRules
 import Foundation
 import Starlark
 
@@ -20,12 +21,12 @@ final class PluginApple: PluginBuiltin {
             version: dep.rawValue,
             repo_name: "build_bazel_rules_apple")
         if dep == .v5_4_0 {
-            builder.call(.init("single_version_override") {
-                "module_name" => "rules_apple"
-                "version" => dep.rawValue
-                "patches" => ["//\(Self.mixedAppIconsPatchDirectory):mixed_app_icons.patch"]
-                "patch_strip" => 1
-            })
+            builder.call(
+                Rules.Builtin.Call.single_version_override(
+                    module_name: "rules_apple",
+                    version: dep.rawValue,
+                    patches: ["//\(Self.mixedAppIconsPatchDirectory):mixed_app_icons.patch"],
+                    patch_strip: 1))
         }
         builder.custom("""
         register_toolchains(

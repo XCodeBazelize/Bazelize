@@ -2,7 +2,7 @@
 //  Rules+Workspace.swift
 //
 //
-//  The rules a generated workspace carries itself, under `tools/`.
+//  The rules a generated workspace carries itself.
 //
 
 import Foundation
@@ -15,11 +15,17 @@ extension Rules {
     /// that use them.
     public enum Workspace: String, LoadableRule {
         public var module: String {
-            "//tools:\(rawValue).bzl"
+            switch self {
+            case .apple_simulator_test, .asset_symbols:
+                "//tools:\(rawValue).bzl"
+            case .swiftpm_resource_bundle:
+                "//Packages:\(rawValue).bzl"
+            }
         }
 
         case apple_simulator_test
         case asset_symbols
+        case swiftpm_resource_bundle
     }
 }
 
@@ -74,6 +80,22 @@ extension Rules.Workspace {
                 Attr.target_compatible_with(target_compatible_with.map { Starlark.Label.named($0) })
                 Attr.timeout(timeout)
                 Attr.visibility(visibility)
+            }
+        }
+
+        /// Materializes the resource bundle a standalone executable carries.
+        public static func swiftpm_resource_bundle(
+            name: String,
+            archive: Starlark.Label,
+            bundle_name: String,
+            tags: [String]? = nil)
+            -> Starlark.Statement.Call
+        {
+            Rules.Workspace.swiftpm_resource_bundle.call {
+                Attr.name(name)
+                Attr.archive(archive)
+                Attr.bundle_name(bundle_name)
+                Attr.tags(tags)
             }
         }
     }

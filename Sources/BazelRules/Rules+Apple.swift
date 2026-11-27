@@ -903,6 +903,7 @@ extension Rules.Apple.MacOS {
             deps: Starlark.Value? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
+            tags: [String]? = nil,
             visibility: Starlark.Statement.Argument.Visibility? = nil)
             -> Starlark.Statement.Call
         {
@@ -912,6 +913,7 @@ extension Rules.Apple.MacOS {
                 Attr.deps(deps)
                 Attr.infoplists(infoplists)
                 Attr.minimum_os_version(minimum_os_version)
+                Attr.tags(tags)
                 Attr.visibility(visibility)
             }
         }

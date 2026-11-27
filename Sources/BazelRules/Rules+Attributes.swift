@@ -47,6 +47,10 @@ enum Attr {
         value.map { "app_icons" => $0 }
     }
 
+    static func archive(_ value: Starlark.Label?) -> Starlark.Statement.Argument? {
+        value.map { "archive" => $0 }
+    }
+
     static func archives(_ value: Starlark.Value?) -> Starlark.Statement.Argument? {
         value.map { "archives" => $0 }
     }
@@ -379,6 +383,14 @@ enum Attr {
         value.map { "package_name" => $0 }
     }
 
+    static func patch_strip(_ value: Int?) -> Starlark.Statement.Argument? {
+        value.map { "patch_strip" => $0 }
+    }
+
+    static func patches(_ value: [String]?) -> Starlark.Statement.Argument? {
+        value.map { "patches" => $0 }
+    }
+
     static func pch(_ value: Starlark.Label?) -> Starlark.Statement.Argument? {
         value.map { "pch" => $0 }
     }
@@ -413,6 +425,10 @@ enum Attr {
 
     static func profile_name(_ value: String?) -> Starlark.Statement.Argument? {
         value.map { "profile_name" => $0 }
+    }
+
+    static func project_name(_ value: String?) -> Starlark.Statement.Argument? {
+        value.map { "project_name" => $0 }
     }
 
     static func provisioning_profile(_ value: Starlark.Label?) -> Starlark.Statement.Argument? {
@@ -605,6 +621,10 @@ enum Attr {
 
     static func toolchain_types(_ value: Starlark.Value?) -> Starlark.Statement.Argument? {
         value.map { "toolchain_types" => $0 }
+    }
+
+    static func top_level_targets(_ value: [Starlark.Label]?) -> Starlark.Statement.Argument? {
+        value.map { "top_level_targets" => $0 }
     }
 
     static func umbrella_header(_ value: Starlark.Label?) -> Starlark.Statement.Argument? {
