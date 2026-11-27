@@ -319,8 +319,10 @@ public struct ChecksummedReleaseEnumFile: Equatable {
 
     private func hostProperty(_ keyPath: KeyPath<RepoReleaseAsset, String>) -> String {
         assets.map { asset in
-            "                case .\(asset.caseName):\n"
-                + "                    return \"\(asset[keyPath: keyPath])\""
+            """
+                            case .\(asset.caseName):
+                                return "\(asset[keyPath: keyPath])"
+            """
         }
         .joined(separator: "\n")
     }
@@ -328,15 +330,20 @@ public struct ChecksummedReleaseEnumFile: Equatable {
     private var checksumCases: String {
         releases.map { release in
             let hosts = assets.map { asset in
-                "                case .\(asset.caseName):\n"
-                    + "                    return \"\(release.checksums[asset.caseName] ?? "")\""
+                let checksum = release.checksums[asset.caseName] ?? ""
+                return """
+                                case .\(asset.caseName):
+                                    return "\(checksum)"
+                """
             }
             .joined(separator: "\n")
 
-            return "            case .\(release.tag.caseName):\n"
-                + "                switch host {\n"
-                + hosts + "\n"
-                + "                }"
+            return """
+                        case .\(release.tag.caseName):
+                            switch host {
+            \(hosts)
+                            }
+            """
         }
         .joined(separator: "\n")
     }
