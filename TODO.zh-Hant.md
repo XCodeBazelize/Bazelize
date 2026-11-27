@@ -86,7 +86,7 @@ SwiftPM 的 `--traits A` 會讓該 package 以 `-DA` 編譯；沒有選到的其
 manifest defaults，`<Package>.all` 打開全部。多個 trait 也能用公開的 boolean flags
 表示。少一個單一 config 的便利寫法不算 generator 行為缺口，因此不再列為未完成。
 
-### A8. app 內嵌的 iOS 與 tvOS product type —— 已完成，剩三種情況
+### A8. app 內嵌的 iOS 與 tvOS product type —— 已完成，剩兩種情況
 
 App Clip 生成 `ios_app_clip`，由它的 application 放進 `app_clips`；iMessage
 extension 生成 `ios_imessage_extension`；sticker pack 生成
@@ -108,10 +108,28 @@ CI 檢查 App Clip 和各 extension 是否放在 Xcode 放的位置。
   把一個 Tuist 專案的 target 在 `project.pbxproj` 裡改成這個類型並拿掉原始碼後，
   `xcodebuild` 可以 build，生成的 `ios_imessage_application` 也能用 Bazel build，
   結構相同——extension 在 `PlugIns`，外加 stub 執行檔。CI 裡沒有重複這個驗證。
-- **`com.apple.product-type.app-extension.intents-service` 仍然會報錯。** Xcode 27
-  只為 watchOS 定義這個類型；iOS 上的這種 target 連 `xcodebuild` 都會因
-  `unable to resolve product type` 失敗。它應該和 watchOS 的 product type 一起
-  處理，而那些目前還沒有生成。
+
+### A9. 內嵌的 watchOS app 與 extension —— 已完成，container 尚未支援
+
+單一 target watch app 生成 `watchos_application`，程式碼放在 `deps`，app extension
+放在 `extensions`。沒有原始碼的 watchOS 2 app 使用同一個 rule，將 WatchKit extension
+放在 `extension`；該 extension 生成 `watchos_extension`。watchOS app extension，包含
+`com.apple.product-type.app-extension.intents-service`，使用
+`watchos_extension(application_extension = True)`。iOS companion 透過
+`ios_application.watch_application` 內嵌這兩種 watch app。
+
+`fixture/iOS` 的 `WatchCompanion` 包含 Intents service，`Watch2Companion` 包含
+WatchKit extension。Tuist 沒有 Intents service product，因此 fixture preparation script
+會修改該 target 的 product type。Xcode 與 Bazel 都會 build 這兩種結構；CI 檢查 `Watch/`
+下的巢狀執行檔與 watchOS 2 stub。iOS 上的 Intents service product 仍會報錯：Xcode 27
+同樣無法在 iOS 解析這個 product type。
+
+**watch-only iOS container（`watch2AppContainer`）不生成。** Xcode 將平台的
+`MessagesApplicationStub` 複製進 container，而非連結出執行檔。生成的
+`ios_application` 會因缺少 `_main` 而連結失敗，無法忠實重現這種 stub 打包。
+generator 會發出 note，仍照常生成內部 watch app，讓它可以獨立 build。container
+沒有 CI fixture；Xcode build 與 Bazel 連結失敗已手動驗證。要支援它，需要能打包平台
+stub 的 rule，而非自行編造 `main`。
 
 ## B. 覆蓋率
 

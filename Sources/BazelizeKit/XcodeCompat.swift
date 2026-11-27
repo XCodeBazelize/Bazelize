@@ -57,8 +57,8 @@ extension Target {
         }
 
         switch productType {
-        case .application, .onDemandInstallCapableApplication, .messagesApplication, .commandLineTool, .bundle,
-             .unitTestBundle, .uiTestBundle:
+        case .application, .onDemandInstallCapableApplication, .messagesApplication, .watch2App,
+             .watch2AppContainer, .watch2Extension, .commandLineTool, .bundle, .unitTestBundle, .uiTestBundle:
             return false
         default:
             return !productType.isAppExtension
@@ -89,6 +89,34 @@ extension Target {
             .filter { project.withTarget(named: $0, { $0.isGenerated }) == true }
             .sorted()
             .map { Starlark.Label.named("//Targets/\($0):\($0)") }
+    }
+
+    /// The WatchKit extensions a watchOS 2 app carries.
+    func watchKitExtensionNames(project: borrowing Project) -> [String] {
+        dependencies.targets
+            .filter { productTypeOfTarget(named: $0, in: project) == .watch2Extension }
+            .sorted()
+    }
+
+    /// The watch app an iOS app carries in `Watch/`: a single-target watchOS
+    /// application, or a watchOS 2 app. rules_apple takes one; any other is
+    /// left out and named.
+    func embeddedWatchApplication(project: borrowing Project, _ kit: Kit) -> Starlark.Label? {
+        let watchApplications = dependencies.targets
+            .filter { target in
+                let kind = project.withTarget(named: target) { ($0.productType, $0.platformSDK, $0.isGenerated) }
+                guard let (productType, sdk, isGenerated) = kind, isGenerated else { return false }
+                return productType == .watch2App || (productType == .application && sdk == .watchOS)
+            }
+            .sorted()
+
+        for extra in watchApplications.dropFirst() {
+            kit.note("""
+            \(name) embeds the watch app \(extra), which is left out of it: an iOS app carries one watch app, \
+            and it already carries \(watchApplications[0]).
+            """)
+        }
+        return watchApplications.first.map { Starlark.Label.named("//Targets/\($0):\($0)") }
     }
 
     var frameworksLibrary: [Starlark.Label] {

@@ -105,7 +105,7 @@ expressed with the public boolean flags. The missing single-config shorthand is
 only convenience, not a generator behaviour gap, so it is no longer tracked as
 unfinished work.
 
-### A8. iOS and tvOS product types an app embeds — done, three cases open
+### A8. iOS and tvOS product types an app embeds — done, two cases open
 
 An App Clip becomes an `ios_app_clip` its application carries in `app_clips`;
 an iMessage extension an `ios_imessage_extension`; a sticker pack an
@@ -129,10 +129,32 @@ What is still open:
   sources builds with `xcodebuild`, and its generated `ios_imessage_application`
   builds with Bazel into the same layout — the extension in `PlugIns` and the
   stub executable. Nothing in CI repeats that.
-- **`com.apple.product-type.app-extension.intents-service` is still an error.**
-  Xcode 27 defines it for watchOS only; an iOS target of that type fails
-  `xcodebuild` with `unable to resolve product type`. It belongs with the
-  watchOS product types, which are not generated yet.
+
+### A9. Embedded watchOS apps and extensions — done, container open
+
+A single-target watch app becomes `watchos_application` with its code in `deps`
+and app extensions in `extensions`. A source-free watchOS 2 app uses the same
+rule with its WatchKit extension in `extension`; that extension becomes
+`watchos_extension`. A watchOS app extension, including
+`com.apple.product-type.app-extension.intents-service`, uses
+`watchos_extension(application_extension = True)`. An iOS companion embeds
+either watch app through `ios_application.watch_application`.
+
+`fixture/iOS` has `WatchCompanion` with an Intents service and `Watch2Companion`
+with a WatchKit extension. The fixture preparation script retypes the Intents
+target because Tuist has no Intents service product. Xcode and Bazel build both
+shapes; CI checks the nested executables and the watchOS 2 stub under `Watch/`.
+The Intents service product on iOS remains an error: Xcode 27 does not resolve
+that product type for iOS either.
+
+**A watch-only iOS container (`watch2AppContainer`) is not generated.** Xcode
+copies its platform's `MessagesApplicationStub` into the container rather than
+linking an executable. The generated `ios_application` failed to link with an
+undefined `_main`; it cannot faithfully reproduce that stub packaging. The
+generator emits a note and still generates the contained watch app, which can
+be built independently. This container has no CI fixture; its Xcode build and
+the Bazel link failure were verified manually. Support needs a rule that
+bundles the platform stub, not a fabricated `main`.
 
 ## B. Coverage
 

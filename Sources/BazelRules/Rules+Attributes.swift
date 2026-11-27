@@ -43,6 +43,10 @@ enum Attr {
         value.map { "app_clips" => $0 }
     }
 
+    static func application_extension(_ value: Bool?) -> Starlark.Statement.Argument? {
+        value.map { "application_extension" => $0 }
+    }
+
     static func app_icons(_ value: Starlark.Value?) -> Starlark.Statement.Argument? {
         value.map { "app_icons" => $0 }
     }

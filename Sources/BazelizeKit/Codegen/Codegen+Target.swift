@@ -16,10 +16,16 @@ extension Target {
         !(srcs_c + srcs_cpp + srcs_objc + srcs_objcpp + srcs_swift).isEmpty
     }
 
-    /// A sticker pack and an iMessage app ship what they carry rather than code
-    /// of their own, so no library is what they are bundled from.
+    /// A sticker pack, an iMessage app, a watchOS 2 app, and a watch app
+    /// container ship what they carry rather than code of their own, so no
+    /// library is what they are bundled from.
     var bundlesWithoutSources: Bool {
-        productType == .stickerPack || productType == .messagesApplication
+        switch productType {
+        case .stickerPack, .messagesApplication, .watch2App, .watch2AppContainer:
+            true
+        default:
+            false
+        }
     }
 
     /// Whether a rule is written for the target's product.
@@ -64,7 +70,21 @@ extension Target {
         case .messagesApplication:
             generateStrings(builder, kit)
             generateIMessageApplication(builder, kit)
-        case .bundle, .xpcService, .appExtension, .tvExtension, .messagesExtension, .stickerPack:
+        case .watch2App:
+            generateStrings(builder, kit)
+            generateWatch2Application(builder, kit)
+        case .watch2AppContainer:
+            /// Xcode copies the platform's `MessagesApplicationStub` in as the
+            /// container's executable; `ios_application` links one of its own
+            /// and has nothing to link. The watch app it carries is generated.
+            kit.note("""
+            \(name) is not generated: a watch app container's executable is Xcode's \
+            MessagesApplicationStub, which no rules_apple rule bundles in an iOS app.
+            """)
+        case .bundle, .xpcService, .appExtension, .tvExtension, .messagesExtension, .stickerPack, .watch2Extension:
+            generateBundleProduct(builder, kit)
+        /// Xcode defines an Intents extension for watchOS only.
+        case .intentsServiceExtension where platformSDK == .watchOS:
             generateBundleProduct(builder, kit)
         case .commandLineTool:
             generateCommandLineApplicationCode(builder, kit)

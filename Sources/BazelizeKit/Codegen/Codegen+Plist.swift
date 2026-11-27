@@ -395,7 +395,7 @@ extension Target {
                 ?? project.targets[index].prefer(\.generatedPlist.marketingVersion)
         } ?? settings.generatedPlist.marketingVersion
 
-        let defaults: [(PlistKey, String)] = [
+        var defaults: [(PlistKey, String)] = [
             (.bundleName, BuildSettings.Key.productName.reference),
             (.bundleIdentifier, BuildSettings.Key.productBundleIdentifier.reference),
             /// `plisttool` cannot resolve these, and rules_apple rejects a bundle
@@ -406,6 +406,16 @@ extension Target {
             (.bundleDevelopmentRegion, BuildSettings.Key.developmentLanguage.reference),
             (.bundleShortVersionString, version(shortVersion, key: .bundleShortVersionString) ?? "1.0"),
         ]
+        // The legacy watch app and WatchKit extension rules do not supply
+        // the product's package type to plisttool.
+        switch productType {
+        case .watch2App:
+            defaults.append((.bundlePackageType, "APPL"))
+        case .watch2Extension:
+            defaults.append((.bundlePackageType, "XPC!"))
+        default:
+            break
+        }
 
         return defaults
             .filter { key, _ in !existing.contains(key.rawValue) && !unsupportedDefaultPlistKeys.contains(key) }
