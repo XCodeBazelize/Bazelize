@@ -199,7 +199,7 @@ extension SwiftPM.Generator {
         /// The root `BUILD` declares `//:plugins` for any project with packages,
         /// because whether one of them has a plugin is not known when that file
         /// is written. So all of its inputs exist even when the plan is empty.
-        guard (output + "Package.swift").exists else { return }
+        guard packageManifestPath.exists else { return }
 
         let executions = pluginExecutions
         let binaries = executions
@@ -210,7 +210,7 @@ extension SwiftPM.Generator {
             .values
             .sorted { $0.label < $1.label }
 
-        try packagesRoot.mkpath()
+        try packagesDirectory.root.mkpath()
         let group = CodeBuilder()
         group.call(
             Rules.Builtin.Call.filegroup(
@@ -220,12 +220,11 @@ extension SwiftPM.Generator {
         /// The flags every trait is switched with, in the package the
         /// generator owns.
         buildTraitRules(group)
-        try (packagesRoot + "BUILD").write(group.build())
+        try packagesDirectory.build.write(group.build())
 
         try writePluginPlan(executions)
-        try (output + "plugin-host.swift").write(Self.pluginRunnerSource)
-        let script = output + "plugins.sh"
-        try script.write("""
+        try pluginHostPath.write(Self.pluginRunnerSource)
+        try pluginScriptPath.write("""
         #!/bin/bash
         # Bazel supplies this host, its plan, every plugin and every tool.
         set -euo pipefail
@@ -235,7 +234,7 @@ extension SwiftPM.Generator {
         """)
 
         /// `sh_binary` refuses a script that is not executable.
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: script.string)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: pluginScriptPath.string)
     }
 
     private func writePluginPlan(_ executions: [PluginExecution]) throws {
@@ -263,7 +262,7 @@ extension SwiftPM.Generator {
             withJSONObject: plan,
             options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])
         data.append(0x0A)
-        try data.write(to: (output + "plugin-plan.json").url)
+        try data.write(to: pluginPlanPath.url)
     }
 
     /// Bazel-native commands that describe the generated workspace.
@@ -274,8 +273,7 @@ extension SwiftPM.Generator {
     /// keeps `bazel list config|trait|language` as aliases for the `bazel run`
     /// targets and forwards every other command unchanged.
     func writeListingCommands() throws {
-        let directory = output + "tools"
-        try directory.mkpath()
+        try toolsDirectory.root.mkpath()
 
         let listings = [
             ("config", try Listing.config(output: output)),
@@ -286,7 +284,7 @@ extension SwiftPM.Generator {
 
         for (topic, contents) in listings {
             let name = "list-\(topic)"
-            let script = directory + "\(name).sh"
+            let script = toolsDirectory.root + "\(name).sh"
             try script.write("""
             #!/bin/bash
             cat <<'BAZELIZE_LIST'
@@ -303,9 +301,9 @@ extension SwiftPM.Generator {
                     srcs: ["\(name).sh"]))
         }
 
-        try (directory + "BUILD").write(builder.build())
+        try toolsDirectory.build.write(builder.build())
 
-        try writeBazelWrapper(to: directory + "bazel")
+        try writeBazelWrapper(to: bazelWrapperPath)
     }
 
     private func writeBazelWrapper(to wrapper: Path) throws {
