@@ -204,13 +204,12 @@ jobs:
         working-directory: fixture/iOS/App
         run: bazel build //Targets/Example //Targets/MacBundle //Targets/ProductProbe
 
-      # The product types an application embeds besides a plain extension: an
-      # App Clip in AppClips, an iMessage extension, and a tvOS Top Shelf
-      # extension. Each has to land where Xcode puts it.
+      # Each embedded product has to land where Xcode puts it, including
+      # the watch app and its nested Intents or WatchKit extension.
       - name: Build Embedded Product Kinds
         working-directory: fixture/iOS/App
         run: |
-          bazel build //Targets/ProductKinds //Targets/ProductKindsStickers //Targets/TVProductKinds
+          bazel build //Targets/ProductKinds //Targets/ProductKindsStickers //Targets/TVProductKinds //Targets/WatchCompanion //Targets/Watch2Companion
           # The listing is read whole: `grep -q` closing a pipe early fails the
           # step under `pipefail`.
           check() {
@@ -222,6 +221,11 @@ jobs:
           }
           check ProductKinds AppClips/ProductKindsClip.app/ProductKindsClip PlugIns/ProductKindsMessages.appex/ProductKindsMessages
           check TVProductKinds PlugIns/TVProductKindsTopShelf.appex/TVProductKindsTopShelf
+          check WatchCompanion Watch/WatchCompanionWatch.app/WatchCompanionWatch Watch/WatchCompanionWatch.app/PlugIns/WatchCompanionIntents.appex/WatchCompanionIntents
+          check Watch2Companion Watch/Watch2CompanionWatch.app/Watch2CompanionWatch Watch/Watch2CompanionWatch.app/PlugIns/Watch2CompanionExtension.appex/Watch2CompanionExtension Watch/Watch2CompanionWatch.app/_WatchKitStub/WK
+          ipa=$(bazel cquery //Targets/Watch2Companion --output=files | grep '\.ipa$')
+          test "$(unzip -p "$ipa" Payload/Watch2Companion.app/Watch/Watch2CompanionWatch.app/Info.plist | plutil -extract CFBundlePackageType raw -o - -)" = APPL
+          test "$(unzip -p "$ipa" Payload/Watch2Companion.app/Watch/Watch2CompanionWatch.app/PlugIns/Watch2CompanionExtension.appex/Info.plist | plutil -extract CFBundlePackageType raw -o - -)" = 'XPC!'
 
       - name: Run Per-File Flag Probe
         working-directory: fixture/iOS/App

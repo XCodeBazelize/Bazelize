@@ -9,8 +9,10 @@ extension Target {
             generateMacOSBundle(builder, kit)
         case .xpcService:
             generateXPCService(builder, kit)
-        case .appExtension, .tvExtension:
+        case .appExtension, .tvExtension, .intentsServiceExtension:
             generateExtension(builder, kit)
+        case .watch2Extension:
+            generateWatchKitExtension(builder, kit)
         case .messagesExtension:
             generateIMessageExtension(builder, kit)
         case .stickerPack:

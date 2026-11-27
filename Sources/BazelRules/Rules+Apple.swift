@@ -1168,11 +1168,17 @@ extension Rules.Apple.TVOS {
 extension Rules.Apple.WatchOS {
     public enum Call {
         /// Builds a `watchos_application` target.
+        ///
+        /// With `deps` it is a single-target watch app whose extensions go in
+        /// `extensions`; without, it is a watchOS 2 app around the WatchKit
+        /// extension in `extension`.
         public static func watchos_application(
             name: String,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            extension: Starlark.Label? = nil,
+            extensions: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
@@ -1185,6 +1191,8 @@ extension Rules.Apple.WatchOS {
                 Attr.bundle_id(bundle_id)
                 Attr.bundle_name(bundle_name)
                 Attr.deps(deps)
+                Attr.extension(`extension`)
+                if let extensions, !extensions.isEmpty { Attr.extensions(extensions) }
                 Attr.infoplists(infoplists)
                 Attr.minimum_os_version(minimum_os_version)
                 Attr.resources(resources)
@@ -1193,11 +1201,15 @@ extension Rules.Apple.WatchOS {
             }
         }
 
+        /// Builds a `watchos_extension` target: a WatchKit extension, or with
+        /// `application_extension` an app extension a watch app carries.
         public static func watchos_extension(
             name: String,
+            application_extension: Bool? = nil,
             bundle_id: String? = nil,
             bundle_name: String? = nil,
             deps: Starlark.Value? = nil,
+            extensions: [Starlark.Label]? = nil,
             infoplists: Starlark.Value? = nil,
             minimum_os_version: String? = nil,
             resources: Starlark.Value? = nil,
@@ -1207,9 +1219,11 @@ extension Rules.Apple.WatchOS {
         {
             Rules.Apple.WatchOS.watchos_extension.call {
                 Attr.name(name)
+                Attr.application_extension(application_extension)
                 Attr.bundle_id(bundle_id)
                 Attr.bundle_name(bundle_name)
                 Attr.deps(deps)
+                if let extensions, !extensions.isEmpty { Attr.extensions(extensions) }
                 Attr.infoplists(infoplists)
                 Attr.minimum_os_version(minimum_os_version)
                 Attr.resources(resources)

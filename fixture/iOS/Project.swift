@@ -207,6 +207,74 @@ let project = Project(
             ]),
             sources: ["TVProductKinds/TopShelf/**/*.swift"],
             settings: settings(["APPLICATION_EXTENSION_API_ONLY": "YES"])),
+        /// A single-target watch app the iPhone app carries in `Watch/`, and the
+        /// Intents extension the watch app carries.
+        target(
+            "WatchCompanion",
+            product: .app,
+            sources: ["WatchKinds/Companion/**/*.swift"],
+            dependencies: [.target(name: "WatchCompanionWatch")]),
+        .target(
+            name: "WatchCompanionWatch",
+            destinations: [.appleWatch],
+            product: .app,
+            bundleId: "com.bazel.WatchCompanion.watchkitapp",
+            deploymentTargets: .watchOS("9.0"),
+            infoPlist: .extendingDefault(with: [
+                "WKApplication": true,
+                "WKCompanionAppBundleIdentifier": "com.bazel.WatchCompanion",
+            ]),
+            sources: ["WatchKinds/Watch/**/*.swift"],
+            dependencies: [.target(name: "WatchCompanionIntents")],
+            settings: settings()),
+        .target(
+            name: "WatchCompanionIntents",
+            destinations: [.appleWatch],
+            product: .appExtension,
+            bundleId: "com.bazel.WatchCompanion.watchkitapp.Intents",
+            deploymentTargets: .watchOS("9.0"),
+            infoPlist: .extendingDefault(with: [
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.intents-service",
+                    "NSExtensionPrincipalClass": "$(PRODUCT_MODULE_NAME).IntentHandler",
+                    "NSExtensionAttributes": ["IntentsSupported": ["INSendMessageIntent"]],
+                ],
+            ]),
+            sources: ["WatchKinds/Intents/**/*.swift"],
+            settings: settings(["APPLICATION_EXTENSION_API_ONLY": "YES"])),
+        /// The watchOS 2 structure: a watch app with no code of its own around
+        /// the WatchKit extension that has it.
+        target(
+            "Watch2Companion",
+            product: .app,
+            sources: ["WatchKinds/Companion2/**/*.swift"],
+            dependencies: [.target(name: "Watch2CompanionWatch")]),
+        .target(
+            name: "Watch2CompanionWatch",
+            destinations: [.appleWatch],
+            product: .watch2App,
+            bundleId: "com.bazel.Watch2Companion.watchkitapp",
+            deploymentTargets: .watchOS("9.0"),
+            infoPlist: .extendingDefault(with: [
+                "WKCompanionAppBundleIdentifier": "com.bazel.Watch2Companion",
+            ]),
+            dependencies: [.target(name: "Watch2CompanionExtension")],
+            settings: settings()),
+        .target(
+            name: "Watch2CompanionExtension",
+            destinations: [.appleWatch],
+            product: .watch2Extension,
+            bundleId: "com.bazel.Watch2Companion.watchkitapp.watchkitextension",
+            deploymentTargets: .watchOS("9.0"),
+            infoPlist: .extendingDefault(with: [
+                "NSExtension": [
+                    "NSExtensionPointIdentifier": "com.apple.watchkit",
+                    "NSExtensionAttributes": ["WKAppBundleIdentifier": "com.bazel.Watch2Companion.watchkitapp"],
+                ],
+                "WKExtensionDelegateClassName": "$(PRODUCT_MODULE_NAME).ExtensionDelegate",
+            ]),
+            sources: ["WatchKinds/Extension/**/*.swift"],
+            settings: settings(["APPLICATION_EXTENSION_API_ONLY": "YES"])),
         .target(
             name: "MacBundle",
             destinations: .macOS,

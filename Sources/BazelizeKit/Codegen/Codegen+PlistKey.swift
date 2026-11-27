@@ -6,6 +6,7 @@ enum PlistKey: String {
     case bundleShortVersionString = "CFBundleShortVersionString"
     case bundleExecutable = "CFBundleExecutable"
     case bundleDevelopmentRegion = "CFBundleDevelopmentRegion"
+    case bundlePackageType = "CFBundlePackageType"
     case bundleIconFile = "CFBundleIconFile"
     case bundleIconFiles = "CFBundleIconFiles"
     case bundleIconName = "CFBundleIconName"

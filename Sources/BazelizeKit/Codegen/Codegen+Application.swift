@@ -46,8 +46,9 @@ extension Target {
                 bundle_id: bundleIdentifier(project: kit.project),
                 deps: .build {
                     ":\(name)_library"
-                    frameworks
+                    linkedFrameworks(project: kit.project)
                 },
+                extensions: embeddedExtensions(project: kit.project),
                 infoplists: .build {
                     plistFile(kit)
                     plist_auto
@@ -73,6 +74,7 @@ extension Target {
             sticker pack only in an iMessage app, never in an application.
             """)
         }
+        let watchApplication = embeddedWatchApplication(project: kit.project, kit)
         builder.call(
             Rules.Apple.IOS.Call.ios_application(
                 name: name,
@@ -104,7 +106,8 @@ extension Target {
                         ":Strings"
                     }
                 },
-                visibility: .public))
+                visibility: .public,
+                watch_application: watchApplication))
     }
 
     private func buildMac(_ builder: CodeBuilder, _ kit: Kit) {
@@ -222,6 +225,41 @@ extension Target {
                     plistDefault(kit)
                 },
                 minimum_os_version: prefer(\.platform.iOS),
+                resources: .build {
+                    bundleResources(project: kit.project)
+                },
+                strings: .build {
+                    if !allStrings.isEmpty {
+                        ":Strings"
+                    }
+                },
+                visibility: .public))
+    }
+
+    /// A watchOS 2 app has no code: it is the WatchKit extension it carries,
+    /// which rules_apple takes as `extension`. One that carries none, or
+    /// several, has no rule that bundles it.
+    func generateWatch2Application(_ builder: CodeBuilder, _ kit: Kit) {
+        let carried = watchKitExtensionNames(project: kit.project)
+        guard carried.count == 1, let only = carried.first else {
+            kit.note("""
+            \(name) is not generated: a watchOS 2 app carries exactly one WatchKit extension, \
+            and it carries \(carried.isEmpty ? "none" : carried.joined(separator: ", ")).
+            """)
+            return
+        }
+
+        builder.call(
+            Rules.Apple.WatchOS.Call.watchos_application(
+                name: name,
+                bundle_id: bundleIdentifier(project: kit.project),
+                extension: .named("//Targets/\(only):\(only)"),
+                infoplists: .build {
+                    plistFile(kit)
+                    plist_auto
+                    plistDefault(kit)
+                },
+                minimum_os_version: prefer(\.platform.watchOS),
                 resources: .build {
                     bundleResources(project: kit.project)
                 },
