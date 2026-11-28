@@ -37,7 +37,8 @@ extension SwiftPM.Generator {
         /// that closes the loop.
         if Self.hasCycle(directory) || Self.containsBazelPackage(directory) {
             var visited: Set<String> = []
-            try Self.mirror(directory, at: link, visited: &visited)
+            let excluded = Set(target.exclude.map { (directory + $0).normalize().string })
+            try Self.mirror(directory, at: link, excluding: excluded, visited: &visited)
         } else {
             try link.symlink(directory)
         }
@@ -84,19 +85,26 @@ extension SwiftPM.Generator {
     /// way into a directory — is left out. SwiftPM compiles a file once
     /// however many ways lead to it, and swiftc rejects a file name it is
     /// given twice.
-    private static func mirror(_ directory: Path, at destination: Path, visited: inout Set<String>) throws {
-        guard visited.insert(resolved(directory)).inserted else { return }
+    /// Excluded fixtures can link back to the checkout, including the output
+    /// currently being generated. Prune them before following any links.
+    private static func mirror(
+        _ directory: Path,
+        at destination: Path,
+        excluding excluded: Set<String>,
+        visited: inout Set<String>) throws
+    {
+        guard !excluded.contains(directory.string), visited.insert(resolved(directory)).inserted else { return }
         try destination.mkpath()
 
         let children = ((try? directory.children()) ?? []).sorted { $0.lastComponent < $1.lastComponent }
         for child in children {
-            if packageMarkers.contains(child.lastComponent) { continue }
+            if packageMarkers.contains(child.lastComponent) || excluded.contains(child.string) { continue }
 
             let target = destination + child.lastComponent
 
             if child.isDirectory {
                 if visited.contains(resolved(child)) { continue }
-                try mirror(child, at: target, visited: &visited)
+                try mirror(child, at: target, excluding: excluded, visited: &visited)
             } else {
                 try target.symlink(child)
             }

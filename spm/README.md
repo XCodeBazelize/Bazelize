@@ -100,6 +100,11 @@ A package that must not compile a file says so in the file: it is a
 quietly passing. What must not be *linked* says so where it would have been
 linked, so the package holding it still builds anywhere.
 
+When a source tree must be mirrored to remove cycles or foreign Bazel packages,
+target `exclude` entries are pruned before following symlinks. An excluded test
+fixture can point back to the checkout root, so copying it would also copy an
+`App/` output being generated inside that checkout.
+
 ## Running one
 
 ```sh
