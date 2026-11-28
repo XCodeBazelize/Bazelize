@@ -424,12 +424,22 @@ configuration. It never rewrites the working tree or index, so partially staged
 edits remain separate. Generated workspaces and external checkouts are excluded
 by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
 
+Declare fixed generated paths on the object that owns the output. Initialize
+them from its root, as `Bazel.PackageDirectory` does for `root` and `build`,
+rather than constructing paths at write sites. Keep paths chosen from runtime
+inputs local.
+
 Swift child processes belong to purpose-named operations of the `Commands` target,
 grouped by tool: `Commands.swiftpm.resolvePackage(in:)`, `Commands.bazel`,
 `Commands.pkgConfig`, `Commands.xcodebuild`, and `Commands.xcrun`. Their only
 execution backend is `swift-subprocess`; callers await discovery and execution
 rather than block a thread. Toolchain and SDK framework discovery share immutable
 results across concurrent generations.
+
+Generated Starlark rule calls use typed `Rules.<domain>.Call` factories, which
+own their rule names, loads, and attributes. Bazelize-provided rules belong to
+`Rules.Workspace.Call`, including `swiftpm_resource_bundle`; third-party rules
+use their own namespace, such as `Rules.XcodeProj.Call.xcodeproj`.
 
 The generated macOS plugin host also uses `swift-subprocess`. Its pinned source
 archive and C shims are declared in Bazel under `tools/subprocess`, independently

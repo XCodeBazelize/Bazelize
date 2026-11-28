@@ -24,6 +24,17 @@ extension SwiftPM {
 
         let deployment: Deployment
 
+        let packagesDirectory: Bazel.PackageDirectory
+        let toolsDirectory: Bazel.PackageDirectory
+        let resourceBundleRulePath: Path
+        let packageManifestPath: Path
+        let pluginHostPath: Path
+        let pluginScriptPath: Path
+        let pluginPlanPath: Path
+        let bazelWrapperPath: Path
+        let traitsRCPath: Path
+        let languagesRCPath: Path
+
         /// The packages whose targets use a build tool plugin, which are written
         /// again once `bazel run //:plugins` has produced what those plugins
         /// generate.
@@ -76,6 +87,16 @@ extension SwiftPM {
             self.output = output
             self.workspace = workspace
             self.deployment = deployment
+            packagesDirectory = Bazel.PackageDirectory(output + PluginSwiftPM.packagesDirectory)
+            toolsDirectory = Bazel.PackageDirectory(output + "tools")
+            resourceBundleRulePath = packagesDirectory.root + "swiftpm_resource_bundle.bzl"
+            packageManifestPath = output + "Package.swift"
+            pluginHostPath = output + "plugin-host.swift"
+            pluginScriptPath = output + "plugins.sh"
+            pluginPlanPath = output + "plugin-plan.json"
+            bazelWrapperPath = toolsDirectory.root + "bazel"
+            traitsRCPath = output + "traits.bazelrc"
+            languagesRCPath = output + "languages.bazelrc"
         }
 
         func generate(locals _: [Path] = []) async throws {
@@ -207,22 +228,19 @@ extension SwiftPM {
 
         // MARK: Private
 
-        var packagesRoot: Path {
-            output + PluginSwiftPM.packagesDirectory
-        }
-
         /// `Packages/` is generated output. Rebuilding it removes rules for a
         /// dependency or target that left the graph; a stale `BUILD` would
         /// otherwise remain part of `//...`. The output root itself stays:
         /// SwiftPM and Bazel keep their resolved state beside this directory.
         private func preparePackagesRoot() throws {
-            if packagesRoot.exists { try packagesRoot.delete() }
-            try packagesRoot.mkpath()
-            try (packagesRoot + "swiftpm_resource_bundle.bzl").write(Self.resourceBundleRule + "\n")
+            if packagesDirectory.root.exists { try packagesDirectory.root.delete() }
+            try packagesDirectory.root.mkpath()
+            try resourceBundleRulePath.write(Self.resourceBundleRule + "\n")
         }
 
         private func generate(_ package: Package) async throws {
-            let root = packagesRoot + package.directory
+            let packageOutput = Bazel.PackageDirectory(packagesDirectory.root + package.directory)
+            let root = packageOutput.root
             try root.mkpath()
 
             let builder = CodeBuilder()
@@ -353,7 +371,7 @@ extension SwiftPM {
                 build(product, emitted: Set(emitted.keys), package: package, builder: builder)
             }
 
-            try (root + "BUILD").write(builder.build())
+            try packageOutput.build.write(builder.build())
         }
     }
 }

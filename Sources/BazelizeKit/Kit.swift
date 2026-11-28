@@ -16,6 +16,7 @@ public final class Kit {
     let outputRoot: Path
     let configuration: BazelizeConfiguration
     private let sdkFrameworkNames: [String: Set<String>]
+    private let cacheRCPath: Path
 
     private lazy var roadmap = Bazel.Roadmap(output: outputRoot)
     lazy var version = Bazel.Version(outputRoot)
@@ -55,6 +56,7 @@ public final class Kit {
         self.configuration = configuration
         project = try await Project.load(path: projPath, preferConfig: preferConfig)
         outputRoot = outputPath ?? Path(project.workspacePath)
+        cacheRCPath = outputRoot + "cache.bazelrc"
         sdkFrameworkNames = await SDKFrameworks.load(project: project)
 
         try await pluginSPM.loadPackageNames(projPath: projPath)
@@ -217,7 +219,7 @@ extension Kit {
         try generateVersion()
         try generateModule()
         try generateBuild()
-        try (outputRoot + "cache.bazelrc").write(configuration.cache.rc)
+        try cacheRCPath.write(configuration.cache.rc)
         try generatePrebuiltBuild()
         try generateWorkspaceRules()
         try generatePluginExtraFile()
