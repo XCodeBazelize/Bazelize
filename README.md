@@ -424,6 +424,11 @@ configuration. It never rewrites the working tree or index, so partially staged
 edits remain separate. Generated workspaces and external checkouts are excluded
 by Git's tracked/ignored-file selection. `make build` and CI never run SwiftFormat.
 
+Declare fixed generated paths on the object that owns the output. Initialize
+them from its root, as `Bazel.PackageDirectory` does for `root` and `build`,
+rather than constructing paths at write sites. Keep paths chosen from runtime
+inputs local.
+
 Swift child processes belong to operations of the `Commands` target, named for
 their purpose. Their only execution backend is `swift-subprocess`; callers
 await discovery and execution rather than block a thread. Toolchain and SDK

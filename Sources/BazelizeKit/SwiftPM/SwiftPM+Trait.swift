@@ -374,7 +374,7 @@ extension SwiftPM.Generator {
             }
         }
 
-        try (output + "traits.bazelrc").write(lines.joined(separator: "\n") + "\n")
+        try traitsRCPath.write(lines.joined(separator: "\n") + "\n")
     }
 
     /// `--disable-default-traits`, `--enable-all-traits` and `--traits default`,
