@@ -100,7 +100,7 @@ extension SwiftPM {
             guard let sdkName, let machOName else { return nil }
 
             guard
-                let platformPath = try? await Commands.sdkPlatform(sdk: sdkName)
+                let platformPath = try? await Commands.xcrun.sdkPlatform(sdk: sdkName)
             else {
                 return nil
             }
@@ -108,7 +108,7 @@ extension SwiftPM {
             let binary = platformPath + "Developer/Library/Frameworks/XCTest.framework/XCTest"
             guard binary.exists else { return nil }
 
-            guard let build = try? await Commands.binaryBuildInfo(at: binary) else {
+            guard let build = try? await Commands.xcrun.binaryBuildInfo(at: binary) else {
                 return nil
             }
 

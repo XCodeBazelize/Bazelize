@@ -98,23 +98,23 @@ extension SwiftPM.Generator {
     /// only says `regular`.
     private func kind(of target: SwiftPM.PackageTarget, in package: SwiftPM.Package) throws -> TargetKind? {
         switch target.type {
-        case "test":
+        case .test:
             /// Only the package under the tool: the tests of a package a project
             /// depends on say nothing about the project.
             return package.isRoot ? .test : nil
-        case "plugin":
+        case .plugin:
             /// A plugin is a program SwiftPM runs, never a rule this workspace
             /// builds: a command plugin runs when someone asks for it by name,
             /// and a build tool plugin runs while the workspace is generated.
             /// Whether it ran is what the run reports.
             return nil
-        case "binary":
+        case .binary:
             return .binary
-        case "system":
+        case .system:
             return .system
-        case "macro":
+        case .macro:
             return .macro
-        case "executable", "snippet":
+        case .executable, .snippet:
             /// A tool the package builds: it has a `main`, so it links rather
             /// than being linked.
             return .executable

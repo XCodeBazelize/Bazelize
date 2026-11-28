@@ -84,7 +84,7 @@ actor SDKFrameworks {
     }
 
     private static func read(sdk: String) async -> Set<String> {
-        guard let root = try? await Commands.showSDK(sdk: sdk) else { return [] }
+        guard let root = try? await Commands.xcrun.showSDK(sdk: sdk) else { return [] }
         let roots = [
             root + "System/Library/Frameworks",
             root + "System/iOSSupport/System/Library/Frameworks",

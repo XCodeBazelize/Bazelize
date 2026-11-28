@@ -143,8 +143,8 @@ extension SwiftPM.Generator {
         guard let name = target.pkgConfig else { return .none }
 
         guard
-            let compilerFlags = try? await Commands.pkgConfigCFlags(package: name),
-            let linkerFlags = try? await Commands.pkgConfigLinkerFlags(package: name)
+            let compilerFlags = try? await Commands.pkgConfig.pkgConfigCFlags(package: name),
+            let linkerFlags = try? await Commands.pkgConfig.pkgConfigLinkerFlags(package: name)
         else {
             let installs = target.providers
                 .map { "\($0.manager) \($0.packages.joined(separator: " "))" }
@@ -158,40 +158,65 @@ extension SwiftPM.Generator {
             return .none
         }
 
-        var pkgConfig = PkgConfig(linkerFlags: linkerFlags)
-        var pending: String?
+        return PkgConfig(compilerFlags: compilerFlags, linkerFlags: linkerFlags)
+    }
 
-        for flag in compilerFlags {
-            if let waiting = pending {
-                if waiting == "-I" { pkgConfig.includePaths.append(flag) } else { pkgConfig.defines.append(flag) }
-                pending = nil
-                continue
-            }
+    private enum CompilerOption: String {
+        case include = "-I"
+        case define = "-D"
 
-            switch true {
-            case flag == "-I", flag == "-D":
-                pending = flag
-            case flag.hasPrefix("-I"):
-                pkgConfig.includePaths.append(String(flag.dropFirst(2)))
-            case flag.hasPrefix("-D"):
-                pkgConfig.defines.append(String(flag.dropFirst(2)))
-            default:
-                pkgConfig.otherFlags.append(flag)
+        init?(argument: String) {
+            if argument.hasPrefix(Self.include.rawValue) {
+                self = .include
+            } else if argument.hasPrefix(Self.define.rawValue) {
+                self = .define
+            } else {
+                return nil
             }
         }
-
-        return pkgConfig
     }
 
     /// An include path reaches whoever imports the module, a define reaches
     /// them too, and anything else is only this module's to compile with.
-    private struct PkgConfig {
+    struct PkgConfig {
+        init(compilerFlags: [String], linkerFlags: [String]) {
+            self.linkerFlags = linkerFlags
+            var pending: CompilerOption?
+
+            for flag in compilerFlags {
+                let option: CompilerOption
+                let value: String
+                if let waiting = pending {
+                    option = waiting
+                    value = flag
+                    pending = nil
+                } else if let parsed = CompilerOption(argument: flag) {
+                    if flag == parsed.rawValue {
+                        pending = parsed
+                        continue
+                    }
+                    option = parsed
+                    value = String(flag.dropFirst(parsed.rawValue.count))
+                } else {
+                    otherFlags.append(flag)
+                    continue
+                }
+
+                switch option {
+                case .include:
+                    includePaths.append(value)
+                case .define:
+                    defines.append(value)
+                }
+            }
+        }
+
         var includePaths: [String] = []
         var defines: [String] = []
         var otherFlags: [String] = []
-        var linkerFlags: [String] = []
+        var linkerFlags: [String]
 
-        static let none = PkgConfig()
+        static let none = PkgConfig(compilerFlags: [], linkerFlags: [])
     }
 
 

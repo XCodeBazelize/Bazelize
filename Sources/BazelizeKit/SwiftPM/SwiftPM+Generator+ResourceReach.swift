@@ -25,7 +25,7 @@ extension SwiftPM.Generator {
         var reached: Set<TargetKey> = []
         var pending: [TargetKey] = workspace.packages.flatMap { package in
             package.manifest.targets
-                .filter { $0.type == "executable" }
+                .filter { $0.type == .executable }
                 .map { TargetKey(package: package.directory, target: $0.name) }
         }
 
@@ -50,19 +50,20 @@ extension SwiftPM.Generator {
     /// What one dependency of a target names, as the targets behind it.
     private func targets(
         of dependency: SwiftPM.TargetDependency,
-        from package: SwiftPM.Package) -> [TargetKey]
+        from package: SwiftPM.Package)
+        -> [TargetKey]
     {
         switch dependency.kind {
-        case let .target(name):
+        case .target(let name):
             return [TargetKey(package: package.directory, target: name)]
-        case let .byName(name):
+        case .byName(let name):
             /// A target of this package wins over a product of the same name,
             /// which is how SwiftPM resolves the shorthand.
             if package.manifest.targets.contains(where: { $0.name == name }) {
                 return [TargetKey(package: package.directory, target: name)]
             }
             return targets(ofProduct: name, package: nil, from: package)
-        case let .product(name, owner):
+        case .product(let name, let owner):
             return targets(ofProduct: name, package: owner, from: package)
         }
     }
@@ -71,7 +72,8 @@ extension SwiftPM.Generator {
     private func targets(
         ofProduct product: String,
         package name: String?,
-        from consumer: SwiftPM.Package) -> [TargetKey]
+        from consumer: SwiftPM.Package)
+        -> [TargetKey]
     {
         guard let owner = package(ofProduct: product, package: name, from: consumer) else { return [] }
 

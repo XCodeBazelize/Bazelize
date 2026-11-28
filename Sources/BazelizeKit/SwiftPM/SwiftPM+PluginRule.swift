@@ -405,7 +405,7 @@ extension SwiftPM.Generator {
         for candidate in packages {
             if
                 let target = candidate.manifest.targets.first(where: {
-                    $0.name == usage.name && $0.type == "plugin"
+                    $0.name == usage.name && $0.type == .plugin
                 })
             {
                 return (target, candidate)
@@ -460,11 +460,11 @@ extension SwiftPM.Generator {
         guard let target = package.manifest.targets.first(where: { $0.name == name }) else {
             return nil
         }
-        if target.type == "executable" {
+        if target.type == .executable {
             return binary(of: target, in: package)
         }
         guard
-            target.type == "binary",
+            target.type == .binary,
             let artifact = artifact(of: target, in: package),
             case .artifactBundle = artifact.kind,
             Self.executable(inArtifactBundle: artifact.path) != nil

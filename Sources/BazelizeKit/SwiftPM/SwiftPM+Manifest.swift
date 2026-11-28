@@ -79,10 +79,53 @@ extension SwiftPM {
         }
     }
 
+    /// `regular`, `executable`, `test`, `system`, `binary`, `plugin`, `macro`,
+    /// `snippet`: the `type` of a target in the dump.
+    enum TargetType: RawRepresentable, Hashable {
+        case regular
+        case executable
+        case test
+        case system
+        case binary
+        case plugin
+        case macro
+        case snippet
+        case other(String)
+
+        init(rawValue: String) {
+            switch rawValue {
+            case "regular": self = .regular
+            case "executable": self = .executable
+            case "test": self = .test
+            case "system": self = .system
+            case "binary": self = .binary
+            case "plugin": self = .plugin
+            case "macro": self = .macro
+            case "snippet": self = .snippet
+            default: self = .other(rawValue)
+            }
+        }
+
+        var rawValue: String {
+            switch self {
+            case .regular: "regular"
+            case .executable: "executable"
+            case .test: "test"
+            case .system: "system"
+            case .binary: "binary"
+            case .plugin: "plugin"
+            case .macro: "macro"
+            case .snippet: "snippet"
+            case .other(let value): value
+            }
+        }
+    }
+
     struct PackageTarget: Decodable {
         let name: String
-        /// `regular`, `executable`, `test`, `system`, `binary`, `plugin`, `macro`.
-        let type: String
+        /// What the manifest says the target is. A kind this tool does not know
+        /// is kept as it was written.
+        let type: TargetType
         let path: String?
         let sources: [String]?
         let exclude: [String]
@@ -106,7 +149,7 @@ extension SwiftPM {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: AnyKey.self)
             name = try container.decode(String.self, forKey: AnyKey("name"))
-            type = container.value(String.self, "type") ?? "regular"
+            type = container.value(String.self, "type").map(TargetType.init(rawValue:)) ?? .regular
             path = container.value(String.self, "path")
             sources = container.value([String].self, "sources")
             exclude = container.list(String.self, "exclude")
@@ -249,6 +292,69 @@ extension SwiftPM {
         }
     }
 
+    /// The name of a setting in the dump: the key of its `kind`. One this tool
+    /// does not know is kept as it was written.
+    enum SettingName: RawRepresentable, Hashable {
+        case define
+        case headerSearchPath
+        case bridgingHeader
+        case swiftLanguageMode
+        case swiftLanguageVersion
+        case defaultIsolation
+        case enableUpcomingFeature
+        case enableExperimentalFeature
+        case strictMemorySafety
+        case interoperabilityMode
+        case unsafeFlags
+        case treatAllWarnings
+        case treatWarning
+        case linkedLibrary
+        case linkedFramework
+        case other(String)
+
+        init(rawValue: String) {
+            switch rawValue {
+            case "define": self = .define
+            case "headerSearchPath": self = .headerSearchPath
+            case "bridgingHeader": self = .bridgingHeader
+            case "swiftLanguageMode": self = .swiftLanguageMode
+            case "swiftLanguageVersion": self = .swiftLanguageVersion
+            case "defaultIsolation": self = .defaultIsolation
+            case "enableUpcomingFeature": self = .enableUpcomingFeature
+            case "enableExperimentalFeature": self = .enableExperimentalFeature
+            case "strictMemorySafety": self = .strictMemorySafety
+            case "interoperabilityMode": self = .interoperabilityMode
+            case "unsafeFlags": self = .unsafeFlags
+            case "treatAllWarnings": self = .treatAllWarnings
+            case "treatWarning": self = .treatWarning
+            case "linkedLibrary": self = .linkedLibrary
+            case "linkedFramework": self = .linkedFramework
+            default: self = .other(rawValue)
+            }
+        }
+
+        var rawValue: String {
+            switch self {
+            case .define: "define"
+            case .headerSearchPath: "headerSearchPath"
+            case .bridgingHeader: "bridgingHeader"
+            case .swiftLanguageMode: "swiftLanguageMode"
+            case .swiftLanguageVersion: "swiftLanguageVersion"
+            case .defaultIsolation: "defaultIsolation"
+            case .enableUpcomingFeature: "enableUpcomingFeature"
+            case .enableExperimentalFeature: "enableExperimentalFeature"
+            case .strictMemorySafety: "strictMemorySafety"
+            case .interoperabilityMode: "interoperabilityMode"
+            case .unsafeFlags: "unsafeFlags"
+            case .treatAllWarnings: "treatAllWarnings"
+            case .treatWarning: "treatWarning"
+            case .linkedLibrary: "linkedLibrary"
+            case .linkedFramework: "linkedFramework"
+            case .other(let value): value
+            }
+        }
+    }
+
     /// `{"tool": "swift", "kind": {"define": {"_0": "FOO"}}}`
     struct Setting: Decodable {
         let tool: String
@@ -258,8 +364,8 @@ extension SwiftPM {
         let condition: SettingCondition?
 
         /// `define`, `headerSearchPath`, `defaultIsolation`…
-        var name: String? {
-            kind.keys.first
+        var name: SettingName? {
+            kind.keys.first.map(SettingName.init(rawValue:))
         }
 
         var values: [String] {
@@ -378,8 +484,9 @@ extension SwiftPM {
         let aliases: [String: String]?
 
         init(from decoder: Decoder) throws {
-            if let single = try? decoder.singleValueContainer(),
-               let name = try? single.decode(String.self)
+            if
+                let single = try? decoder.singleValueContainer(),
+                let name = try? single.decode(String.self)
             {
                 self.name = name
                 condition = nil
@@ -403,7 +510,7 @@ extension SwiftPM {
             aliases = nil
         }
 
-        private static let conditionKeys: Set<String> = ["platformNames", "traits", "config"]
+        private static let conditionKeys: Set = ["platformNames", "traits", "config"]
     }
 
     /// `{"fileSystem": [{...}]}` or `{"sourceControl": [{...}]}`

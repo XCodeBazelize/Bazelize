@@ -65,8 +65,8 @@ struct Toolchain: Sendable {
     }
 
     private static func discover() async -> Self {
-        async let sdkQuery = try? JSONDecoder().decode([SDK].self, from: Commands.installedSDKs())
-        async let versionQuery = try? Commands.xcodeVersion()
+        async let sdkQuery = try? JSONDecoder().decode([SDK].self, from: Commands.xcodebuild.installedSDKs())
+        async let versionQuery = try? Commands.xcodebuild.xcodeVersion()
         let (sdks, output) = await (sdkQuery, versionQuery)
         let version = output?.split(separator: "\n").first?.split(separator: " ").last
         let xcode = version.map { settings(xcodeVersion: String($0)) } ?? [:]

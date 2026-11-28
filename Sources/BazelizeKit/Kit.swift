@@ -199,7 +199,7 @@ extension Kit {
         }
 
         do {
-            try await Commands.runBuildToolPlugins(in: outputRoot)
+            try await Commands.bazel.runBuildToolPlugins(in: outputRoot)
             try await generator.refreshPluginPackages()
         } catch {
             generator.note("""

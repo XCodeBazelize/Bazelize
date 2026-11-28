@@ -277,23 +277,31 @@ extension Xcode.BuildSettings {
         return result
     }
 
+    private enum Modifier: String {
+        case rfc1034identifier
+        case identifier
+        case c99extidentifier
+        case lower
+        case upper
+    }
+
     private static func apply(_ modifier: String?, to value: String) -> String {
-        switch modifier {
-        case "rfc1034identifier":
+        switch modifier.flatMap(Modifier.init(rawValue:)) {
+        case .rfc1034identifier:
             return value.map { character in
                 character.isLetter || character.isNumber || character == "." || character == "-"
                     ? String(character)
                     : "-"
             }.joined()
-        case "identifier", "c99extidentifier":
+        case .identifier, .c99extidentifier:
             return value.map { character in
                 character.isLetter || character.isNumber ? String(character) : "_"
             }.joined()
-        case "lower":
+        case .lower:
             return value.lowercased()
-        case "upper":
+        case .upper:
             return value.uppercased()
-        default:
+        case nil:
             return value
         }
     }

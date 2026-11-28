@@ -184,7 +184,7 @@ extension SwiftPM {
             }
 
             let used = package.manifest.targets
-                .filter { $0.type != "test" }
+                .filter { $0.type != .test }
                 .flatMap(\.pluginUsages)
                 .map(\.name)
 
@@ -207,7 +207,7 @@ extension SwiftPM {
         /// and stop every other plugin with it.
         private func reportForeignPlugins(of package: Package) {
             let foreign = package.manifest.targets
-                .filter { $0.type != "test" }
+                .filter { $0.type != .test }
                 .flatMap(\.pluginUsages)
                 .filter { usage in
                     guard let owner = pluginOwner(of: usage, from: package) else { return false }
@@ -253,7 +253,7 @@ extension SwiftPM {
             /// asks for it.
             if package.isRoot || package.isLocal {
                 let used = usedPluginNames(in: package)
-                for target in package.manifest.targets where target.type == "plugin" {
+                for target in package.manifest.targets where target.type == .plugin {
                     guard let prefix = try materialize(target, in: package, at: root) else { continue }
 
                     if target.pluginCapability?.isCommand == true {

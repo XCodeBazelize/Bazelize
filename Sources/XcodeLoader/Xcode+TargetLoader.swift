@@ -471,7 +471,7 @@ extension Xcode.BuildPhase {
             destination = .init(
                 path: copyPhase.dstPath,
                 subfolder: copyPhase.dstSubfolder?.rawValue,
-                subfolderSpec: copyPhase.dstSubfolderSpec?.rawValue)
+                subfolderSpec: copyPhase.dstSubfolderSpec.map { .init(rawValue: $0.rawValue) })
         } else {
             destination = nil
         }

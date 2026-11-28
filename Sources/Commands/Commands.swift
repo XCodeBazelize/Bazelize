@@ -10,6 +10,12 @@ import System
 
 /// External operations; callers supply intent rather than process configuration.
 public enum Commands {
+    public enum swiftpm { }
+    public enum bazel { }
+    public enum pkgConfig { }
+    public enum xcodebuild { }
+    public enum xcrun { }
+
     public struct Failure: Error, CustomStringConvertible {
         public let command: String
         public let status: String
