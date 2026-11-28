@@ -95,15 +95,11 @@ extension SwiftPM.Generator {
                 tags: Self.manual))
 
         builder.call(
-            Starlark.Statement.Call(
-                "swiftpm_resource_bundle",
-                load: .init(module: "//Packages:swiftpm_resource_bundle.bzl", symbols: ["swiftpm_resource_bundle"]))
-            {
-                "name" => rule.name
-                "archive" => Starlark.Label.named(":\(archive)")
-                "bundle_name" => rule.bundle
-                "tags" => Self.manual
-            })
+            Rules.Workspace.Call.swiftpm_resource_bundle(
+                name: rule.name,
+                archive: Starlark.Label.named(":\(archive)"),
+                bundle_name: rule.bundle,
+                tags: Self.manual))
     }
 
     /// `Bundle.module`, the name a package's Swift code uses.

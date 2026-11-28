@@ -5,6 +5,7 @@
 //  Created by Yume on 2023/2/3.
 //
 
+import BazelRules
 import Foundation
 import Starlark
 
@@ -20,12 +21,12 @@ final class PluginSwift: PluginBuiltin {
             version: dep.rawValue,
             repo_name: "build_bazel_rules_swift")
         if dep == .v4_2_2 {
-            builder.call(.init("single_version_override") {
-                "module_name" => "rules_swift"
-                "version" => dep.rawValue
-                "patches" => ["//tools/rules_swift:framework_module_maps.patch"]
-                "patch_strip" => 1
-            })
+            builder.call(
+                Rules.Builtin.Call.single_version_override(
+                    module_name: "rules_swift",
+                    version: dep.rawValue,
+                    patches: ["//tools/rules_swift:framework_module_maps.patch"],
+                    patch_strip: 1))
         }
         builder.custom("""
         system_sdk = use_extension("@build_bazel_rules_swift//swift:extensions.bzl", "system_sdk")

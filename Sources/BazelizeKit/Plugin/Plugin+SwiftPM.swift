@@ -246,13 +246,12 @@ final class PluginSwiftPM: PluginBuiltin {
         // systems. The native tool rule transitions the whole host dependency
         // closure without raising the application's deployment target.
         builder.call(
-            Rules.Apple.MacOS.macos_command_line_application.call {
-                "name" => "_plugin_host"
-                "deps" => [":_plugin_host_library"]
-                "minimum_os_version" => "13.0"
-                "tags" => ["manual"]
-                "visibility" => ["//visibility:public"]
-            })
+            Rules.Apple.MacOS.Call.macos_command_line_application(
+                name: "_plugin_host",
+                deps: [":_plugin_host_library"],
+                minimum_os_version: "13.0",
+                tags: ["manual"],
+                visibility: .public))
         builder.call(
             Rules.Shell.Call.sh_binary(
                 name: "plugins",
