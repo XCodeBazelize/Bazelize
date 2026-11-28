@@ -14,7 +14,11 @@ extension Starlark {
     /// Written the way buildifier writes one, which is the only way it will
     /// leave it alone.
     public static func tripleQuoted(_ value: String) -> Value {
-        .custom("\"\"\"\n\(Format.escaped(value, triple: true))\n\"\"\"")
+        .custom(#"""
+        """
+        \#(Format.escaped(value, triple: true))
+        """
+        """#)
     }
 
     /// `allowEmpty` is for a directory something else writes into: the pattern
